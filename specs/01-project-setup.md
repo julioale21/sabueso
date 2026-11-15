@@ -351,8 +351,8 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - **Sí:** el alias de Vite al código fuente del núcleo. El servidor de desarrollo funciona sin compilar el núcleo antes, y los cambios en los algoritmos se ven al instante en la UI.
 - **No:** que `web` consuma `core/dist`. Obligaría a recompilar el núcleo en cada cambio para verlo en la UI.
 - **Sí:** solo herramientas de calidad como `devDependencies` (TypeScript, Vitest, ESLint, Prettier, Testing Library, Vite). No tienen lógica de dominio, así que no violan la regla del anteproyecto de no usar bibliotecas que resuelvan los conceptos.
-- **Sí:** identificadores en inglés y comentarios en español. Cuando se traduzcan los comentarios, el código ya queda listo.
-- **No:** identificadores en español. Obligaría a renombrar todo después.
+- **Sí:** todo el código en inglés: identificadores, comentarios y nombres de las pruebas (`describe`/`it`). La documentación (`docs/`, specs, README) sigue en español. Los specs 02–04, que piden comentarios en español, adoptan esta regla cuando se trabaje cada uno.
+- **No:** identificadores ni comentarios en español. Obligaría a traducir todo después.
 - **Sí:** nombres de archivos y carpetas en inglés (`presentation-guide.md`, `docs/concepts/`, `docs/console-demo.md`), aunque su contenido esté en español. Es la misma razón que con los identificadores. Los specs 02–04 adoptan la regla cuando se trabaje cada uno.
 
 **CLI**

@@ -1,4 +1,4 @@
-// Configuración plana de ESLint para los tres workspaces (SPEC 01, sección 4.4).
+// Flat ESLint config for the three workspaces (SPEC 01, section 4.4).
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
@@ -11,13 +11,21 @@ export default defineConfig(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          // Config files outside any tsconfig.
+          allowDefaultProject: [
+            'vitest.config.ts',
+            'packages/*/vitest.config.ts',
+            'apps/*/vitest.config.ts',
+            'apps/*/vite.config.ts',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
   },
-  // Los archivos JavaScript (como este) no forman parte de ningún tsconfig.
+  // JavaScript files (like this one) are not part of any tsconfig.
   { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
-  // Al final, para que ESLint no choque con Prettier.
+  // Last, so ESLint does not conflict with Prettier.
   prettier,
 );

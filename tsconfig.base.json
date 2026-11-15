@@ -1,5 +1,5 @@
 {
-  // Configuración compartida por todos los workspaces (SPEC 01, sección 4.2).
+  // Shared by all workspaces (SPEC 01, section 4.2).
   "compilerOptions": {
     "strict": true,
     "noUncheckedIndexedAccess": true,
