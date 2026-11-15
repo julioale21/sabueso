@@ -13,11 +13,11 @@ Laboratorio Integrador Final de **Fundamentos Teóricos de Informática**.
 
 El proyecto se implementa por specs, en este orden:
 
-| Spec | Contenido | Estado |
-| --- | --- | --- |
-| [01 — Setup del proyecto](specs/01-setup-proyecto.md) | Monorepo, tooling, esqueletos y CLI base | Approved |
-| [02 — Núcleo y motor de Earley](specs/02-nucleo-motor-earley.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`) | Borrador |
-| [03 — Interfaz web](specs/03-interfaz-web.md) | Análisis visual y vistas didácticas (`apps/web`) | Borrador |
-| [04 — Español controlado](specs/04-espanol-controlado.md) | Del texto del relato a la secuencia de etiquetas (`@sabueso/nl`) | Borrador |
+| Spec                                                             | Contenido                                                        | Estado   |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- | -------- |
+| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                         | Approved |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)  | Borrador |
+| [03 — Interfaz web](specs/03-web-interface.md)                    | Análisis visual y vistas didácticas (`apps/web`)                 | Borrador |
+| [04 — Español controlado](specs/04-controlled-spanish.md)        | Del texto del relato a la secuencia de etiquetas (`@sabueso/nl`) | Borrador |
 
-La guía para la exposición está en [`guia-presentacion.md`](guia-presentacion.md).
+La guía para la exposición está en [`presentation-guide.md`](presentation-guide.md).

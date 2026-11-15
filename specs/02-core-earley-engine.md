@@ -14,24 +14,24 @@ Sabueso es el Laboratorio Integrador Final de Fundamentos Teóricos de Informát
 Este spec cubre **solo el núcleo**: la librería y su CLI. Hay tres razones para separarlo de la interfaz:
 
 1. **El anteproyecto lo exige.** Su metodología dice: "La interfaz se empieza cuando el núcleo pasa las pruebas por consola". Un spec por hito respeta ese orden.
-2. **La defensa es oral y por conceptos.** Cada concepto vive en un archivo propio, con su ficha en `docs/conceptos/` y su prueba. Así puede explicarse aislado: "acá está el Predictor, esta es su prueba y esta es la página del Hopcroft".
+2. **La defensa es oral y por conceptos.** Cada concepto vive en un archivo propio, con su ficha en `docs/concepts/` y su prueba. Así puede explicarse aislado: "acá está el Predictor, esta es su prueba y esta es la página del Hopcroft".
 3. **El motor no debe depender de la UI.** El criterio de éxito "el mismo motor funciona con gramáticas de libro sin cambios en el código" solo se verifica si el motor es una librería pura.
 
 ### 1.1 Regla rectora: "solo si se usa en el fondo"
 
 El autor pidió incluir LL(k), LR(k) o la Máquina de Turing **solo si el proyecto realmente los usa**. Cada concepto con código en este spec tiene un uso funcional, no decorativo:
 
-| Concepto | ¿Tiene código? | Uso real que lo justifica |
-| --- | --- | --- |
-| Autómata finito determinista | Sí | Es el analizador léxico que lee los archivos `.glc`. |
-| LL(1): FIRST, FOLLOW, tabla, parser descendente | Sí | (a) El lector de `.glc` es un parser descendente predictivo LL(1). (b) Certifica que G1 no es ambigua: toda gramática LL(1) es no ambigua. (c) Certifica que la meta-gramática de `.glc` es LL(1). |
-| Anulables, productivos, alcanzables, vacuidad, ciclos | Sí | Earley necesita los anulables para el arreglo de ε. El validador de gramáticas necesita los inútiles y la vacuidad. El conteo de árboles necesita los ciclos. |
-| Earley (reconocedor, árboles, derivación) | Sí | Es el analizador central que pide el enunciado. |
-| Forma Normal de Chomsky + CYK | Sí | Es la comparación que fundamenta la elección de Earley en el anteproyecto. También es un segundo reconocedor que valida a Earley por pruebas diferenciales. |
-| GLC → Autómata de pila | Sí | Demuestra en código el teorema GLC ≡ AP (Hopcroft 6.3.1). Además es un tercer reconocedor para las pruebas diferenciales. |
-| Búsqueda acotada de ambigüedad y de diferencias entre lenguajes | Sí | Responde lo que pide el anteproyecto: "qué lecturas da cada una" y "qué relatos acepta una y no la otra". Ilustra que esos problemas son indecidibles pero semidecidibles. |
-| LR(k) | **No** | Nada del proyecto lo usa. G0 es ambigua, y ninguna gramática ambigua es LR(k). G1 ya está certificada por LL(1). Implementarlo sería decorativo. |
-| Máquina de Turing | **No (solo ficha)** | Ningún algoritmo del proyecto necesita simular una MT. Aparece como modelo de referencia en la ficha de decidibilidad (por la tesis de Church-Turing, cada algoritmo del núcleo es una MT que siempre se detiene). También aparece en la ficha de límites de las GLC. |
+| Concepto                                                        | ¿Tiene código?      | Uso real que lo justifica                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Autómata finito determinista                                    | Sí                  | Es el analizador léxico que lee los archivos `.glc`.                                                                                                                                                                                                                  |
+| LL(1): FIRST, FOLLOW, tabla, parser descendente                 | Sí                  | (a) El lector de `.glc` es un parser descendente predictivo LL(1). (b) Certifica que G1 no es ambigua: toda gramática LL(1) es no ambigua. (c) Certifica que la meta-gramática de `.glc` es LL(1).                                                                    |
+| Anulables, productivos, alcanzables, vacuidad, ciclos           | Sí                  | Earley necesita los anulables para el arreglo de ε. El validador de gramáticas necesita los inútiles y la vacuidad. El conteo de árboles necesita los ciclos.                                                                                                         |
+| Earley (reconocedor, árboles, derivación)                       | Sí                  | Es el analizador central que pide el enunciado.                                                                                                                                                                                                                       |
+| Forma Normal de Chomsky + CYK                                   | Sí                  | Es la comparación que fundamenta la elección de Earley en el anteproyecto. También es un segundo reconocedor que valida a Earley por pruebas diferenciales.                                                                                                           |
+| GLC → Autómata de pila                                          | Sí                  | Demuestra en código el teorema GLC ≡ AP (Hopcroft 6.3.1). Además es un tercer reconocedor para las pruebas diferenciales.                                                                                                                                             |
+| Búsqueda acotada de ambigüedad y de diferencias entre lenguajes | Sí                  | Responde lo que pide el anteproyecto: "qué lecturas da cada una" y "qué relatos acepta una y no la otra". Ilustra que esos problemas son indecidibles pero semidecidibles.                                                                                            |
+| LR(k)                                                           | **No**              | Nada del proyecto lo usa. G0 es ambigua, y ninguna gramática ambigua es LR(k). G1 ya está certificada por LL(1). Implementarlo sería decorativo.                                                                                                                      |
+| Máquina de Turing                                               | **No (solo ficha)** | Ningún algoritmo del proyecto necesita simular una MT. Aparece como modelo de referencia en la ficha de decidibilidad (por la tesis de Church-Turing, cada algoritmo del núcleo es una MT que siempre se detiene). También aparece en la ficha de límites de las GLC. |
 
 ---
 
@@ -50,9 +50,9 @@ El autor pidió incluir LL(k), LR(k) o la Máquina de Turing **solo si el proyec
 - Construcción GLC → AP de un estado (aceptación por pila vacía) y simulador acotado con traza de descripciones instantáneas.
 - Búsquedas acotadas: generación de oraciones hasta longitud k, testigo de ambigüedad y comparación de lenguajes.
 - CLI `sabueso` que crece paso a paso: **cada módulo tiene su comando de consola y la prueba de ese comando** (sección 8.1). Ejemplos: `lex`, `grammar`, `nullable`, `first-follow`, `ll1`, `earley`, `trace`, `trees`, `count`, `derive`, `parse`, `cnf`, `cyk`, `pda`, `ambiguity`, `compare`, `differential` y `bench`.
-- Guion de consola `docs/demo-consola.md`, verificado por una prueba que ejecuta cada comando.
+- Guion de consola `docs/console-demo.md`, verificado por una prueba que ejecuta cada comando.
 - Batería de pruebas con Vitest: unitarias, valores esperados calculados a mano, diferenciales Earley/CYK/AP y rendimiento.
-- Fichas de exposición `docs/conceptos/NN-*.md`, una por concepto atómico.
+- Fichas de exposición `docs/concepts/NN-*.md`, una por concepto atómico.
 - Comentarios en español en todo el código, con prioridad en los algoritmos.
 - README con instrucciones y un índice que relaciona cada concepto con su archivo y su ficha.
 
@@ -72,7 +72,7 @@ El autor pidió incluir LL(k), LR(k) o la Máquina de Turing **solo si el proyec
 
 ## 3. Fundamentos teóricos que se implementan
 
-Esta sección es la referencia teórica del spec. Cada subsección corresponde a una ficha de `docs/conceptos/` y a uno o más archivos de código.
+Esta sección es la referencia teórica del spec. Cada subsección corresponde a una ficha de `docs/concepts/` y a uno o más archivos de código.
 
 ### 3.1 Alfabeto, cadena y lenguaje
 
@@ -91,15 +91,15 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 
 - M = (Q, Σc, δ, q0, F), donde Σc son **clases de caracteres** (letra, dígito, espacio, salto de línea, `-`, `>`, `→`, `|`, `ε`, `'`, `#`, `%` y otro).
 - δ se implementa como **tabla explícita**: un objeto `Record<Estado, Partial<Record<ClaseChar, Estado>>>`, no como `if` anidados. Así la tabla puede mostrarse en la exposición igual que en el pizarrón.
-- **Separación motor y tabla:** `automata/dfa.ts` es un **ejecutor genérico de AFD**. Recibe una definición `DfaDefinition` (estados, función de clasificación de caracteres, tabla δ, estados de aceptación con el tipo de token que emiten, y estados que se descartan, como espacios y comentarios) y aplica *maximal munch*. `grammar-format/lexer.ts` solo declara la tabla del formato `.glc`. Se separa porque el SPEC 04 reutiliza el mismo ejecutor con otras dos tablas (texto en español y archivos de léxico y reglas), así que el concepto "un AFD es una tabla más un ejecutor" se ve en código.
-- Regla de *maximal munch*: el token se emite cuando no hay transición posible desde un estado de aceptación.
+- **Separación motor y tabla:** `automata/dfa.ts` es un **ejecutor genérico de AFD**. Recibe una definición `DfaDefinition` (estados, función de clasificación de caracteres, tabla δ, estados de aceptación con el tipo de token que emiten, y estados que se descartan, como espacios y comentarios) y aplica _maximal munch_. `grammar-format/lexer.ts` solo declara la tabla del formato `.glc`. Se separa porque el SPEC 04 reutiliza el mismo ejecutor con otras dos tablas (texto en español y archivos de léxico y reglas), así que el concepto "un AFD es una tabla más un ejecutor" se ve en código.
+- Regla de _maximal munch_: el token se emite cuando no hay transición posible desde un estado de aceptación.
 - Referencias: Augusto 1.3; Hopcroft 2.2.
 
 ### 3.4 Gramática LL(1) y parser descendente recursivo (lector de `.glc`)
 
-- Cada no terminal de `meta.glc` es una función. Cada función elige su alternativa mirando **un solo token** (el *lookahead*).
+- Cada no terminal de `meta.glc` es una función. Cada función elige su alternativa mirando **un solo token** (el _lookahead_).
 - La elección es determinista porque `meta.glc` es LL(1). El propio módulo de la sección 3.6 lo demuestra en una prueba: el lector se certifica con el análisis que implementa el núcleo.
-- Referencia: Aho, Lam, Sethi y Ullman, *Compiladores* (2.ª ed.), 4.4.
+- Referencia: Aho, Lam, Sethi y Ullman, _Compiladores_ (2.ª ed.), 4.4.
 
 ### 3.5 FIRST y FOLLOW
 
@@ -158,7 +158,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 ### 3.13 Predictor
 
 - Si el ítem es (A → α • B β, j) con B no terminal, se agrega a Sk el ítem (B → • γ, k) por cada producción B → γ.
-- Es la parte **descendente** (*top-down*) de Earley.
+- Es la parte **descendente** (_top-down_) de Earley.
 
 ### 3.14 Scanner
 
@@ -168,7 +168,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 ### 3.15 Completer
 
 - Si el ítem es (B → γ •, i), por cada ítem (A → α • B β, j) de Si se agrega a Sk el ítem (A → α B • β, j).
-- Es la parte **ascendente** (*bottom-up*) de Earley.
+- Es la parte **ascendente** (_bottom-up_) de Earley.
 - Relación con el autómata de pila: Earley simula en paralelo todas las pilas posibles del AP no determinista y las comparte a través de los orígenes. Esto se explica en la ficha 24.
 
 ### 3.16 Arreglo de ε (Aycock y Horspool, 2002)
@@ -176,7 +176,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 - **Problema del Earley clásico:** si B → • ε se completa en Sk antes de que se agregue otro ítem que espera B en el mismo Sk, ese ítem nunca avanza. El caso de prueba es `S → A A 'x'`, `A → ε`, con la entrada `x`.
 - **Arreglo:** en el Predictor, si B es anulable, además de predecir B se agrega (A → α B • β, j) con un enlace de tipo `nullable`.
 - **Regla complementaria de este proyecto:** el Completer **ignora** los ítems completos con origen igual a k (lapso vacío), porque el Predictor ya hizo todos los avances sobre ε. Esto evita enlaces duplicados, y con ellos el doble conteo de árboles.
-- Referencia: Aycock y Horspool, "Practical Earley Parsing", *The Computer Journal* 45(6), 2002.
+- Referencia: Aycock y Horspool, "Practical Earley Parsing", _The Computer Journal_ 45(6), 2002.
 
 ### 3.17 Aceptación y diagnóstico de errores
 
@@ -189,7 +189,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 
 ### 3.18 Backpointers y árbol de derivación
 
-- Cada avance de punto guarda un **enlace** (*link*) con dos partes:
+- Cada avance de punto guarda un **enlace** (_link_) con dos partes:
   - el **predecesor**: el mismo ítem con el punto una posición antes;
   - la **causa**: un token (scan), un ítem completo (complete) o un símbolo anulable (nullable).
 - Un ítem puede tener **varios enlaces**. Esa es exactamente la representación de la ambigüedad.
@@ -411,14 +411,18 @@ Las de análisis prueban el análisis de gramáticas. En la CLI se nombran `prue
 
 ```ts
 // src/genres/types.ts
-interface TagInfo { tag: string; function: string; example: string }   // función narrativa y ejemplo (tabla del anteproyecto)
+interface TagInfo {
+  tag: string;
+  function: string;
+  example: string;
+} // función narrativa y ejemplo (tabla del anteproyecto)
 interface Genre {
-  id: string;                    // 'policial'
-  name: string;                  // 'Policial de enigma'
+  id: string; // 'policial'
+  name: string; // 'Policial de enigma'
   description: string;
-  officialGrammar: string;       // 'policial/g1': con esta se decide si el relato pertenece al género
-  alternativeGrammar?: string;   // 'policial/g0': versión ambigua para el análisis de ambigüedad
-  tags: TagInfo[];               // las 14 etiquetas: paleta y ayuda de la UI
+  officialGrammar: string; // 'policial/g1': con esta se decide si el relato pertenece al género
+  alternativeGrammar?: string; // 'policial/g0': versión ambigua para el análisis de ambigüedad
+  tags: TagInfo[]; // las 14 etiquetas: paleta y ayuda de la UI
 }
 ```
 
@@ -435,29 +439,49 @@ Los identificadores van en inglés y los comentarios en español. Los tipos vive
 
 ```ts
 // src/grammar/types.ts
-type SymbolName = string;                    // 'Pasos', 'CTX', '+'
-interface Production { id: number; lhs: SymbolName; rhs: SymbolName[] }  // rhs [] = ε
+type SymbolName = string; // 'Pasos', 'CTX', '+'
+interface Production {
+  id: number;
+  lhs: SymbolName;
+  rhs: SymbolName[];
+} // rhs [] = ε
 interface Grammar {
   name: string;
-  start: SymbolName;                          // símbolo inicial declarado
+  start: SymbolName; // símbolo inicial declarado
   nonterminals: ReadonlySet<SymbolName>;
-  terminals: ReadonlySet<SymbolName>;         // Σ
+  terminals: ReadonlySet<SymbolName>; // Σ
   productions: readonly Production[];
   byLhs: ReadonlyMap<SymbolName, readonly Production[]>;
 }
-const AUGMENTED_START = '$S';                 // nunca lo produce el lexer
+const AUGMENTED_START = '$S'; // nunca lo produce el lexer
 
 // src/automata/dfa.ts
 interface DfaDefinition<S extends string, C extends string, K extends string> {
-  start: S; classify: (ch: string) => C; delta: Record<S, Partial<Record<C, S>>>;
-  accepting: Partial<Record<S, K | null>>;   // null = se reconoce pero se descarta (espacios, comentarios)
+  start: S;
+  classify: (ch: string) => C;
+  delta: Record<S, Partial<Record<C, S>>>;
+  accepting: Partial<Record<S, K | null>>; // null = se reconoce pero se descarta (espacios, comentarios)
 }
-interface DfaToken<K> { kind: K; text: string; line: number; column: number }
+interface DfaToken<K> {
+  kind: K;
+  text: string;
+  line: number;
+  column: number;
+}
 
 // src/grammar-format/lexer.ts
-type TokenKind = 'IDENT' | 'LITERAL' | 'FLECHA' | 'BARRA' | 'EPSILON' | 'NL' | 'INICIO' | 'TERMINALES' | 'FIN';
-interface Token { kind: TokenKind; text: string; line: number; column: number }
-class GrammarSyntaxError extends Error { line: number; column: number }
+type TokenKind =
+  'IDENT' | 'LITERAL' | 'FLECHA' | 'BARRA' | 'EPSILON' | 'NL' | 'INICIO' | 'TERMINALES' | 'FIN';
+interface Token {
+  kind: TokenKind;
+  text: string;
+  line: number;
+  column: number;
+}
+class GrammarSyntaxError extends Error {
+  line: number;
+  column: number;
+}
 
 // src/analysis/*.ts
 interface GrammarAnalysis {
@@ -466,34 +490,58 @@ interface GrammarAnalysis {
   productive: Set<SymbolName>;
   reachable: Set<SymbolName>;
   useless: Set<SymbolName>;
-  isEmpty: boolean;                           // L(G) = ∅
-  cycles: SymbolName[][];                     // cada ciclo A ⇒+ A encontrado
+  isEmpty: boolean; // L(G) = ∅
+  cycles: SymbolName[][]; // cada ciclo A ⇒+ A encontrado
   first: Map<SymbolName, Set<SymbolName | 'ε'>>;
   follow: Map<SymbolName, Set<SymbolName | '$'>>;
-  ll1: { table: Map<SymbolName, Map<SymbolName, Production[]>>; conflicts: Ll1Conflict[]; isLL1: boolean };
+  ll1: {
+    table: Map<SymbolName, Map<SymbolName, Production[]>>;
+    conflicts: Ll1Conflict[];
+    isLL1: boolean;
+  };
 }
-interface Ll1Conflict { nonterminal: SymbolName; lookahead: SymbolName; productions: Production[] }
+interface Ll1Conflict {
+  nonterminal: SymbolName;
+  lookahead: SymbolName;
+  productions: Production[];
+}
 
 // src/earley/item.ts
-interface EarleyItem { production: Production; dot: number; origin: number; setIndex: number; key: string; links: Link[] }
+interface EarleyItem {
+  production: Production;
+  dot: number;
+  origin: number;
+  setIndex: number;
+  key: string;
+  links: Link[];
+}
 type Link =
   | { kind: 'scan'; predecessor: EarleyItem; tokenIndex: number }
   | { kind: 'complete'; predecessor: EarleyItem; child: EarleyItem }
   | { kind: 'nullable'; predecessor: EarleyItem; symbol: SymbolName };
 
 // src/earley/chart.ts
-interface EarleySet { index: number; items: EarleyItem[]; byKey: Map<string, EarleyItem> }
+interface EarleySet {
+  index: number;
+  items: EarleyItem[];
+  byKey: Map<string, EarleyItem>;
+}
 type Chart = EarleySet[];
 
 // src/earley/trace.ts
-interface TraceEvent { set: number; op: 'predict' | 'scan' | 'complete' | 'nullable'; item: string; cause?: string }
+interface TraceEvent {
+  set: number;
+  op: 'predict' | 'scan' | 'complete' | 'nullable';
+  item: string;
+  cause?: string;
+}
 
 // src/earley/diagnostics.ts
 interface ParseError {
   kind: 'unexpected-token' | 'unexpected-end' | 'unknown-symbol';
-  position: number;                           // índice de token, base 0
-  found: SymbolName | null;                   // null = fin de entrada
-  expected: SymbolName[];                     // ordenado alfabéticamente
+  position: number; // índice de token, base 0
+  found: SymbolName | null; // null = fin de entrada
+  expected: SymbolName[]; // ordenado alfabéticamente
 }
 
 // src/trees/tree.ts
@@ -502,31 +550,75 @@ type ParseTree =
   | { kind: 'epsilon' }
   | { kind: 'nonterminal'; symbol: SymbolName; production: Production; children: ParseTree[] };
 type TreeCount = bigint | 'infinito';
-interface DerivationStep { form: SymbolName[]; production: Production | null }  // el primer paso tiene null
+interface DerivationStep {
+  form: SymbolName[];
+  production: Production | null;
+} // el primer paso tiene null
 
 // src/index.ts — resultado público de parse()
-interface ParseOptions { maxTrees?: number /* 50 */; trace?: boolean /* false */; countTrees?: boolean /* true */; classicEpsilon?: boolean /* false; solo didáctico: reproduce el bug de ε */ }
+interface ParseOptions {
+  maxTrees?: number /* 50 */;
+  trace?: boolean /* false */;
+  countTrees?: boolean /* true */;
+  classicEpsilon?: boolean; /* false; solo didáctico: reproduce el bug de ε */
+}
 type ParseResult =
-  | { accepted: true; tokens: SymbolName[]; trees: ParseTree[]; treeCount: TreeCount; derivation: DerivationStep[]; chart: Chart; trace: TraceEvent[] }
+  | {
+      accepted: true;
+      tokens: SymbolName[];
+      trees: ParseTree[];
+      treeCount: TreeCount;
+      derivation: DerivationStep[];
+      chart: Chart;
+      trace: TraceEvent[];
+    }
   | { accepted: false; tokens: SymbolName[]; error: ParseError; chart: Chart; trace: TraceEvent[] };
 
 // src/cnf/*.ts
-interface CnfResult { grammar: Grammar; acceptsEmpty: boolean; steps: { name: 'START' | 'DEL' | 'UNIT' | 'USELESS' | 'TERM' | 'BIN'; grammar: Grammar }[] }
+interface CnfResult {
+  grammar: Grammar;
+  acceptsEmpty: boolean;
+  steps: { name: 'START' | 'DEL' | 'UNIT' | 'USELESS' | 'TERM' | 'BIN'; grammar: Grammar }[];
+}
 
 // src/cyk/cyk.ts
-interface CykResult { accepted: boolean; table: Set<SymbolName>[][]; tree: ParseTree | null }
+interface CykResult {
+  accepted: boolean;
+  table: Set<SymbolName>[][];
+  tree: ParseTree | null;
+}
 
 // src/pda/*.ts
-interface Pda { state: 'q'; inputAlphabet: Set<SymbolName>; stackAlphabet: Set<SymbolName>; startStack: SymbolName; transitions: PdaTransition[] }
+interface Pda {
+  state: 'q';
+  inputAlphabet: Set<SymbolName>;
+  stackAlphabet: Set<SymbolName>;
+  startStack: SymbolName;
+  transitions: PdaTransition[];
+}
 type PdaTransition =
   | { kind: 'expand'; top: SymbolName; push: SymbolName[]; production: Production }
   | { kind: 'match'; terminal: SymbolName };
-interface PdaId { position: number; stack: SymbolName[] }   // tope = índice 0
-interface PdaRun { result: 'acepta' | 'rechaza' | 'indeterminado'; steps: number; acceptingPath: { id: PdaId; via: PdaTransition | null }[] | null }
+interface PdaId {
+  position: number;
+  stack: SymbolName[];
+} // tope = índice 0
+interface PdaRun {
+  result: 'acepta' | 'rechaza' | 'indeterminado';
+  steps: number;
+  acceptingPath: { id: PdaId; via: PdaTransition | null }[] | null;
+}
 
 // src/bounded/*.ts
-interface AmbiguityWitness { sentence: SymbolName[]; treeCount: TreeCount }
-interface LanguageComparison { onlyInFirst: SymbolName[][]; onlyInSecond: SymbolName[][]; maxLength: number }
+interface AmbiguityWitness {
+  sentence: SymbolName[];
+  treeCount: TreeCount;
+}
+interface LanguageComparison {
+  onlyInFirst: SymbolName[][];
+  onlyInSecond: SymbolName[][];
+  maxLength: number;
+}
 ```
 
 **Convenciones:**
@@ -552,10 +644,10 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
   .gitignore
   README.md
   specs/
-    02-nucleo-motor-earley.md
+    02-core-earley-engine.md
     .spec-config.yml
-  docs/conceptos/              # una ficha por concepto (tabla 7.1)
-  docs/demo-consola.md         # guion de exposición por consola (paso 29)
+  docs/concepts/              # una ficha por concepto (tabla 7.1)
+  docs/console-demo.md         # guion de exposición por consola (paso 29)
   packages/core/
     package.json               # @sabueso/core, "type": "module", bin: { sabueso: dist/cli.js }
     tsconfig.json
@@ -622,7 +714,7 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
 
 ## 7. Fichas de exposición y comentarios
 
-### 7.1 Fichas `docs/conceptos/`
+### 7.1 Fichas `docs/concepts/`
 
 Cada ficha tiene siempre las mismas cinco partes:
 
@@ -634,39 +726,39 @@ Cada ficha tiene siempre las mismas cinco partes:
 
 Cada ficha tiene como máximo unas 2 páginas, pensadas para una diapositiva o dos.
 
-| # | Archivo | Concepto | Código |
-| --- | --- | --- | --- |
-| 01 | `01-alfabeto-y-lenguaje.md` | Σ, cadenas, L(G) | `input/sequence.ts` |
-| 02 | `02-gramatica-libre-de-contexto.md` | 4-upla, convención de terminales | `grammar/types.ts`, `grammar/build.ts` |
-| 03 | `03-automata-finito-lexer.md` | AFD como tabla más ejecutor | `automata/dfa.ts`, `grammar-format/lexer.ts` |
-| 04 | `04-parser-descendente-ll1.md` | Descendente recursivo predictivo | `grammar-format/parser.ts` |
-| 05 | `05-first-follow.md` | FIRST, FOLLOW, punto fijo | `analysis/first-follow.ts` |
-| 06 | `06-tabla-ll1-y-no-ambiguedad.md` | Tabla, conflictos, teorema LL(1) ⇒ no ambigua | `analysis/ll1.ts` |
-| 07 | `07-anulables.md` | Anulables | `analysis/nullable.ts` |
-| 08 | `08-simbolos-inutiles-y-vacuidad.md` | Productivos, alcanzables, vacuidad | `analysis/useful.ts` |
-| 09 | `09-ciclos.md` | A ⇒+ A, infinitos árboles | `analysis/cycles.ts` |
-| 10 | `10-longitud-minima.md` | minYield | `analysis/min-yield.ts` |
-| 11 | `11-item-de-earley.md` | Regla punteada | `earley/item.ts` |
-| 12 | `12-conjuntos-de-earley.md` | Chart, lista como cola | `earley/chart.ts` |
-| 13 | `13-predictor.md` | Predictor | `earley/recognizer.ts#predict` |
-| 14 | `14-scanner.md` | Scanner | `earley/recognizer.ts#scan` |
-| 15 | `15-completer.md` | Completer | `earley/recognizer.ts#complete` |
-| 16 | `16-epsilon-aycock-horspool.md` | El bug de ε y su arreglo | `earley/recognizer.ts#predict` |
-| 17 | `17-aceptacion-y-errores.md` | Aceptación, posición, esperados | `earley/diagnostics.ts` |
-| 18 | `18-backpointers-y-arboles.md` | Enlaces y árbol | `trees/enumerate.ts` |
-| 19 | `19-conteo-catalan.md` | Programación dinámica, Catalan, `'infinito'` | `trees/count.ts` |
-| 20 | `20-derivacion-izquierda.md` | Preorden y formas sentenciales | `trees/derivation.ts` |
-| 21 | `21-ambiguedad-g0-vs-g1.md` | 4 árboles contra 3 lecturas; L(G1) ⊊ L(G0) | `generos/policial/g0.glc`, `generos/policial/g1.glc` |
-| 22 | `22-forma-normal-de-chomsky.md` | Los 6 pasos | `cnf/*.ts` |
-| 23 | `23-cyk.md` | Tabla CYK, comparación con Earley | `cyk/cyk.ts` |
-| 24 | `24-automata-de-pila.md` | GLC → AP, ID, Earley como AP compartido | `pda/*.ts` |
-| 25 | `25-busquedas-acotadas.md` | Semidecisión | `bounded/*.ts` |
-| 26 | `26-jerarquia-y-limites-glc.md` | Chomsky, bombeo, reglas no GLC | (sin código) |
-| 27 | `27-decidibilidad-y-turing.md` | Decidible / indecidible, Church-Turing | (sin código) |
+| #   | Archivo                              | Concepto                                      | Código                                               |
+| --- | ------------------------------------ | --------------------------------------------- | ---------------------------------------------------- |
+| 01  | `01-alfabeto-y-lenguaje.md`          | Σ, cadenas, L(G)                              | `input/sequence.ts`                                  |
+| 02  | `02-gramatica-libre-de-contexto.md`  | 4-upla, convención de terminales              | `grammar/types.ts`, `grammar/build.ts`               |
+| 03  | `03-automata-finito-lexer.md`        | AFD como tabla más ejecutor                   | `automata/dfa.ts`, `grammar-format/lexer.ts`         |
+| 04  | `04-parser-descendente-ll1.md`       | Descendente recursivo predictivo              | `grammar-format/parser.ts`                           |
+| 05  | `05-first-follow.md`                 | FIRST, FOLLOW, punto fijo                     | `analysis/first-follow.ts`                           |
+| 06  | `06-tabla-ll1-y-no-ambiguedad.md`    | Tabla, conflictos, teorema LL(1) ⇒ no ambigua | `analysis/ll1.ts`                                    |
+| 07  | `07-anulables.md`                    | Anulables                                     | `analysis/nullable.ts`                               |
+| 08  | `08-simbolos-inutiles-y-vacuidad.md` | Productivos, alcanzables, vacuidad            | `analysis/useful.ts`                                 |
+| 09  | `09-ciclos.md`                       | A ⇒+ A, infinitos árboles                     | `analysis/cycles.ts`                                 |
+| 10  | `10-longitud-minima.md`              | minYield                                      | `analysis/min-yield.ts`                              |
+| 11  | `11-item-de-earley.md`               | Regla punteada                                | `earley/item.ts`                                     |
+| 12  | `12-conjuntos-de-earley.md`          | Chart, lista como cola                        | `earley/chart.ts`                                    |
+| 13  | `13-predictor.md`                    | Predictor                                     | `earley/recognizer.ts#predict`                       |
+| 14  | `14-scanner.md`                      | Scanner                                       | `earley/recognizer.ts#scan`                          |
+| 15  | `15-completer.md`                    | Completer                                     | `earley/recognizer.ts#complete`                      |
+| 16  | `16-epsilon-aycock-horspool.md`      | El bug de ε y su arreglo                      | `earley/recognizer.ts#predict`                       |
+| 17  | `17-aceptacion-y-errores.md`         | Aceptación, posición, esperados               | `earley/diagnostics.ts`                              |
+| 18  | `18-backpointers-y-arboles.md`       | Enlaces y árbol                               | `trees/enumerate.ts`                                 |
+| 19  | `19-conteo-catalan.md`               | Programación dinámica, Catalan, `'infinito'`  | `trees/count.ts`                                     |
+| 20  | `20-derivacion-izquierda.md`         | Preorden y formas sentenciales                | `trees/derivation.ts`                                |
+| 21  | `21-ambiguedad-g0-vs-g1.md`          | 4 árboles contra 3 lecturas; L(G1) ⊊ L(G0)    | `generos/policial/g0.glc`, `generos/policial/g1.glc` |
+| 22  | `22-forma-normal-de-chomsky.md`      | Los 6 pasos                                   | `cnf/*.ts`                                           |
+| 23  | `23-cyk.md`                          | Tabla CYK, comparación con Earley             | `cyk/cyk.ts`                                         |
+| 24  | `24-automata-de-pila.md`             | GLC → AP, ID, Earley como AP compartido       | `pda/*.ts`                                           |
+| 25  | `25-busquedas-acotadas.md`           | Semidecisión                                  | `bounded/*.ts`                                       |
+| 26  | `26-jerarquia-y-limites-glc.md`      | Chomsky, bombeo, reglas no GLC                | (sin código)                                         |
+| 27  | `27-decidibilidad-y-turing.md`       | Decidible / indecidible, Church-Turing        | (sin código)                                         |
 
 ### 7.2 Comentarios en el código
 
-- Cada archivo empieza con un bloque `/** … */` en español con tres líneas: **qué concepto implementa**, **referencia** (libro y sección) y **ficha** (`docs/conceptos/NN-*.md`).
+- Cada archivo empieza con un bloque `/** … */` en español con tres líneas: **qué concepto implementa**, **referencia** (libro y sección) y **ficha** (`docs/concepts/NN-*.md`).
 - Cada paso de un algoritmo lleva un comentario que lo nombra como en la teoría. Por ejemplo: `// PREDICTOR: (A → α • B β, j) ⇒ (B → • γ, k)`.
 - Los invariantes de los bucles de punto fijo se comentan explícitamente. Por ejemplo: "el conjunto solo crece y está acotado por |N|, por lo tanto el bucle termina".
 - Los comentarios no repiten lo obvio del código: explican el **por qué** teórico.
@@ -716,7 +808,7 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
    - **Consola:** `npm run sabueso -- demo-grammar` construye en código la gramática de expresiones `E → E + T | T`, `T → id`, e imprime la 4-upla G = (N, Σ, P, S) con las producciones numeradas.
 
 3. **Lexer AFD.**
-   - `automata/dfa.ts`: el ejecutor genérico con *maximal munch*, probado con un AFD de juguete (números enteros y espacios).
+   - `automata/dfa.ts`: el ejecutor genérico con _maximal munch_, probado con un AFD de juguete (números enteros y espacios).
    - `grammar-format/lexer.ts`: la tabla de transiciones explícita del formato `.glc` (sección 3.3).
    - Comentarios `#`, `->` y `→`, literales `'…'`, `ε`, `%inicio` y `%terminales`.
    - Agrega un `NL` final antes de `FIN`.
@@ -882,7 +974,7 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
       - `npm run sabueso -- bench --grammar g0 --file packages/core/test/fixtures/l1.txt` imprime los tiempos de reconocimiento y de conteo.
 
 29. **Guion de consola completo.**
-    - Completar `docs/demo-consola.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.
+    - Completar `docs/console-demo.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.
     - La prueba `demo-doc.test.ts` del SPEC 01 ya ejecuta cada comando del documento con `runCli` y verifica que ninguno termine con código 2. Este paso no la modifica: solo agrega comandos al guion.
 
 30. **Fichas teóricas y README.**
@@ -899,21 +991,21 @@ Todos los valores fueron **calculados a mano** en este spec. El autor debe **ver
 
 ### 9.1 Casos del relato
 
-| Id | Entrada | G0 | G1 |
-| --- | --- | --- | --- |
-| V1 | `CTX HAL ENC INT SOS PIS DSC REV CNF CAP` | acepta, **8** árboles | acepta, **1** árbol |
-| V2 | `HAL PIS REV EPI` | acepta, 1 | acepta, 1 |
-| V3 | `CRI ENC SOS INT DSC PIS SOS ATQ REV CAP` | acepta, **112** | acepta, 1 |
-| A1 | `CRI SOS PIS INT REV` | acepta, **4** (3 lecturas) | acepta, 1 |
-| M1 | `CRI PIS REV` (relato mínimo, largo 3) | acepta, 1 | acepta, 1 |
-| L1 | `CRI` + 198 × `PIS` + `REV` (200 eventos) | acepta, C(197) | acepta, 1 |
-| I1 | `CTX PER PIS REV` (falta el crimen) | error pos 2, found `PIS`, expected `[CRI, HAL]` | ídem |
-| I2 | (vacía) | error pos 0, found `null`, expected `[CRI, CTX, HAL, PER]` | ídem |
-| I3 | `CRI REV` (sin investigación) | error pos 1, found `REV`, expected `[ATQ, CTX, DSC, ENC, HAL, INT, PER, PIS, SOS]` | error pos 1, found `REV`, expected `[ATQ, CTX, ENC, HAL, INT, PER, PIS, SOS]` |
-| I4 | `CRI PIS` (sin desenlace) | error pos 2, found `null`, expected `[ATQ, DSC, INT, PIS, REV, SOS]` | error pos 2, found `null`, expected `[ATQ, INT, PIS, REV, SOS]` |
-| I5 | `CRI DSC REV` (descarte sin sospecha) | acepta, 1 | error pos 1, found `DSC`, expected `[ATQ, CTX, ENC, HAL, INT, PER, PIS, SOS]` |
-| I6 | `CRI XYZ REV` | `unknown-symbol` pos 1, found `XYZ` | ídem |
-| I7 | `CRI SOS DSC DSC REV` (doble descarte) | acepta, 4 | error pos 3, found `DSC`, expected `[ATQ, INT, PIS, REV, SOS]` |
+| Id  | Entrada                                   | G0                                                                                 | G1                                                                            |
+| --- | ----------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| V1  | `CTX HAL ENC INT SOS PIS DSC REV CNF CAP` | acepta, **8** árboles                                                              | acepta, **1** árbol                                                           |
+| V2  | `HAL PIS REV EPI`                         | acepta, 1                                                                          | acepta, 1                                                                     |
+| V3  | `CRI ENC SOS INT DSC PIS SOS ATQ REV CAP` | acepta, **112**                                                                    | acepta, 1                                                                     |
+| A1  | `CRI SOS PIS INT REV`                     | acepta, **4** (3 lecturas)                                                         | acepta, 1                                                                     |
+| M1  | `CRI PIS REV` (relato mínimo, largo 3)    | acepta, 1                                                                          | acepta, 1                                                                     |
+| L1  | `CRI` + 198 × `PIS` + `REV` (200 eventos) | acepta, C(197)                                                                     | acepta, 1                                                                     |
+| I1  | `CTX PER PIS REV` (falta el crimen)       | error pos 2, found `PIS`, expected `[CRI, HAL]`                                    | ídem                                                                          |
+| I2  | (vacía)                                   | error pos 0, found `null`, expected `[CRI, CTX, HAL, PER]`                         | ídem                                                                          |
+| I3  | `CRI REV` (sin investigación)             | error pos 1, found `REV`, expected `[ATQ, CTX, DSC, ENC, HAL, INT, PER, PIS, SOS]` | error pos 1, found `REV`, expected `[ATQ, CTX, ENC, HAL, INT, PER, PIS, SOS]` |
+| I4  | `CRI PIS` (sin desenlace)                 | error pos 2, found `null`, expected `[ATQ, DSC, INT, PIS, REV, SOS]`               | error pos 2, found `null`, expected `[ATQ, INT, PIS, REV, SOS]`               |
+| I5  | `CRI DSC REV` (descarte sin sospecha)     | acepta, 1                                                                          | error pos 1, found `DSC`, expected `[ATQ, CTX, ENC, HAL, INT, PER, PIS, SOS]` |
+| I6  | `CRI XYZ REV`                             | `unknown-symbol` pos 1, found `XYZ`                                                | ídem                                                                          |
+| I7  | `CRI SOS DSC DSC REV` (doble descarte)    | acepta, 4                                                                          | error pos 3, found `DSC`, expected `[ATQ, INT, PIS, REV, SOS]`                |
 
 Cálculo de referencia para G0. P(w) es la cantidad de árboles de `Pasos` sobre w, y Paso(w) es la cantidad de árboles de `Paso`:
 
@@ -949,19 +1041,19 @@ Cálculo de referencia para G0. P(w) es la cantidad de árboles de `Pasos` sobre
 
 ### 9.3 Gramáticas de libro, autómata de pila y búsquedas acotadas
 
-| Id | Caso | Esperado |
-| --- | --- | --- |
-| AR1 | `aritmetica-ambigua`, `id + id * id` | acepta, 2 árboles |
-| AR2 | `aritmetica`, `id + id * id` | acepta, 1 árbol; la raíz aplica `E → E '+' T` |
-| P1 | `parentesis`, `( ( ) ) ( )` | acepta, 1 árbol; la cadena vacía acepta con 1 árbol |
-| P2 | `parentesis`, `( ( )` | error pos 3, found `null`, expected `['(', ')']` |
-| E1 | `epsilon-trampa`, `x` | acepta, 1 árbol |
-| C1 | `ciclica`, `a` | acepta, conteo `'infinito'`; la enumeración con límite 3 devuelve 3 árboles |
-| AP1 | AP de G1 con A1 | `acepta`; las expansiones del camino coinciden en orden con las 18 producciones de 9.2 |
-| B1 | `findAmbiguityWitness(G0, 3)` | `null` |
-| B2 | `findAmbiguityWitness(G0, 4)` | `[CRI, SOS, ATQ, REV]`, 2 árboles (primera en orden de longitud y después lexicográfico) |
-| B3 | `findAmbiguityWitness(G1, 7)` | `null` |
-| B4 | `compareLanguages(G0, G1, 3)` | onlyInFirst = `[[CRI, DSC, REV], [HAL, DSC, REV]]`, onlyInSecond = `[]` |
+| Id  | Caso                                 | Esperado                                                                                 |
+| --- | ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| AR1 | `aritmetica-ambigua`, `id + id * id` | acepta, 2 árboles                                                                        |
+| AR2 | `aritmetica`, `id + id * id`         | acepta, 1 árbol; la raíz aplica `E → E '+' T`                                            |
+| P1  | `parentesis`, `( ( ) ) ( )`          | acepta, 1 árbol; la cadena vacía acepta con 1 árbol                                      |
+| P2  | `parentesis`, `( ( )`                | error pos 3, found `null`, expected `['(', ')']`                                         |
+| E1  | `epsilon-trampa`, `x`                | acepta, 1 árbol                                                                          |
+| C1  | `ciclica`, `a`                       | acepta, conteo `'infinito'`; la enumeración con límite 3 devuelve 3 árboles              |
+| AP1 | AP de G1 con A1                      | `acepta`; las expansiones del camino coinciden en orden con las 18 producciones de 9.2   |
+| B1  | `findAmbiguityWitness(G0, 3)`        | `null`                                                                                   |
+| B2  | `findAmbiguityWitness(G0, 4)`        | `[CRI, SOS, ATQ, REV]`, 2 árboles (primera en orden de longitud y después lexicográfico) |
+| B3  | `findAmbiguityWitness(G1, 7)`        | `null`                                                                                   |
+| B4  | `compareLanguages(G0, G1, 3)`        | onlyInFirst = `[[CRI, DSC, REV], [HAL, DSC, REV]]`, onlyInSecond = `[]`                  |
 
 ### 9.4 Pruebas diferenciales (Earley, CYK y AP)
 
@@ -985,85 +1077,85 @@ Se mide con `performance.now()` en Vitest, sin traza y con `maxTrees: 1`:
 Es el valor esperado del comando `earley --grammar g1 "CRI PIS REV" --chart` y de la prueba del paso 15. Se calculó a mano: el autor lo verifica antes de implementar.
 
 - **Orden:** los ítems se listan en el orden en que el algoritmo los agrega. Cada conjunto es una lista de solo agregado. Para que el orden sea reproducible, el spec fija esta convención:
-    - los ítems de un conjunto se procesan en orden de inserción;
-    - el Predictor agrega las producciones del no terminal en el orden del archivo `.glc` y, **después**, el avance por anulable si el símbolo es anulable;
-    - el Completer recorre los ítems del conjunto de origen en su orden de inserción.
+  - los ítems de un conjunto se procesan en orden de inserción;
+  - el Predictor agrega las producciones del no terminal en el orden del archivo `.glc` y, **después**, el avance por anulable si el símbolo es anulable;
+  - el Completer recorre los ítems del conjunto de origen en su orden de inserción.
 - **Cantidad de ítems por conjunto:** S0 = 8, S1 = 19, S2 = 16, S3 = 11.
 - **Notación de la columna "Cómo":** P = Predictor, S = Scanner, C = Completer, ε = avance por anulable (arreglo de Aycock-Horspool). "Ignorado" marca un ítem completo con origen igual al conjunto actual, que el Completer no procesa (sección 3.16).
 
 **S0**
 
-| # | Ítem | Origen | Cómo |
-| --- | --- | --- | --- |
-| 1 | `$S → • Relato` | 0 | inicial |
-| 2 | `Relato → • Planteo Investigacion Desenlace` | 0 | P |
-| 3 | `Planteo → • Hecho MarcoOpc` | 0 | P |
-| 4 | `Planteo → • Marco Hecho` | 0 | P |
-| 5 | `Hecho → • CRI HallazgoOpc` | 0 | P |
-| 6 | `Hecho → • HAL` | 0 | P |
-| 7 | `Marco → • CTX PerOpc` | 0 | P |
-| 8 | `Marco → • PER CtxOpc` | 0 | P |
+| #   | Ítem                                         | Origen | Cómo    |
+| --- | -------------------------------------------- | ------ | ------- |
+| 1   | `$S → • Relato`                              | 0      | inicial |
+| 2   | `Relato → • Planteo Investigacion Desenlace` | 0      | P       |
+| 3   | `Planteo → • Hecho MarcoOpc`                 | 0      | P       |
+| 4   | `Planteo → • Marco Hecho`                    | 0      | P       |
+| 5   | `Hecho → • CRI HallazgoOpc`                  | 0      | P       |
+| 6   | `Hecho → • HAL`                              | 0      | P       |
+| 7   | `Marco → • CTX PerOpc`                       | 0      | P       |
+| 8   | `Marco → • PER CtxOpc`                       | 0      | P       |
 
 **S1** (después de `CRI`)
 
-| # | Ítem | Origen | Cómo |
-| --- | --- | --- | --- |
-| 1 | `Hecho → CRI • HallazgoOpc` | 0 | S de S0#5 |
-| 2 | `HallazgoOpc → • HAL` | 1 | P |
-| 3 | `HallazgoOpc → •` | 1 | P (ignorado) |
-| 4 | `Hecho → CRI HallazgoOpc •` | 0 | ε |
-| 5 | `Planteo → Hecho • MarcoOpc` | 0 | C de S0#3 |
-| 6 | `MarcoOpc → • Marco` | 1 | P |
-| 7 | `MarcoOpc → •` | 1 | P (ignorado) |
-| 8 | `Planteo → Hecho MarcoOpc •` | 0 | ε |
-| 9 | `Marco → • CTX PerOpc` | 1 | P |
-| 10 | `Marco → • PER CtxOpc` | 1 | P |
-| 11 | `Relato → Planteo • Investigacion Desenlace` | 0 | C de S0#2 |
-| 12 | `Investigacion → • Pasos` | 1 | P |
-| 13 | `Investigacion → • ENC Pasos` | 1 | P |
-| 14 | `Pasos → • Evidencia Libres Lineas` | 1 | P |
-| 15 | `Pasos → • Linea Lineas` | 1 | P |
-| 16 | `Evidencia → • PIS` | 1 | P |
-| 17 | `Evidencia → • INT` | 1 | P |
-| 18 | `Evidencia → • ATQ` | 1 | P |
-| 19 | `Linea → • SOS CuerpoLinea` | 1 | P |
+| #   | Ítem                                         | Origen | Cómo         |
+| --- | -------------------------------------------- | ------ | ------------ |
+| 1   | `Hecho → CRI • HallazgoOpc`                  | 0      | S de S0#5    |
+| 2   | `HallazgoOpc → • HAL`                        | 1      | P            |
+| 3   | `HallazgoOpc → •`                            | 1      | P (ignorado) |
+| 4   | `Hecho → CRI HallazgoOpc •`                  | 0      | ε            |
+| 5   | `Planteo → Hecho • MarcoOpc`                 | 0      | C de S0#3    |
+| 6   | `MarcoOpc → • Marco`                         | 1      | P            |
+| 7   | `MarcoOpc → •`                               | 1      | P (ignorado) |
+| 8   | `Planteo → Hecho MarcoOpc •`                 | 0      | ε            |
+| 9   | `Marco → • CTX PerOpc`                       | 1      | P            |
+| 10  | `Marco → • PER CtxOpc`                       | 1      | P            |
+| 11  | `Relato → Planteo • Investigacion Desenlace` | 0      | C de S0#2    |
+| 12  | `Investigacion → • Pasos`                    | 1      | P            |
+| 13  | `Investigacion → • ENC Pasos`                | 1      | P            |
+| 14  | `Pasos → • Evidencia Libres Lineas`          | 1      | P            |
+| 15  | `Pasos → • Linea Lineas`                     | 1      | P            |
+| 16  | `Evidencia → • PIS`                          | 1      | P            |
+| 17  | `Evidencia → • INT`                          | 1      | P            |
+| 18  | `Evidencia → • ATQ`                          | 1      | P            |
+| 19  | `Linea → • SOS CuerpoLinea`                  | 1      | P            |
 
 **S2** (después de `PIS`)
 
-| # | Ítem | Origen | Cómo |
-| --- | --- | --- | --- |
-| 1 | `Evidencia → PIS •` | 1 | S de S1#16 |
-| 2 | `Pasos → Evidencia • Libres Lineas` | 1 | C de S1#14 |
-| 3 | `Libres → • Evidencia Libres` | 2 | P |
-| 4 | `Libres → •` | 2 | P (ignorado) |
-| 5 | `Pasos → Evidencia Libres • Lineas` | 1 | ε |
-| 6 | `Evidencia → • PIS` | 2 | P |
-| 7 | `Evidencia → • INT` | 2 | P |
-| 8 | `Evidencia → • ATQ` | 2 | P |
-| 9 | `Lineas → • Linea Lineas` | 2 | P |
-| 10 | `Lineas → •` | 2 | P (ignorado) |
-| 11 | `Pasos → Evidencia Libres Lineas •` | 1 | ε |
-| 12 | `Linea → • SOS CuerpoLinea` | 2 | P |
-| 13 | `Investigacion → Pasos •` | 1 | C de S1#12 |
-| 14 | `Relato → Planteo Investigacion • Desenlace` | 0 | C de S1#11 |
-| 15 | `Desenlace → • Resolucion EpiOpc` | 2 | P |
-| 16 | `Resolucion → • REV Cierre` | 2 | P |
+| #   | Ítem                                         | Origen | Cómo         |
+| --- | -------------------------------------------- | ------ | ------------ |
+| 1   | `Evidencia → PIS •`                          | 1      | S de S1#16   |
+| 2   | `Pasos → Evidencia • Libres Lineas`          | 1      | C de S1#14   |
+| 3   | `Libres → • Evidencia Libres`                | 2      | P            |
+| 4   | `Libres → •`                                 | 2      | P (ignorado) |
+| 5   | `Pasos → Evidencia Libres • Lineas`          | 1      | ε            |
+| 6   | `Evidencia → • PIS`                          | 2      | P            |
+| 7   | `Evidencia → • INT`                          | 2      | P            |
+| 8   | `Evidencia → • ATQ`                          | 2      | P            |
+| 9   | `Lineas → • Linea Lineas`                    | 2      | P            |
+| 10  | `Lineas → •`                                 | 2      | P (ignorado) |
+| 11  | `Pasos → Evidencia Libres Lineas •`          | 1      | ε            |
+| 12  | `Linea → • SOS CuerpoLinea`                  | 2      | P            |
+| 13  | `Investigacion → Pasos •`                    | 1      | C de S1#12   |
+| 14  | `Relato → Planteo Investigacion • Desenlace` | 0      | C de S1#11   |
+| 15  | `Desenlace → • Resolucion EpiOpc`            | 2      | P            |
+| 16  | `Resolucion → • REV Cierre`                  | 2      | P            |
 
 **S3** (después de `REV`, fin de la entrada)
 
-| # | Ítem | Origen | Cómo |
-| --- | --- | --- | --- |
-| 1 | `Resolucion → REV • Cierre` | 2 | S de S2#16 |
-| 2 | `Cierre → • CNF CapOpc` | 3 | P |
-| 3 | `Cierre → • CAP` | 3 | P |
-| 4 | `Cierre → •` | 3 | P (ignorado) |
-| 5 | `Resolucion → REV Cierre •` | 2 | ε |
-| 6 | `Desenlace → Resolucion • EpiOpc` | 2 | C de S2#15 |
-| 7 | `EpiOpc → • EPI` | 3 | P |
-| 8 | `EpiOpc → •` | 3 | P (ignorado) |
-| 9 | `Desenlace → Resolucion EpiOpc •` | 2 | ε |
-| 10 | `Relato → Planteo Investigacion Desenlace •` | 0 | C de S2#14 |
-| 11 | `$S → Relato •` | 0 | C de S0#1 → **acepta** |
+| #   | Ítem                                         | Origen | Cómo                   |
+| --- | -------------------------------------------- | ------ | ---------------------- |
+| 1   | `Resolucion → REV • Cierre`                  | 2      | S de S2#16             |
+| 2   | `Cierre → • CNF CapOpc`                      | 3      | P                      |
+| 3   | `Cierre → • CAP`                             | 3      | P                      |
+| 4   | `Cierre → •`                                 | 3      | P (ignorado)           |
+| 5   | `Resolucion → REV Cierre •`                  | 2      | ε                      |
+| 6   | `Desenlace → Resolucion • EpiOpc`            | 2      | C de S2#15             |
+| 7   | `EpiOpc → • EPI`                             | 3      | P                      |
+| 8   | `EpiOpc → •`                                 | 3      | P (ignorado)           |
+| 9   | `Desenlace → Resolucion EpiOpc •`            | 2      | ε                      |
+| 10  | `Relato → Planteo Investigacion Desenlace •` | 0      | C de S2#14             |
+| 11  | `$S → Relato •`                              | 0      | C de S0#1 → **acepta** |
 
 **Verificaciones que se derivan del chart:**
 
@@ -1116,7 +1208,7 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 - [ ] `npm run sabueso -- help` lista todos los comandos de la sección 8.3.
 - [ ] `npm run sabueso -- earley --grammar epsilon-trampa "x" --sin-arreglo-epsilon` imprime `RECHAZA`, y sin la opción imprime `ACEPTA`.
 - [ ] `npm run sabueso -- nullable --grammar g1 --pasos` muestra al menos dos iteraciones y termina con los 10 anulables.
-- [ ] La prueba `demo-doc.test.ts` ejecuta todos los comandos de `docs/demo-consola.md` y ninguno termina con código 2.
+- [ ] La prueba `demo-doc.test.ts` ejecuta todos los comandos de `docs/console-demo.md` y ninguno termina con código 2.
 - [ ] Existen las 27 fichas de la tabla 7.1, cada una con las cinco partes de la sección 7.1.
 - [ ] Cada archivo de `src/` empieza con el bloque de comentario en español de la sección 7.2 (concepto, referencia y ficha).
 - [ ] El README contiene el índice concepto → archivo → ficha y los comandos de la CLI.
@@ -1183,15 +1275,15 @@ Las decisiones generales de tecnología (TypeScript estricto, `tsc` + `node`, si
 
 ## 13. Riesgos identificados
 
-| Riesgo | Mitigación |
-| --- | --- |
-| Algún valor esperado calculado a mano está mal | El autor lo verifica antes de cada paso. Las pruebas diferenciales (9.4) detectan errores de aceptación de forma independiente. Si hay discrepancia, se corrige primero el spec. |
+| Riesgo                                                                    | Mitigación                                                                                                                                                                                                |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Algún valor esperado calculado a mano está mal                            | El autor lo verifica antes de cada paso. Las pruebas diferenciales (9.4) detectan errores de aceptación de forma independiente. Si hay discrepancia, se corrige primero el spec.                          |
 | G0 con 200 eventos supera 3 s o consume demasiada memoria (O(n³) enlaces) | Enlaces como objetos chicos, sin traza, enumeración con límite 1. Si igual falla, se mide y se registra en el informe como evidencia del costo de la ambigüedad. El criterio estricto de 1 s aplica a G1. |
-| Doble conteo de árboles por enlaces ε duplicados | Regla de la sección 3.16 (el Completer ignora el lapso vacío), cubierta por las pruebas E1, P1 y la batería de G1. |
-| Explosión de configuraciones del AP en el corpus diferencial | Corpus acotado (largo ≤ 4 para el relato), poda por minYield y visitados. El criterio exige que no haya `indeterminado`. Si aparece, se sube `maxSteps` solo en la prueba. |
-| La cátedra pide cambios en G1 | Las gramáticas son datos: los cambios no tocan el motor. Las pruebas de G1 se recalculan con el mismo método de la sección 9. |
-| La cátedra prefiere CYK | CYK ya está implementado y validado. Cambiar el analizador principal no afecta el resto. |
-| Las fichas consumen tiempo del código | Cada ficha se escribe en el mismo paso que su módulo, con un largo máximo de unas 2 páginas. |
+| Doble conteo de árboles por enlaces ε duplicados                          | Regla de la sección 3.16 (el Completer ignora el lapso vacío), cubierta por las pruebas E1, P1 y la batería de G1.                                                                                        |
+| Explosión de configuraciones del AP en el corpus diferencial              | Corpus acotado (largo ≤ 4 para el relato), poda por minYield y visitados. El criterio exige que no haya `indeterminado`. Si aparece, se sube `maxSteps` solo en la prueba.                                |
+| La cátedra pide cambios en G1                                             | Las gramáticas son datos: los cambios no tocan el motor. Las pruebas de G1 se recalculan con el mismo método de la sección 9.                                                                             |
+| La cátedra prefiere CYK                                                   | CYK ya está implementado y validado. Cambiar el analizador principal no afecta el resto.                                                                                                                  |
+| Las fichas consumen tiempo del código                                     | Cada ficha se escribe en el mismo paso que su módulo, con un largo máximo de unas 2 páginas.                                                                                                              |
 
 ---
 

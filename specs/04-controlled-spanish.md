@@ -39,7 +39,7 @@ El anteproyecto define esta etapa como "ampliación opcional": tres etapas (aut�
   - árbol de cada oración;
   - la secuencia resultante pasa a la vista Análisis existente.
 - Tres relatos de ejemplo (`ashby.txt`, `condesa.txt` y `banquero.txt`) con sus resultados esperados.
-- Fichas 28 a 35 en `docs/conceptos/`.
+- Fichas 28 a 35 en `docs/concepts/`.
 
 **Fuera de alcance (para specs futuros):**
 
@@ -134,18 +134,18 @@ Las dos son LL(1). El cálculo a mano da FOLLOW(ClaseOpc) = FOLLOW(Palabras) = {
 
 - **Tabla de sufijos** (`suffixes.ts`), con reemplazo y rasgos:
 
-  | Sufijo | Reemplazo | Rasgos |
-  | --- | --- | --- |
-  | `ó` | `ar` | pret3s |
-  | `ió` | `er` o `ir` | pret3s |
-  | `aron` | `ar` | pret3p |
+  | Sufijo  | Reemplazo   | Rasgos |
+  | ------- | ----------- | ------ |
+  | `ó`     | `ar`        | pret3s |
+  | `ió`    | `er` o `ir` | pret3s |
+  | `aron`  | `ar`        | pret3p |
   | `ieron` | `er` o `ir` | pret3p |
-  | `aba` | `ar` | imp3s |
-  | `aban` | `ar` | imp3p |
-  | `ía` | `er` o `ir` | imp3s |
-  | `ían` | `er` o `ir` | imp3p |
-  | `s` | (nada) | pl |
-  | `es` | (nada) | pl |
+  | `aba`   | `ar`        | imp3s  |
+  | `aban`  | `ar`        | imp3p  |
+  | `ía`    | `er` o `ir` | imp3s  |
+  | `ían`   | `er` o `ir` | imp3p  |
+  | `s`     | (nada)      | pl     |
+  | `es`    | (nada)      | pl     |
 
 - **Construcción:** los sufijos se insertan **invertidos** en un trie. El trie es un AFD: cada nodo es un estado y cada arista es una transición por letra.
 - **Transductor de Mealy:** la máquina lee la palabra **de derecha a izquierda**. Cada transición que completa un sufijo **emite** una salida (largo del sufijo, reemplazos y rasgos). Una palabra puede emitir varias salidas: "temió" emite `ó` e `ió`.
@@ -465,40 +465,65 @@ regresar                         -> EPI
 ```ts
 // src/lexicon/types.ts
 type Category = 'DET' | 'SUST' | 'ADJ' | 'VERBO' | 'PREP' | 'TITULO' | 'NOMBRE' | 'INDEF';
-interface LexiconEntry { lemma: string; category: Category; semClass: string | null; line: number }
+interface LexiconEntry {
+  lemma: string;
+  category: Category;
+  semClass: string | null;
+  line: number;
+}
 interface Lexicon {
-  entries: Map<string, LexiconEntry>;          // clave: lema en minúsculas (o con mayúscula para NOMBRE)
-  irregulars: Map<string, string>;             // forma → lema
-  contractions: Map<string, string[]>;         // 'al' → ['a', 'el']
+  entries: Map<string, LexiconEntry>; // clave: lema en minúsculas (o con mayúscula para NOMBRE)
+  irregulars: Map<string, string>; // forma → lema
+  contractions: Map<string, string[]>; // 'al' → ['a', 'el']
   classes: Set<string>;
 }
 
 // src/tagging/types.ts
-interface TagRule { lemma: string; objectClass: string | null; subjectClass: string | null; tag: string; line: number; text: string }
+interface TagRule {
+  lemma: string;
+  objectClass: string | null;
+  subjectClass: string | null;
+  tag: string;
+  line: number;
+  text: string;
+}
 
 // src/morphology/mealy.ts
-interface MealyMachine<O> { start: number; delta: Map<number, Map<string, number>>; output: Map<string, O[]> } // clave "estado|letra"
-interface SuffixOutput { length: number; replacements: string[]; features: string[] }
+interface MealyMachine<O> {
+  start: number;
+  delta: Map<number, Map<string, number>>;
+  output: Map<string, O[]>;
+} // clave "estado|letra"
+interface SuffixOutput {
+  length: number;
+  replacements: string[];
+  features: string[];
+}
 
 // src/text/types.ts
 interface WordAnalysis {
-  surface: string;                             // como aparece en el texto
+  surface: string; // como aparece en el texto
   lemma: string;
   category: Category;
   semClass: string | null;
-  features: string[];                          // ['pret3s'], ['pl'], []
+  features: string[]; // ['pret3s'], ['pl'], []
   source: 'lexicon' | 'morphology' | 'irregular' | 'contraction' | 'proper-name';
-  sentenceOffset: number;                      // columna en el texto original (para subrayar)
+  sentenceOffset: number; // columna en el texto original (para subrayar)
 }
 
 // src/semantics/frame.ts
-interface NounPhrase { head: string; semClass: string | null; characterId: string | null; text: string }
+interface NounPhrase {
+  head: string;
+  semClass: string | null;
+  characterId: string | null;
+  text: string;
+}
 interface Frame {
   subject: NounPhrase | null;
   verb: { lemma: string; features: string[] };
-  objects: NounPhrase[];                       // arreglo desde ya: la coordinación futura no cambia el tipo
+  objects: NounPhrase[]; // arreglo desde ya: la coordinación futura no cambia el tipo
   complements: { prep: string; np: NounPhrase }[];
-  characters: string[];                        // identidades, sin repetir, en orden de aparición
+  characters: string[]; // identidades, sin repetir, en orden de aparición
 }
 
 // src/index.ts
@@ -507,21 +532,21 @@ type NlError =
   | { kind: 'missing-period'; line: number; column: number }
   | { kind: 'unknown-word'; wordIndex: number; word: string; suggestion: string | null }
   | { kind: 'ambiguous-form'; wordIndex: number; word: string; candidates: string[] }
-  | { kind: 'syntax'; error: ParseError; words: string[] }   // ParseError del núcleo sobre categorías
+  | { kind: 'syntax'; error: ParseError; words: string[] } // ParseError del núcleo sobre categorías
   | { kind: 'no-rule'; frame: Frame }
   | { kind: 'ambiguous-tag'; tags: string[] };
 
 interface SentenceAnalysis {
-  index: number;                               // base 0
+  index: number; // base 0
   text: string;
   words: WordAnalysis[];
   categories: Category[];
   treeCount: TreeCount;
-  trees: ParseTree[];                          // hasta 50
+  trees: ParseTree[]; // hasta 50
   frame: Frame | null;
   tag: string | null;
   rule: TagRule | null;
-  note: string | null;                         // nota de ambigüedad coincidente
+  note: string | null; // nota de ambigüedad coincidente
   error: NlError | null;
 }
 
@@ -535,12 +560,17 @@ interface CulpritCheck {
 
 interface StoryAnalysis {
   sentences: SentenceAnalysis[];
-  tags: string[] | null;                       // null si alguna oración falló
-  story: ParseResult | null;                   // análisis del relato con el núcleo
+  tags: string[] | null; // null si alguna oración falló
+  story: ParseResult | null; // análisis del relato con el núcleo
   culprit: CulpritCheck | null;
 }
 
-interface NlResources { lexicon: Lexicon; rules: TagRule[]; sentenceGrammar: Grammar; storyGrammar: Grammar }
+interface NlResources {
+  lexicon: Lexicon;
+  rules: TagRule[];
+  sentenceGrammar: Grammar;
+  storyGrammar: Grammar;
+}
 // loadResources(texts) parsea y valida los tres archivos y lanza errores con línea y columna.
 // analyzeStory(text, resources) es una función pura.
 ```
@@ -596,21 +626,21 @@ apps/web/src/               # cambios de integración (sección 7, pasos 16 a 19
   core-client/...           # nuevas operaciones nlLoad y nlAnalyze en el worker
   views/NarrativeInput.tsx
   components/SentenceTable.tsx
-docs/conceptos/28-…35-*.md
+docs/concepts/28-…35-*.md
 ```
 
 Las fichas nuevas son:
 
-| # | Archivo | Concepto |
-| --- | --- | --- |
-| 28 | `28-automatas-de-texto-y-datos.md` | AFD de texto, AFD de datos y parsers LL(1) de datos |
-| 29 | `29-transductor-de-mealy.md` | Trie de sufijos invertidos como AFD con salidas |
-| 30 | `30-lexico-y-homomorfismo.md` | Palabra → categoría como homomorfismo |
-| 31 | `31-gramatica-de-oracion.md` | `oracion.glc` y la ambigüedad del sintagma preposicional |
-| 32 | `32-marco-y-reglas.md` | Traducción dirigida por la sintaxis y tabla de decisión |
-| 33 | `33-dos-niveles-de-analisis.md` | Composición oración → relato con el mismo motor |
-| 34 | `34-levenshtein.md` | Distancia de edición, programación dinámica |
-| 35 | `35-verificacion-del-culpable.md` | Restricción fuera de la GLC (relación con la ficha 26) |
+| #   | Archivo                            | Concepto                                                 |
+| --- | ---------------------------------- | -------------------------------------------------------- |
+| 28  | `28-automatas-de-texto-y-datos.md` | AFD de texto, AFD de datos y parsers LL(1) de datos      |
+| 29  | `29-transductor-de-mealy.md`       | Trie de sufijos invertidos como AFD con salidas          |
+| 30  | `30-lexico-y-homomorfismo.md`      | Palabra → categoría como homomorfismo                    |
+| 31  | `31-gramatica-de-oracion.md`       | `oracion.glc` y la ambigüedad del sintagma preposicional |
+| 32  | `32-marco-y-reglas.md`             | Traducción dirigida por la sintaxis y tabla de decisión  |
+| 33  | `33-dos-niveles-de-analisis.md`    | Composición oración → relato con el mismo motor          |
+| 34  | `34-levenshtein.md`                | Distancia de edición, programación dinámica              |
+| 35  | `35-verificacion-del-culpable.md`  | Restricción fuera de la GLC (relación con la ficha 26)   |
 
 ---
 
@@ -728,7 +758,7 @@ En la UI (pasos 16 a 19), "ejecutable" significa visible en `npm run dev -w @sab
     - **Consola:** cada caso de la tabla 8.3 se puede reproducir con `etiquetar --texto "<relato>"`, que analiza un texto pasado como argumento en lugar de un archivo.
 
 15. **Guion de consola.**
-    - Bloque "Español controlado" agregado a `docs/demo-consola.md`, en el orden de las fichas 28 a 35: `lex-texto` → `mealy` → `palabra` → `oracion` → `marco` → `etiqueta` → `etiquetar` → `culpable`.
+    - Bloque "Español controlado" agregado a `docs/console-demo.md`, en el orden de las fichas 28 a 35: `lex-texto` → `mealy` → `palabra` → `oracion` → `marco` → `etiqueta` → `etiquetar` → `culpable`.
     - La prueba `demo-doc.test.ts` del núcleo se extiende para ejecutar también los comandos `sabueso-nl` del documento.
 
 16. **Worker de la UI.**
@@ -766,42 +796,42 @@ Calculados a mano. El autor los verifica antes de implementar cada paso, con la 
 
 ### 8.1 Relatos completos (con G1)
 
-| Relato | Secuencia | Relato válido en G1 | Verificación del culpable |
-| --- | --- | --- | --- |
-| `ashby.txt` | `CTX HAL ENC INT SOS PIS DSC REV CNF CAP` | sí, 1 árbol | `ok`: acusado `cocinera`, oración REV 7, primera mención 3 |
-| `condesa.txt` | `CTX PER CRI HAL ENC PIS SOS INT DSC SOS REV CAP` | sí, 1 árbol | `ok`: acusado `criada`, oración REV 10, primera mención 3 |
-| `banquero.txt` | `CTX PER HAL ENC INT REV CNF` | sí, 1 árbol | `warning`: acusado `socio`, oración REV 5, primera mención `null` |
+| Relato         | Secuencia                                         | Relato válido en G1 | Verificación del culpable                                         |
+| -------------- | ------------------------------------------------- | ------------------- | ----------------------------------------------------------------- |
+| `ashby.txt`    | `CTX HAL ENC INT SOS PIS DSC REV CNF CAP`         | sí, 1 árbol         | `ok`: acusado `cocinera`, oración REV 7, primera mención 3        |
+| `condesa.txt`  | `CTX PER CRI HAL ENC PIS SOS INT DSC SOS REV CAP` | sí, 1 árbol         | `ok`: acusado `criada`, oración REV 10, primera mención 3         |
+| `banquero.txt` | `CTX PER HAL ENC INT REV CNF`                     | sí, 1 árbol         | `warning`: acusado `socio`, oración REV 5, primera mención `null` |
 
 Los índices de oración son base 0.
 
 ### 8.2 Oraciones de `ashby.txt`
 
-| # | Oración | Categorías | Árboles | Etiqueta | Regla |
-| --- | --- | --- | --- | --- | --- |
-| 0 | Lord Ashby vivía en una mansión de Kent. | TITULO NOMBRE VERBO PREP DET SUST PREP NOMBRE | 2 | CTX | `vivir -> CTX` |
-| 1 | El mayordomo encontró el cadáver de Lord Ashby. | DET SUST VERBO DET SUST PREP TITULO NOMBRE | 2 | HAL | `encontrar objeto:cadaver -> HAL` |
-| 2 | La viuda llamó al inspector Miller. | DET SUST VERBO PREP DET TITULO NOMBRE | 1 | ENC | `llamar objeto:detective -> ENC` |
-| 3 | Miller interrogó a la cocinera. | NOMBRE VERBO PREP DET SUST | 1 | INT | `interrogar -> INT` |
-| 4 | Miller sospechó del sobrino. | NOMBRE VERBO PREP DET SUST | 1 | SOS | `sospechar -> SOS` |
-| 5 | Miller encontró un pañuelo en el jardín. | NOMBRE VERBO DET SUST PREP DET SUST | 2 | PIS | `encontrar objeto:objeto -> PIS` |
-| 6 | El sobrino tenía una coartada. | DET SUST VERBO DET SUST | 1 | DSC | `tener objeto:coartada -> DSC` |
-| 7 | Miller acusó a la cocinera. | NOMBRE VERBO PREP DET SUST | 1 | REV | `acusar -> REV` |
-| 8 | La cocinera confesó el crimen. | DET SUST VERBO DET SUST | 1 | CNF | `confesar -> CNF` |
-| 9 | La policía arrestó a la cocinera. | DET SUST VERBO PREP DET SUST | 1 | CAP | `arrestar -> CAP` |
+| #   | Oración                                         | Categorías                                    | Árboles | Etiqueta | Regla                             |
+| --- | ----------------------------------------------- | --------------------------------------------- | ------- | -------- | --------------------------------- |
+| 0   | Lord Ashby vivía en una mansión de Kent.        | TITULO NOMBRE VERBO PREP DET SUST PREP NOMBRE | 2       | CTX      | `vivir -> CTX`                    |
+| 1   | El mayordomo encontró el cadáver de Lord Ashby. | DET SUST VERBO DET SUST PREP TITULO NOMBRE    | 2       | HAL      | `encontrar objeto:cadaver -> HAL` |
+| 2   | La viuda llamó al inspector Miller.             | DET SUST VERBO PREP DET TITULO NOMBRE         | 1       | ENC      | `llamar objeto:detective -> ENC`  |
+| 3   | Miller interrogó a la cocinera.                 | NOMBRE VERBO PREP DET SUST                    | 1       | INT      | `interrogar -> INT`               |
+| 4   | Miller sospechó del sobrino.                    | NOMBRE VERBO PREP DET SUST                    | 1       | SOS      | `sospechar -> SOS`                |
+| 5   | Miller encontró un pañuelo en el jardín.        | NOMBRE VERBO DET SUST PREP DET SUST           | 2       | PIS      | `encontrar objeto:objeto -> PIS`  |
+| 6   | El sobrino tenía una coartada.                  | DET SUST VERBO DET SUST                       | 1       | DSC      | `tener objeto:coartada -> DSC`    |
+| 7   | Miller acusó a la cocinera.                     | NOMBRE VERBO PREP DET SUST                    | 1       | REV      | `acusar -> REV`                   |
+| 8   | La cocinera confesó el crimen.                  | DET SUST VERBO DET SUST                       | 1       | CNF      | `confesar -> CNF`                 |
+| 9   | La policía arrestó a la cocinera.               | DET SUST VERBO PREP DET SUST                  | 1       | CAP      | `arrestar -> CAP`                 |
 
 Las oraciones 0, 1 y 5 llevan la nota de ambigüedad coincidente.
 
 ### 8.3 Errores
 
-| Id | Entrada | Esperado |
-| --- | --- | --- |
-| N1 | `Miller interogó a la cocinera.` | `unknown-word`, `wordIndex` 1, `interogó`, sugerencia `interrogar` |
-| N2 | `Miller la cocinera interrogó.` | `syntax`: posición 1, found `DET`, expected `[PREP, VERBO]` |
-| N3 | `Miller interrogó a la cocinera` | `missing-period` |
-| N4 | `Miller, el inspector, sospechó.` | `lexical` en la línea 1, columna 7 (la coma) |
-| N5 | `Miller miró el jardín.` | `no-rule` (verbo `mirar`, objeto de clase `lugar`) |
-| N6 | `La cocinera encontró el cadaver.` | `unknown-word`, `cadaver`, sugerencia `cadáver` |
-| N7 | Relato con una oración errónea en el medio | `tags === null`, `story === null`, y las demás oraciones analizadas igual |
+| Id  | Entrada                                    | Esperado                                                                  |
+| --- | ------------------------------------------ | ------------------------------------------------------------------------- |
+| N1  | `Miller interogó a la cocinera.`           | `unknown-word`, `wordIndex` 1, `interogó`, sugerencia `interrogar`        |
+| N2  | `Miller la cocinera interrogó.`            | `syntax`: posición 1, found `DET`, expected `[PREP, VERBO]`               |
+| N3  | `Miller interrogó a la cocinera`           | `missing-period`                                                          |
+| N4  | `Miller, el inspector, sospechó.`          | `lexical` en la línea 1, columna 7 (la coma)                              |
+| N5  | `Miller miró el jardín.`                   | `no-rule` (verbo `mirar`, objeto de clase `lugar`)                        |
+| N6  | `La cocinera encontró el cadaver.`         | `unknown-word`, `cadaver`, sugerencia `cadáver`                           |
+| N7  | Relato con una oración errónea en el medio | `tags === null`, `story === null`, y las demás oraciones analizadas igual |
 
 ---
 
@@ -809,13 +839,13 @@ Las oraciones 0, 1 y 5 llevan la nota de ambigüedad coincidente.
 
 El diseño separa cuatro capas, y cada ampliación toca solo las que le corresponden:
 
-| Ampliación | Datos (`lexico`, `reglas`, `oracion.glc`) | Código |
-| --- | --- | --- |
-| Más vocabulario | `lexico.txt` y `reglas.txt` | ninguno |
+| Ampliación                                    | Datos (`lexico`, `reglas`, `oracion.glc`)                | Código                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Más vocabulario                               | `lexico.txt` y `reglas.txt`                              | ninguno                                                                                       |
 | Coordinación ("a la cocinera y al mayordomo") | `CONJ` en el léxico; `SN -> SN CONJ SN` en `oracion.glc` | `frame.ts` recorre los SN coordinados. `objects` ya es un arreglo, así que el tipo no cambia. |
-| Más tiempos verbales | filas en `suffixes.ts` | ninguno: el trie se construye solo |
-| Pronombres y anáfora | `PRON` en el léxico y la gramática | un resolvedor nuevo (último personaje compatible), en su propio módulo |
-| Varios eventos por oración | reglas que devuelven varias etiquetas | `tag` pasa a `tags: string[]` (cambio de tipo, va en otro spec) |
+| Más tiempos verbales                          | filas en `suffixes.ts`                                   | ninguno: el trie se construye solo                                                            |
+| Pronombres y anáfora                          | `PRON` en el léxico y la gramática                       | un resolvedor nuevo (último personaje compatible), en su propio módulo                        |
+| Varios eventos por oración                    | reglas que devuelven varias etiquetas                    | `tag` pasa a `tags: string[]` (cambio de tipo, va en otro spec)                               |
 
 Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el motor es genérico.
 
@@ -835,7 +865,7 @@ Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el m
 - [ ] Cada paso de la sección 7.2 (1 a 15) tiene su comando `sabueso-nl` y una prueba en `test/cli/` que verifica la salida y el código de salida.
 - [ ] `npm run sabueso-nl -- mealy temió` muestra la lectura paso a paso y las dos salidas (`ó` e `ió`).
 - [ ] `npm run sabueso-nl -- palabra policía` muestra el candidato `policer` (o `policir`) descartado por la validación y el resultado por identidad.
-- [ ] `docs/demo-consola.md` incluye el bloque "Español controlado", y su prueba ejecuta esos comandos sin código 2.
+- [ ] `docs/console-demo.md` incluye el bloque "Español controlado", y su prueba ejecuta esos comandos sin código 2.
 - [ ] `node packages/nl/dist/cli.js etiquetar packages/nl/data/relatos/banquero.txt` imprime la secuencia `CTX PER HAL ENC INT REV CNF`, "relato válido" y la advertencia sobre `socio`.
 - [ ] En la UI, en modo "Español controlado", el ejemplo `ashby.txt` muestra 10 filas con sus etiquetas, y la vista Análisis muestra el árbol del relato con G1.
 - [ ] En la UI, seleccionar la oración 1 de `ashby.txt` muestra 2 árboles y la nota de ambigüedad coincidente.
@@ -879,14 +909,14 @@ Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el m
 
 ## 12. Riesgos identificados
 
-| Riesgo | Mitigación |
-| --- | --- |
-| Un valor esperado calculado a mano está mal | El autor lo verifica antes de cada paso. Si hay discrepancia, se corrige primero el spec. |
-| Una palabra frecuente en los relatos de prueba de la cátedra no está en el léxico | El error es localizado y trae sugerencia. Agregarla es una línea en `lexico.txt` del repositorio. |
-| Los sufijos generan candidatos falsos que coinciden con otro lema | La validación por categoría compatible los descarta. Si quedan dos, `ambiguous-form` señala el problema de datos con los candidatos. |
-| Se vuelve a pedir coordinación o pronombres durante la defensa | Sección 9: está prevista y se explica como ampliación por datos. Si se implementa, va en un spec nuevo. |
-| Las oraciones con varios complementos generan muchos árboles | La cantidad crece según Catalan con la cantidad de sintagmas preposicionales. Con oraciones simples (2 o 3) es despreciable, y la enumeración está limitada a 50. |
-| La UI consume tiempo del resto | El SPEC 04 es opcional según el anteproyecto. El trabajo queda completo sin él. |
+| Riesgo                                                                            | Mitigación                                                                                                                                                        |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Un valor esperado calculado a mano está mal                                       | El autor lo verifica antes de cada paso. Si hay discrepancia, se corrige primero el spec.                                                                         |
+| Una palabra frecuente en los relatos de prueba de la cátedra no está en el léxico | El error es localizado y trae sugerencia. Agregarla es una línea en `lexico.txt` del repositorio.                                                                 |
+| Los sufijos generan candidatos falsos que coinciden con otro lema                 | La validación por categoría compatible los descarta. Si quedan dos, `ambiguous-form` señala el problema de datos con los candidatos.                              |
+| Se vuelve a pedir coordinación o pronombres durante la defensa                    | Sección 9: está prevista y se explica como ampliación por datos. Si se implementa, va en un spec nuevo.                                                           |
+| Las oraciones con varios complementos generan muchos árboles                      | La cantidad crece según Catalan con la cantidad de sintagmas preposicionales. Con oraciones simples (2 o 3) es despreciable, y la enumeración está limitada a 50. |
+| La UI consume tiempo del resto                                                    | El SPEC 04 es opcional según el anteproyecto. El trabajo queda completo sin él.                                                                                   |
 
 ---
 

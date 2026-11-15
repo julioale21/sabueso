@@ -14,7 +14,7 @@ El anteproyecto pide "una aplicación web de una sola página, organizada en pan
 Esa frontera es deliberada por tres razones:
 
 1. **Correctitud verificable.** Si la UI no tiene lógica teórica, toda la correctitud ya está verificada por las pruebas del núcleo.
-2. **Defensa.** En la exposición, cada vista se presenta como "la visualización del módulo X". Así cada pantalla se relaciona con una ficha de `docs/conceptos/`.
+2. **Defensa.** En la exposición, cada vista se presenta como "la visualización del módulo X". Así cada pantalla se relaciona con una ficha de `docs/concepts/`.
 3. **Riesgo de plazos.** El anteproyecto identifica que "la interfaz consume tiempo del núcleo". Con un spec aparte, la UI se encara recién cuando el núcleo está terminado.
 
 La única lógica no trivial de la UI es el **posicionamiento del árbol** (sección 3.3). Es geometría, no teoría de lenguajes, y tiene sus propias pruebas.
@@ -99,7 +99,7 @@ Si corrieran en el hilo principal, la UI quedaría congelada. Por eso se define 
 Detalles del protocolo:
 
 - Un mensaje es `{ id, op, args }` y su respuesta es `{ id, ok, value | error }`.
-- El *structured clone* del navegador soporta referencias cíclicas, `Map`, `Set` y `bigint`, así que `Chart` y `ParseResult` viajan sin serialización manual.
+- El _structured clone_ del navegador soporta referencias cíclicas, `Map`, `Set` y `bigint`, así que `Chart` y `ParseResult` viajan sin serialización manual.
 - Cada operación nueva cancela la anterior del mismo tipo: se ignoran las respuestas con `id` viejo.
 
 ### 3.3 Posicionamiento del árbol (SVG propio)
@@ -118,14 +118,14 @@ Se descarta Reingold-Tilford porque es más compacto, pero más largo de explica
 
 ### 3.4 Visualización de cada concepto del núcleo
 
-| Pestaña | Muestra | Fuente en el núcleo | Fichas | Equivalente en consola |
-| --- | --- | --- | --- | --- |
-| Análisis | Árbol, derivación con el no terminal reemplazado resaltado y sincronizado con el nodo del árbol, total de árboles y diagnóstico | `parse`, `renderDerivation` | 17–21 | `sabueso parse` |
-| Earley paso a paso | Columnas S0…Sn. El evento actual resaltado con su operación (Predictor, Scanner, Completer o anulable) y su causa. Controles ⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad | `parse(..., { trace: true })` | 11–16 | `sabueso trace` |
-| LL(1) | FIRST y FOLLOW por no terminal. Tabla M[A, a] con las celdas en conflicto en rojo. Insignia "LL(1) ✓ ⇒ no ambigua" o "k conflictos" | `analyzeGrammar` | 5–10 | `sabueso ll1`, `sabueso first-follow` |
-| FNC y CYK | Lista de los 6 pasos con la gramática después de cada uno. Tabla triangular CYK para la secuencia actual. Árbol FNC al lado del árbol de Earley | `toCNF`, `cykRecognize` | 22–23 | `sabueso cnf`, `sabueso cyk --comparar` |
-| Autómata de pila | Transiciones expand/match. Camino de aceptación como tabla de descripciones instantáneas (posición, entrada restante, pila) y el resultado acepta, rechaza o indeterminado | `grammarToPda`, `runPda` | 24 | `sabueso pda` |
-| G0 vs G1 | Selector k entre 1 y 6. Testigo de ambigüedad de G0 y de G1. Listas "solo en G0" y "solo en G1" | `findAmbiguityWitness`, `compareLanguages` | 21, 25 | `sabueso ambiguity`, `sabueso compare` |
+| Pestaña            | Muestra                                                                                                                                                                    | Fuente en el núcleo                        | Fichas | Equivalente en consola                  |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------ | --------------------------------------- |
+| Análisis           | Árbol, derivación con el no terminal reemplazado resaltado y sincronizado con el nodo del árbol, total de árboles y diagnóstico                                            | `parse`, `renderDerivation`                | 17–21  | `sabueso parse`                         |
+| Earley paso a paso | Columnas S0…Sn. El evento actual resaltado con su operación (Predictor, Scanner, Completer o anulable) y su causa. Controles ⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad        | `parse(..., { trace: true })`              | 11–16  | `sabueso trace`                         |
+| LL(1)              | FIRST y FOLLOW por no terminal. Tabla M[A, a] con las celdas en conflicto en rojo. Insignia "LL(1) ✓ ⇒ no ambigua" o "k conflictos"                                        | `analyzeGrammar`                           | 5–10   | `sabueso ll1`, `sabueso first-follow`   |
+| FNC y CYK          | Lista de los 6 pasos con la gramática después de cada uno. Tabla triangular CYK para la secuencia actual. Árbol FNC al lado del árbol de Earley                            | `toCNF`, `cykRecognize`                    | 22–23  | `sabueso cnf`, `sabueso cyk --comparar` |
+| Autómata de pila   | Transiciones expand/match. Camino de aceptación como tabla de descripciones instantáneas (posición, entrada restante, pila) y el resultado acepta, rechaza o indeterminado | `grammarToPda`, `runPda`                   | 24     | `sabueso pda`                           |
+| G0 vs G1           | Selector k entre 1 y 6. Testigo de ambigüedad de G0 y de G1. Listas "solo en G0" y "solo en G1"                                                                            | `findAmbiguityWitness`, `compareLanguages` | 21, 25 | `sabueso ambiguity`, `sabueso compare`  |
 
 **Límites de la UI y sus fundamentos:**
 
@@ -167,19 +167,36 @@ interface CoreClient {
 type TabId = 'analysis' | 'earley' | 'll1' | 'cnf-cyk' | 'pda' | 'compare';
 interface AppState {
   activeTab: TabId;
-  genreId: string;                             // 'policial' (del catálogo)
-  grammarId: GrammarId;                        // 'policial/g1' | 'policial/g0': solo gramáticas de género
-  input: string;                               // secuencia separada por espacios
-  selectedTree: number;                        // índice en la página de árboles
-  collapseEpsilon: boolean;                    // por defecto true
+  genreId: string; // 'policial' (del catálogo)
+  grammarId: GrammarId; // 'policial/g1' | 'policial/g0': solo gramáticas de género
+  input: string; // secuencia separada por espacios
+  selectedTree: number; // índice en la página de árboles
+  collapseEpsilon: boolean; // por defecto true
 }
 
 // src/state/persistence.ts — clave 'sabueso:v1'
-interface PersistedState { version: 1; genreId: string; grammarId: GrammarId; input: string }
+interface PersistedState {
+  version: 1;
+  genreId: string;
+  grammarId: GrammarId;
+  input: string;
+}
 
 // src/tree-layout/layout.ts
-interface LayoutNode { id: string; label: string; kind: 'terminal' | 'nonterminal' | 'epsilon' | 'collapsed'; x: number; y: number; children: LayoutNode[] }
-interface TreeLayout { root: LayoutNode; width: number; height: number; leafCount: number }
+interface LayoutNode {
+  id: string;
+  label: string;
+  kind: 'terminal' | 'nonterminal' | 'epsilon' | 'collapsed';
+  x: number;
+  y: number;
+  children: LayoutNode[];
+}
+interface TreeLayout {
+  root: LayoutNode;
+  width: number;
+  height: number;
+  leafCount: number;
+}
 
 // TagInfo y Genre se importan de @sabueso/core (catálogo de géneros)
 ```
@@ -373,13 +390,13 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio.
 
 ## 10. Riesgos identificados
 
-| Riesgo | Mitigación |
-| --- | --- |
-| El *structured clone* de un `Chart` grande (G0 con 200 eventos) es lento | Para L1, la vista Análisis pide el resultado sin traza y con `maxTrees: 50`. Si el clone sigue pesando, el worker devuelve un resultado resumido (sin `chart`) cuando la entrada supera los 15 tokens. Es un cambio local al worker. |
-| El árbol de 200 hojas es muy ancho | Scroll horizontal y colapso de ε. El total y la derivación siguen visibles. |
-| Las rutas de GitHub Pages rompen la carga de recursos | `base` configurable por `VITE_BASE`. El criterio de aceptación verifica la URL publicada. |
-| El Worker no carga en algún navegador | Si `new Worker` lanza, se usa `createDirectClient()` y se muestra un aviso de que puede haber demoras. |
-| La UI consume tiempo del núcleo | Este spec se implementa recién con el SPEC 02 en estado Implementado. |
+| Riesgo                                                                   | Mitigación                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| El _structured clone_ de un `Chart` grande (G0 con 200 eventos) es lento | Para L1, la vista Análisis pide el resultado sin traza y con `maxTrees: 50`. Si el clone sigue pesando, el worker devuelve un resultado resumido (sin `chart`) cuando la entrada supera los 15 tokens. Es un cambio local al worker. |
+| El árbol de 200 hojas es muy ancho                                       | Scroll horizontal y colapso de ε. El total y la derivación siguen visibles.                                                                                                                                                          |
+| Las rutas de GitHub Pages rompen la carga de recursos                    | `base` configurable por `VITE_BASE`. El criterio de aceptación verifica la URL publicada.                                                                                                                                            |
+| El Worker no carga en algún navegador                                    | Si `new Worker` lanza, se usa `createDirectClient()` y se muestra un aviso de que puede haber demoras.                                                                                                                               |
+| La UI consume tiempo del núcleo                                          | Este spec se implementa recién con el SPEC 02 en estado Implementado.                                                                                                                                                                |
 
 ---
 

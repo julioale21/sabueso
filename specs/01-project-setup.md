@@ -32,7 +32,7 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 - Esqueleto de `@sabueso/nl`: dependencia de `core`, CLI propia con `version` y `help`, prueba de humo.
 - Esqueleto de `@sabueso/web`: Vite + React 19, una pantalla que muestra "Sabueso" y la versión del núcleo, Vitest con jsdom y Testing Library, prueba de humo.
 - Scripts raíz: `build`, `test`, `lint`, `format`, `format:check`, `typecheck`, `sabueso` y `sabueso-nl`.
-- Estructura de documentación: `docs/conceptos/` con una plantilla de ficha, y `docs/demo-consola.md` con su prueba automática.
+- Estructura de documentación: `docs/concepts/` con una plantilla de ficha, y `docs/console-demo.md` con su prueba automática.
 - Hooks de git nativos (`.githooks/`): `pre-commit` con formato y lint, `pre-push` con pruebas.
 - CI en GitHub Actions: lint, formato, typecheck, build y pruebas en cada push y pull request.
 
@@ -64,11 +64,11 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
   tsconfig.base.json
   vitest.config.ts                # test.projects: core, nl, web
   README.md
-  guia-presentacion.md            # ya existe (no la crea este spec)
+  presentation-guide.md            # ya existe (no la crea este spec)
   specs/                          # ya existe
   docs/
-    conceptos/_plantilla.md
-    demo-consola.md
+    conceptos/_template.md
+    console-demo.md
   packages/
     core/
       package.json                # @sabueso/core
@@ -150,11 +150,11 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 
 ### 4.3 Cómo se consumen los paquetes entre sí
 
-| Consumidor | Consume | Cómo | Por qué |
-| --- | --- | --- | --- |
-| `nl` | `core` | Dependencia de workspace (`"@sabueso/core": "*"`), resuelta a `packages/core/dist` | `nl` corre en Node (su CLI), que necesita JavaScript compilado. `tsc -b` compila `core` primero gracias a las referencias. |
-| `web` | `core` (y en el SPEC 04, `nl`) | Alias de Vite y `paths` de TS al **código fuente** (`src/index.ts`) | El servidor de desarrollo no necesita un build previo del núcleo, y los cambios en el núcleo se ven al instante. |
-| Vitest (los tres) | Código fuente | Vitest ejecuta TypeScript directamente | Las pruebas no dependen de `dist/`. |
+| Consumidor        | Consume                        | Cómo                                                                               | Por qué                                                                                                                    |
+| ----------------- | ------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `nl`              | `core`                         | Dependencia de workspace (`"@sabueso/core": "*"`), resuelta a `packages/core/dist` | `nl` corre en Node (su CLI), que necesita JavaScript compilado. `tsc -b` compila `core` primero gracias a las referencias. |
+| `web`             | `core` (y en el SPEC 04, `nl`) | Alias de Vite y `paths` de TS al **código fuente** (`src/index.ts`)                | El servidor de desarrollo no necesita un build previo del núcleo, y los cambios en el núcleo se ven al instante.           |
+| Vitest (los tres) | Código fuente                  | Vitest ejecuta TypeScript directamente                                             | Las pruebas no dependen de `dist/`.                                                                                        |
 
 ### 4.4 Lint, formato y editor
 
@@ -171,10 +171,10 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 
 ### 4.6 Hooks de git
 
-| Hook | Ejecuta | Por qué |
-| --- | --- | --- |
-| `.githooks/pre-commit` | `npm run format:check && npm run lint` | Es rápido (segundos). Evita commits con formato o lint roto. |
-| `.githooks/pre-push` | `npm test` | Las pruebas tardan más (las diferenciales del SPEC 02 pueden tardar decenas de segundos), así que se corren antes de subir, no en cada commit. |
+| Hook                   | Ejecuta                                | Por qué                                                                                                                                        |
+| ---------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.githooks/pre-commit` | `npm run format:check && npm run lint` | Es rápido (segundos). Evita commits con formato o lint roto.                                                                                   |
+| `.githooks/pre-push`   | `npm test`                             | Las pruebas tardan más (las diferenciales del SPEC 02 pueden tardar decenas de segundos), así que se corren antes de subir, no en cada commit. |
 
 Son scripts de shell con permiso de ejecución. Se activan con `git config core.hooksPath .githooks`, que corre `npm install` a través de `prepare`.
 
@@ -193,27 +193,30 @@ La única estructura nueva es la de la CLI, compartida por `core` y `nl`:
 ```ts
 // packages/core/src/cli/types.ts
 interface CliIo {
-  stdout(text: string): void;                  // salida normal
-  stderr(text: string): void;                  // errores
-  readFile(path: string): Promise<string>;     // la única puerta al sistema de archivos
+  stdout(text: string): void; // salida normal
+  stderr(text: string): void; // errores
+  readFile(path: string): Promise<string>; // la única puerta al sistema de archivos
 }
 
 interface CliCommand {
-  name: string;                                // 'version'
-  description: string;                         // una línea, para help
-  usage: string;                               // 'sabueso version'
-  run(args: string[], io: CliIo): Promise<number>;   // devuelve el código de salida
+  name: string; // 'version'
+  description: string; // una línea, para help
+  usage: string; // 'sabueso version'
+  run(args: string[], io: CliIo): Promise<number>; // devuelve el código de salida
 }
 
 // packages/core/src/cli/run.ts
-function createCli(options: { program: string; version: string; commands: CliCommand[] }):
-  (argv: string[], io: CliIo) => Promise<number>;
+function createCli(options: {
+  program: string;
+  version: string;
+  commands: CliCommand[];
+}): (argv: string[], io: CliIo) => Promise<number>;
 // Agrega help automáticamente. Sin argumentos muestra help.
 // Un comando desconocido escribe el error y la lista de comandos en stderr, y devuelve 2.
 
 // packages/core/src/cli/format.ts
-function table(header: string[], rows: string[][]): string;   // columnas alineadas
-function set(items: Iterable<string>): string;                // '{a, b, c}', ordenado
+function table(header: string[], rows: string[][]): string; // columnas alineadas
+function set(items: Iterable<string>): string; // '{a, b, c}', ordenado
 
 // packages/core/src/index.ts
 const VERSION = '0.1.0';
@@ -221,11 +224,11 @@ const VERSION = '0.1.0';
 
 **Códigos de salida (para todos los comandos de todos los specs):**
 
-| Código | Significado |
-| --- | --- |
-| `0` | Éxito, o entrada aceptada |
-| `1` | Entrada rechazada, o error del usuario (por ejemplo, un símbolo desconocido) |
-| `2` | Uso incorrecto: comando desconocido u opciones faltantes |
+| Código | Significado                                                                  |
+| ------ | ---------------------------------------------------------------------------- |
+| `0`    | Éxito, o entrada aceptada                                                    |
+| `1`    | Entrada rechazada, o error del usuario (por ejemplo, un símbolo desconocido) |
+| `2`    | Uso incorrecto: comando desconocido u opciones faltantes                     |
 
 **Convención de `cli.ts`:** es el único archivo que importa `node:*`. Arma el `io` real (`process.stdout`, `process.stderr` y `fs.promises.readFile`), llama a `runCli(process.argv.slice(2), io)` y termina con `process.exit(código)`. Empieza con `#!/usr/bin/env node`.
 
@@ -236,9 +239,9 @@ const VERSION = '0.1.0';
 Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del proyecto, cada paso es **ejecutable** (por consola o con `npm run dev`) y **testeable** siempre que se pueda. Los pasos de pura configuración se verifican con el comando indicado.
 
 1. **Repositorio.**
-   - `git init -b main` en `~/Desktop/sabueso` (la carpeta ya existe, con `specs/` y `guia-presentacion.md`).
+   - `git init -b main` en `~/Desktop/sabueso` (la carpeta ya existe, con `specs/` y `presentation-guide.md`).
    - `.gitignore` (`node_modules/`, `dist/`, `coverage/`, `*.tsbuildinfo`, `.DS_Store`), `.editorconfig` y un `README.md` base con el nombre del proyecto, la materia, los requisitos (Node 24 según `.nvmrc`) y la lista de specs.
-   - Primer commit con `specs/`, `guia-presentacion.md` y estos archivos.
+   - Primer commit con `specs/`, `presentation-guide.md` y estos archivos.
    - **Verificación:** `git log --oneline` muestra el commit y `git status` queda limpio.
 
 2. **Monorepo raíz.**
@@ -277,10 +280,10 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
    - **Ejecutable:** `npm run dev -w @sabueso/web` muestra la pantalla. `npm run build` genera `apps/web/dist/index.html`.
 
 7. **Estructura de documentación.**
-   - `docs/conceptos/_plantilla.md`, con las cinco partes de una ficha: definición formal, ejemplo resuelto a mano, dónde está en el código (archivo, función y comando de consola), qué prueba lo verifica, y referencia bibliográfica.
-   - `docs/demo-consola.md`, con un bloque de código que contiene `npm run sabueso -- version`.
+   - `docs/concepts/_template.md`, con las cinco partes de una ficha: definición formal, ejemplo resuelto a mano, dónde está en el código (archivo, función y comando de consola), qué prueba lo verifica, y referencia bibliográfica.
+   - `docs/console-demo.md`, con un bloque de código que contiene `npm run sabueso -- version`.
    - **Prueba:** `packages/core/test/cli/demo-doc.test.ts`:
-     - lee `docs/demo-consola.md` y extrae las líneas `npm run sabueso -- …` de los bloques de código;
+     - lee `docs/console-demo.md` y extrae las líneas `npm run sabueso -- …` de los bloques de código;
      - ejecuta cada una con `runCli` y un `io` en memoria, y verifica que ninguna devuelva 2;
      - ignora las líneas de `sabueso-nl` hasta que el SPEC 04 extienda la prueba.
    - **Verificación:** `npm test` incluye la prueba del guion.
@@ -309,7 +312,7 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - [ ] `npm run dev -w @sabueso/web` sirve una página que muestra "Sabueso" y la versión del núcleo, sin errores en la consola del navegador.
 - [ ] `packages/core/package.json` no tiene `dependencies`. `packages/nl/package.json` solo tiene `@sabueso/core`. `apps/web/package.json` solo tiene `react`, `react-dom` y `@sabueso/core`.
 - [ ] Ningún archivo de `packages/*/src`, salvo los `cli.ts`, importa módulos `node:*`.
-- [ ] `docs/conceptos/_plantilla.md` tiene las cinco partes, y la prueba del guion de consola pasa.
+- [ ] `docs/concepts/_template.md` tiene las cinco partes, y la prueba del guion de consola pasa.
 - [ ] Con los hooks activos, un commit con formato roto es rechazado.
 - [ ] `.github/workflows/ci.yml` existe y corre formato, lint, typecheck, build y pruebas.
 - [ ] No hay ninguna lógica de dominio: ni gramáticas, ni etiquetas, ni autómatas.
@@ -318,11 +321,11 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 
 ## 8. Cómo usan este setup los demás specs
 
-| Spec | Qué recibe de este setup | Qué agrega |
-| --- | --- | --- |
-| 02 Núcleo | `packages/core`, la CLI (`createCli`, `io`, `format`, códigos de salida), el script `sabueso` y el guion de consola con su prueba | Los módulos teóricos, un comando por paso, `cli/grammars.ts` y las opciones `--grammar`, `--file` y `--pasos` |
-| 03 Interfaz | `apps/web` con Vite, React, el alias al núcleo, Vitest con jsdom y Testing Library | Componentes, vistas, Web Worker, persistencia y el workflow de Pages |
-| 04 Español | `packages/nl` con su CLI y el script `sabueso-nl` | Los módulos de lenguaje natural, sus comandos y la integración en la UI |
+| Spec        | Qué recibe de este setup                                                                                                          | Qué agrega                                                                                                    |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 02 Núcleo   | `packages/core`, la CLI (`createCli`, `io`, `format`, códigos de salida), el script `sabueso` y el guion de consola con su prueba | Los módulos teóricos, un comando por paso, `cli/grammars.ts` y las opciones `--grammar`, `--file` y `--pasos` |
+| 03 Interfaz | `apps/web` con Vite, React, el alias al núcleo, Vitest con jsdom y Testing Library                                                | Componentes, vistas, Web Worker, persistencia y el workflow de Pages                                          |
+| 04 Español  | `packages/nl` con su CLI y el script `sabueso-nl`                                                                                 | Los módulos de lenguaje natural, sus comandos y la integración en la UI                                       |
 
 ---
 
@@ -343,7 +346,7 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - **Sí:** `tsc` compila a `dist/` y las CLI corren con `node`. Es 100% TypeScript, funciona en cualquier Node 20.19 o superior, y no agrega dependencias.
 - **Sí:** `NodeNext` con sufijo `.js` en `core` y `nl`. Con `bundler`, `tsc` emite imports sin extensión, y Node ESM falla con `ERR_MODULE_NOT_FOUND` al ejecutar la CLI. `bundler` queda solo para `web`, que compila Vite.
 - **No:** `tsx`. El autor lo descartó, y no hace falta: Vitest ejecuta TypeScript directamente y la CLI usa `tsc -b`.
-- **No:** el TypeScript nativo de Node (*type stripping*). Exige Node 23.6 o superior y prohíbe `enum` y otras construcciones: una restricción sin beneficio.
+- **No:** el TypeScript nativo de Node (_type stripping_). Exige Node 23.6 o superior y prohíbe `enum` y otras construcciones: una restricción sin beneficio.
 - **Sí:** `.nvmrc` = 24 y `engines` `>=20.19`. Node 20 terminó su soporte en abril de 2026. El autor pidió "Node 20 LTS o superior", así que el piso se respeta, pero se apunta al LTS activo (24, el instalado en la máquina). 20.19 es el mínimo que exige la versión actual de Vite.
 - **Sí:** el alias de Vite al código fuente del núcleo. El servidor de desarrollo funciona sin compilar el núcleo antes, y los cambios en los algoritmos se ven al instante en la UI.
 - **No:** que `web` consuma `core/dist`. Obligaría a recompilar el núcleo en cada cambio para verlo en la UI.
@@ -371,12 +374,12 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 
 ## 10. Riesgos identificados
 
-| Riesgo | Mitigación |
-| --- | --- |
-| Las referencias de TypeScript entre `core` y `nl` fallan o compilan en desorden | `tsc -b` con `composite` resuelve el orden. El criterio de aceptación verifica `npm run build` desde un clon limpio. |
-| El alias de Vite y los `paths` de TypeScript se desincronizan | Los dos apuntan al mismo archivo (`packages/core/src/index.ts`). `npm run typecheck` y la prueba de `App` los ejercitan. |
-| Los hooks no se activan (por ejemplo, si se instaló antes de `git init`) | `prepare` vuelve a correr con cada `npm install`. El README lo indica. |
-| Una versión nueva de una herramienta rompe la configuración | `package-lock.json` fija las versiones, y el CI usa `npm ci`. |
+| Riesgo                                                                          | Mitigación                                                                                                               |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Las referencias de TypeScript entre `core` y `nl` fallan o compilan en desorden | `tsc -b` con `composite` resuelve el orden. El criterio de aceptación verifica `npm run build` desde un clon limpio.     |
+| El alias de Vite y los `paths` de TypeScript se desincronizan                   | Los dos apuntan al mismo archivo (`packages/core/src/index.ts`). `npm run typecheck` y la prueba de `App` los ejercitan. |
+| Los hooks no se activan (por ejemplo, si se instaló antes de `git init`)        | `prepare` vuelve a correr con cada `npm install`. El README lo indica.                                                   |
+| Una versión nueva de una herramienta rompe la configuración                     | `package-lock.json` fija las versiones, y el CI usa `npm ci`.                                                            |
 
 ---
 
