@@ -1,6 +1,6 @@
 # SPEC 02 — Núcleo de Sabueso: librería de gramáticas y motor de Earley
 
-> **Estado:** Borrador
+> **Estado:** Approved
 > **Depende de:** SPEC 01
 > **Fecha:** 2026-11-14
 > **Objetivo:** Construir desde cero `@sabueso/core`, una librería TypeScript sin dependencias de runtime que lee gramáticas libres de contexto desde archivos de texto, decide con un motor de Earley propio si un relato policial (secuencia de etiquetas) pertenece al lenguaje, y expone cada concepto teórico de la materia como un módulo atómico, probado y explicable por consola.
