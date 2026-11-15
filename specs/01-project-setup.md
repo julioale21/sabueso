@@ -64,10 +64,10 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
   tsconfig.base.json
   vitest.config.ts                # test.projects: core, nl, web
   README.md
-  presentation-guide.md            # ya existe (no la crea este spec)
+  presentation-guide.md           # ya existe (no la crea este spec)
   specs/                          # ya existe
   docs/
-    conceptos/_template.md
+    concepts/_template.md
     console-demo.md
   packages/
     core/
@@ -353,6 +353,7 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - **Sí:** solo herramientas de calidad como `devDependencies` (TypeScript, Vitest, ESLint, Prettier, Testing Library, Vite). No tienen lógica de dominio, así que no violan la regla del anteproyecto de no usar bibliotecas que resuelvan los conceptos.
 - **Sí:** identificadores en inglés y comentarios en español. Cuando se traduzcan los comentarios, el código ya queda listo.
 - **No:** identificadores en español. Obligaría a renombrar todo después.
+- **Sí:** nombres de archivos y carpetas en inglés (`presentation-guide.md`, `docs/concepts/`, `docs/console-demo.md`), aunque su contenido esté en español. Es la misma razón que con los identificadores. Los specs 02–04 adoptan la regla cuando se trabaje cada uno.
 
 **CLI**
 
