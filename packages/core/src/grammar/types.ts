@@ -7,12 +7,14 @@
 /** A grammar symbol: a nonterminal ('Pasos'), a tag ('CTX') or a literal ('+'). */
 export type SymbolName = string;
 
-/** A production A → α. An empty rhs is the ε-production A → ε. */
+/** A production A → α. An empty right side is the ε-production A → ε. */
 export interface Production {
   /** Position in Grammar.productions, starting at 0. */
   id: number;
-  lhs: SymbolName;
-  rhs: SymbolName[];
+  /** The nonterminal A that is replaced (left side of the arrow). */
+  leftSide: SymbolName;
+  /** The sequence α that replaces it (right side of the arrow); empty for A → ε. */
+  rightSide: SymbolName[];
 }
 
 export interface Grammar {
@@ -26,7 +28,7 @@ export interface Grammar {
   /** P, numbered in the order the rules were given. */
   productions: readonly Production[];
   /** The productions of each nonterminal, so algorithms can expand A quickly. */
-  byLhs: ReadonlyMap<SymbolName, readonly Production[]>;
+  productionsByLeftSide: ReadonlyMap<SymbolName, readonly Production[]>;
 }
 
 /** Start symbol of the augmented grammar ($S → S). '$' is reserved, so no rule can produce it. */

@@ -4,6 +4,7 @@
 > **Depende de:** ninguno (primer spec del proyecto)
 > **Fecha:** 2026-11-14
 > **Objetivo:** Dejar el repositorio `~/Desktop/sabueso` listo para implementar, con el monorepo, el tooling, los esqueletos de `core`, `nl` y `web` funcionando y probados, la infraestructura de la CLI, la estructura de documentación, los hooks de git y el CI, sin ninguna lógica de dominio.
+> **Nota (2026-11-15):** durante el SPEC 02 se simplificó parte de lo creado aquí: se quitaron el comando `version` y la constante `VERSION`, el paquete `nl` se eliminó hasta el SPEC 04 (que lo crea como `packages/natural-language`), y la infraestructura de la CLI se renombró (`cli/` → `command-line/`, `CliIo` → `CommandLineEnvironment`, `createCli` → `createCommandLineProgram`).
 
 ---
 
@@ -24,14 +25,14 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 **Entra:**
 
 - Repositorio git en `~/Desktop/sabueso` (rama `main`), con `.gitignore`, `.editorconfig` y `README.md` base.
-- Monorepo con npm workspaces: `packages/core`, `packages/nl` y `apps/web`.
+- Monorepo con npm workspaces: `packages/core`, `packages/natural-language` y `apps/web`.
 - TypeScript estricto con configuración base compartida y referencias entre paquetes.
 - ESLint (configuración plana) y Prettier para los tres workspaces.
 - Vitest con una configuración raíz que corre los tres proyectos.
-- Esqueleto de `@sabueso/core`: `VERSION`, prueba de humo y la **infraestructura de la CLI** (`createCli`, `runCli` con `io` inyectado, utilidades de formato, comandos `version` y `help`).
-- Esqueleto de `@sabueso/nl`: dependencia de `core`, CLI propia con `version` y `help`, prueba de humo.
+- Esqueleto de `@sabueso/core`: `VERSION`, prueba de humo y la **infraestructura de la CLI** (`createCommandLineProgram`, `runCommandLine` con `environment` inyectado, utilidades de formato, comandos `version` y `help`).
+- Esqueleto de `@sabueso/natural-language`: dependencia de `core`, CLI propia con `version` y `help`, prueba de humo.
 - Esqueleto de `@sabueso/web`: Vite + React 19, una pantalla que muestra "Sabueso" y la versión del núcleo, Vitest con jsdom y Testing Library, prueba de humo.
-- Scripts raíz: `build`, `test`, `lint`, `format`, `format:check`, `typecheck`, `sabueso` y `sabueso-nl`.
+- Scripts raíz: `build`, `test`, `lint`, `format`, `format:check`, `typecheck`, `sabueso` y `sabueso-natural-language`.
 - Estructura de documentación: `docs/concepts/` con una plantilla de ficha, y `docs/console-demo.md` con su prueba automática.
 - Hooks de git nativos (`.githooks/`): `pre-commit` con formato y lint, `pre-push` con pruebas.
 - CI en GitHub Actions: lint, formato, typecheck, build y pruebas en cada push y pull request.
@@ -76,23 +77,23 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
       vitest.config.ts
       src/
         index.ts                  # VERSION + exports de la CLI
-        cli.ts                    # único archivo con node:*
-        cli/types.ts              # CliIo, CliCommand
-        cli/run.ts                # createCli
+        command-line.ts                    # único archivo con node:*
+        cli/types.ts              # CommandLineEnvironment, Command
+        cli/run.ts                # createCommandLineProgram
         cli/format.ts             # table, set
-        cli/commands/version.ts
+        command-line/commands/version.ts
       test/
         smoke.test.ts
         cli/run.test.ts
         cli/demo-doc.test.ts
     nl/
-      package.json                # @sabueso/nl, depende de @sabueso/core
+      package.json                # @sabueso/natural-language, depende de @sabueso/core
       tsconfig.json               # NodeNext, composite, referencia a core
       vitest.config.ts
       src/
         index.ts                  # VERSION
-        cli.ts
-        cli/commands/version.ts
+        command-line.ts
+        command-line/commands/version.ts
       test/
         smoke.test.ts
         cli/version.test.ts
@@ -122,16 +123,16 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
   "private": true,
   "type": "module",
   "engines": { "node": ">=20.19" },
-  "workspaces": ["packages/core", "packages/nl", "apps/web"],
+  "workspaces": ["packages/core", "packages/natural-language", "apps/web"],
   "scripts": {
-    "build": "tsc -b packages/core packages/nl && npm run build -w @sabueso/web",
-    "typecheck": "tsc -b packages/core packages/nl && tsc -p apps/web --noEmit",
+    "build": "tsc -b packages/core packages/natural-language && npm run build -w @sabueso/web",
+    "typecheck": "tsc -b packages/core packages/natural-language && tsc -p apps/web --noEmit",
     "test": "vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "sabueso": "tsc -b packages/core && node packages/core/dist/cli.js",
-    "sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js",
+    "sabueso": "tsc -b packages/core && node packages/core/dist/command-line.js",
+    "sabueso-natural-language": "tsc -b packages/natural-language && node packages/natural-language/dist/command-line.js",
     "prepare": "node -e \"require('fs').existsSync('.git') && require('child_process').execSync('git config core.hooksPath .githooks')\""
   }
 }
@@ -144,7 +145,7 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 ### 4.2 TypeScript
 
 - **`tsconfig.base.json`:** `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: true`, `target: ES2022`, `lib: ["ES2022"]`, `skipLibCheck: true`, `forceConsistentCasingInFileNames: true`.
-- **`packages/core` y `packages/nl`:** `module` y `moduleResolution` en `NodeNext`, `composite: true`, `declaration: true`, `outDir: dist`, `rootDir: src`. `nl` declara `references: [{ "path": "../core" }]`.
+- **`packages/core` y `packages/natural-language`:** `module` y `moduleResolution` en `NodeNext`, `composite: true`, `declaration: true`, `outDir: dist`, `rootDir: src`. `nl` declara `references: [{ "path": "../core" }]`.
 - **`apps/web`:** `moduleResolution: bundler`, `jsx: react-jsx`, `lib: ["ES2022", "DOM"]`, `noEmit: true`, y `paths` con `@sabueso/core` apuntando a `../../packages/core/src/index.ts`.
 - **Imports relativos con sufijo `.js`** en `core` y `nl`. Es lo que exige Node ESM sobre el código compilado (ver Decisiones).
 
@@ -159,7 +160,7 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 ### 4.4 Lint, formato y editor
 
 - **ESLint:** configuración plana (`eslint.config.js`) con `@eslint/js`, `typescript-eslint` (recomendada con tipos), `eslint-plugin-react-hooks` solo para `apps/web`, y `eslint-config-prettier` al final para que no choque con Prettier. Ignora `dist/`, `node_modules/` y `coverage/`.
-- **Prettier:** `singleQuote: true`, `printWidth: 100`, `trailingComma: "all"`. `.prettierignore` excluye `dist/`, `package-lock.json` y los archivos `.glc`, que tienen su propio formato.
+- **Prettier:** `singleQuote: true`, `printWidth: 100`, `trailingComma: "all"`. `.prettierignore` excluye `dist/`, `package-lock.json` y los archivos `.grammar`, que tienen su propio formato.
 - **`.editorconfig`:** UTF-8, fin de línea LF, 2 espacios, línea final, sin espacios al final.
 
 ### 4.5 Pruebas
@@ -191,30 +192,30 @@ Son scripts de shell con permiso de ejecución. Se activan con `git config core.
 La única estructura nueva es la de la CLI, compartida por `core` y `nl`:
 
 ```ts
-// packages/core/src/cli/types.ts
-interface CliIo {
+// packages/core/src/command-line/types.ts
+interface CommandLineEnvironment {
   stdout(text: string): void; // salida normal
   stderr(text: string): void; // errores
   readFile(path: string): Promise<string>; // la única puerta al sistema de archivos
 }
 
-interface CliCommand {
+interface Command {
   name: string; // 'version'
   description: string; // una línea, para help
   usage: string; // 'sabueso version'
-  run(args: string[], io: CliIo): Promise<number>; // devuelve el código de salida
+  run(commandArguments: string[], environment: CommandLineEnvironment): Promise<number>; // devuelve el código de salida
 }
 
-// packages/core/src/cli/run.ts
-function createCli(options: {
+// packages/core/src/command-line/run.ts
+function createCommandLineProgram(options: {
   program: string;
   version: string;
-  commands: CliCommand[];
-}): (argv: string[], io: CliIo) => Promise<number>;
+  commands: Command[];
+}): (commandLineArguments: string[], environment: CommandLineEnvironment) => Promise<number>;
 // Agrega help automáticamente. Sin argumentos muestra help.
 // Un comando desconocido escribe el error y la lista de comandos en stderr, y devuelve 2.
 
-// packages/core/src/cli/format.ts
+// packages/core/src/command-line/format.ts
 function table(header: string[], rows: string[][]): string; // columnas alineadas
 function set(items: Iterable<string>): string; // '{a, b, c}', ordenado
 
@@ -230,7 +231,7 @@ const VERSION = '0.1.0';
 | `1`    | Entrada rechazada, o error del usuario (por ejemplo, un símbolo desconocido) |
 | `2`    | Uso incorrecto: comando desconocido u opciones faltantes                     |
 
-**Convención de `cli.ts`:** es el único archivo que importa `node:*`. Arma el `io` real (`process.stdout`, `process.stderr` y `fs.promises.readFile`), llama a `runCli(process.argv.slice(2), io)` y termina con `process.exit(código)`. Empieza con `#!/usr/bin/env node`.
+**Convención de `command-line.ts`:** es el único archivo que importa `node:*`. Arma el `environment` real (`process.stdout`, `process.stderr` y `fs.promises.readFile`), llama a `runCommandLine(process.argv.slice(2), environment)` y termina con `process.exit(código)`. Empieza con `#!/usr/bin/env node`.
 
 ---
 
@@ -250,15 +251,15 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
    - **Verificación:** `npm install`, `npm run lint` y `npm run format:check` terminan sin errores.
 
 3. **Esqueleto de `@sabueso/core`.**
-   - `package.json` (`"type": "module"`, `"main": "dist/index.js"`, `"types": "dist/index.d.ts"`, `"bin": { "sabueso": "dist/cli.js" }`, sin `dependencies`), `tsconfig.json` y `vitest.config.ts`.
+   - `package.json` (`"type": "module"`, `"main": "dist/index.js"`, `"types": "dist/index.d.ts"`, `"bin": { "sabueso": "dist/command-line.js" }`, sin `dependencies`), `tsconfig.json` y `vitest.config.ts`.
    - `src/index.ts` con `VERSION`. `test/smoke.test.ts` verifica que `VERSION` sea `'0.1.0'`.
    - `vitest.config.ts` raíz con el proyecto `core`. Scripts `build`, `typecheck` y `test` en la raíz.
    - **Verificación:** `npm test` (1 prueba) y `npm run build` (genera `packages/core/dist/index.js`).
 
 4. **Infraestructura de la CLI en `core`.**
-   - `cli/types.ts`, `cli/run.ts` (`createCli`, con `help` automático), `cli/format.ts` (`table` y `set`), `cli/commands/version.ts` y `cli.ts`. `index.ts` exporta `createCli`, `CliCommand`, `CliIo`, `table` y `set`.
+   - `cli/types.ts`, `cli/run.ts` (`createCommandLineProgram`, con `help` automático), `cli/format.ts` (`table` y `set`), `command-line/commands/version.ts` y `command-line.ts`. `index.ts` exporta `createCommandLineProgram`, `Command`, `CommandLineEnvironment`, `table` y `set`.
    - Script raíz `sabueso`.
-   - **Pruebas** (`test/cli/run.test.ts`, con un `io` en memoria):
+   - **Pruebas** (`test/command-line/run.test.ts`, con un `environment` en memoria):
      - `version` escribe `Sabueso core 0.1.0` y devuelve 0;
      - `help` lista `version` y `help`;
      - sin argumentos se muestra la ayuda;
@@ -266,11 +267,11 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
      - `table` alinea columnas y `set` ordena.
    - **Consola:** `npm run sabueso -- version` imprime `Sabueso core 0.1.0`. `npm run sabueso -- foo` termina con código 2.
 
-5. **Esqueleto de `@sabueso/nl`.**
-   - `package.json` (`"dependencies": { "@sabueso/core": "*" }`, `"bin": { "sabueso-nl": "dist/cli.js" }`), `tsconfig.json` con referencia a `core`, `vitest.config.ts`, `src/index.ts` (`VERSION`) y `src/cli.ts` con el comando `version`, registrado con `createCli` de `core`.
-   - Script raíz `sabueso-nl`, y `nl` agregado a `build`, `typecheck` y a los proyectos de Vitest.
-   - **Pruebas:** humo, y `version` escribe `Sabueso nl 0.1.0 (core 0.1.0)`.
-   - **Consola:** `npm run sabueso-nl -- version` y `npm run sabueso-nl -- help`.
+5. **Esqueleto de `@sabueso/natural-language`.**
+   - `package.json` (`"dependencies": { "@sabueso/core": "*" }`, `"bin": { "sabueso-natural-language": "dist/command-line.js" }`), `tsconfig.json` con referencia a `core`, `vitest.config.ts`, `src/index.ts` (`VERSION`) y `src/command-line.ts` con el comando `version`, registrado con `createCommandLineProgram` de `core`.
+   - Script raíz `sabueso-natural-language`, y `nl` agregado a `build`, `typecheck` y a los proyectos de Vitest.
+   - **Pruebas:** humo, y `version` escribe `Sabueso natural-language 0.1.0 (core 0.1.0)`.
+   - **Consola:** `npm run sabueso-natural-language -- version` y `npm run sabueso-natural-language -- help`.
 
 6. **Esqueleto de `@sabueso/web`.**
    - Vite + React 19 + TypeScript: `index.html`, `src/main.tsx` y `src/App.tsx`, que muestra el título "Sabueso" y "núcleo v0.1.0", importando `VERSION` de `@sabueso/core` por el alias.
@@ -282,10 +283,10 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 7. **Estructura de documentación.**
    - `docs/concepts/_template.md`, con las cinco partes de una ficha: definición formal, ejemplo resuelto a mano, dónde está en el código (archivo, función y comando de consola), qué prueba lo verifica, y referencia bibliográfica.
    - `docs/console-demo.md`, con un bloque de código que contiene `npm run sabueso -- version`.
-   - **Prueba:** `packages/core/test/cli/demo-doc.test.ts`:
+   - **Prueba:** `packages/core/test/command-line/demo-doc.test.ts`:
      - lee `docs/console-demo.md` y extrae las líneas `npm run sabueso -- …` de los bloques de código;
-     - ejecuta cada una con `runCli` y un `io` en memoria, y verifica que ninguna devuelva 2;
-     - ignora las líneas de `sabueso-nl` hasta que el SPEC 04 extienda la prueba.
+     - ejecuta cada una con `runCommandLine` y un `environment` en memoria, y verifica que ninguna devuelva 2;
+     - ignora las líneas de `sabueso-natural-language` hasta que el SPEC 04 extienda la prueba.
    - **Verificación:** `npm test` incluye la prueba del guion.
 
 8. **Hooks de git.**
@@ -308,10 +309,10 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - [ ] `npm run sabueso -- version` imprime `Sabueso core 0.1.0` y termina con código 0.
 - [ ] `npm run sabueso -- help` lista `version` y `help`.
 - [ ] `npm run sabueso -- foo` termina con código 2 y muestra la lista de comandos.
-- [ ] `npm run sabueso-nl -- version` imprime `Sabueso nl 0.1.0 (core 0.1.0)`.
+- [ ] `npm run sabueso-natural-language -- version` imprime `Sabueso natural-language 0.1.0 (core 0.1.0)`.
 - [ ] `npm run dev -w @sabueso/web` sirve una página que muestra "Sabueso" y la versión del núcleo, sin errores en la consola del navegador.
-- [ ] `packages/core/package.json` no tiene `dependencies`. `packages/nl/package.json` solo tiene `@sabueso/core`. `apps/web/package.json` solo tiene `react`, `react-dom` y `@sabueso/core`.
-- [ ] Ningún archivo de `packages/*/src`, salvo los `cli.ts`, importa módulos `node:*`.
+- [ ] `packages/core/package.json` no tiene `dependencies`. `packages/natural-language/package.json` solo tiene `@sabueso/core`. `apps/web/package.json` solo tiene `react`, `react-dom` y `@sabueso/core`.
+- [ ] Ningún archivo de `packages/*/src`, salvo los `command-line.ts`, importa módulos `node:*`.
 - [ ] `docs/concepts/_template.md` tiene las cinco partes, y la prueba del guion de consola pasa.
 - [ ] Con los hooks activos, un commit con formato roto es rechazado.
 - [ ] `.github/workflows/ci.yml` existe y corre formato, lint, typecheck, build y pruebas.
@@ -321,11 +322,11 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 
 ## 8. Cómo usan este setup los demás specs
 
-| Spec        | Qué recibe de este setup                                                                                                          | Qué agrega                                                                                                    |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 02 Núcleo   | `packages/core`, la CLI (`createCli`, `io`, `format`, códigos de salida), el script `sabueso` y el guion de consola con su prueba | Los módulos teóricos, un comando por paso, `cli/grammars.ts` y las opciones `--grammar`, `--file` y `--pasos` |
-| 03 Interfaz | `apps/web` con Vite, React, el alias al núcleo, Vitest con jsdom y Testing Library                                                | Componentes, vistas, Web Worker, persistencia y el workflow de Pages                                          |
-| 04 Español  | `packages/nl` con su CLI y el script `sabueso-nl`                                                                                 | Los módulos de lenguaje natural, sus comandos y la integración en la UI                                       |
+| Spec        | Qué recibe de este setup                                                                                                                                  | Qué agrega                                                                                                    |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 02 Núcleo   | `packages/core`, la CLI (`createCommandLineProgram`, `environment`, `format`, códigos de salida), el script `sabueso` y el guion de consola con su prueba | Los módulos teóricos, un comando por paso, `cli/grammars.ts` y las opciones `--grammar`, `--file` y `--pasos` |
+| 03 Interfaz | `apps/web` con Vite, React, el alias al núcleo, Vitest con jsdom y Testing Library                                                                        | Componentes, vistas, Web Worker, persistencia y el workflow de Pages                                          |
+| 04 Español  | `packages/natural-language` con su CLI y el script `sabueso-natural-language`                                                                             | Los módulos de lenguaje natural, sus comandos y la integración en la UI                                       |
 
 ---
 
@@ -357,8 +358,8 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 
 **CLI**
 
-- **Sí:** la infraestructura de la CLI acá, y los comandos en los specs de dominio. `createCli`, el `io` inyectado y los códigos de salida son infraestructura compartida por `core` y `nl`. Cada spec de dominio solo registra comandos.
-- **Sí:** `io` inyectado y `cli.ts` como único archivo con `node:*`. Los comandos se prueban en memoria, sin lanzar procesos, y el resto del código corre igual en el navegador.
+- **Sí:** la infraestructura de la CLI acá, y los comandos en los specs de dominio. `createCommandLineProgram`, el `environment` inyectado y los códigos de salida son infraestructura compartida por `core` y `nl`. Cada spec de dominio solo registra comandos.
+- **Sí:** `environment` inyectado y `command-line.ts` como único archivo con `node:*`. Los comandos se prueban en memoria, sin lanzar procesos, y el resto del código corre igual en el navegador.
 - **Sí:** el script `npm run sabueso` con `tsc -b` incremental. Ejecuta por consola sin pasos manuales de build.
 - **Sí:** el guion de consola con su prueba desde el principio. Cada spec le agrega comandos, y la prueba garantiza que la demo de la exposición siempre funcione.
 
@@ -369,7 +370,7 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - **Sí:** formato y lint en `pre-commit`, pruebas en `pre-push`. El commit tiene que ser rápido. Las pruebas, que van a crecer (diferenciales, rendimiento), se corren antes de subir.
 - **Sí:** CI con un solo job y la versión de `.nvmrc`. Verifica lo mismo que se verifica localmente, en una máquina limpia. Una matriz de versiones no aporta, porque el proyecto fija una.
 - **Sí:** `.editorconfig`. Mismo formato básico en cualquier editor, incluso antes de que corra Prettier.
-- **Sí:** `.glc` excluido de Prettier. Es un formato propio que Prettier no entiende, y su legibilidad depende de la alineación manual.
+- **Sí:** `.grammar` excluido de Prettier. Es un formato propio que Prettier no entiende, y su legibilidad depende de la alineación manual.
 
 ---
 

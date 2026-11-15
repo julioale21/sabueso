@@ -137,10 +137,10 @@ Se descarta Reingold-Tilford porque es más compacto, pero más largo de explica
 ### 3.5 Panel de gramática (solo lectura)
 
 - **Selector:** se construye desde el **catálogo de géneros** del núcleo (SPEC 02, sección 4.6). Tiene dos niveles: género (hoy solo "Policial de enigma") y versión ("G1: oficial" o "G0: ambigua"). Por defecto, la versión oficial. Las gramáticas internas (`meta` y las de `pruebas/`) no se ofrecen: no identifican ningún género. Si en el futuro se suma un género al catálogo, aparece en el selector sin cambiar la UI.
-- **Texto de la gramática:** se muestra en solo lectura, con las producciones tal como están en el `.glc`. Así, durante la defensa, se ve contra qué se está analizando.
+- **Texto de la gramática:** se muestra en solo lectura, con las producciones tal como están en el `.grammar`. Así, durante la defensa, se ve contra qué se está analizando.
 - **Resumen:** LL(1) ✓/✗, cantidad de anulables, inútiles, si es vacía y si tiene ciclos (de `analyzeGrammar`).
 - **Paleta:** muestra las **etiquetas del género activo** (`Genre.tags`), con su función narrativa como tooltip.
-- **Origen:** las gramáticas son archivos fijos de `packages/core/grammars/`. Se importan con `?raw` **dentro del worker** y se parsean una vez al iniciar. El usuario no puede cargar ni editar gramáticas. Si la cátedra pide un cambio, se edita el `.glc` en el repositorio, sin tocar el código (anteproyecto).
+- **Origen:** las gramáticas son archivos fijos de `packages/core/grammars/`. Se importan con `?raw` **dentro del worker** y se parsean una vez al iniciar. El usuario no puede cargar ni editar gramáticas. Si la cátedra pide un cambio, se edita el `.grammar` en el repositorio, sin tocar el código (anteproyecto).
 
 ### 3.6 Metadatos de las etiquetas
 
@@ -342,7 +342,7 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio.
 - [ ] El panel de gramática muestra el texto de la gramática activa sin permitir editarlo, y la UI no ofrece ninguna forma de cargar una gramática.
 - [ ] Al recargar la página se conservan la gramática elegida y la entrada.
 - [ ] Con `localStorage` bloqueado, la app funciona sin errores visibles.
-- [ ] El workflow `deploy-pages.yml` existe y es válido. Con el repo creado y Pages habilitado, el sitio carga en `https://<usuario>.github.io/sabueso/`.
+- [ ] El workflow `deploy-pages.yml` existe y es válido. Con el repo creado y Pages habilitado, el sitio carga en `https://<usuario>.github.environment/sabueso/`.
 - [ ] Existen `docs/verificacion-manual-ui.md` y `docs/guion-exposicion.md`, y cada caso de la verificación manual fue marcado como verificado.
 
 ---
@@ -367,7 +367,7 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio.
 - **No:** d3-hierarchy ni Reingold-Tilford. Suma una dependencia, o un algoritmo largo, para algo que no es teoría de la materia.
 - **No:** el árbol como lista anidada. No se parece al árbol del pizarrón, que es lo que se defiende.
 - **Sí:** solo gramáticas incorporadas, en solo lectura. El propósito del programa es decidir si un relato respeta la gramática del policial, no ser un editor de gramáticas. Permitir gramáticas arbitrarias abre un frente enorme (gramáticas mal escritas, cíclicas o gigantes) sin aportar al objetivo.
-- **No:** editor de gramáticas en vivo. Se propuso para responder cambios de la cátedra en la defensa, pero esos cambios se hacen editando el `.glc` del repositorio, que es lo que prevé el anteproyecto.
+- **No:** editor de gramáticas en vivo. Se propuso para responder cambios de la cátedra en la defensa, pero esos cambios se hacen editando el `.grammar` del repositorio, que es lo que prevé el anteproyecto.
 - **Sí:** vista Análisis más pestañas de teoría, sin router. Sigue el boceto del anteproyecto para el flujo principal y separa las vistas didácticas sin sumar `react-router`.
 - **No:** todo en una página con scroll. Sería demasiado larga para navegarla durante la exposición.
 - **Sí:** CSS plano con custom properties y CSS Modules. Cero dependencias, los CSS Modules ya vienen en Vite, y el tema oscuro sale gratis con `prefers-color-scheme`.

@@ -23,7 +23,6 @@ npm install      # instala dependencias y activa los hooks de git
 | Carpeta         | Paquete         | Qué contiene                                                          |
 | --------------- | --------------- | --------------------------------------------------------------------- |
 | `packages/core` | `@sabueso/core` | El núcleo: gramáticas, motor de Earley y la CLI `sabueso`             |
-| `packages/nl`   | `@sabueso/nl`   | El español controlado y la CLI `sabueso-nl`                           |
 | `apps/web`      | `@sabueso/web`  | La interfaz web (Vite + React)                                        |
 | `docs/`         | —               | Fichas de conceptos (`docs/concepts/`) y guion de la demo por consola |
 
@@ -32,11 +31,10 @@ npm install      # instala dependencias y activa los hooks de git
 | Comando                                   | Qué hace                                                                          |
 | ----------------------------------------- | --------------------------------------------------------------------------------- |
 | `npm run sabueso -- <comando>`            | Compila el núcleo y ejecuta su CLI (`npm run sabueso -- help` lista los comandos) |
-| `npm run sabueso-nl -- <comando>`         | Lo mismo para la CLI de español controlado                                        |
 | `npm run dev -w @sabueso/web`             | Servidor de desarrollo de la interfaz web                                         |
-| `npm test`                                | Pruebas de los tres paquetes                                                      |
-| `npm run build`                           | Compila `core` y `nl`, y genera `apps/web/dist`                                   |
-| `npm run typecheck`                       | Verifica los tipos de los tres paquetes                                           |
+| `npm test`                                | Pruebas del núcleo y de la web                                                    |
+| `npm run build`                           | Compila `core` y genera `apps/web/dist`                                           |
+| `npm run typecheck`                       | Verifica los tipos del núcleo y de la web                                         |
 | `npm run lint`                            | ESLint                                                                            |
 | `npm run format` / `npm run format:check` | Aplica o verifica el formato de Prettier                                          |
 
@@ -49,12 +47,12 @@ npm install      # instala dependencias y activa los hooks de git
 
 El proyecto se implementa por specs, en este orden:
 
-| Spec                                                            | Contenido                                                        | Estado   |
-| --------------------------------------------------------------- | ---------------------------------------------------------------- | -------- |
-| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                         | Approved |
-| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)  | Borrador |
-| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                 | Borrador |
-| [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/nl`) | Borrador |
+| Spec                                                            | Contenido                                                                      | Estado   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------- |
+| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Approved |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Borrador |
+| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador |
+| [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador |
 
 La guía para la exposición está en [`presentation-guide.md`](presentation-guide.md).
 

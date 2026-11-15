@@ -3,7 +3,7 @@
 > **Estado:** Borrador
 > **Depende de:** SPEC 01, SPEC 02, SPEC 03
 > **Fecha:** 2026-11-14
-> **Objetivo:** Construir `@sabueso/nl`, un paquete que traduce un relato escrito en español controlado (oraciones simples, una por evento, con un vocabulario cerrado) a la secuencia de etiquetas que analiza el núcleo, reutilizando el AFD y el motor de Earley del SPEC 02 y explicando en la UI por qué cada oración recibió su etiqueta.
+> **Objetivo:** Construir `@sabueso/natural-language`, un paquete que traduce un relato escrito en español controlado (oraciones simples, una por evento, con un vocabulario cerrado) a la secuencia de etiquetas que analiza el núcleo, reutilizando el AFD y el motor de Earley del SPEC 02 y explicando en la UI por qué cada oración recibió su etiqueta.
 
 ---
 
@@ -11,7 +11,7 @@
 
 El anteproyecto define esta etapa como "ampliación opcional": tres etapas (autómata finito léxico, gramática de oración con el mismo motor de Earley y tabla de reglas), que se encaran solo con el núcleo terminado. Este spec la concreta con tres principios:
 
-1. **El núcleo no se modifica.** `@sabueso/nl` depende de `@sabueso/core` y usa solo su API pública (`runDfa`, `parseGrammarText`, `buildGrammar`, `parse`, `analyzeGrammar`, `findAmbiguityWitness`). Así se cumple lo que dice el anteproyecto: "la ampliación se conecta delante, sin modificarlo".
+1. **El núcleo no se modifica.** `@sabueso/natural-language` depende de `@sabueso/core` y usa solo su API pública (`runDeterministicAutomaton`, `parseGrammarText`, `buildGrammar`, `parse`, `analyzeGrammar`, `findAmbiguityWitness`). Así se cumple lo que dice el anteproyecto: "la ampliación se conecta delante, sin modificarlo".
 2. **Los conceptos de la materia que el núcleo usa poco aparecen acá.** Son autómatas finitos aplicados a texto, el **autómata finito traductor** (Augusto 1.3.3), el **homomorfismo** palabra → categoría y la ambigüedad natural (el sintagma preposicional). Además, la regla "el culpable apareció antes", que la ficha 26 declara fuera de las GLC, se puede **verificar en código** porque ahora los personajes tienen nombre.
 3. **Escalable por datos.** El vocabulario, la gramática de oración y las reglas de etiquetado son archivos de texto. Ampliar el español aceptado (coordinación, más verbos, pronombres) consiste en cambiar datos y, como mucho, el extractor de marcos. El motor no cambia (ver sección 9).
 
@@ -21,18 +21,18 @@ El anteproyecto define esta etapa como "ampliación opcional": tres etapas (aut�
 
 **Entra:**
 
-- El paquete `packages/nl` (`@sabueso/nl`), con una sola dependencia: `@sabueso/core`.
-- **Lexer de texto con AFD** (tabla propia sobre el `runDfa` del núcleo): palabras con o sin mayúscula inicial, punto final y errores para cualquier otro carácter.
-- **Lexer de archivos de datos con AFD** y **parsers LL(1)** para `lexico.txt` y `reglas.txt`. Sus meta-gramáticas (`meta-lexico.glc` y `meta-reglas.glc`) se certifican LL(1) con el `analyzeGrammar` del núcleo.
+- El paquete `packages/natural-language` (`@sabueso/natural-language`), con una sola dependencia: `@sabueso/core`.
+- **Lexer de texto con AFD** (tabla propia sobre el `runDeterministicAutomaton` del núcleo): palabras con o sin mayúscula inicial, punto final y errores para cualquier otro carácter.
+- **Lexer de archivos de datos con AFD** y **parsers LL(1)** para `lexico.txt` y `reglas.txt`. Sus meta-gramáticas (`meta-lexico.grammar` y `meta-reglas.grammar`) se certifican LL(1) con el `analyzeGrammar` del núcleo.
 - **Morfología con un transductor de Mealy** construido como un trie de sufijos invertidos, más irregulares y contracciones del léxico.
 - **Léxico cerrado** de 100 a 150 entradas: categoría y clase semántica.
-- **Gramática de oración `oracion.glc`** sobre categorías, para oraciones simples: sujeto, verbo, objeto directo opcional y complementos con preposición. Se analiza con el `parse` del núcleo, incluida su ambigüedad.
+- **Gramática de oración `oracion.grammar`** sobre categorías, para oraciones simples: sujeto, verbo, objeto directo opcional y complementos con preposición. Se analiza con el `parse` del núcleo, incluida su ambigüedad.
 - **Extracción del marco semántico** desde el árbol: sujeto, verbo, objetos, complementos y personajes.
 - **Reglas de etiquetado** en orden de prioridad: gana la primera coincidencia. Cada oración informa la regla aplicada (con número de línea) como justificación.
 - **Política de ambigüedad:** si todos los árboles de una oración dan la misma etiqueta, se acepta con una nota. Si dan etiquetas distintas, es un error.
 - **Errores localizados sin adivinar:** carácter no permitido, falta el punto final, palabra desconocida (con sugerencia por distancia de Levenshtein), oración fuera de la gramática (con las categorías esperadas que da Earley), oración sin regla y etiqueta ambigua.
 - **Verificación del culpable**, aparte de la gramática: el acusado de la oración REV tiene que haber aparecido en alguna oración anterior. Si no, se emite una advertencia.
-- **CLI `sabueso-nl`, un comando por etapa** (sección 7.1): `lex-texto`, `lex-datos`, `lexico`, `reglas`, `mealy`, `palabra`, `sugerir`, `distancia`, `oracion`, `marco`, `etiqueta`, `culpable` y `etiquetar`. Cada comando tiene su prueba.
+- **CLI `sabueso-natural-language`, un comando por etapa** (sección 7.1): `lex-texto`, `lex-datos`, `lexico`, `reglas`, `mealy`, `palabra`, `sugerir`, `distancia`, `oracion`, `marco`, `etiqueta`, `culpable` y `etiquetar`. Cada comando tiene su prueba.
 - **Integración en la UI** (`apps/web`):
   - interruptor "Etiquetas | Español controlado";
   - tabla de oraciones con etiqueta, regla, árboles y personajes;
@@ -58,7 +58,7 @@ El anteproyecto define esta etapa como "ampliación opcional": tres etapas (aut�
 
 ```text
 texto ─AFD texto─► palabras ─transductor + léxico─► (lema, categoría, clase)
-      ─h: palabra→categoría─► cadena de categorías ─Earley(oracion.glc)─► árboles
+      ─h: palabra→categoría─► cadena de categorías ─Earley(oracion.grammar)─► árboles
       ─marco + reglas─► etiqueta por oración ─► secuencia ─Earley(G1)─► relato
                                                       └─► verificación del culpable
 ```
@@ -87,7 +87,7 @@ Este es el argumento central de la ficha 33: la salida de un análisis sintácti
 
 ### 3.3 AFD de archivos de datos (ficha 28)
 
-El mismo ejecutor `runDfa`, con otra tabla. Tokens:
+El mismo ejecutor `runDeterministicAutomaton`, con otra tabla. Tokens:
 
 - `PALABRA`: empieza en minúscula o es una palabra capitalizada, como "Kent";
 - `MAYUS`: dos o más letras, todas mayúsculas, como `SUST` o `HAL`;
@@ -99,7 +99,7 @@ La distinción entre `PALABRA` y `MAYUS` la decide el **estado** del autómata (
 
 ### 3.4 Parsers LL(1) de léxico y reglas (ficha 28)
 
-`meta-lexico.glc`:
+`meta-lexico.grammar`:
 
 ```text
 %inicio Archivo
@@ -111,7 +111,7 @@ ClaseOpc -> PALABRA | ε
 Palabras -> PALABRA Palabras | ε
 ```
 
-`meta-reglas.glc`:
+`meta-reglas.grammar`:
 
 ```text
 %inicio Archivo
@@ -122,7 +122,7 @@ Regla       -> PALABRA Condiciones FLECHA MAYUS NL
 Condiciones -> CONDICION Condiciones | ε
 ```
 
-Las dos son LL(1). El cálculo a mano da FOLLOW(ClaseOpc) = FOLLOW(Palabras) = {NL} y FOLLOW(Condiciones) = {FLECHA}, todos disjuntos de los FIRST de las alternativas. Los parsers son descendentes recursivos, con una función por no terminal, igual que el lector de `.glc` del SPEC 02.
+Las dos son LL(1). El cálculo a mano da FOLLOW(ClaseOpc) = FOLLOW(Palabras) = {NL} y FOLLOW(Condiciones) = {FLECHA}, todos disjuntos de los FIRST de las alternativas. Los parsers son descendentes recursivos, con una función por no terminal, igual que el lector de `.grammar` del SPEC 02.
 
 **Semántica de una línea de `lexico.txt`:**
 
@@ -162,7 +162,7 @@ Las dos son LL(1). El cálculo a mano da FOLLOW(ClaseOpc) = FOLLOW(Palabras) = {
 ### 3.6 Léxico como homomorfismo palabra → categoría (ficha 30)
 
 - Cada palabra resuelta se reemplaza por su categoría: h(encontró) = VERBO, h(cadáver) = SUST.
-- Los terminales de `oracion.glc` son las categorías: Σ_oración = {ADJ, DET, INDEF, NOMBRE, PREP, SUST, TITULO, VERBO}.
+- Los terminales de `oracion.grammar` son las categorías: Σ_oración = {ADJ, DET, INDEF, NOMBRE, PREP, SUST, TITULO, VERBO}.
 - h es un **homomorfismo** de un símbolo a un símbolo. El lema, la clase y la superficie viajan aparte, en un arreglo indexado por posición, para recuperarlos desde el árbol.
 - **Nombres propios:** una `PALABRA_MAY` cuya forma en minúsculas no está en el léxico es `NOMBRE`, con clase `persona` por defecto. Los lugares se declaran en el léxico (`Kent NOMBRE lugar`). Una palabra en minúscula desconocida es un error.
 - **Primera palabra de la oración:** siempre está en mayúscula. Primero se busca en minúsculas ("El" → "el"), y solo si no está se trata como nombre propio.
@@ -171,7 +171,7 @@ Las dos son LL(1). El cálculo a mano da FOLLOW(ClaseOpc) = FOLLOW(Palabras) = {
 
 ### 3.7 Gramática de oración y ambigüedad del sintagma preposicional (ficha 31)
 
-`oracion.glc`:
+`oracion.grammar`:
 
 ```text
 %inicio Oracion
@@ -578,30 +578,30 @@ interface NlResources {
 **Convenciones:**
 
 - Las posiciones de palabra son base 0 **después de expandir las contracciones**. La UI subraya usando `sentenceOffset`.
-- Igual que en el núcleo, `src/` no importa `node:*` salvo `cli.ts`. El paquete también corre en el Worker de la UI.
+- Igual que en el núcleo, `src/` no importa `node:*` salvo `command-line.ts`. El paquete también corre en el Worker de la UI.
 
 ---
 
 ## 6. Estructura de archivos
 
 ```text
-packages/nl/
-  package.json              # @sabueso/nl; dependencies: { "@sabueso/core": "*" }; bin: sabueso-nl
+packages/natural-language/
+  package.json              # @sabueso/natural-language; dependencies: { "@sabueso/core": "*" }; bin: sabueso-natural-language
   tsconfig.json             # NodeNext, igual que core
   vitest.config.ts
   data/
-    oracion.glc
+    oracion.grammar
     lexico.txt
     reglas.txt
-    meta-lexico.glc
-    meta-reglas.glc
+    meta-lexico.grammar
+    meta-reglas.grammar
     relatos/ashby.txt
     relatos/condesa.txt
     relatos/banquero.txt
   src/
     index.ts
-    cli.ts                   # único archivo con node:*; usa createCli del núcleo
-    cli/commands/*.ts        # un archivo por comando (sección 7.2)
+    command-line.ts                   # único archivo con node:*; usa createCommandLineProgram del núcleo
+    command-line/commands/*.ts        # un archivo por comando (sección 7.2)
     text/text-lexer.ts
     text/sentences.ts
     data-format/data-lexer.ts
@@ -621,7 +621,7 @@ packages/nl/
     suggest/levenshtein.ts
     checks/culprit.ts
   test/                     # una prueba por módulo, más stories.test.ts y errors.test.ts
-    cli/                    # una prueba por comando
+    command-line/                    # una prueba por comando
 apps/web/src/               # cambios de integración (sección 7, pasos 16 a 19)
   core-client/...           # nuevas operaciones nlLoad y nlAnalyze en el worker
   views/NarrativeInput.tsx
@@ -631,16 +631,16 @@ docs/concepts/28-…35-*.md
 
 Las fichas nuevas son:
 
-| #   | Archivo                            | Concepto                                                 |
-| --- | ---------------------------------- | -------------------------------------------------------- |
-| 28  | `28-automatas-de-texto-y-datos.md` | AFD de texto, AFD de datos y parsers LL(1) de datos      |
-| 29  | `29-transductor-de-mealy.md`       | Trie de sufijos invertidos como AFD con salidas          |
-| 30  | `30-lexico-y-homomorfismo.md`      | Palabra → categoría como homomorfismo                    |
-| 31  | `31-gramatica-de-oracion.md`       | `oracion.glc` y la ambigüedad del sintagma preposicional |
-| 32  | `32-marco-y-reglas.md`             | Traducción dirigida por la sintaxis y tabla de decisión  |
-| 33  | `33-dos-niveles-de-analisis.md`    | Composición oración → relato con el mismo motor          |
-| 34  | `34-levenshtein.md`                | Distancia de edición, programación dinámica              |
-| 35  | `35-verificacion-del-culpable.md`  | Restricción fuera de la GLC (relación con la ficha 26)   |
+| #   | Archivo                            | Concepto                                                     |
+| --- | ---------------------------------- | ------------------------------------------------------------ |
+| 28  | `28-automatas-de-texto-y-datos.md` | AFD de texto, AFD de datos y parsers LL(1) de datos          |
+| 29  | `29-transductor-de-mealy.md`       | Trie de sufijos invertidos como AFD con salidas              |
+| 30  | `30-lexico-y-homomorfismo.md`      | Palabra → categoría como homomorfismo                        |
+| 31  | `31-gramatica-de-oracion.md`       | `oracion.grammar` y la ambigüedad del sintagma preposicional |
+| 32  | `32-marco-y-reglas.md`             | Traducción dirigida por la sintaxis y tabla de decisión      |
+| 33  | `33-dos-niveles-de-analisis.md`    | Composición oración → relato con el mismo motor              |
+| 34  | `34-levenshtein.md`                | Distancia de edición, programación dinámica                  |
+| 35  | `35-verificacion-del-culpable.md`  | Restricción fuera de la GLC (relación con la ficha 26)       |
 
 ---
 
@@ -651,102 +651,103 @@ Las fichas nuevas son:
 Se aplica la misma regla que en el SPEC 02 (sección 8.1). Cada paso termina con tres cosas:
 
 1. **Una prueba automatizada** del módulo.
-2. **Un comando de consola** `sabueso-nl <comando>` que lo ejecuta sobre una entrada real.
+2. **Un comando de consola** `sabueso-natural-language <comando>` que lo ejecuta sobre una entrada real.
 3. **Una prueba del comando.**
 
 Además, cada paso deja `npm test` en verde y es un commit propio.
 
-**Arquitectura de la CLI:** es la misma del núcleo, reutilizada. `@sabueso/core` exporta `createCli(commands)`, el tipo `CliCommand` y las utilidades de formato (SPEC 01, sección 5).
+**Arquitectura de la CLI:** es la misma del núcleo, reutilizada. `@sabueso/core` exporta `createCommandLineProgram(commands)`, el tipo `Command` y las utilidades de formato (SPEC 01, sección 5).
 
-- `packages/nl/src/cli.ts` es el único archivo con `node:*`.
-- Los comandos viven en `src/cli/commands/<comando>.ts`, uno por archivo, como funciones con `io` inyectado.
-- Las pruebas de los comandos están en `test/cli/`.
-- El `package.json` raíz suma el script `"sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js"`.
+- `packages/natural-language/src/command-line.ts` es el único archivo con `node:*`.
+- Los comandos viven en `src/command-line/commands/<comando>.ts`, uno por archivo, como funciones con `environment` inyectado.
+- Las pruebas de los comandos están en `test/command-line/`.
+- El `package.json` raíz suma el script `"sabueso-natural-language": "tsc -b packages/natural-language && node packages/natural-language/dist/command-line.js"`.
 - Los códigos de salida son los mismos del núcleo (0, 1 y 2).
 
 En la UI (pasos 16 a 19), "ejecutable" significa visible en `npm run dev -w @sabueso/web`, con pruebas de componente. La lógica que muestra la UI ya es ejecutable por consola desde los pasos anteriores.
 
 ### 7.2 Pasos
 
-1. **Punto de partida (cubierto por el SPEC 01).**
-   - El esqueleto de `packages/nl`, su CLI con `version` y `help` y el script `sabueso-nl` los crea el SPEC 01. Este paso no agrega código.
-   - Verificación antes de empezar: `npm run sabueso-nl -- version` imprime `Sabueso nl 0.1.0 (core 0.1.0)`.
+1. **Esqueleto del paquete.**
+   - Crear `packages/natural-language` (`@sabueso/natural-language`, única dependencia `@sabueso/core`), con su `tsconfig.json`, `vitest.config.ts`, su `command-line.ts` sobre `createCommandLineProgram` del núcleo (solo `help`), y el script raíz `sabueso-natural-language`. Sumarlo a `workspaces`, a los `projects` de Vitest y a los scripts `build` y `typecheck`.
+   - El núcleo exporta desde `index.ts` lo que este paquete necesita de la CLI (`createCommandLineProgram`, `Command`, `CommandLineEnvironment`, `EXIT_CODES`, `table`, `set`).
+   - Verificación: `npm run sabueso-natural-language -- help` lista los comandos.
 
 2. **Lexer de texto.**
-   - `text/text-lexer.ts` (tabla sobre `runDfa`) y `text/sentences.ts`.
+   - `text/text-lexer.ts` (tabla sobre `runDeterministicAutomaton`) y `text/sentences.ts`.
    - Pruebas: los tokens de "Miller interrogó a la cocinera."; los errores de coma, dígito, "MiLLer" y falta de punto final, con línea y columna. Ficha 28 (primera parte).
    - **Consola:**
-     - `npm run sabueso-nl -- lex-texto packages/nl/data/relatos/ashby.txt` imprime las oraciones numeradas y sus tokens (tipo, texto, línea:columna).
+     - `npm run sabueso-natural-language -- lex-texto packages/natural-language/data/relatos/ashby.txt` imprime las oraciones numeradas y sus tokens (tipo, texto, línea:columna).
      - Con `--estados`, imprime la secuencia de estados del AFD para la primera oración.
      - Un texto con coma termina con código 1 e informa la línea y la columna.
 
 3. **Lexer de datos y meta-gramáticas.**
-   - `data-format/data-lexer.ts`, `meta-lexico.glc` y `meta-reglas.glc`.
+   - `data-format/data-lexer.ts`, `meta-lexico.grammar` y `meta-reglas.grammar`.
    - Prueba: las dos meta-gramáticas dan `analyzeGrammar(...).ll1.isLL1 === true`.
    - **Consola:**
-     - `npm run sabueso-nl -- lex-datos packages/nl/data/reglas.txt` imprime la tabla de tokens.
-     - `npm run sabueso-nl -- lex-datos --certificar` imprime la tabla LL(1) de las dos meta-gramáticas (usando `analyzeGrammar` del núcleo) y confirma que no tienen conflictos.
+     - `npm run sabueso-natural-language -- lex-datos packages/natural-language/data/reglas.txt` imprime la tabla de tokens.
+     - `npm run sabueso-natural-language -- lex-datos --certificar` imprime la tabla LL(1) de las dos meta-gramáticas (usando `analyzeGrammar` del núcleo) y confirma que no tienen conflictos.
 
 4. **Parser de léxico.**
    - `data-format/lexicon-parser.ts` y `lexicon/lexicon.ts`, con validación de categorías válidas, unicidad de categoría por lema, irregulares que apuntan a un `VERBO` y contracciones con palabras existentes.
    - Prueba: `lexico.txt` carga entre 100 y 150 entradas, y cada validación tiene su caso de error con número de línea.
    - **Consola:**
-     - `npm run sabueso-nl -- lexico` (usa `data/lexico.txt` por defecto, o `--file <ruta>`) imprime la cantidad de entradas por categoría y por clase, los irregulares y las contracciones.
+     - `npm run sabueso-natural-language -- lexico` (usa `data/lexico.txt` por defecto, o `--file <ruta>`) imprime la cantidad de entradas por categoría y por clase, los irregulares y las contracciones.
      - Si hay errores de validación, los informa con su línea y termina con código 1.
 
 5. **Parser de reglas.**
    - `data-format/rules-parser.ts`, con validación de lema `VERBO`, etiqueta dentro de los terminales de G1 y clase existente.
    - Prueba: `reglas.txt` carga 26 reglas, y una etiqueta inválida da error en su línea. Ficha 28 (completa).
-   - **Consola:** `npm run sabueso-nl -- reglas` imprime la tabla de decisión numerada (prioridad, lema, condiciones, etiqueta y línea).
+   - **Consola:** `npm run sabueso-natural-language -- reglas` imprime la tabla de decisión numerada (prioridad, lema, condiciones, etiqueta y línea).
 
 6. **Transductor de Mealy.**
    - `morphology/mealy.ts` (ejecutor genérico) y `morphology/suffix-trie.ts` (construye la máquina desde `suffixes.ts`).
    - Prueba: "temió" emite las salidas `ó` e `ió`; "casa" no emite nada. Ficha 29.
    - **Consola:**
-     - `npm run sabueso-nl -- mealy temió` imprime la lectura de derecha a izquierda, paso a paso: estado, letra, estado siguiente y salida emitida.
+     - `npm run sabueso-natural-language -- mealy temió` imprime la lectura de derecha a izquierda, paso a paso: estado, letra, estado siguiente y salida emitida.
      - Con `--trie`, imprime el trie de sufijos invertidos como tabla de transiciones.
 
 7. **Análisis de palabras.**
    - `morphology/analyze-word.ts`: contracción → irregular → transductor más validación → nombre propio.
    - Pruebas: interrogó → interrogar pret3s; vivía → vivir imp3s; descubrió → descubrir (y no descubrer); fue → ser; al → [a, el]; policía → policía (por identidad, aunque el transductor proponga `polic-er`); Ashby → NOMBRE persona; Kent → NOMBRE lugar. Ficha 30.
-   - **Consola:** `npm run sabueso-nl -- palabra descubrió` imprime los candidatos del transductor, cuáles descartó la validación y por qué, y el resultado final (lema, categoría, clase, rasgos y fuente).
+   - **Consola:** `npm run sabueso-natural-language -- palabra descubrió` imprime los candidatos del transductor, cuáles descartó la validación y por qué, y el resultado final (lema, categoría, clase, rasgos y fuente).
 
 8. **Levenshtein.**
    - `suggest/levenshtein.ts`.
    - Pruebas: d(interogar, interrogar) = 1; "interogó" sugiere `interrogar`; "cadaver" sugiere `cadáver`; "xyzw" no sugiere nada. Ficha 34.
    - **Consola:**
-     - `npm run sabueso-nl -- sugerir interogó` imprime los candidatos, las distancias más cercanas y la sugerencia.
-     - `npm run sabueso-nl -- distancia interogar interrogar --tabla` imprime la matriz de programación dinámica.
+     - `npm run sabueso-natural-language -- sugerir interogó` imprime los candidatos, las distancias más cercanas y la sugerencia.
+     - `npm run sabueso-natural-language -- distancia interogar interrogar --tabla` imprime la matriz de programación dinámica.
 
 9. **Gramática de oración.**
-   - `oracion.glc` y `sentence/parse-sentence.ts` (palabras → categorías → `parse` del núcleo).
+   - `oracion.grammar` y `sentence/parse-sentence.ts` (palabras → categorías → `parse` del núcleo).
    - Pruebas: los conteos de árboles de la tabla 8.2; `isLL1` es falso; el testigo de ambigüedad con k = 5 coincide con la sección 3.7 y con k = 4 da `null`. Ficha 31.
    - **Consola:**
-     - `npm run sabueso-nl -- oracion "El mayordomo encontró el cadáver de Lord Ashby."` imprime las palabras con su categoría (el homomorfismo h), la cadena de categorías, la cantidad de árboles y los árboles en ASCII con hojas "categoría: palabra".
+     - `npm run sabueso-natural-language -- oracion "El mayordomo encontró el cadáver de Lord Ashby."` imprime las palabras con su categoría (el homomorfismo h), la cadena de categorías, la cantidad de árboles y los árboles en ASCII con hojas "categoría: palabra".
      - Una oración inválida (N2) muestra el diagnóstico de Earley y termina con código 1.
-     - `npm run sabueso-nl -- oracion --ambiguedad 5` imprime el testigo de ambigüedad mínimo de la gramática de oración (usando `findAmbiguityWitness` del núcleo).
+     - `npm run sabueso-natural-language -- oracion --ambiguedad 5` imprime el testigo de ambigüedad mínimo de la gramática de oración (usando `findAmbiguityWitness` del núcleo).
 
 10. **Marco semántico.**
     - `semantics/frame.ts` y `semantics/characters.ts`.
     - Pruebas: el marco de "La viuda llamó al inspector Miller." tiene `objects[0].characterId === 'Miller'` con clase `detective`; los personajes son iguales en los 2 árboles de "El mayordomo encontró el cadáver de Lord Ashby." (`['mayordomo', 'Ashby']`).
-    - **Consola:** `npm run sabueso-nl -- marco "La viuda llamó al inspector Miller."` imprime el marco (sujeto, verbo, objetos, complementos y personajes) para cada árbol.
+    - **Consola:** `npm run sabueso-natural-language -- marco "La viuda llamó al inspector Miller."` imprime el marco (sujeto, verbo, objetos, complementos y personajes) para cada árbol.
 
 11. **Reglas de etiquetado.**
     - `tagging/apply-rules.ts`, con la política de ambigüedad.
     - Pruebas: las etiquetas de la tabla 8.2; `ambiguous-tag` con dos marcos sintéticos que dan etiquetas distintas; `no-rule` para "Miller miró el jardín.". Ficha 32.
     - **Consola:**
-      - `npm run sabueso-nl -- etiqueta "Miller encontró un pañuelo en el jardín."` imprime la etiqueta `PIS`, la regla aplicada con su línea, y la nota de ambigüedad coincidente (2 árboles).
+      - `npm run sabueso-natural-language -- etiqueta "Miller encontró un pañuelo en el jardín."` imprime la etiqueta `PIS`, la regla aplicada con su línea, y la nota de ambigüedad coincidente (2 árboles).
       - N5 termina con código 1 e informa `no-rule`.
 
 12. **Verificación del culpable.**
     - `checks/culprit.ts`.
     - Pruebas: el resultado esperado en los tres relatos (tabla 8.1). Ficha 35.
-    - **Consola:** `npm run sabueso-nl -- culpable packages/nl/data/relatos/banquero.txt` imprime el acusado, la oración REV, la primera mención (o su ausencia) y el estado. Una advertencia termina con código 0, porque no es un error.
+    - **Consola:** `npm run sabueso-natural-language -- culpable packages/natural-language/data/relatos/banquero.txt` imprime el acusado, la oración REV, la primera mención (o su ausencia) y el estado. Una advertencia termina con código 0, porque no es un error.
 
 13. **API `analyzeStory` y `loadResources`.**
     - `src/index.ts`.
     - Prueba `stories.test.ts`: los tres relatos completos según la tabla 8.1. Ficha 33.
-    - **Consola:** `npm run sabueso-nl -- etiquetar packages/nl/data/relatos/ashby.txt [--grammar g0|g1]` imprime:
+    - **Consola:** `npm run sabueso-natural-language -- etiquetar packages/natural-language/data/relatos/ashby.txt [--grammar g0|g1]` imprime:
       - una tabla con oración, etiqueta, regla (línea N) y árboles;
       - la secuencia resultante;
       - el resultado del relato con el núcleo (aceptación y árbol);
@@ -754,12 +755,12 @@ En la UI (pasos 16 a 19), "ejecutable" significa visible en `npm run dev -w @sab
     - Termina con código 1 si alguna oración falla.
 
 14. **Errores de punta a punta.**
-    - `errors.test.ts` con los casos de la tabla 8.3, ejecutados también a través de `runCli`: cada caso con su salida y su código de salida.
+    - `errors.test.ts` con los casos de la tabla 8.3, ejecutados también a través de `runCommandLine`: cada caso con su salida y su código de salida.
     - **Consola:** cada caso de la tabla 8.3 se puede reproducir con `etiquetar --texto "<relato>"`, que analiza un texto pasado como argumento en lugar de un archivo.
 
 15. **Guion de consola.**
     - Bloque "Español controlado" agregado a `docs/console-demo.md`, en el orden de las fichas 28 a 35: `lex-texto` → `mealy` → `palabra` → `oracion` → `marco` → `etiqueta` → `etiquetar` → `culpable`.
-    - La prueba `demo-doc.test.ts` del núcleo se extiende para ejecutar también los comandos `sabueso-nl` del documento.
+    - La prueba `demo-doc.test.ts` del núcleo se extiende para ejecutar también los comandos `sabueso-natural-language` del documento.
 
 16. **Worker de la UI.**
     - Nuevas operaciones `nlLoad(texts)` y `nlAnalyze(text)` en `CoreClient`, con caché de recursos por texto.
@@ -786,7 +787,7 @@ En la UI (pasos 16 a 19), "ejecutable" significa visible en `npm run dev -w @sab
     - Fichas 28 a 35, cada una con su comando de consola en la parte "Dónde está en el código".
     - Casos nuevos en `docs/verificacion-manual-ui.md`.
     - Bloque final en `docs/guion-exposicion.md` ("Español controlado": ashby → banquero).
-    - Sección de `@sabueso/nl` en el README, con la tabla de comandos.
+    - Sección de `@sabueso/natural-language` en el README, con la tabla de comandos.
 
 ---
 
@@ -839,13 +840,13 @@ Las oraciones 0, 1 y 5 llevan la nota de ambigüedad coincidente.
 
 El diseño separa cuatro capas, y cada ampliación toca solo las que le corresponden:
 
-| Ampliación                                    | Datos (`lexico`, `reglas`, `oracion.glc`)                | Código                                                                                        |
-| --------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Más vocabulario                               | `lexico.txt` y `reglas.txt`                              | ninguno                                                                                       |
-| Coordinación ("a la cocinera y al mayordomo") | `CONJ` en el léxico; `SN -> SN CONJ SN` en `oracion.glc` | `frame.ts` recorre los SN coordinados. `objects` ya es un arreglo, así que el tipo no cambia. |
-| Más tiempos verbales                          | filas en `suffixes.ts`                                   | ninguno: el trie se construye solo                                                            |
-| Pronombres y anáfora                          | `PRON` en el léxico y la gramática                       | un resolvedor nuevo (último personaje compatible), en su propio módulo                        |
-| Varios eventos por oración                    | reglas que devuelven varias etiquetas                    | `tag` pasa a `tags: string[]` (cambio de tipo, va en otro spec)                               |
+| Ampliación                                    | Datos (`lexico`, `reglas`, `oracion.grammar`)                | Código                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Más vocabulario                               | `lexico.txt` y `reglas.txt`                                  | ninguno                                                                                       |
+| Coordinación ("a la cocinera y al mayordomo") | `CONJ` en el léxico; `SN -> SN CONJ SN` en `oracion.grammar` | `frame.ts` recorre los SN coordinados. `objects` ya es un arreglo, así que el tipo no cambia. |
+| Más tiempos verbales                          | filas en `suffixes.ts`                                       | ninguno: el trie se construye solo                                                            |
+| Pronombres y anáfora                          | `PRON` en el léxico y la gramática                           | un resolvedor nuevo (último personaje compatible), en su propio módulo                        |
+| Varios eventos por oración                    | reglas que devuelven varias etiquetas                        | `tag` pasa a `tags: string[]` (cambio de tipo, va en otro spec)                               |
 
 Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el motor es genérico.
 
@@ -853,20 +854,20 @@ Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el m
 
 ## 10. Criterios de aceptación
 
-- [ ] `@sabueso/nl` tiene como única `dependency` a `@sabueso/core`, y no se modificó ningún archivo de `packages/core/src` en este spec.
+- [ ] `@sabueso/natural-language` tiene como única `dependency` a `@sabueso/core`, y no se modificó ningún archivo de `packages/core/src` en este spec.
 - [ ] `npm install`, `npm test`, `npm run build` y `npm run lint` terminan sin errores en la raíz.
-- [ ] `meta-lexico.glc` y `meta-reglas.glc` son LL(1) según `analyzeGrammar`.
+- [ ] `meta-lexico.grammar` y `meta-reglas.grammar` son LL(1) según `analyzeGrammar`.
 - [ ] `lexico.txt` carga entre 100 y 150 entradas sin errores de validación, y `reglas.txt` carga 26 reglas.
 - [ ] Cada caso de la prueba del paso 7 (análisis de palabras) da el lema, la categoría y los rasgos indicados.
 - [ ] `findAmbiguityWitness(oracion, 5)` devuelve `[INDEF, VERBO, INDEF, PREP, INDEF]`, y con k = 4 devuelve `null`.
 - [ ] Cada fila de la tabla 8.2 da exactamente las categorías, la cantidad de árboles, la etiqueta y la regla indicadas.
 - [ ] Cada relato de la tabla 8.1 da exactamente la secuencia, el resultado en G1 y la verificación del culpable indicados.
 - [ ] Cada caso de la tabla 8.3 da exactamente el error indicado.
-- [ ] Cada paso de la sección 7.2 (1 a 15) tiene su comando `sabueso-nl` y una prueba en `test/cli/` que verifica la salida y el código de salida.
-- [ ] `npm run sabueso-nl -- mealy temió` muestra la lectura paso a paso y las dos salidas (`ó` e `ió`).
-- [ ] `npm run sabueso-nl -- palabra policía` muestra el candidato `policer` (o `policir`) descartado por la validación y el resultado por identidad.
+- [ ] Cada paso de la sección 7.2 (1 a 15) tiene su comando `sabueso-natural-language` y una prueba en `test/command-line/` que verifica la salida y el código de salida.
+- [ ] `npm run sabueso-natural-language -- mealy temió` muestra la lectura paso a paso y las dos salidas (`ó` e `ió`).
+- [ ] `npm run sabueso-natural-language -- palabra policía` muestra el candidato `policer` (o `policir`) descartado por la validación y el resultado por identidad.
 - [ ] `docs/console-demo.md` incluye el bloque "Español controlado", y su prueba ejecuta esos comandos sin código 2.
-- [ ] `node packages/nl/dist/cli.js etiquetar packages/nl/data/relatos/banquero.txt` imprime la secuencia `CTX PER HAL ENC INT REV CNF`, "relato válido" y la advertencia sobre `socio`.
+- [ ] `node packages/natural-language/dist/command-line.js etiquetar packages/natural-language/data/relatos/banquero.txt` imprime la secuencia `CTX PER HAL ENC INT REV CNF`, "relato válido" y la advertencia sobre `socio`.
 - [ ] En la UI, en modo "Español controlado", el ejemplo `ashby.txt` muestra 10 filas con sus etiquetas, y la vista Análisis muestra el árbol del relato con G1.
 - [ ] En la UI, seleccionar la oración 1 de `ashby.txt` muestra 2 árboles y la nota de ambigüedad coincidente.
 - [ ] En la UI, N1 subraya "interogó" y muestra "¿quisiste decir interrogar?".
@@ -878,11 +879,11 @@ Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el m
 ## 11. Decisiones tomadas y descartadas
 
 - **Sí:** un comando de consola y su prueba por cada etapa. Es el requisito del autor: cada etapa ejecutable y testeable. Con `mealy`, `palabra` y `marco`, cada concepto se puede mostrar aislado en la exposición.
-- **Sí:** reutilizar `createCli` del núcleo. Las dos CLI quedan iguales en estilo, opciones y códigos de salida, sin duplicar la infraestructura.
+- **Sí:** reutilizar `createCommandLineProgram` del núcleo. Las dos CLI quedan iguales en estilo, opciones y códigos de salida, sin duplicar la infraestructura.
 - **Sí:** el léxico, las reglas y la gramática de oración son del género **policial**. Si en el futuro se suma un género al catálogo (SPEC 02, sección 4.6) y se quiere el modo español para él, ese género tendrá sus propias reglas. Queda fuera de este spec.
-- **Sí:** un paquete aparte, `packages/nl`. Cumple "la ampliación se conecta delante, sin modificarlo" (anteproyecto), y el núcleo comprometido queda aislado de la parte opcional.
+- **Sí:** un paquete aparte, `packages/natural-language`. Cumple "la ampliación se conecta delante, sin modificarlo" (anteproyecto), y el núcleo comprometido queda aislado de la parte opcional.
 - **No:** un módulo dentro de `core`. Mezclaría lo opcional con lo comprometido.
-- **Sí:** reutilizar el `runDfa` del núcleo con tablas nuevas. Es el mismo concepto ("AFD = tabla + ejecutor") aplicado a tres lenguajes distintos, sin duplicar código. Por eso se separó el ejecutor en el SPEC 02.
+- **Sí:** reutilizar el `runDeterministicAutomaton` del núcleo con tablas nuevas. Es el mismo concepto ("AFD = tabla + ejecutor") aplicado a tres lenguajes distintos, sin duplicar código. Por eso se separó el ejecutor en el SPEC 02.
 - **Sí:** oraciones simples (sujeto, verbo, objeto y complementos), con un diseño escalable. El autor pidió empezar simple y planificar para ampliar. La sección 9 muestra que la coordinación y los pronombres son cambios de datos y de un módulo, no de arquitectura.
 - **No:** coordinación en esta etapa. Introduce ambigüedad de alcance que complica el etiquetado, y queda prevista.
 - **Sí:** un transductor de Mealy construido desde un trie de sufijos invertidos. Aplica un concepto de la materia (autómata traductor, Augusto 1.3.3) que no aparece en el núcleo. Además, la construcción automática desde la tabla hace que agregar tiempos verbales sea agregar filas.
@@ -894,7 +895,7 @@ Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el m
 - **Sí:** categorías como terminales de la gramática de oración, con un homomorfismo de un símbolo a un símbolo. La gramática queda chica y legible (8 terminales). La información léxica viaja aparte, indexada por posición.
 - **No:** lemas como terminales con producciones léxicas generadas. La gramática crecería a más de 150 producciones, sin beneficio mientras no haya ambigüedad léxica.
 - **Sí:** prohibir la ambigüedad léxica por validación. Es español **controlado**. Soportarla exigiría un Earley sobre retículas de tokens, que es un cambio en el núcleo. Queda como trabajo futuro.
-- **Sí:** `oracion.glc` ambigua a propósito (sintagma preposicional). Es el caso natural más claro de ambigüedad, y conecta con G0 y la ficha 25. Earley lo maneja sin cambios.
+- **Sí:** `oracion.grammar` ambigua a propósito (sintagma preposicional). Es el caso natural más claro de ambigüedad, y conecta con G0 y la ficha 25. Earley lo maneja sin cambios.
 - **Sí:** el "a" personal se resuelve en el marco y no en la gramática. Evita una segunda fuente de ambigüedad sintáctica y deja la decisión donde está la información (la clase semántica).
 - **Sí:** aceptar la ambigüedad si todas las lecturas dan la misma etiqueta, y si no, dar error. Es "sin adivinar" aplicado a la sintaxis: nunca se elige una lectura arbitraria.
 - **Sí:** las reglas se evalúan en orden y gana la primera coincidencia. Es la tabla de decisión más simple de explicar, y la prioridad queda visible en el archivo.

@@ -53,7 +53,7 @@ El alfabeto tiene 14 etiquetas:
 ┌──────────────▼──────────────────────────────────▼───────────────┐
 │                     Núcleo  @sabueso/core                        │
 │                                                                  │
-│  Catálogo de géneros ─► .glc ─► AFD ─► LL(1) ─► Grammar          │
+│  Catálogo de géneros ─► .grammar ─► AFD ─► LL(1) ─► Grammar          │
 │                                                   │              │
 │  Relato ─► tokenizador ─► EARLEY ─► diagnóstico / árboles /      │
 │                                     conteo / derivación          │
@@ -63,7 +63,7 @@ El alfabeto tiene 14 etiquetas:
 └──────────────────────────────────────────────────────────────────┘
                ▲ (v2) se conecta delante, sin modificar el núcleo
 ┌──────────────┴──────────────────────────────────────────────────┐
-│   @sabueso/nl: texto ─► AFD ─► Mealy ─► categorías ─► Earley      │
+│   @sabueso/natural-language: texto ─► AFD ─► Mealy ─► categorías ─► Earley      │
 │                ─► marco ─► reglas ─► etiquetas                    │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -80,21 +80,21 @@ El alfabeto tiene 14 etiquetas:
 
 El programa analiza dos lenguajes distintos porque el anteproyecto pide que la gramática sea un dato y no código: _"las gramáticas se guardan como archivos de texto, de modo que modificarlas no requiere tocar el código"_.
 
-|                         | Lenguaje 1: archivos de gramática (`.glc`) | Lenguaje 2: relatos                 |
-| ----------------------- | ------------------------------------------ | ----------------------------------- |
-| Ejemplo                 | `Pasos -> Paso \| Pasos Pasos`             | `CRI SOS PIS INT REV`               |
-| Quién define sus reglas | Nosotros, una vez (`meta.glc`)             | Las gramáticas del género (G0 y G1) |
-| ¿Es ambiguo?            | No: lo diseñamos LL(1)                     | Puede serlo (G0 lo es a propósito)  |
-| Analizador              | AFD + parser LL(1)                         | Earley                              |
-| Cuándo se usa           | Una vez, al iniciar                        | En cada análisis                    |
+|                         | Lenguaje 1: archivos de gramática (`.grammar`) | Lenguaje 2: relatos                 |
+| ----------------------- | ---------------------------------------------- | ----------------------------------- |
+| Ejemplo                 | `Pasos -> Paso \| Pasos Pasos`                 | `CRI SOS PIS INT REV`               |
+| Quién define sus reglas | Nosotros, una vez (`meta.grammar`)             | Las gramáticas del género (G0 y G1) |
+| ¿Es ambiguo?            | No: lo diseñamos LL(1)                         | Puede serlo (G0 lo es a propósito)  |
+| Analizador              | AFD + parser LL(1)                             | Earley                              |
+| Cuándo se usa           | Una vez, al iniciar                            | En cada análisis                    |
 
 - **Los relatos** son lo que el programa analiza: el lenguaje del problema.
-- **Los `.glc`** son cómo se le dice al programa contra qué analizar: el lenguaje de la configuración.
+- **Los `.grammar`** son cómo se le dice al programa contra qué analizar: el lenguaje de la configuración.
 
 No compiten: trabajan en cadena.
 
 ```
- g1.glc ──► [AFD] ──► tokens ──► [LL(1)] ──► Grammar ──┐
+ g1.grammar ──► [AFD] ──► tokens ──► [LL(1)] ──► Grammar ──┐
                                                        ├──► [Earley] ──► acepta / árbol / error
  "CRI SOS PIS INT REV" ────────────────────────────────┘
 ```
@@ -104,7 +104,7 @@ No compiten: trabajan en cadena.
 - **G1:** la oficial. Con esta se decide si el relato es policial.
 - **G0:** la natural y ambigua, que se usa para mostrar el análisis de ambigüedad.
 
-Un catálogo lista los géneros. Sumar otro en el futuro (por ejemplo, el policial negro) es agregar una carpeta con sus `.glc` y una entrada en el catálogo, sin tocar el motor ni la UI.
+Un catálogo lista los géneros. Sumar otro en el futuro (por ejemplo, el policial negro) es agregar una carpeta con sus `.grammar` y una entrada en el catálogo, sin tocar el motor ni la UI.
 
 Las **gramáticas de libro** (expresiones aritméticas, paréntesis, la trampa de ε) no identifican relatos. Solo prueban que el motor es genérico y sirven para demostraciones por consola.
 
@@ -112,7 +112,7 @@ Las **gramáticas de libro** (expresiones aritméticas, paréntesis, la trampa d
 
 ## 4. El AFD: de caracteres a tokens
 
-**Qué hace:** recorre el archivo `.glc` carácter por carácter y lo agrupa en **tokens**, las "palabras" del formato. Descarta espacios y comentarios. Es como agrupar letras en palabras.
+**Qué hace:** recorre el archivo `.grammar` carácter por carácter y lo agrupa en **tokens**, las "palabras" del formato. Descarta espacios y comentarios. Es como agrupar letras en palabras.
 
 **Cómo lo hace:** con una **tabla de transiciones**. Según el estado actual y la clase del carácter leído, la tabla dice a qué estado pasar.
 
@@ -142,7 +142,7 @@ IDENT(Pasos) FLECHA IDENT(Evidencia) IDENT(Libres) IDENT(Lineas) BARRA IDENT(Lin
 
 **Por qué un AFD:** reconocer palabras es un problema **regular**. Para saber si una palabra sigue o terminó, alcanza con recordar en qué estado se está, sin pila ni memoria extra. Si hay un carácter inválido o un literal sin cerrar, el AFD informa la línea y la columna exactas.
 
-En el código hay **un ejecutor genérico** de AFD y **varias tablas**: la del formato `.glc` y, en la v2, la del texto en español y la de los archivos de léxico y reglas. La idea para explicar: _el autómata es la tabla; el programa solo la recorre_.
+En el código hay **un ejecutor genérico** de AFD y **varias tablas**: la del formato `.grammar` y, en la v2, la del texto en español y la de los archivos de léxico y reglas. La idea para explicar: _el autómata es la tabla; el programa solo la recorre_.
 
 Consola: `npm run sabueso -- lex g1 --estados`
 
@@ -152,7 +152,7 @@ Consola: `npm run sabueso -- lex g1 --estados`
 
 **Qué hace:** recibe los tokens y verifica que formen reglas bien escritas. A medida que las reconoce, arma la estructura que va a usar Earley. Es como agrupar palabras en oraciones con estructura.
 
-**Cómo lo hace:** hay **una función por cada regla de `meta.glc`**, la gramática del formato `.glc`. Cada función mira **un solo token**, el siguiente (ese es el "1" de LL(1)), y con eso decide qué hacer, sin probar alternativas ni retroceder.
+**Cómo lo hace:** hay **una función por cada regla de `meta.grammar`**, la gramática del formato `.grammar`. Cada función mira **un solo token**, el siguiente (ese es el "1" de LL(1)), y con eso decide qué hacer, sin probar alternativas ni retroceder.
 
 ```
 Regla           → IDENT FLECHA Alternativas NL
@@ -190,13 +190,13 @@ Pasos → Linea Lineas
 
 Si encuentra un token inesperado, informa el error con línea y columna. Por ejemplo, "línea 12, columna 7: se esperaba `->`".
 
-**Por qué LL(1) y no Earley para leer el `.glc`:**
+**Por qué LL(1) y no Earley para leer el `.grammar`:**
 
 1. **El huevo y la gallina.** Earley necesita una gramática ya cargada para funcionar. El LL(1) es el primer lector, escrito a mano.
-2. **No hace falta tanta potencia.** El formato `.glc` lo diseñamos nosotros, y lo hicimos de modo que un token alcance para decidir. Eso da un lector simple, lineal y con errores precisos.
+2. **No hace falta tanta potencia.** El formato `.grammar` lo diseñamos nosotros, y lo hicimos de modo que un token alcance para decidir. Eso da un lector simple, lineal y con errores precisos.
 3. **Herramienta mínima.** Cada clase de lenguaje tiene su máquina adecuada, que es justamente lo que enseña la materia.
 
-El programa además **verifica** con su propio módulo de FIRST/FOLLOW que `meta.glc` es LL(1).
+El programa además **verifica** con su propio módulo de FIRST/FOLLOW que `meta.grammar` es LL(1).
 
 Consola: `npm run sabueso -- grammar g1 --traza-ll1`
 
@@ -429,7 +429,7 @@ npm run sabueso -- parse --grammar g1 "CRI SOS PIS INT REV"
 ```
 UI          SequenceInput arma el texto → coreClient.parse('policial/g1', texto)
 Worker      ya tiene G1 cargada → llama a parse() del núcleo
-Núcleo  0.  (al inicio) catálogo → g1.glc → AFD → LL(1) → Grammar + anulables
+Núcleo  0.  (al inicio) catálogo → g1.grammar → AFD → LL(1) → Grammar + anulables
         1.  tokenizador → [CRI, SOS, PIS, INT, REV], todos ∈ Σ
         2.  Earley → S0…S5; ($S → Relato •, 0) ∈ S5 → acepta
         3.  conteo → 1 árbol
@@ -530,8 +530,8 @@ Código de salida: `1`. En la UI, el diagnóstico marca el tercer evento y dice 
 
 | Pieza                 | Para qué la usa el programa                           | Tema de la materia                                               |
 | --------------------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
-| AFD (lexer)           | Leer los archivos `.glc`: de caracteres a tokens      | Autómatas finitos (Augusto 1.3, Hopcroft 2.2)                    |
-| Parser LL(1)          | Leer los archivos `.glc`: de tokens a reglas          | Análisis descendente (Aho 4.4)                                   |
+| AFD (lexer)           | Leer los archivos `.grammar`: de caracteres a tokens  | Autómatas finitos (Augusto 1.3, Hopcroft 2.2)                    |
+| Parser LL(1)          | Leer los archivos `.grammar`: de tokens a reglas      | Análisis descendente (Aho 4.4)                                   |
 | `buildGrammar`        | Armar G = (N, Σ, P, S)                                | Gramáticas libres de contexto (Augusto 2.4)                      |
 | Anulables             | Que Earley funcione con ε                             | Cadena nula (Augusto 2.3, Hopcroft 7.1.3)                        |
 | Inútiles y vacuidad   | Validar que la gramática esté bien escrita            | Símbolos inútiles, problemas decidibles (Hopcroft 7.1, 7.4.3)    |
@@ -594,7 +594,7 @@ Otra alternativa es armar cada oración eligiendo palabras de listas (sujeto, ve
    ▼ AFD de texto           → Miller · interrogó · a · la · cocinera · .
    ▼ Transductor de Mealy   → interrogó = interrogar (pretérito)
    ▼ Léxico (homomorfismo)  → NOMBRE VERBO PREP DET SUST
-   ▼ Earley + oracion.glc   → árbol: sujeto (Miller), verbo, complemento (a la cocinera)
+   ▼ Earley + oracion.grammar   → árbol: sujeto (Miller), verbo, complemento (a la cocinera)
    ▼ Marco semántico        → verbo: interrogar · objeto: cocinera (persona)
    ▼ Reglas                 → INT   (regla "interrogar -> INT")
 ```
@@ -640,7 +640,7 @@ Orden sugerido para la exposición. Cada paso tiene su comando de consola y su v
 | 10  | Por qué no CYK                      | `cyk --grammar g1 "CRI PIS REV" --comparar`                             | Pestaña FNC y CYK          |
 | 11  | La equivalencia GLC ≡ AP            | `pda --grammar g1 "CRI SOS PIS INT REV"`                                | Pestaña AP                 |
 | 12  | Rendimiento con 200 eventos         | `count --grammar g0 --file …/l1.txt`                                    | Análisis con el ejemplo L1 |
-| 13  | (v2) Del texto a las etiquetas      | `sabueso-nl etiquetar …/ashby.txt`                                      | Modo español controlado    |
-| 14  | (v2) El límite de las GLC           | `sabueso-nl culpable …/banquero.txt`                                    | Banner de advertencia      |
+| 13  | (v2) Del texto a las etiquetas      | `sabueso-natural-language etiquetar …/ashby.txt`                        | Modo español controlado    |
+| 14  | (v2) El límite de las GLC           | `sabueso-natural-language culpable …/banquero.txt`                      | Banner de advertencia      |
 
-Todos los comandos se ejecutan con `npm run sabueso -- <comando>` (o `npm run sabueso-nl -- <comando>`). El guion ejecutable completo está en `docs/console-demo.md`, y una prueba automática verifica que todos sus comandos funcionen.
+Todos los comandos se ejecutan con `npm run sabueso -- <comando>` (o `npm run sabueso-natural-language -- <comando>`). El guion ejecutable completo está en `docs/console-demo.md`, y una prueba automática verifica que todos sus comandos funcionen.

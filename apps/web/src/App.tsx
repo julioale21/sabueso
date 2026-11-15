@@ -1,11 +1,8 @@
-import { VERSION } from '@sabueso/core';
-
-// Smoke screen: proves the web app reaches the core through the alias.
+// Placeholder page until SPEC 03 builds the interface.
 export function App() {
   return (
     <main>
       <h1>Sabueso</h1>
-      <p>núcleo v{VERSION}</p>
     </main>
   );
 }

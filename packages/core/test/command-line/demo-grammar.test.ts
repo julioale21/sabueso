@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { runCli } from '../../src/cli/program.js';
-import { memoryIo } from './memory-io.js';
+import { runCommandLine } from '../../src/command-line/program.js';
+import { createMemoryEnvironment } from './memory-environment.js';
 
 describe('sabueso demo-grammar', () => {
   it('prints the 4-tuple of the expression grammar with numbered productions', async () => {
-    const { io, stdout } = memoryIo();
-    expect(await runCli(['demo-grammar'], io)).toBe(0);
-    expect(stdout()).toBe(
+    const { environment, output } = createMemoryEnvironment();
+    expect(await runCommandLine(['demo-grammar'], environment)).toBe(0);
+    expect(output()).toBe(
       [
         'expressions: G = (N, Σ, P, S)',
         'N = {E, T}',

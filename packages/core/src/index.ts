@@ -1,7 +1,4 @@
-// Core version, shown by the CLI and the web app.
-export const VERSION = '0.1.0';
-
-// CLI infrastructure, shared with @sabueso/nl.
-export { set, table } from './cli/format.js';
-export { createCli, type CliOptions } from './cli/run.js';
-export { EXIT_CODES, type CliCommand, type CliIo } from './cli/types.js';
+// Public API of the core: what other packages (the web app) can import.
+export { buildGrammar, formatProduction, GrammarBuildError } from './grammar/build.js';
+export type { GrammarRule, RightSideSymbol } from './grammar/build.js';
+export type { Grammar, Production, SymbolName } from './grammar/types.js';

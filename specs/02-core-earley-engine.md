@@ -23,8 +23,8 @@ El autor pidió incluir LL(k), LR(k) o la Máquina de Turing **solo si el proyec
 
 | Concepto                                                        | ¿Tiene código?      | Uso real que lo justifica                                                                                                                                                                                                                                             |
 | --------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Autómata finito determinista                                    | Sí                  | Es el analizador léxico que lee los archivos `.glc`.                                                                                                                                                                                                                  |
-| LL(1): FIRST, FOLLOW, tabla, parser descendente                 | Sí                  | (a) El lector de `.glc` es un parser descendente predictivo LL(1). (b) Certifica que G1 no es ambigua: toda gramática LL(1) es no ambigua. (c) Certifica que la meta-gramática de `.glc` es LL(1).                                                                    |
+| Autómata finito determinista                                    | Sí                  | Es el analizador léxico que lee los archivos `.grammar`.                                                                                                                                                                                                              |
+| LL(1): FIRST, FOLLOW, tabla, parser descendente                 | Sí                  | (a) El lector de `.grammar` es un parser descendente predictivo LL(1). (b) Certifica que G1 no es ambigua: toda gramática LL(1) es no ambigua. (c) Certifica que la meta-gramática de `.grammar` es LL(1).                                                            |
 | Anulables, productivos, alcanzables, vacuidad, ciclos           | Sí                  | Earley necesita los anulables para el arreglo de ε. El validador de gramáticas necesita los inútiles y la vacuidad. El conteo de árboles necesita los ciclos.                                                                                                         |
 | Earley (reconocedor, árboles, derivación)                       | Sí                  | Es el analizador central que pide el enunciado.                                                                                                                                                                                                                       |
 | Forma Normal de Chomsky + CYK                                   | Sí                  | Es la comparación que fundamenta la elección de Earley en el anteproyecto. También es un segundo reconocedor que valida a Earley por pruebas diferenciales.                                                                                                           |
@@ -40,16 +40,16 @@ El autor pidió incluir LL(k), LR(k) o la Máquina de Turing **solo si el proyec
 **Entra:**
 
 - Monorepo `~/Desktop/sabueso` con npm workspaces y el paquete `packages/core` (`@sabueso/core`).
-- Formato de archivo `.glc` para gramáticas, con lexer AFD y parser LL(1) propios.
-- Gramáticas definidas por nosotros y organizadas **por género**, con un catálogo (sección 4.6). El único género de este spec es el **policial**: `genres/detective/g1.glc` (oficial, no ambigua y LL(1), propuesta en este spec) y `genres/detective/g0.glc` (la del anteproyecto, ambigua, para el análisis de ambigüedad). Sumar otro género en el futuro es agregar una carpeta y una entrada al catálogo.
-- Gramáticas internas que el usuario no ve como género: `meta.glc` (la gramática del formato `.glc`), las gramáticas de libro y las de análisis, en `grammars/test/`. Se usan en las pruebas y en la CLI de desarrollo.
+- Formato de archivo `.grammar` para gramáticas, con lexer AFD y parser LL(1) propios.
+- Gramáticas definidas por nosotros y organizadas **por género**, con un catálogo (sección 4.6). El único género de este spec es el **policial**: `genres/detective/g1.grammar` (oficial, no ambigua y LL(1), propuesta en este spec) y `genres/detective/g0.grammar` (la del anteproyecto, ambigua, para el análisis de ambigüedad). Sumar otro género en el futuro es agregar una carpeta y una entrada al catálogo.
+- Gramáticas internas que el usuario no ve como género: `meta.grammar` (la gramática del formato `.grammar`), las gramáticas de libro y las de análisis, en `grammars/test/`. Se usan en las pruebas y en la CLI de desarrollo.
 - Análisis de gramáticas: anulables, longitud mínima derivable, productivos, alcanzables, inútiles, vacuidad, ciclos, FIRST, FOLLOW, tabla LL(1) y conflictos.
 - Motor de Earley: reconocedor con Predictor, Scanner y Completer, arreglo de ε de Aycock-Horspool, diagnóstico de errores y traza de operaciones.
 - Árboles: backpointers, conteo exacto con `bigint` (o `'infinite'`), enumeración acotada, árboles ε, derivación más a la izquierda y render ASCII.
 - Conversión a Forma Normal de Chomsky paso a paso, y reconocedor CYK con extracción de un árbol.
 - Construcción GLC → AP de un estado (aceptación por pila vacía) y simulador acotado con traza de descripciones instantáneas.
 - Búsquedas acotadas: generación de oraciones hasta longitud k, testigo de ambigüedad y comparación de lenguajes.
-- CLI `sabueso` que crece paso a paso: **cada módulo tiene su comando de consola y la prueba de ese comando** (sección 8.1). Ejemplos: `lex`, `grammar`, `nullable`, `first-follow`, `ll1`, `earley`, `trace`, `trees`, `count`, `derive`, `parse`, `cnf`, `cyk`, `pda`, `ambiguity`, `compare`, `differential` y `bench`.
+- CLI `sabueso` que crece paso a paso: **cada módulo tiene su comando de consola y la prueba de ese comando** (sección 8.1). Ejemplos: `lex`, `grammar`, `nullable`, `first-follow`, `predictive-table`, `earley`, `trace`, `trees`, `count`, `derive`, `parse`, `chomsky-normal-form`, `cocke-younger-kasami`, `pushdown-automaton`, `ambiguity`, `compare`, `differential` y `bench`.
 - Guion de consola `docs/console-demo.md`, verificado por una prueba que ejecuta cada comando.
 - Batería de pruebas con Vitest: unitarias, valores esperados calculados a mano, diferenciales Earley/CYK/AP y rendimiento.
 - Fichas de exposición `docs/concepts/NN-*.md`, una por concepto atómico.
@@ -83,21 +83,21 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 ### 3.2 Gramática libre de contexto
 
 - G = (N, Σ, P, S): no terminales, terminales, producciones A → α con α ∈ (N ∪ Σ)*, y símbolo inicial.
-- **Convención de `.glc`:** un identificador es no terminal si aparece como lado izquierdo de alguna regla. En otro caso es terminal. Los literales entre comillas simples (`'+'`) son siempre terminales. Su nombre de símbolo es el contenido **sin comillas**: `'+'` es el terminal `+`, y así coincide con la entrada separada por espacios (`id + id`). Dos casos son errores de construcción: un literal cuyo contenido coincide con el nombre de un no terminal, y un literal que contiene `$`. El `$` queda reservado para el fin de entrada de FOLLOW y para `$S`.
+- **Convención de `.grammar`:** un identificador es no terminal si aparece como lado izquierdo de alguna regla. En otro caso es terminal. Los literales entre comillas simples (`'+'`) son siempre terminales. Su nombre de símbolo es el contenido **sin comillas**: `'+'` es el terminal `+`, y así coincide con la entrada separada por espacios (`id + id`). Dos casos son errores de construcción: un literal cuyo contenido coincide con el nombre de un no terminal, y un literal que contiene `$`. El `$` queda reservado para el fin de entrada de FOLLOW y para `$S`.
 - Referencias: Augusto 2.4; Hopcroft 5.1.
 
-### 3.3 Autómata finito determinista (lexer de `.glc`)
+### 3.3 Autómata finito determinista (lexer de `.grammar`)
 
 - M = (Q, Σc, δ, q0, F), donde Σc son **clases de caracteres** (letra, dígito, espacio, salto de línea, `-`, `>`, `→`, `|`, `ε`, `'`, `#`, `%` y otro).
 - δ se implementa como **tabla explícita**: un objeto `Record<Estado, Partial<Record<ClaseChar, Estado>>>`, no como `if` anidados. Así la tabla puede mostrarse en la exposición igual que en el pizarrón.
-- **Separación motor y tabla:** `automata/dfa.ts` es un **ejecutor genérico de AFD**. Recibe una definición `DfaDefinition` (estados, función de clasificación de caracteres, tabla δ, estados de aceptación con el tipo de token que emiten, y estados que se descartan, como espacios y comentarios) y aplica _maximal munch_. `grammar-format/lexer.ts` solo declara la tabla del formato `.glc`. Se separa porque el SPEC 04 reutiliza el mismo ejecutor con otras dos tablas (texto en español y archivos de léxico y reglas), así que el concepto "un AFD es una tabla más un ejecutor" se ve en código.
+- **Separación motor y tabla:** `automata/deterministic-finite-automaton.ts` es un **ejecutor genérico de AFD**. Recibe una definición `DeterministicAutomatonDefinition` (estados, función de clasificación de caracteres, tabla δ, estados de aceptación con el tipo de token que emiten, y estados que se descartan, como espacios y comentarios) y aplica _maximal munch_. `grammar-format/lexer.ts` solo declara la tabla del formato `.grammar`. Se separa porque el SPEC 04 reutiliza el mismo ejecutor con otras dos tablas (texto en español y archivos de léxico y reglas), así que el concepto "un AFD es una tabla más un ejecutor" se ve en código.
 - Regla de _maximal munch_: el token se emite cuando no hay transición posible desde un estado de aceptación.
 - Referencias: Augusto 1.3; Hopcroft 2.2.
 
-### 3.4 Gramática LL(1) y parser descendente recursivo (lector de `.glc`)
+### 3.4 Gramática LL(1) y parser descendente recursivo (lector de `.grammar`)
 
-- Cada no terminal de `meta.glc` es una función. Cada función elige su alternativa mirando **un solo token** (el _lookahead_).
-- La elección es determinista porque `meta.glc` es LL(1). El propio módulo de la sección 3.6 lo demuestra en una prueba: el lector se certifica con el análisis que implementa el núcleo.
+- Cada no terminal de `meta.grammar` es una función. Cada función elige su alternativa mirando **un solo token** (el _lookahead_).
+- La elección es determinista porque `meta.grammar` es LL(1). El propio módulo de la sección 3.6 lo demuestra en una prueba: el lector se certifica con el análisis que implementa el núcleo.
 - Referencia: Aho, Lam, Sethi y Ullman, _Compiladores_ (2.ª ed.), 4.4.
 
 ### 3.5 FIRST y FOLLOW
@@ -272,7 +272,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 - Problemas **decidibles** y dónde está implementado cada uno:
   - pertenencia: Earley, que siempre se detiene;
   - vacuidad: `isEmpty`;
-  - "G es LL(1)": `ll1Table`.
+  - "G es LL(1)": `predictiveTable`.
 - Problemas **indecidibles**: ambigüedad y equivalencia. En el proyecto aparecen solo como búsquedas acotadas.
 - Por la tesis de Church-Turing, cada algoritmo del núcleo es una MT que siempre se detiene (un decisor).
 - Qué verifica el programa y qué se demuestra a mano. El caso a mano es L(G1) ⊂ L(G0) (sección 4.4).
@@ -282,7 +282,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 
 ## 4. Gramáticas
 
-### 4.1 Formato `.glc`
+### 4.1 Formato `.grammar`
 
 Cada regla ocupa una línea. Las líneas en blanco y los comentarios `#` se ignoran. La flecha puede ser `->` o `→`. ε se escribe `ε` o con una alternativa vacía. Las directivas son opcionales:
 
@@ -296,32 +296,32 @@ E -> E '+' T | T
 T -> 'id' | '(' E ')'
 ```
 
-### 4.2 `meta.glc`: la gramática del formato `.glc`, escrita en `.glc`
+### 4.2 `meta.grammar`: la gramática del formato `.grammar`, escrita en `.grammar`
 
-Sus terminales son los tipos de token que emite el lexer AFD. El lexer garantiza un `NL` antes de `EOF`.
+Sus terminales son los tipos de token que emite el lexer AFD. El lexer garantiza un `NEWLINE` antes de `END_OF_FILE`.
 
 ```text
 %start File
-%terminals IDENT LITERAL ARROW BAR EPSILON NL START TERMINALS EOF
-File         -> Element File | EOF
-Element        -> NL | Directive | Rule
-Directive       -> START IDENT NL | TERMINALS Symbols NL
-Rule           -> IDENT ARROW Alternatives NL
+%terminals IDENTIFIER LITERAL ARROW BAR EPSILON NEWLINE START TERMINALS END_OF_FILE
+File         -> Element File | END_OF_FILE
+Element        -> NEWLINE | Directive | Rule
+Directive       -> START IDENTIFIER NEWLINE | TERMINALS Symbols NEWLINE
+Rule           -> IDENTIFIER ARROW Alternatives NEWLINE
 Alternatives    -> Sequence MoreAlternatives
 MoreAlternatives -> BAR Sequence MoreAlternatives | ε
 Sequence       -> EPSILON | Symbols
 Symbols        -> Symbol Symbols | ε
-Symbol         -> IDENT | LITERAL
+Symbol         -> IDENTIFIER | LITERAL
 ```
 
 Verificación LL(1) a mano. La prueba la repite en código.
 
-- FOLLOW(MoreAlternatives) = FOLLOW(Alternatives) = {NL}, disjunto de {BAR}.
-- FOLLOW(Symbols) = {BAR, NL}, disjunto de {IDENT, LITERAL}.
-- Para Sequence: {EPSILON} es disjunto de FIRST(Symbols) ∪ FOLLOW(Sequence) = {IDENT, LITERAL, BAR, NL}.
+- FOLLOW(MoreAlternatives) = FOLLOW(Alternatives) = {NEWLINE}, disjunto de {BAR}.
+- FOLLOW(Symbols) = {BAR, NEWLINE}, disjunto de {IDENTIFIER, LITERAL}.
+- Para Sequence: {EPSILON} es disjunto de FIRST(Symbols) ∪ FOLLOW(Sequence) = {IDENTIFIER, LITERAL, BAR, NEWLINE}.
 - Resultado: 0 conflictos.
 
-### 4.3 `genres/detective/g0.glc`: la gramática del anteproyecto, sin cambios
+### 4.3 `genres/detective/g0.grammar`: la gramática del anteproyecto, sin cambios
 
 ```text
 %start Relato
@@ -342,7 +342,7 @@ G0 tiene dos fuentes de ambigüedad: `Pasos → Pasos Pasos` (asociatividad) y `
 
 **Árboles y lecturas.** Para `CRI SOS PIS INT REV`, G0 da **4 árboles** pero solo **3 lecturas narrativas**: la sospecha abarca nada, PIS, o PIS INT. Dos de los cuatro árboles difieren solo en cómo `Pasos → Pasos Pasos` agrupa los pasos cuando la sospecha no abarca nada. El anteproyecto habla de "tres lecturas". El motor cuenta árboles. La ficha 21 explica la diferencia.
 
-### 4.4 `genres/detective/g1.glc`: la oficial, no ambigua y LL(1) (propuesta)
+### 4.4 `genres/detective/g1.grammar`: la oficial, no ambigua y LL(1) (propuesta)
 
 **Criterio de diseño.** Una línea de sospecha empieza en SOS y abarca los pasos siguientes hasta la próxima SOS o hasta el desenlace. DSC solo puede aparecer **dentro** de una línea abierta, y la cierra. Los pasos posteriores a un DSC quedan bajo el nodo `Descarte` de esa línea. Esta convención elimina la ambigüedad del mismo modo que la regla "el `else` corresponde al último `then`" (Augusto 2.4.2). Además, la gramática está factorizada a izquierda para ser LL(1).
 
@@ -393,16 +393,16 @@ Verificación LL(1) a mano, solo de las celdas críticas. La prueba la repite en
 
 Viven en `packages/core/grammars/test/`. **No identifican ningún género** y no aparecen en la UI. Su único propósito es probar que el motor no depende del relato policial (criterio del anteproyecto: "el mismo motor funciona con gramáticas de libro") y permitir demostraciones por consola, como el bug de ε. Las de libro son:
 
-- `arithmetic-ambiguous.glc`: `E -> E '+' E | E '*' E | '(' E ')' | 'id'`.
-- `arithmetic.glc`: `E -> E '+' T | T`, `T -> T '*' F | F`, `F -> '(' E ')' | 'id'`. Es no ambigua y recursiva a izquierda, así que no es LL(1). Earley la acepta igual.
-- `parentheses.glc`: `S -> '(' S ')' S | ε`. Tiene ε y su lenguaje contiene la cadena vacía.
-- `epsilon-trap.glc`: `S -> A A 'x'` y `A -> ε`. Es el caso que rompe al Earley clásico.
+- `arithmetic-ambiguous.grammar`: `E -> E '+' E | E '*' E | '(' E ')' | 'id'`.
+- `arithmetic.grammar`: `E -> E '+' T | T`, `T -> T '*' F | F`, `F -> '(' E ')' | 'id'`. Es no ambigua y recursiva a izquierda, así que no es LL(1). Earley la acepta igual.
+- `parentheses.grammar`: `S -> '(' S ')' S | ε`. Tiene ε y su lenguaje contiene la cadena vacía.
+- `epsilon-trap.grammar`: `S -> A A 'x'` y `A -> ε`. Es el caso que rompe al Earley clásico.
 
 Las de análisis prueban el análisis de gramáticas. En la CLI se nombran `test-useless`, `test-empty` y `test-cyclic`:
 
-- `useless.glc`: `S -> A 'a' | 'b'`, `A -> A 'a'`, `C -> 'c'`. A no es productivo y C no es alcanzable.
-- `empty.glc`: `S -> S 'a'`. L(G) = ∅.
-- `cyclic.glc`: `S -> A | 'a'`, `A -> S`.
+- `useless.grammar`: `S -> A 'a' | 'b'`, `A -> A 'a'`, `C -> 'c'`. A no es productivo y C no es alcanzable.
+- `empty.grammar`: `S -> S 'a'`. L(G) = ∅.
+- `cyclic.grammar`: `S -> A | 'a'`, `A -> S`.
 
 ### 4.6 Catálogo de géneros
 
@@ -427,7 +427,7 @@ interface Genre {
 
 - El catálogo de este spec tiene un solo género: `detective` (policial de enigma). Sus etiquetas viven en `src/genres/detective-tags.ts`.
 - Los **identificadores de gramática** tienen la forma `<genre>/<version>` (`detective/g1`). `g1` y `g0` son alias de `detective/g1` y `detective/g0`, para acortar los comandos.
-- **Sumar un género futuro** (por ejemplo, el policial negro del trabajo futuro del anteproyecto) consiste en crear `grammars/genres/<id>/` con su `.glc`, agregar sus etiquetas y una entrada al catálogo. El motor, la CLI y la UI no cambian, porque leen el catálogo.
+- **Sumar un género futuro** (por ejemplo, el policial negro del trabajo futuro del anteproyecto) consiste en crear `grammars/genres/<id>/` con su `.grammar`, agregar sus etiquetas y una entrada al catálogo. El motor, la CLI y la UI no cambian, porque leen el catálogo.
 - Las etiquetas son datos de dominio. Antes estaban previstas en la web (SPEC 03). Se mueven al catálogo del núcleo para que la CLI y la UI usen la misma fuente, y para que cada género traiga las suyas.
 
 ---
@@ -441,27 +441,27 @@ Los identificadores y los comentarios del código van en inglés. Los tipos vive
 type SymbolName = string; // 'Pasos', 'CTX', '+'
 interface Production {
   id: number;
-  lhs: SymbolName;
-  rhs: SymbolName[];
-} // rhs [] = ε
+  leftSide: SymbolName;
+  rightSide: SymbolName[];
+} // rightSide [] = ε
 interface Grammar {
   name: string;
   start: SymbolName; // declared start symbol
   nonterminals: ReadonlySet<SymbolName>;
   terminals: ReadonlySet<SymbolName>; // Σ
   productions: readonly Production[];
-  byLhs: ReadonlyMap<SymbolName, readonly Production[]>;
+  productionsByLeftSide: ReadonlyMap<SymbolName, readonly Production[]>;
 }
 const AUGMENTED_START = '$S'; // never produced by the lexer
 
-// src/automata/dfa.ts
-interface DfaDefinition<S extends string, C extends string, K extends string> {
+// src/automata/deterministic-finite-automaton.ts
+interface DeterministicAutomatonDefinition<S extends string, C extends string, K extends string> {
   start: S;
   classify: (ch: string) => C;
   delta: Record<S, Partial<Record<C, S>>>;
   accepting: Partial<Record<S, K | null>>; // null = recognized but discarded (whitespace, comments)
 }
-interface DfaToken<K> {
+interface AutomatonToken<K> {
   kind: K;
   text: string;
   line: number;
@@ -470,7 +470,15 @@ interface DfaToken<K> {
 
 // src/grammar-format/lexer.ts
 type TokenKind =
-  'IDENT' | 'LITERAL' | 'ARROW' | 'BAR' | 'EPSILON' | 'NL' | 'START' | 'TERMINALS' | 'EOF';
+  | 'IDENTIFIER'
+  | 'LITERAL'
+  | 'ARROW'
+  | 'BAR'
+  | 'EPSILON'
+  | 'NEWLINE'
+  | 'START'
+  | 'TERMINALS'
+  | 'END_OF_FILE';
 interface Token {
   kind: TokenKind;
   text: string;
@@ -493,13 +501,13 @@ interface GrammarAnalysis {
   cycles: SymbolName[][]; // every cycle A ⇒+ A found
   first: Map<SymbolName, Set<SymbolName | 'ε'>>;
   follow: Map<SymbolName, Set<SymbolName | '$'>>;
-  ll1: {
+  predictiveTable: {
     table: Map<SymbolName, Map<SymbolName, Production[]>>;
-    conflicts: Ll1Conflict[];
-    isLL1: boolean;
+    conflicts: PredictiveTableConflict[];
+    isPredictive: boolean;
   };
 }
-interface Ll1Conflict {
+interface PredictiveTableConflict {
   nonterminal: SymbolName;
   lookahead: SymbolName;
   productions: Production[];
@@ -573,39 +581,39 @@ type ParseResult =
     }
   | { accepted: false; tokens: SymbolName[]; error: ParseError; chart: Chart; trace: TraceEvent[] };
 
-// src/cnf/*.ts
-interface CnfResult {
+// src/chomsky-normal-form/*.ts
+interface ChomskyNormalFormResult {
   grammar: Grammar;
   acceptsEmpty: boolean;
   steps: { name: 'START' | 'DEL' | 'UNIT' | 'USELESS' | 'TERM' | 'BIN'; grammar: Grammar }[];
 }
 
-// src/cyk/cyk.ts
-interface CykResult {
+// src/cocke-younger-kasami/recognizer.ts
+interface CockeYoungerKasamiResult {
   accepted: boolean;
   table: Set<SymbolName>[][];
   tree: ParseTree | null;
 }
 
-// src/pda/*.ts
-interface Pda {
+// src/pushdown-automaton/*.ts
+interface PushdownAutomaton {
   state: 'q';
   inputAlphabet: Set<SymbolName>;
   stackAlphabet: Set<SymbolName>;
   startStack: SymbolName;
-  transitions: PdaTransition[];
+  transitions: PushdownTransition[];
 }
-type PdaTransition =
+type PushdownTransition =
   | { kind: 'expand'; top: SymbolName; push: SymbolName[]; production: Production }
   | { kind: 'match'; terminal: SymbolName };
-interface PdaId {
+interface InstantaneousDescription {
   position: number;
   stack: SymbolName[];
 } // top = index 0
-interface PdaRun {
+interface PushdownRun {
   result: 'accept' | 'reject' | 'undetermined';
   steps: number;
-  acceptingPath: { id: PdaId; via: PdaTransition | null }[] | null;
+  acceptingPath: { id: InstantaneousDescription; via: PushdownTransition | null }[] | null;
 }
 
 // src/bounded/*.ts
@@ -625,7 +633,7 @@ interface LanguageComparison {
 - Las posiciones de token son base 0. La posición k es el hueco anterior al token k, y la posición n es el final.
 - Las entradas de secuencia se separan solo por espacios en blanco y distinguen mayúsculas.
 - Todo conjunto que se devuelve en una API pública con orden observable (`expected`, conflictos, oraciones) se ordena, para que las pruebas sean deterministas.
-- El núcleo no importa nada de `node:*`. Solo `src/cli.ts` usa `node:fs` y `node:process`. Así el mismo paquete corre en el navegador en el SPEC 03.
+- El núcleo no importa nada de `node:*`. Solo `src/command-line.ts` usa `node:fs` y `node:process`. Así el mismo paquete corre en el navegador en el SPEC 03.
 
 ---
 
@@ -648,26 +656,26 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
   docs/concepts/              # una ficha por concepto (tabla 7.1)
   docs/console-demo.md         # guion de exposición por consola (paso 29)
   packages/core/
-    package.json               # @sabueso/core, "type": "module", bin: { sabueso: dist/cli.js }
+    package.json               # @sabueso/core, "type": "module", bin: { sabueso: dist/command-line.js }
     tsconfig.json
     vitest.config.ts           # testTimeout 60000 para differential, performance y bounded
     grammars/
-      meta.glc                 # gramática del formato .glc (interna)
-      genres/detective/        # g0.glc y g1.glc: las gramáticas del género
-      test/                    # arithmetic-ambiguous, arithmetic, parentheses, epsilon-trap, useless, empty, cyclic (.glc)
+      meta.grammar                 # gramática del formato .grammar (interna)
+      genres/detective/        # g0.grammar y g1.grammar: las gramáticas del género
+      test/                    # arithmetic-ambiguous, arithmetic, parentheses, epsilon-trap, useless, empty, cyclic (.grammar)
     src/
       index.ts                 # API pública
-      cli.ts                   # único archivo con node:*; arma io y llama a runCli
+      command-line.ts                   # único archivo con node:*; arma environment y llama a runCommandLine
       cli/run.ts
       cli/format.ts
-      cli/grammars.ts
+      command-line/grammars.ts
       genres/types.ts
       genres/catalog.ts        # catálogo de géneros (solo datos)
       genres/detective-tags.ts
-      cli/commands/*.ts        # un archivo por comando (sección 8.2)
+      command-line/commands/*.ts        # un archivo por comando (sección 8.2)
       grammar/types.ts
       grammar/build.ts
-      automata/dfa.ts
+      automata/deterministic-finite-automaton.ts
       grammar-format/lexer.ts
       grammar-format/parser.ts
       input/sequence.ts
@@ -676,7 +684,7 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
       analysis/useful.ts
       analysis/cycles.ts
       analysis/first-follow.ts
-      analysis/ll1.ts
+      analysis/predictive-table.ts
       analysis/index.ts
       earley/item.ts
       earley/chart.ts
@@ -689,23 +697,23 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
       trees/enumerate.ts
       trees/derivation.ts
       trees/render.ts
-      cnf/start.ts
-      cnf/del.ts
-      cnf/unit.ts
-      cnf/useless.ts
-      cnf/term.ts
-      cnf/bin.ts
-      cnf/index.ts
-      cyk/cyk.ts
-      pda/build.ts
-      pda/simulate.ts
+      chomsky-normal-form/add-new-start.ts
+      chomsky-normal-form/remove-epsilon-productions.ts
+      chomsky-normal-form/remove-unit-productions.ts
+      chomsky-normal-form/remove-useless-symbols.ts
+      chomsky-normal-form/isolate-terminals.ts
+      chomsky-normal-form/binarize.ts
+      chomsky-normal-form/index.ts
+      cocke-younger-kasami/recognizer.ts
+      pushdown-automaton/build.ts
+      pushdown-automaton/simulate.ts
       bounded/generate.ts
       bounded/ambiguity.ts
       bounded/compare.ts
     test/
       fixtures/                # l1.txt (200 eventos)
-      cli/                     # una prueba por comando, más demo-doc.test.ts
-      helpers/load.ts          # lee .glc con node:fs (solo en las pruebas)
+      command-line/                     # una prueba por comando, más demo-doc.test.ts
+      helpers/load.ts          # lee .grammar con node:fs (solo en las pruebas)
       *.test.ts                # una por módulo, más hand-computed, differential y performance
 ```
 
@@ -725,35 +733,35 @@ Cada ficha tiene siempre las mismas cinco partes:
 
 Cada ficha tiene como máximo unas 2 páginas, pensadas para una diapositiva o dos.
 
-| #   | Archivo                                  | Concepto                                      | Código                                               |
-| --- | ---------------------------------------- | --------------------------------------------- | ---------------------------------------------------- |
-| 01  | `01-alphabet-and-language.md`            | Σ, cadenas, L(G)                              | `input/sequence.ts`                                  |
-| 02  | `02-context-free-grammar.md`             | 4-upla, convención de terminales              | `grammar/types.ts`, `grammar/build.ts`               |
-| 03  | `03-finite-automaton-lexer.md`           | AFD como tabla más ejecutor                   | `automata/dfa.ts`, `grammar-format/lexer.ts`         |
-| 04  | `04-ll1-recursive-descent-parser.md`     | Descendente recursivo predictivo              | `grammar-format/parser.ts`                           |
-| 05  | `05-first-follow.md`                     | FIRST, FOLLOW, punto fijo                     | `analysis/first-follow.ts`                           |
-| 06  | `06-ll1-table-and-unambiguity.md`        | Tabla, conflictos, teorema LL(1) ⇒ no ambigua | `analysis/ll1.ts`                                    |
-| 07  | `07-nullable-symbols.md`                 | Anulables                                     | `analysis/nullable.ts`                               |
-| 08  | `08-useless-symbols-and-emptiness.md`    | Productivos, alcanzables, vacuidad            | `analysis/useful.ts`                                 |
-| 09  | `09-cycles.md`                           | A ⇒+ A, infinitos árboles                     | `analysis/cycles.ts`                                 |
-| 10  | `10-minimum-yield.md`                    | minYield                                      | `analysis/min-yield.ts`                              |
-| 11  | `11-earley-item.md`                      | Regla punteada                                | `earley/item.ts`                                     |
-| 12  | `12-earley-sets.md`                      | Chart, lista como cola                        | `earley/chart.ts`                                    |
-| 13  | `13-predictor.md`                        | Predictor                                     | `earley/recognizer.ts#predict`                       |
-| 14  | `14-scanner.md`                          | Scanner                                       | `earley/recognizer.ts#scan`                          |
-| 15  | `15-completer.md`                        | Completer                                     | `earley/recognizer.ts#complete`                      |
-| 16  | `16-epsilon-aycock-horspool.md`          | El bug de ε y su arreglo                      | `earley/recognizer.ts#predict`                       |
-| 17  | `17-acceptance-and-errors.md`            | Aceptación, posición, esperados               | `earley/diagnostics.ts`                              |
-| 18  | `18-backpointers-and-trees.md`           | Enlaces y árbol                               | `trees/enumerate.ts`                                 |
-| 19  | `19-tree-count-catalan.md`               | Programación dinámica, Catalan, `'infinite'`  | `trees/count.ts`                                     |
-| 20  | `20-leftmost-derivation.md`              | Preorden y formas sentenciales                | `trees/derivation.ts`                                |
-| 21  | `21-ambiguity-g0-vs-g1.md`               | 4 árboles contra 3 lecturas; L(G1) ⊊ L(G0)    | `genres/detective/g0.glc`, `genres/detective/g1.glc` |
-| 22  | `22-chomsky-normal-form.md`              | Los 6 pasos                                   | `cnf/*.ts`                                           |
-| 23  | `23-cyk.md`                              | Tabla CYK, comparación con Earley             | `cyk/cyk.ts`                                         |
-| 24  | `24-pushdown-automaton.md`               | GLC → AP, ID, Earley como AP compartido       | `pda/*.ts`                                           |
-| 25  | `25-bounded-searches.md`                 | Semidecisión                                  | `bounded/*.ts`                                       |
-| 26  | `26-chomsky-hierarchy-and-cfg-limits.md` | Chomsky, bombeo, reglas no GLC                | (sin código)                                         |
-| 27  | `27-decidability-and-turing.md`          | Decidible / indecidible, Church-Turing        | (sin código)                                         |
+| #   | Archivo                                     | Concepto                                      | Código                                                                  |
+| --- | ------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
+| 01  | `01-alphabet-and-language.md`               | Σ, cadenas, L(G)                              | `input/sequence.ts`                                                     |
+| 02  | `02-context-free-grammar.md`                | 4-upla, convención de terminales              | `grammar/types.ts`, `grammar/build.ts`                                  |
+| 03  | `03-finite-automaton-lexer.md`              | AFD como tabla más ejecutor                   | `automata/deterministic-finite-automaton.ts`, `grammar-format/lexer.ts` |
+| 04  | `04-predictive-recursive-descent-parser.md` | Descendente recursivo predictivo              | `grammar-format/parser.ts`                                              |
+| 05  | `05-first-follow.md`                        | FIRST, FOLLOW, punto fijo                     | `analysis/first-follow.ts`                                              |
+| 06  | `06-predictive-table-and-unambiguity.md`    | Tabla, conflictos, teorema LL(1) ⇒ no ambigua | `analysis/predictive-table.ts`                                          |
+| 07  | `07-nullable-symbols.md`                    | Anulables                                     | `analysis/nullable.ts`                                                  |
+| 08  | `08-useless-symbols-and-emptiness.md`       | Productivos, alcanzables, vacuidad            | `analysis/useful.ts`                                                    |
+| 09  | `09-cycles.md`                              | A ⇒+ A, infinitos árboles                     | `analysis/cycles.ts`                                                    |
+| 10  | `10-minimum-yield.md`                       | minYield                                      | `analysis/min-yield.ts`                                                 |
+| 11  | `11-earley-item.md`                         | Regla punteada                                | `earley/item.ts`                                                        |
+| 12  | `12-earley-sets.md`                         | Chart, lista como cola                        | `earley/chart.ts`                                                       |
+| 13  | `13-predictor.md`                           | Predictor                                     | `earley/recognizer.ts#predict`                                          |
+| 14  | `14-scanner.md`                             | Scanner                                       | `earley/recognizer.ts#scan`                                             |
+| 15  | `15-completer.md`                           | Completer                                     | `earley/recognizer.ts#complete`                                         |
+| 16  | `16-epsilon-aycock-horspool.md`             | El bug de ε y su arreglo                      | `earley/recognizer.ts#predict`                                          |
+| 17  | `17-acceptance-and-errors.md`               | Aceptación, posición, esperados               | `earley/diagnostics.ts`                                                 |
+| 18  | `18-backpointers-and-trees.md`              | Enlaces y árbol                               | `trees/enumerate.ts`                                                    |
+| 19  | `19-tree-count-catalan.md`                  | Programación dinámica, Catalan, `'infinite'`  | `trees/count.ts`                                                        |
+| 20  | `20-leftmost-derivation.md`                 | Preorden y formas sentenciales                | `trees/derivation.ts`                                                   |
+| 21  | `21-ambiguity-g0-vs-g1.md`                  | 4 árboles contra 3 lecturas; L(G1) ⊊ L(G0)    | `genres/detective/g0.grammar`, `genres/detective/g1.grammar`            |
+| 22  | `22-chomsky-normal-form.md`                 | Los 6 pasos                                   | `chomsky-normal-form/*.ts`                                              |
+| 23  | `23-cocke-younger-kasami.md`                | Tabla CYK, comparación con Earley             | `cocke-younger-kasami/recognizer.ts`                                    |
+| 24  | `24-pushdown-automaton.md`                  | GLC → AP, ID, Earley como AP compartido       | `pushdown-automaton/*.ts`                                               |
+| 25  | `25-bounded-searches.md`                    | Semidecisión                                  | `bounded/*.ts`                                                          |
+| 26  | `26-chomsky-hierarchy-and-cfg-limits.md`    | Chomsky, bombeo, reglas no GLC                | (sin código)                                                            |
+| 27  | `27-decidability-and-turing.md`             | Decidible / indecidible, Church-Turing        | (sin código)                                                            |
 
 ### 7.2 Comentarios en el código
 
@@ -778,39 +786,39 @@ Además, cada paso deja `npm test` en verde y es un commit propio. Cada paso que
 
 ### 8.2 Arquitectura de la CLI
 
-La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.ts`, los comandos `version` y `help`, el script `npm run sabueso` y los códigos de salida) **la crea el SPEC 01**. Este spec la usa y le agrega `cli/grammars.ts`, las opciones `--grammar`, `--file` y `--steps`, y un comando por paso. Se repite la descripción completa como referencia.
+La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLine` con `environment` inyectado, `format.ts`, el comando `help`, el script `npm run sabueso` y los códigos de salida) **la crea el SPEC 01**. Este spec la usa y le agrega `command-line/grammars.ts`, las opciones `--grammar`, `--file` y `--steps`, y un comando por paso. Se repite la descripción completa como referencia.
 
-- `src/cli.ts` es el único archivo que toca `node:*`. Lee `process.argv`, arma un objeto `io` con `stdout`, `stderr` y `readFile` (basado en `node:fs`) y llama a `runCli(argv, io)`.
-- `src/cli/run.ts` contiene `createCli(commands)`, que devuelve `runCli(argv, io): Promise<number>`. `createCli`, el tipo `CliCommand` y `cli/format.ts` se exportan desde `index.ts` para que `@sabueso/nl` (SPEC 04) registre sus comandos con la misma infraestructura. Busca el comando en el registro, interpreta las opciones comunes (`--grammar`, `--file` y `--steps`) y devuelve el código de salida.
-- `src/cli/commands/<comando>.ts` tiene **un archivo por comando**. Cada uno exporta `{ name, description, usage, run(args, io) }`. Los comandos no importan `node:*`: leen archivos solo a través de `io.readFile`. Así se prueban en memoria, sin lanzar procesos.
-- `src/cli/grammars.ts` resuelve `--grammar`. Acepta **solo identificadores de gramáticas incorporadas**: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". No acepta rutas: el programa trabaja con sus gramáticas, no con gramáticas que cargue el usuario. Un nombre desconocido termina con código 2 y lista los nombres válidos.
-- `src/cli/format.ts` tiene las utilidades de salida: tablas alineadas, conjuntos ordenados como `{a, b}` y árboles ASCII.
-- **Ejecución sin pasos manuales:** el `package.json` raíz tiene el script `"sabueso": "tsc -b packages/core && node packages/core/dist/cli.js"`. Así `npm run sabueso -- <comando> …` compila de forma incremental y ejecuta. También funciona `node packages/core/dist/cli.js` después de `npm run build`.
+- `src/command-line.ts` es el único archivo que toca `node:*`. Lee `process.argv`, arma un objeto `environment` con `writeOutput`, `writeError` y `readFile` (basado en `node:fs`) y llama a `runCommandLine(commandLineArguments, environment)`.
+- `src/command-line/run.ts` contiene `createCommandLineProgram(commands)`, que devuelve `runCommandLine(commandLineArguments, environment): Promise<number>`. `createCommandLineProgram`, el tipo `Command` y `cli/format.ts` se exportan desde `index.ts` para que `@sabueso/natural-language` (SPEC 04) registre sus comandos con la misma infraestructura. Busca el comando en el registro, interpreta las opciones comunes (`--grammar`, `--file` y `--steps`) y devuelve el código de salida.
+- `src/command-line/commands/<comando>.ts` tiene **un archivo por comando**. Cada uno exporta `{ name, description, usage, run(commandArguments, environment) }`. Los comandos no importan `node:*`: leen archivos solo a través de `environment.readFile`. Así se prueban en memoria, sin lanzar procesos.
+- `src/command-line/grammars.ts` resuelve `--grammar`. Acepta **solo identificadores de gramáticas incorporadas**: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". No acepta rutas: el programa trabaja con sus gramáticas, no con gramáticas que cargue el usuario. Un nombre desconocido termina con código 2 y lista los nombres válidos.
+- `src/command-line/format.ts` tiene las utilidades de salida: tablas alineadas, conjuntos ordenados como `{a, b}` y árboles ASCII.
+- **Ejecución sin pasos manuales:** el `package.json` raíz tiene el script `"sabueso": "tsc -b packages/core && node packages/core/dist/command-line.js"`. Así `npm run sabueso -- <comando> …` compila de forma incremental y ejecuta. También funciona `node packages/core/dist/command-line.js` después de `npm run build`.
 - **Códigos de salida:**
   - `0`: éxito, o entrada aceptada.
   - `1`: entrada rechazada o error del usuario (gramática inválida, símbolo desconocido).
   - `2`: uso incorrecto del comando (opciones faltantes).
 - `--steps` muestra las iteraciones de los algoritmos de punto fijo. Las funciones de análisis aceptan un callback opcional, `onIteration(iteration, snapshot)`, que no cuesta nada si no se pasa. Sirve para explicar en la exposición cómo converge cada punto fijo.
 - `--file <ruta>` lee la secuencia de un archivo en lugar del argumento. Hace falta para L1 (200 eventos), que vive en `test/fixtures/l1.txt`.
-- Pruebas de la CLI en `test/cli/<comando>.test.ts`. Llaman a `runCli` con un `io` en memoria.
+- Pruebas de la CLI en `test/command-line/<comando>.test.ts`. Llaman a `runCommandLine` con un `environment` en memoria.
 
 ### 8.3 Pasos
 
 1. **Punto de partida (cubierto por el SPEC 01).**
    - El monorepo, el esqueleto de `packages/core`, el tooling y la infraestructura de la CLI los crea el SPEC 01. Este paso no agrega código.
-   - Verificación antes de empezar: `npm test`, `npm run lint` y `npm run build` pasan, y `npm run sabueso -- version` imprime `Sabueso core 0.1.0`.
+   - Verificación antes de empezar: `npm test`, `npm run lint` y `npm run build` pasan, y `npm run sabueso -- help` lista los comandos.
 
 2. **Tipos de gramática y construcción.**
    - `grammar/types.ts` y `grammar/build.ts`: `buildGrammar(name, rules, start?, declaredTerminals?)`.
-   - Clasifica terminales y no terminales, indexa `byLhs`, numera producciones, y valida el inicio inexistente, los terminales no declarados y las producciones duplicadas.
+   - Clasifica terminales y no terminales, indexa `productionsByLeftSide`, numera producciones, y valida el inicio inexistente, los terminales no declarados y las producciones duplicadas.
    - Prueba unitaria. Fichas 01 y 02.
    - **Consola:** `npm run sabueso -- demo-grammar` construye en código la gramática de expresiones `E → E + T | T`, `T → id`, e imprime la 4-upla G = (N, Σ, P, S) con las producciones numeradas.
 
 3. **Lexer AFD.**
-   - `automata/dfa.ts`: el ejecutor genérico con _maximal munch_, probado con un AFD de juguete (números enteros y espacios).
-   - `grammar-format/lexer.ts`: la tabla de transiciones explícita del formato `.glc` (sección 3.3).
+   - `automata/deterministic-finite-automaton.ts`: el ejecutor genérico con _maximal munch_, probado con un AFD de juguete (números enteros y espacios).
+   - `grammar-format/lexer.ts`: la tabla de transiciones explícita del formato `.grammar` (sección 3.3).
    - Comentarios `#`, `->` y `→`, literales `'…'`, `ε`, `%start` y `%terminals`.
-   - Agrega un `NL` final antes de `EOF`.
+   - Agrega un `NEWLINE` final antes de `END_OF_FILE`.
    - Errores con línea y columna: literal sin cerrar, carácter inválido, directiva desconocida.
    - Pruebas: la secuencia de tokens de un ejemplo de 3 líneas y cada error. Ficha 03.
    - **Consola:**
@@ -818,16 +826,16 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
      - Con `--states`, imprime además la secuencia de estados del AFD de la primera línea, para explicar δ en la exposición.
      - Los errores léxicos (literal sin cerrar, carácter inválido) se verifican en las pruebas con textos en memoria, porque la CLI solo lee gramáticas incorporadas.
 
-4. **Parser LL(1) de `.glc`.**
-   - `grammar-format/parser.ts`: una función por no terminal de `meta.glc`. Cada función elige la alternativa por el `kind` del lookahead.
+4. **Parser LL(1) de `.grammar`.**
+   - `grammar-format/parser.ts`: una función por no terminal de `meta.grammar`. Cada función elige la alternativa por el `kind` del lookahead.
    - Expone `parseGrammarText(text, name)` y la arma con `buildGrammar`.
    - Pruebas: errores de sintaxis con línea y columna. Ficha 04.
    - **Consola:**
      - `npm run sabueso -- grammar arithmetic` imprime G = (N, Σ, P, S).
-     - Con `--ll1-trace`, imprime cada llamada recursiva del parser con el lookahead que decidió la alternativa (por ejemplo, `Sequence [IDENT] → Symbols`).
+     - Con `--parser-trace`, imprime cada llamada recursiva del parser con el lookahead que decidió la alternativa (por ejemplo, `Sequence [IDENTIFIER] → Symbols`).
 
 5. **Archivos de gramáticas.**
-   - Escribir `meta.glc`, `genres/detective/g0.glc` y `g1.glc`, las siete de `test/` y `test/fixtures/l1.txt`, más `test/helpers/load.ts` y `cli/grammars.ts`.
+   - Escribir `meta.grammar`, `genres/detective/g0.grammar` y `g1.grammar`, las siete de `test/` y `test/fixtures/l1.txt`, más `test/helpers/load.ts` y `command-line/grammars.ts`.
    - Escribir el catálogo: `genres/types.ts`, `genres/catalog.ts` y `genres/detective-tags.ts`.
    - Prueba: todos parsean. G0 tiene 10 no terminales, 14 terminales y 28 producciones. G1 tiene 21 no terminales, 14 terminales y 40 producciones.
    - **Consola:**
@@ -852,14 +860,14 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
 
 9. **Productivos, alcanzables, inútiles y vacuidad.**
    - `analysis/useful.ts`, con `onIteration`.
-   - Pruebas: con `useless.glc`, no productivos = {A}, no alcanzables (después de quitar A) = {C}. `empty.glc` da `isEmpty` igual a `true`. G0 y G1 no tienen inútiles y no son vacías. Ficha 08.
+   - Pruebas: con `useless.grammar`, no productivos = {A}, no alcanzables (después de quitar A) = {C}. `empty.grammar` da `isEmpty` igual a `true`. G0 y G1 no tienen inútiles y no son vacías. Ficha 08.
    - **Consola:**
      - `npm run sabueso -- useful --grammar test-useless --steps` imprime las iteraciones de productivos y de alcanzables, los inútiles y la gramática limpia.
      - Con `test-empty`, imprime `L(G) = ∅`.
 
 10. **Ciclos.**
     - `analysis/cycles.ts`.
-    - Pruebas: `cyclic.glc` da el ciclo [S, A]. G0, G1 y `arithmetic` no tienen ciclos. Ficha 09.
+    - Pruebas: `cyclic.grammar` da el ciclo [S, A]. G0, G1 y `arithmetic` no tienen ciclos. Ficha 09.
     - **Consola:** `npm run sabueso -- cycles --grammar test-cyclic` imprime `S ⇒+ A ⇒+ S`.
 
 11. **FIRST y FOLLOW.**
@@ -868,10 +876,10 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
     - **Consola:** `npm run sabueso -- first-follow --grammar g1 [--steps]` imprime una tabla con FIRST y FOLLOW por no terminal.
 
 12. **Tabla LL(1) y análisis completo.**
-    - `analysis/ll1.ts` y `analysis/index.ts` (`analyzeGrammar`).
-    - Pruebas: `meta.glc` y G1 tienen 0 conflictos. G0 tiene conflictos, entre ellos (Linea, SOS), (Planteo, CRI) y (Pasos, PIS). `arithmetic` tiene conflictos por recursión a izquierda. Ficha 06.
+    - `analysis/predictive-table.ts` y `analysis/index.ts` (`analyzeGrammar`).
+    - Pruebas: `meta.grammar` y G1 tienen 0 conflictos. G0 tiene conflictos, entre ellos (Linea, SOS), (Planteo, CRI) y (Pasos, PIS). `arithmetic` tiene conflictos por recursión a izquierda. Ficha 06.
     - **Consola:**
-      - `npm run sabueso -- ll1 --grammar g0` imprime la tabla M[A, a], marca los conflictos y termina con `No es LL(1): k conflictos`.
+      - `npm run sabueso -- predictive-table --grammar g0` imprime la tabla M[A, a], marca los conflictos y termina con `No es LL(1): k conflictos`.
       - Con `g1`, imprime `Es LL(1) ⇒ no ambigua`.
       - `npm run sabueso -- analyze --grammar g1` resume los pasos 7 a 12 en un solo informe.
 
@@ -923,7 +931,7 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
 
 20. **Conteo.**
     - `trees/count.ts`, con `bigint`, memoización y detección de ciclos.
-    - Pruebas: los valores de la tabla 9.1. El relato largo en G0 da C(197), comparado con la fórmula de Catalan calculada en la prueba. `cyclic.glc` con `a` da `'infinite'`. Ficha 19.
+    - Pruebas: los valores de la tabla 9.1. El relato largo en G0 da C(197), comparado con la fórmula de Catalan calculada en la prueba. `cyclic.grammar` con `a` da `'infinite'`. Ficha 19.
     - **Consola:**
       - `npm run sabueso -- count --grammar g0 "CTX HAL ENC INT SOS PIS DSC REV CNF CAP"` imprime `8 árboles`.
       - `npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt` imprime el número completo con su cantidad de dígitos y el tiempo empleado.
@@ -934,29 +942,29 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
     - **Consola:** `npm run sabueso -- derive --grammar g1 "CRI SOS PIS INT REV"` imprime las 19 formas sentenciales numeradas (pasos 0 a 18), con la producción aplicada en cada una.
 
 22. **API pública.**
-    - `src/index.ts`: `parseGrammarText`, `buildGrammar`, `analyzeGrammar`, `parse`, `renderTree`, `renderDerivation`, `runDfa`, `createCli` y el catálogo de géneros (`genres`), más los tipos públicos, y los módulos de FNC, CYK, AP y búsquedas acotadas a medida que se agregan. `buildGrammar` y `runDfa` se exportan porque el SPEC 04 los reutiliza.
+    - `src/index.ts`: `parseGrammarText`, `buildGrammar`, `analyzeGrammar`, `parse`, `renderTree`, `renderDerivation`, `runDeterministicAutomaton`, `createCommandLineProgram` y el catálogo de géneros (`genres`), más los tipos públicos, y los módulos de FNC, CYK, AP y búsquedas acotadas a medida que se agregan. `buildGrammar` y `runDeterministicAutomaton` se exportan porque el SPEC 04 los reutiliza.
     - Prueba de integración que usa solo la API pública.
     - **Consola:** `npm run sabueso -- parse --grammar g0 [--trees N] [--trace] "CRI SOS PIS INT REV"` combina reconocimiento, diagnóstico, conteo, árboles y derivación del primer árbol. Es el comando "completo" que usa la API pública.
 
 23. **FNC: START, DEL y UNIT.**
-    - `cnf/start.ts`, `cnf/del.ts` y `cnf/unit.ts`.
+    - `chomsky-normal-form/add-new-start.ts`, `chomsky-normal-form/remove-epsilon-productions.ts` y `chomsky-normal-form/remove-unit-productions.ts`.
     - Prueba: después de cada paso, el lenguaje se preserva (las oraciones ≤ 4 de G1 siguen aceptadas por Earley sobre la gramática transformada). Ficha 22 (primera parte).
-    - **Consola:** `npm run sabueso -- cnf --grammar g1 --until UNIT` imprime la gramática después de START, de DEL y de UNIT, con las producciones agregadas y quitadas en cada paso.
+    - **Consola:** `npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT` imprime la gramática después de START, de DEL y de UNIT, con las producciones agregadas y quitadas en cada paso.
 
 24. **FNC: USELESS, TERM y BIN.**
-    - `cnf/useless.ts`, `cnf/term.ts`, `cnf/bin.ts` y `cnf/index.ts` (`toCNF` e `isCNF`).
-    - Pruebas: `isCNF` da verdadero para todas las gramáticas. `parentheses` da `acceptsEmpty` verdadero. Ficha 22.
-    - **Consola:** `npm run sabueso -- cnf --grammar g1` imprime los 6 pasos y termina con `FNC ✓ (n producciones)`.
+    - `chomsky-normal-form/remove-useless-symbols.ts`, `chomsky-normal-form/isolate-terminals.ts`, `chomsky-normal-form/binarize.ts` y `chomsky-normal-form/index.ts` (`toChomskyNormalForm` e `isChomskyNormalForm`).
+    - Pruebas: `isChomskyNormalForm` da verdadero para todas las gramáticas. `parentheses` da `acceptsEmpty` verdadero. Ficha 22.
+    - **Consola:** `npm run sabueso -- chomsky-normal-form --grammar g1` imprime los 6 pasos y termina con `FNC ✓ (n producciones)`.
 
 25. **CYK.**
-    - `cyk/cyk.ts`: tabla y extracción de un árbol.
+    - `cocke-younger-kasami/recognizer.ts`: tabla y extracción de un árbol.
     - Pruebas: la tabla de `( ) ( )` con `parentheses` y el árbol de `CRI PIS REV` con G0, que contiene nodos `T_`/`X` o pierde los unitarios. Ficha 23.
-    - **Consola:** `npm run sabueso -- cyk --grammar parentheses "( ) ( )"` imprime la tabla triangular, `ACEPTA` y el árbol FNC. Con `--compare`, imprime al lado el árbol de Earley para la misma entrada.
+    - **Consola:** `npm run sabueso -- cocke-younger-kasami --grammar parentheses "( ) ( )"` imprime la tabla triangular, `ACEPTA` y el árbol FNC. Con `--compare`, imprime al lado el árbol de Earley para la misma entrada.
 
 26. **Autómata de pila.**
-    - `pda/build.ts` y `pda/simulate.ts`.
+    - `pushdown-automaton/build.ts` y `pushdown-automaton/simulate.ts`.
     - Pruebas: P1 y la correspondencia entre el camino de aceptación y la derivación de A1 con G1. Ficha 24.
-    - **Consola:** `npm run sabueso -- pda --grammar g1 "CRI SOS PIS INT REV"` imprime las transiciones (con `--transitions`), el resultado, la cantidad de configuraciones exploradas y el camino de aceptación como tabla de descripciones instantáneas (posición, entrada restante, pila).
+    - **Consola:** `npm run sabueso -- pushdown-automaton --grammar g1 "CRI SOS PIS INT REV"` imprime las transiciones (con `--transitions`), el resultado, la cantidad de configuraciones exploradas y el camino de aceptación como tabla de descripciones instantáneas (posición, entrada restante, pila).
 
 27. **Búsquedas acotadas.**
     - `bounded/generate.ts`, `bounded/ambiguity.ts` y `bounded/compare.ts`.
@@ -974,7 +982,7 @@ La infraestructura (`cli.ts`, `createCli`, `runCli` con `io` inyectado, `format.
 
 29. **Guion de consola completo.**
     - Completar `docs/console-demo.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.
-    - La prueba `demo-doc.test.ts` del SPEC 01 ya ejecuta cada comando del documento con `runCli` y verifica que ninguno termine con código 2. Este paso no la modifica: solo agrega comandos al guion.
+    - La prueba `demo-doc.test.ts` del SPEC 01 ya ejecuta cada comando del documento con `runCommandLine` y verifica que ninguno termine con código 2. Este paso no la modifica: solo agrega comandos al guion.
 
 30. **Fichas teóricas y README.**
     - Fichas 26 y 27.
@@ -1077,7 +1085,7 @@ Es el valor esperado del comando `earley --grammar g1 "CRI PIS REV" --chart` y d
 
 - **Orden:** los ítems se listan en el orden en que el algoritmo los agrega. Cada conjunto es una lista de solo agregado. Para que el orden sea reproducible, el spec fija esta convención:
   - los ítems de un conjunto se procesan en orden de inserción;
-  - el Predictor agrega las producciones del no terminal en el orden del archivo `.glc` y, **después**, el avance por anulable si el símbolo es anulable;
+  - el Predictor agrega las producciones del no terminal en el orden del archivo `.grammar` y, **después**, el avance por anulable si el símbolo es anulable;
   - el Completer recorre los ítems del conjunto de origen en su orden de inserción.
 - **Cantidad de ítems por conjunto:** S0 = 8, S1 = 19, S2 = 16, S3 = 11.
 - **Notación de la columna "Cómo":** P = Predictor, S = Scanner, C = Completer, ε = avance por anulable (arreglo de Aycock-Horspool). "Ignorado" marca un ítem completo con origen igual al conjunto actual, que el Completer no procesa (sección 3.16).
@@ -1169,7 +1177,7 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 
 - **SPEC 03 — Interfaz web (MVP visual).**
   - `apps/web` con Vite + React + TypeScript, que consume `@sabueso/core` sin modificarlo.
-  - Paneles en el orden del análisis: entrada de etiquetas, gramática activa (selector y editor de `.glc`), resultado (árbol en SVG propio, derivación, árboles alternativos paginados), diagnóstico de errores, chart de Earley paso a paso (desde la traza), y paneles de análisis (FIRST/FOLLOW y LL(1), FNC paso a paso, tabla CYK, traza del AP, ambigüedad y comparación).
+  - Paneles en el orden del análisis: entrada de etiquetas, gramática activa (selector y editor de `.grammar`), resultado (árbol en SVG propio, derivación, árboles alternativos paginados), diagnóstico de errores, chart de Earley paso a paso (desde la traza), y paneles de análisis (FIRST/FOLLOW y LL(1), FNC paso a paso, tabla CYK, traza del AP, ambigüedad y comparación).
   - Las gramáticas se importan con `?raw`.
 - **SPEC 04 — Español controlado.**
   - Un AFD léxico para palabras.
@@ -1184,26 +1192,26 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 
 - [ ] `npm install`, `npm run build`, `npm test` y `npm run lint` terminan sin errores desde un clon limpio con Node 24.
 - [ ] `packages/core/package.json` no tiene `dependencies`. Solo tiene `devDependencies` de TypeScript, Vitest, ESLint, Prettier y sus tipos.
-- [ ] Ningún archivo de `packages/core/src/` fuera de `cli.ts` importa módulos `node:*`. Lo verifica una prueba que lee los fuentes.
-- [ ] Los 10 `.glc` de `grammars/` (meta, 2 del género policial y 7 de pruebas) parsean con `parseGrammarText`.
+- [ ] Ningún archivo de `packages/core/src/` fuera de `command-line.ts` importa módulos `node:*`. Lo verifica una prueba que lee los fuentes.
+- [ ] Los 10 `.grammar` de `grammars/` (meta, 2 del género policial y 7 de pruebas) parsean con `parseGrammarText`.
 - [ ] El catálogo tiene el género `policial`, con `officialGrammar` igual a `detective/g1`, `alternativeGrammar` igual a `detective/g0` y 14 etiquetas, todas terminales de G1.
 - [ ] `npm run sabueso -- genres` lista el género policial con sus dos gramáticas.
-- [ ] `npm run sabueso -- parse --grammar ./any.glc "CRI"` termina con código 2 y lista los nombres válidos: la CLI no acepta rutas.
-- [ ] Un `.glc` con un literal sin cerrar en la línea 3 lanza `GrammarSyntaxError` con `line === 3`.
-- [ ] Un `.glc` con `%terminals` y un identificador no declarado que no es lado izquierdo de ninguna regla lanza un error que nombra ese identificador.
-- [ ] `analyzeGrammar(meta).ll1.isLL1 === true` y `analyzeGrammar(g1).ll1.isLL1 === true`.
-- [ ] `analyzeGrammar(g0).ll1.conflicts` incluye la celda (Linea, SOS).
+- [ ] `npm run sabueso -- parse --grammar ./any.grammar "CRI"` termina con código 2 y lista los nombres válidos: la CLI no acepta rutas.
+- [ ] Un `.grammar` con un literal sin cerrar en la línea 3 lanza `GrammarSyntaxError` con `line === 3`.
+- [ ] Un `.grammar` con `%terminals` y un identificador no declarado que no es lado izquierdo de ninguna regla lanza un error que nombra ese identificador.
+- [ ] `analyzeGrammar(meta).predictiveTable.isPredictive === true` y `analyzeGrammar(g1).predictiveTable.isPredictive === true`.
+- [ ] `analyzeGrammar(g0).predictiveTable.conflicts` incluye la celda (Linea, SOS).
 - [ ] Los anulables, inútiles, la vacuidad y los ciclos coinciden con los pasos 7 a 10 del plan.
 - [ ] Cada caso de la tabla 9.1 da exactamente la aceptación, la cantidad de árboles y el `ParseError` (posición, `found` y `expected`) indicados, con G0 y con G1.
 - [ ] La derivación de A1 con G1 es idéntica a la sección 9.2.
 - [ ] El chart de `CRI PIS REV` con G1 es idéntico a la sección 9.6: mismos ítems, mismo orden y misma operación de origen en cada conjunto.
 - [ ] Cada caso de la tabla 9.3 da exactamente el resultado indicado.
-- [ ] `isCNF(toCNF(g).grammar)` es verdadero para G0, G1 y las 4 gramáticas de libro.
+- [ ] `isChomskyNormalForm(toChomskyNormalForm(g).grammar)` es verdadero para G0, G1 y las 4 gramáticas de libro.
 - [ ] La prueba diferencial de la sección 9.4 pasa sin discrepancias y sin resultados `undetermined`.
 - [ ] La prueba de rendimiento de la sección 9.5 pasa: G1 en menos de 1000 ms y G0 en menos de 3000 ms.
-- [ ] `node packages/core/dist/cli.js parse --grammar g0 "CRI SOS PIS INT REV"` imprime "4 árboles", los 4 árboles en ASCII y la derivación del primero.
-- [ ] `node packages/core/dist/cli.js parse --grammar g1 "CTX PER PIS REV"` imprime la posición 2, `PIS` y los esperados `CRI, HAL`, y termina con código de salida 1.
-- [ ] Cada paso de la sección 8.3 tiene su comando registrado en la CLI y una prueba en `test/cli/` que verifica la salida y el código de salida.
+- [ ] `node packages/core/dist/command-line.js parse --grammar g0 "CRI SOS PIS INT REV"` imprime "4 árboles", los 4 árboles en ASCII y la derivación del primero.
+- [ ] `node packages/core/dist/command-line.js parse --grammar g1 "CTX PER PIS REV"` imprime la posición 2, `PIS` y los esperados `CRI, HAL`, y termina con código de salida 1.
+- [ ] Cada paso de la sección 8.3 tiene su comando registrado en la CLI y una prueba en `test/command-line/` que verifica la salida y el código de salida.
 - [ ] `npm run sabueso -- help` lista todos los comandos de la sección 8.3.
 - [ ] `npm run sabueso -- earley --grammar epsilon-trap "x" --no-epsilon-fix` imprime `RECHAZA`, y sin la opción imprime `ACEPTA`.
 - [ ] `npm run sabueso -- nullable --grammar g1 --steps` muestra al menos dos iteraciones y termina con los 10 anulables.
@@ -1220,7 +1228,7 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 
 - **Sí:** tres specs (núcleo, UI y español controlado). Siguen los hitos del anteproyecto y su regla "interfaz al final". Un solo spec mezclaría decisiones de cuatro dominios.
 - **No:** un spec único con fases. Sería imposible de verificar paso a paso y contradice la metodología incremental del anteproyecto.
-- **Sí:** todo el código en inglés (identificadores, comentarios, nombres de archivos y carpetas, opciones de la CLI, directivas `%start`/`%terminals`, tipos de token y no terminales de `meta.glc`), según la regla del SPEC 01. Quedan en español los datos del dominio y de la exposición: los símbolos de G0 y G1 (`Relato`, `CRI`…), el nombre visible del género ("Policial de enigma"), la salida de la CLI (`ACEPTA`, `RECHAZA`, los grupos de `help`) y las fichas, cuyo contenido es documentación.
+- **Sí:** todo el código en inglés (identificadores, comentarios, nombres de archivos y carpetas, opciones de la CLI, directivas `%start`/`%terminals`, tipos de token y no terminales de `meta.grammar`), según la regla del SPEC 01. Quedan en español los datos del dominio y de la exposición: los símbolos de G0 y G1 (`Relato`, `CRI`…), el nombre visible del género ("Policial de enigma"), la salida de la CLI (`ACEPTA`, `RECHAZA`, los grupos de `help`) y las fichas, cuyo contenido es documentación.
 - **Sí:** un monorepo con npm workspaces (`packages/core` y luego `apps/web`). La frontera entre motor e interfaz queda en la estructura de carpetas: la UI no puede tocar el motor por accidente, y se ve en la defensa.
 - **No:** un solo paquete con `src/core` y `src/ui`. La separación dependería solo de la disciplina.
 - **Sí:** las gramáticas viven en `packages/core/grammars/`, separadas en `genres/` (lo que el programa identifica) y `test/` (internas). Son datos que usan la CLI, las pruebas y la UI.
@@ -1236,7 +1244,7 @@ Las decisiones generales de tecnología (TypeScript estricto, `tsc` + `node`, si
 - **Sí:** el núcleo no usa `node:*`, salvo la CLI. El mismo código tiene que correr en el navegador en el SPEC 03.
 
 - **Sí:** cada paso con su comando de consola y la prueba del comando. El autor lo pidió explícitamente: cada etapa tiene que poder ejecutarse por consola y probarse. Además, cada concepto se puede demostrar en vivo apenas existe, sin depender de la UI.
-- **Sí:** comandos como funciones puras con un `io` inyectado. Se prueban en memoria (rápido, sin lanzar procesos), y `node:*` queda confinado a `cli.ts`, que es la regla que permite reutilizar el núcleo en el navegador.
+- **Sí:** comandos como funciones puras con un `environment` inyectado. Se prueban en memoria (rápido, sin lanzar procesos), y `node:*` queda confinado a `command-line.ts`, que es la regla que permite reutilizar el núcleo en el navegador.
 - **No:** una CLI única escrita al final. Así era la primera versión de este spec: dejaba 20 pasos sin forma de ejecutarlos fuera de las pruebas.
 - **Sí:** el script `npm run sabueso` (`tsc -b` incremental + `node`). Ejecuta por consola sin `tsx` y sin pasos manuales de build.
 - **Sí:** las opciones didácticas `--steps` (iteraciones de los puntos fijos) y `--no-epsilon-fix` (`classicEpsilon`). Permiten **mostrar** la convergencia de un punto fijo y el bug de ε, no solo afirmarlos. No cuestan nada cuando no se usan.
@@ -1247,14 +1255,14 @@ Las decisiones generales de tecnología (TypeScript estricto, `tsc` + `node`, si
 - **Sí:** Earley como analizador principal. Acepta cualquier GLC (incluida G0, ambigua) sobre la gramática tal como se diseñó. Es la decisión del anteproyecto.
 - **No:** CYK como analizador principal. Exige FNC y deforma los árboles. Se implementa igual, como comparación y como validación cruzada.
 - **No:** LL(1) o LR(k) como analizador del relato. Son deterministas y G0 es ambigua.
-- **Sí:** LL(1) como análisis y como lector de `.glc`. Se usa de verdad en tres lugares (sección 1.1) y da una demostración **constructiva** de que G1 no es ambigua.
+- **Sí:** LL(1) como análisis y como lector de `.grammar`. Se usa de verdad en tres lugares (sección 1.1) y da una demostración **constructiva** de que G1 no es ambigua.
 - **No:** LR(k) en cualquier forma. Ningún componente lo necesita, y el autor pidió incluirlo solo si se usa en el fondo.
 - **No:** código de Máquina de Turing. Ningún algoritmo lo requiere. Su lugar teórico (decisores, Church-Turing, indecidibilidad) queda cubierto en la ficha 27, de nuevo por la regla "solo si se usa".
 - **Sí:** G1 factorizada a izquierda y LL(1). Su no ambigüedad queda certificada por el propio motor de análisis, en vez de depender solo de una demostración a mano o de una búsqueda acotada que no prueba nada.
 - **Costo asumido de la factorización:** G1 suma 10 no terminales `…Opc` o anulables, y la derivación de A1 tiene 18 pasos, 5 de ellos ε. Esto contradice en parte el argumento del anteproyecto ("los árboles deben corresponder al diseño"). Respuesta para la defensa: la factorización es parte de la gramática que **diseña el autor**, mientras que los `T_a` y `Xn` de la FNC los introduce la máquina. El SPEC 03 podrá colapsar visualmente los subárboles ε.
 - **No:** una G1 "más legible" no LL(1) (con `Lineas → LineaAbierta Lineas | LineaCerrada Pasos`). Era no ambigua, pero solo podía argumentarse a mano. La versión LL(1) se autoverifica.
 - **Sí:** G1 cambia el lenguaje (L(G1) ⊊ L(G0)). El género no admite descartar una sospecha inexistente, el anteproyecto pide comparar "qué relatos acepta una y no la otra", y `compareLanguages` lo exhibe.
-- **Sí:** el formato `.glc` propio, con lexer AFD y parser LL(1). El anteproyecto pide gramáticas como archivos de texto, y el lector aplica dos conceptos de la materia en vez de ser código ad hoc.
+- **Sí:** el formato `.grammar` propio, con lexer AFD y parser LL(1). El anteproyecto pide gramáticas como archivos de texto, y el lector aplica dos conceptos de la materia en vez de ser código ad hoc.
 - **No:** gramáticas en JSON. No requiere parser, pero pierde el AFD y el LL(1), y es menos legible para la cátedra.
 - **Sí:** solo gramáticas incorporadas, también en la CLI (`--grammar` acepta nombres, no rutas). El propósito del programa es analizar relatos policiales con sus gramáticas, no cargar gramáticas del usuario. El motor sigue siendo genérico por dentro, y eso se verifica con las gramáticas de libro en las pruebas.
 - **Sí:** la directiva `%terminals`. Evita que un error de tipeo en un no terminal se convierta silenciosamente en terminal, el error más probable al editar gramáticas.

@@ -6,14 +6,14 @@
 import { buildGrammar } from '../../grammar/build.js';
 import type { Grammar } from '../../grammar/types.js';
 import { formatGrammar } from '../format.js';
-import { EXIT_CODES, type CliCommand } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
-export const demoGrammarCommand: CliCommand = {
+export const demoGrammarCommand: Command = {
   name: 'demo-grammar',
   description: 'Build the expression grammar in code and print G = (N, Σ, P, S)',
   usage: 'sabueso demo-grammar',
-  run(_args, io) {
-    io.stdout(`${formatGrammar(buildExpressionGrammar())}\n`);
+  run(_commandArguments, environment) {
+    environment.writeOutput(`${formatGrammar(buildExpressionGrammar())}\n`);
     return Promise.resolve(EXIT_CODES.ok);
   },
 };
@@ -21,8 +21,8 @@ export const demoGrammarCommand: CliCommand = {
 /** E → E + T | T,  T → id */
 function buildExpressionGrammar(): Grammar {
   return buildGrammar('expressions', [
-    { lhs: 'E', rhs: ['E', '+', 'T'] },
-    { lhs: 'E', rhs: ['T'] },
-    { lhs: 'T', rhs: ['id'] },
+    { leftSide: 'E', rightSide: ['E', '+', 'T'] },
+    { leftSide: 'E', rightSide: ['T'] },
+    { leftSide: 'T', rightSide: ['id'] },
   ]);
 }

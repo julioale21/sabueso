@@ -1,15 +1,15 @@
 // Everything a command may touch outside its own arguments. Injected so commands run
 // the same in Node, in the browser and in tests (in memory, without spawning processes).
-export interface CliIo {
+export interface CommandLineEnvironment {
   /** Normal output. Text is written as is: callers add their own line breaks. */
-  stdout(text: string): void;
+  writeOutput(text: string): void;
   /** Error output. */
-  stderr(text: string): void;
+  writeError(text: string): void;
   /** The only gateway to the file system. */
   readFile(path: string): Promise<string>;
 }
 
-export interface CliCommand {
+export interface Command {
   /** Name typed on the command line, e.g. 'version'. */
   name: string;
   /** One line, shown by help. */
@@ -17,7 +17,7 @@ export interface CliCommand {
   /** Example invocation, e.g. 'sabueso version'. */
   usage: string;
   /** Runs the command and resolves to its exit code (see EXIT_CODES). */
-  run(args: string[], io: CliIo): Promise<number>;
+  run(commandArguments: string[], environment: CommandLineEnvironment): Promise<number>;
 }
 
 /** Exit codes shared by every command of every package. */

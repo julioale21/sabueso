@@ -7,18 +7,16 @@
   },
   "workspaces": [
     "packages/core",
-    "packages/nl",
     "apps/web"
   ],
   "scripts": {
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "tsc -b packages/core packages/nl && npm run build -w @sabueso/web",
-    "typecheck": "tsc -b packages/core packages/nl && tsc -p apps/web --noEmit",
+    "build": "tsc -b packages/core && npm run build -w @sabueso/web",
+    "typecheck": "tsc -b packages/core && tsc -p apps/web --noEmit",
     "test": "vitest run",
-    "sabueso": "tsc -b packages/core && node packages/core/dist/cli.js",
-    "sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js",
+    "sabueso": "tsc -b packages/core && node packages/core/dist/command-line.js",
     "prepare": "node -e \"require('fs').existsSync('.git') && require('child_process').execSync('git config core.hooksPath .githooks')\""
   },
   "devDependencies": {

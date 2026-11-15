@@ -10,12 +10,12 @@ import type { Grammar, Production, SymbolName } from './types.js';
  * the left-hand side of some rule, and a terminal otherwise. A literal ('+' in .glc) is
  * always a terminal, named by its content without quotes.
  */
-export type RhsSymbol = SymbolName | { literal: string };
+export type RightSideSymbol = SymbolName | { literal: string };
 
-/** One production as written: lhs → rhs. An empty rhs is an ε-production. */
+/** One production as written: left side → right side. An empty right side is an ε-production. */
 export interface GrammarRule {
-  lhs: SymbolName;
-  rhs: readonly RhsSymbol[];
+  leftSide: SymbolName;
+  rightSide: readonly RightSideSymbol[];
 }
 
 /** A grammar that cannot be built: its message names the offending symbol or production. */
@@ -57,18 +57,18 @@ export function buildGrammar(
 
   return {
     name,
-    start: requireNonterminalStart(start ?? firstRule.lhs, symbols.nonterminals),
+    start: requireNonterminalStart(start ?? firstRule.leftSide, symbols.nonterminals),
     nonterminals: symbols.nonterminals,
     terminals: symbols.terminals,
     productions,
-    byLhs: groupByLhs(symbols.nonterminals, productions),
+    productionsByLeftSide: groupByLeftSide(symbols.nonterminals, productions),
   };
 }
 
-/** Renders a production as in the theory: 'E → E + T', or 'A → ε' for an empty rhs. */
+/** Renders a production as in the theory: 'E → E + T', or 'A → ε' for an empty right side. */
 export function formatProduction(production: Production): string {
-  const rhs = production.rhs.length === 0 ? 'ε' : production.rhs.join(' ');
-  return `${production.lhs} → ${rhs}`;
+  const rightSide = production.rightSide.length === 0 ? 'ε' : production.rightSide.join(' ');
+  return `${production.leftSide} → ${rightSide}`;
 }
 
 function requireAtLeastOneRule(name: string, rules: readonly GrammarRule[]): GrammarRule {
@@ -93,8 +93,8 @@ function createSymbolTable(
 function collectNonterminals(rules: readonly GrammarRule[]): Set<SymbolName> {
   const nonterminals = new Set<SymbolName>();
   for (const rule of rules) {
-    rejectReservedName(rule.lhs);
-    nonterminals.add(rule.lhs);
+    rejectReservedName(rule.leftSide);
+    nonterminals.add(rule.leftSide);
   }
   return nonterminals;
 }
@@ -111,13 +111,13 @@ function checkDeclaredTerminal(terminal: SymbolName, nonterminals: ReadonlySet<S
 function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable): Production[] {
   return rules.map((rule, index) => ({
     id: index,
-    lhs: rule.lhs,
-    rhs: rule.rhs.map((symbol) => resolveRhsSymbol(symbol, symbols)),
+    leftSide: rule.leftSide,
+    rightSide: rule.rightSide.map((symbol) => resolveRightSideSymbol(symbol, symbols)),
   }));
 }
 
 /** Returns the name of a right-hand-side symbol, adding it to Σ when it is a terminal. */
-function resolveRhsSymbol(symbol: RhsSymbol, symbols: SymbolTable): SymbolName {
+function resolveRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): SymbolName {
   const name =
     typeof symbol === 'string'
       ? resolveIdentifier(symbol, symbols)
@@ -155,7 +155,7 @@ function resolveLiteral(literal: string, symbols: SymbolTable): SymbolName {
 function rejectDuplicateProductions(productions: readonly Production[]): void {
   const seen = new Set<string>();
   for (const production of productions) {
-    const key = JSON.stringify([production.lhs, ...production.rhs]);
+    const key = JSON.stringify([production.leftSide, ...production.rightSide]);
     if (seen.has(key)) {
       throw new GrammarBuildError(`Duplicate production: ${formatProduction(production)}`);
     }
@@ -174,18 +174,18 @@ function requireNonterminalStart(
   return start;
 }
 
-function groupByLhs(
+function groupByLeftSide(
   nonterminals: ReadonlySet<SymbolName>,
   productions: readonly Production[],
 ): Map<SymbolName, Production[]> {
-  const byLhs = new Map<SymbolName, Production[]>();
+  const productionsByLeftSide = new Map<SymbolName, Production[]>();
   for (const nonterminal of nonterminals) {
-    byLhs.set(nonterminal, []);
+    productionsByLeftSide.set(nonterminal, []);
   }
   for (const production of productions) {
-    byLhs.get(production.lhs)?.push(production);
+    productionsByLeftSide.get(production.leftSide)?.push(production);
   }
-  return byLhs;
+  return productionsByLeftSide;
 }
 
 /** '$' is reserved for the end marker of FOLLOW and for the augmented start symbol $S. */

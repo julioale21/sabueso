@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { buildGrammar, formatProduction, GrammarBuildError } from '../src/grammar/build.js';
 
 const expressionRules = [
-  { lhs: 'E', rhs: ['E', '+', 'T'] },
-  { lhs: 'E', rhs: ['T'] },
-  { lhs: 'T', rhs: ['id'] },
+  { leftSide: 'E', rightSide: ['E', '+', 'T'] },
+  { leftSide: 'E', rightSide: ['T'] },
+  { leftSide: 'T', rightSide: ['id'] },
 ];
 
 describe('buildGrammar', () => {
@@ -22,8 +22,10 @@ describe('buildGrammar', () => {
 
   it('indexes the productions of each nonterminal', () => {
     const grammar = buildGrammar('expressions', expressionRules);
-    expect(grammar.byLhs.get('E')?.map((production) => production.id)).toEqual([0, 1]);
-    expect(grammar.byLhs.get('T')?.map((production) => production.id)).toEqual([2]);
+    expect(grammar.productionsByLeftSide.get('E')?.map((production) => production.id)).toEqual([
+      0, 1,
+    ]);
+    expect(grammar.productionsByLeftSide.get('T')?.map((production) => production.id)).toEqual([2]);
   });
 
   it('uses the left-hand side of the first rule as the default start symbol', () => {
@@ -31,26 +33,29 @@ describe('buildGrammar', () => {
     expect(buildGrammar('expressions', expressionRules, 'T').start).toBe('T');
   });
 
-  it('represents an ε-production with an empty rhs', () => {
+  it('represents an ε-production with an empty right side', () => {
     const grammar = buildGrammar('parentheses', [
-      { lhs: 'S', rhs: [{ literal: '(' }, 'S', { literal: ')' }, 'S'] },
-      { lhs: 'S', rhs: [] },
+      { leftSide: 'S', rightSide: [{ literal: '(' }, 'S', { literal: ')' }, 'S'] },
+      { leftSide: 'S', rightSide: [] },
     ]);
     expect(grammar.productions.map(formatProduction)).toEqual(['S → ( S ) S', 'S → ε']);
     expect([...grammar.terminals]).toEqual(['(', ')']);
   });
 
   it('names a literal by its content, so it matches the space-separated input', () => {
-    const grammar = buildGrammar('sum', [{ lhs: 'E', rhs: ['E', { literal: '+' }, 'E'] }]);
-    expect(grammar.productions[0]?.rhs).toEqual(['E', '+', 'E']);
+    const grammar = buildGrammar('sum', [
+      { leftSide: 'E', rightSide: ['E', { literal: '+' }, 'E'] },
+    ]);
+    expect(grammar.productions[0]?.rightSide).toEqual(['E', '+', 'E']);
   });
 
   it('adds declared terminals to Σ even if no rule uses them', () => {
-    const grammar = buildGrammar('story', [{ lhs: 'Relato', rhs: ['CRI', 'REV'] }], undefined, [
-      'CRI',
-      'REV',
-      'EPI',
-    ]);
+    const grammar = buildGrammar(
+      'story',
+      [{ leftSide: 'Relato', rightSide: ['CRI', 'REV'] }],
+      undefined,
+      ['CRI', 'REV', 'EPI'],
+    );
     expect([...grammar.terminals].sort()).toEqual(['CRI', 'EPI', 'REV']);
   });
 });
@@ -70,7 +75,7 @@ describe('buildGrammar errors', () => {
   });
 
   it('names an undeclared identifier when %terminals is present', () => {
-    const rules = [{ lhs: 'Relato', rhs: ['CRI', 'Pistas'] }];
+    const rules = [{ leftSide: 'Relato', rightSide: ['CRI', 'Pistas'] }];
     expectBuildError(
       () => buildGrammar('story', rules, undefined, ['CRI']),
       /Undeclared symbol "Pistas"/,
@@ -78,7 +83,7 @@ describe('buildGrammar errors', () => {
   });
 
   it('rejects a declared terminal that is also a left-hand side', () => {
-    const rules = [{ lhs: 'Relato', rhs: ['CRI'] }];
+    const rules = [{ leftSide: 'Relato', rightSide: ['CRI'] }];
     expectBuildError(
       () => buildGrammar('story', rules, undefined, ['CRI', 'Relato']),
       /"Relato" is declared as a terminal/,
@@ -86,24 +91,30 @@ describe('buildGrammar errors', () => {
   });
 
   it('rejects duplicate productions', () => {
-    const rules = [...expressionRules, { lhs: 'T', rhs: ['id'] }];
+    const rules = [...expressionRules, { leftSide: 'T', rightSide: ['id'] }];
     expectBuildError(() => buildGrammar('expressions', rules), /Duplicate production: T → id/);
   });
 
   it('rejects a literal with the name of a nonterminal', () => {
-    const rules = [{ lhs: 'E', rhs: [{ literal: 'E' }] }];
+    const rules = [{ leftSide: 'E', rightSide: [{ literal: 'E' }] }];
     expectBuildError(() => buildGrammar('clash', rules), /Literal 'E'/);
   });
 
   it("rejects '$', reserved for FOLLOW and $S", () => {
     expectBuildError(
-      () => buildGrammar('dollar', [{ lhs: 'S', rhs: [{ literal: '$' }] }]),
+      () => buildGrammar('dollar', [{ leftSide: 'S', rightSide: [{ literal: '$' }] }]),
       /reserved/,
     );
-    expectBuildError(() => buildGrammar('dollar', [{ lhs: '$S', rhs: ['a'] }]), /reserved/);
+    expectBuildError(
+      () => buildGrammar('dollar', [{ leftSide: '$S', rightSide: ['a'] }]),
+      /reserved/,
+    );
   });
 
   it('rejects an empty literal', () => {
-    expectBuildError(() => buildGrammar('empty', [{ lhs: 'S', rhs: [{ literal: '' }] }]), /ε/);
+    expectBuildError(
+      () => buildGrammar('empty', [{ leftSide: 'S', rightSide: [{ literal: '' }] }]),
+      /ε/,
+    );
   });
 });
