@@ -2,11 +2,12 @@
 // tests can run it in memory, and apart from run.ts to avoid an import cycle with
 // index.ts (which re-exports createCli and owns VERSION).
 import { VERSION } from '../index.js';
+import { demoGrammarCommand } from './commands/demo-grammar.js';
 import { versionCommand } from './commands/version.js';
 import { createCli } from './run.js';
 
 export const runCli = createCli({
   program: 'sabueso',
   version: VERSION,
-  commands: [versionCommand],
+  commands: [versionCommand, demoGrammarCommand],
 });

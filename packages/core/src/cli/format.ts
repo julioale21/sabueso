@@ -1,4 +1,6 @@
 // Plain-text formatting helpers shared by the commands.
+import { formatProduction } from '../grammar/build.js';
+import type { Grammar, Production } from '../grammar/types.js';
 
 /** Renders rows as left-aligned columns, with a dashed line under the header. */
 export function table(header: string[], rows: string[][]): string {
@@ -19,4 +21,21 @@ export function table(header: string[], rows: string[][]): string {
 export function set(items: Iterable<string>): string {
   const sorted = [...new Set(items)].sort();
   return `{${sorted.join(', ')}}`;
+}
+
+/** Renders G as its 4-tuple (N, Σ, P, S), with the productions numbered. */
+export function formatGrammar(grammar: Grammar): string {
+  return [
+    `${grammar.name}: G = (N, Σ, P, S)`,
+    `N = ${set(grammar.nonterminals)}`,
+    `Σ = ${set(grammar.terminals)}`,
+    `S = ${grammar.start}`,
+    'P:',
+    ...grammar.productions.map(formatNumberedProduction),
+  ].join('\n');
+}
+
+/** '   0  E → E + T': the production id right-aligned, then the production. */
+function formatNumberedProduction(production: Production): string {
+  return `  ${String(production.id).padStart(2)}  ${formatProduction(production)}`;
 }
