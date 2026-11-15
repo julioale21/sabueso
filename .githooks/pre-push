@@ -1,0 +1,4 @@
+#!/bin/sh
+# Slower checks before every push: the full test suite (SPEC 01, section 4.6).
+set -e
+npm test

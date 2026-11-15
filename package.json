@@ -18,7 +18,8 @@
     "typecheck": "tsc -b packages/core packages/nl && tsc -p apps/web --noEmit",
     "test": "vitest run",
     "sabueso": "tsc -b packages/core && node packages/core/dist/cli.js",
-    "sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js"
+    "sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js",
+    "prepare": "node -e \"require('fs').existsSync('.git') && require('child_process').execSync('git config core.hooksPath .githooks')\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
