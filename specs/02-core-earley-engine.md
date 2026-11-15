@@ -1220,6 +1220,7 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 
 - **Sí:** tres specs (núcleo, UI y español controlado). Siguen los hitos del anteproyecto y su regla "interfaz al final". Un solo spec mezclaría decisiones de cuatro dominios.
 - **No:** un spec único con fases. Sería imposible de verificar paso a paso y contradice la metodología incremental del anteproyecto.
+- **Sí:** todo el código en inglés (identificadores, comentarios, nombres de archivos y carpetas, opciones de la CLI, directivas `%start`/`%terminals`, tipos de token y no terminales de `meta.glc`), según la regla del SPEC 01. Quedan en español los datos del dominio y de la exposición: los símbolos de G0 y G1 (`Relato`, `CRI`…), el nombre visible del género ("Policial de enigma"), la salida de la CLI (`ACEPTA`, `RECHAZA`, los grupos de `help`) y las fichas, cuyo contenido es documentación.
 - **Sí:** un monorepo con npm workspaces (`packages/core` y luego `apps/web`). La frontera entre motor e interfaz queda en la estructura de carpetas: la UI no puede tocar el motor por accidente, y se ve en la defensa.
 - **No:** un solo paquete con `src/core` y `src/ui`. La separación dependería solo de la disciplina.
 - **Sí:** las gramáticas viven en `packages/core/grammars/`, separadas en `genres/` (lo que el programa identifica) y `test/` (internas). Son datos que usan la CLI, las pruebas y la UI.
