@@ -414,14 +414,14 @@ interface TagInfo {
   tag: string;
   function: string;
   example: string;
-} // función narrativa y ejemplo (tabla del anteproyecto)
+} // narrative function and example (table from the project proposal)
 interface Genre {
   id: string; // 'detective'
   name: string; // 'Policial de enigma'
   description: string;
-  officialGrammar: string; // 'detective/g1': con esta se decide si el relato pertenece al género
-  alternativeGrammar?: string; // 'detective/g0': versión ambigua para el análisis de ambigüedad
-  tags: TagInfo[]; // las 14 etiquetas: paleta y ayuda de la UI
+  officialGrammar: string; // 'detective/g1': decides whether a story belongs to the genre
+  alternativeGrammar?: string; // 'detective/g0': ambiguous version, for the ambiguity analysis
+  tags: TagInfo[]; // the 14 tags: UI palette and help
 }
 ```
 
@@ -434,7 +434,7 @@ interface Genre {
 
 ## 5. Modelo de datos
 
-Los identificadores y los comentarios del código van en inglés (los comentarios de los bloques de abajo están en español solo porque son parte del spec). Los tipos viven en los archivos indicados.
+Los identificadores y los comentarios del código van en inglés. Los tipos viven en los archivos indicados.
 
 ```ts
 // src/grammar/types.ts
@@ -446,20 +446,20 @@ interface Production {
 } // rhs [] = ε
 interface Grammar {
   name: string;
-  start: SymbolName; // símbolo inicial declarado
+  start: SymbolName; // declared start symbol
   nonterminals: ReadonlySet<SymbolName>;
   terminals: ReadonlySet<SymbolName>; // Σ
   productions: readonly Production[];
   byLhs: ReadonlyMap<SymbolName, readonly Production[]>;
 }
-const AUGMENTED_START = '$S'; // nunca lo produce el lexer
+const AUGMENTED_START = '$S'; // never produced by the lexer
 
 // src/automata/dfa.ts
 interface DfaDefinition<S extends string, C extends string, K extends string> {
   start: S;
   classify: (ch: string) => C;
   delta: Record<S, Partial<Record<C, S>>>;
-  accepting: Partial<Record<S, K | null>>; // null = se reconoce pero se descarta (espacios, comentarios)
+  accepting: Partial<Record<S, K | null>>; // null = recognized but discarded (whitespace, comments)
 }
 interface DfaToken<K> {
   kind: K;
@@ -490,7 +490,7 @@ interface GrammarAnalysis {
   reachable: Set<SymbolName>;
   useless: Set<SymbolName>;
   isEmpty: boolean; // L(G) = ∅
-  cycles: SymbolName[][]; // cada ciclo A ⇒+ A encontrado
+  cycles: SymbolName[][]; // every cycle A ⇒+ A found
   first: Map<SymbolName, Set<SymbolName | 'ε'>>;
   follow: Map<SymbolName, Set<SymbolName | '$'>>;
   ll1: {
@@ -538,9 +538,9 @@ interface TraceEvent {
 // src/earley/diagnostics.ts
 interface ParseError {
   kind: 'unexpected-token' | 'unexpected-end' | 'unknown-symbol';
-  position: number; // índice de token, base 0
-  found: SymbolName | null; // null = fin de entrada
-  expected: SymbolName[]; // ordenado alfabéticamente
+  position: number; // token index, 0-based
+  found: SymbolName | null; // null = end of input
+  expected: SymbolName[]; // sorted alphabetically
 }
 
 // src/trees/tree.ts
@@ -552,14 +552,14 @@ type TreeCount = bigint | 'infinite';
 interface DerivationStep {
   form: SymbolName[];
   production: Production | null;
-} // el primer paso tiene null
+} // the first step has null
 
-// src/index.ts — resultado público de parse()
+// src/index.ts — public result of parse()
 interface ParseOptions {
   maxTrees?: number /* 50 */;
   trace?: boolean /* false */;
   countTrees?: boolean /* true */;
-  classicEpsilon?: boolean; /* false; solo didáctico: reproduce el bug de ε */
+  classicEpsilon?: boolean; /* false; teaching only: reproduces the ε bug */
 }
 type ParseResult =
   | {
@@ -601,7 +601,7 @@ type PdaTransition =
 interface PdaId {
   position: number;
   stack: SymbolName[];
-} // tope = índice 0
+} // top = index 0
 interface PdaRun {
   result: 'accept' | 'reject' | 'undetermined';
   steps: number;
