@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "noEmit": true,
+    // Same target as the Vite alias: the core source, not its build (SPEC 01, 4.3).
+    "paths": {
+      "@sabueso/core": ["../../packages/core/src/index.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}

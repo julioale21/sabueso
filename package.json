@@ -14,8 +14,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "tsc -b packages/core packages/nl",
-    "typecheck": "tsc -b packages/core packages/nl",
+    "build": "tsc -b packages/core packages/nl && npm run build -w @sabueso/web",
+    "typecheck": "tsc -b packages/core packages/nl && tsc -p apps/web --noEmit",
     "test": "vitest run",
     "sabueso": "tsc -b packages/core && node packages/core/dist/cli.js",
     "sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js"
@@ -25,6 +25,7 @@
     "@types/node": "^24.19.2",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",
