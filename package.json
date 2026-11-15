@@ -14,10 +14,11 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "tsc -b packages/core",
-    "typecheck": "tsc -b packages/core",
+    "build": "tsc -b packages/core packages/nl",
+    "typecheck": "tsc -b packages/core packages/nl",
     "test": "vitest run",
-    "sabueso": "tsc -b packages/core && node packages/core/dist/cli.js"
+    "sabueso": "tsc -b packages/core && node packages/core/dist/cli.js",
+    "sabueso-nl": "tsc -b packages/nl && node packages/nl/dist/cli.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
