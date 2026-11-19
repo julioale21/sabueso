@@ -10,11 +10,11 @@ export interface CommandLineEnvironment {
 }
 
 export interface Command {
-  /** Name typed on the command line, e.g. 'version'. */
+  /** Name typed on the command line, e.g. 'demo-grammar'. */
   name: string;
   /** One line, shown by help. */
   description: string;
-  /** Example invocation, e.g. 'sabueso version'. */
+  /** Example invocation, e.g. 'sabueso demo-grammar'. */
   usage: string;
   /** Runs the command and resolves to its exit code (see EXIT_CODES). */
   run(commandArguments: string[], environment: CommandLineEnvironment): Promise<number>;

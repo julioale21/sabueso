@@ -776,11 +776,12 @@ Cada ficha tiene como máximo unas 2 páginas, pensadas para una diapositiva o d
 
 ### 8.1 Regla de los pasos: cada etapa se ejecuta por consola y se prueba
 
-Cada paso termina con tres cosas, y ningún paso se da por cerrado sin ellas:
+Cada paso termina con cuatro cosas, y ningún paso se da por cerrado sin ellas:
 
 1. **Una prueba automatizada** del módulo, con los valores esperados de la sección 9.
 2. **Un comando de consola** que ejecuta el módulo sobre una entrada real y muestra su resultado de forma legible. Así cada concepto se puede demostrar en vivo apenas se implementa, sin esperar a la API final ni a la UI.
 3. **Una prueba del comando:** que la salida contenga lo esperado y que el código de salida sea el correcto.
+4. **Una guía de estudio** en `docs/guides/NN-nombre.md` (plantilla en `docs/guides/_template.md`). Documenta las decisiones del paso: qué problema resuelve, por qué se eligió esa herramienta y no otra, cómo se usa en el programa, cómo funciona y cada función del código, con un ejemplo recorrido a mano y las preguntas probables de la defensa. La ficha del concepto (`docs/concepts/`) es el resumen teórico; la guía es la explicación completa del código y de sus decisiones.
 
 Además, cada paso deja `npm test` en verde y es un commit propio. Cada paso que introduce un concepto incluye su ficha. **Antes de cada paso de algoritmo, el autor simula el caso a mano** (metodología del anteproyecto).
 

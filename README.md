@@ -20,11 +20,11 @@ npm install      # instala dependencias y activa los hooks de git
 
 ## Estructura
 
-| Carpeta         | Paquete         | Qué contiene                                                          |
-| --------------- | --------------- | --------------------------------------------------------------------- |
-| `packages/core` | `@sabueso/core` | El núcleo: gramáticas, motor de Earley y la CLI `sabueso`             |
-| `apps/web`      | `@sabueso/web`  | La interfaz web (Vite + React)                                        |
-| `docs/`         | —               | Fichas de conceptos (`docs/concepts/`) y guion de la demo por consola |
+| Carpeta         | Paquete         | Qué contiene                                                                                                      |
+| --------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `packages/core` | `@sabueso/core` | El núcleo: gramáticas, motor de Earley y la CLI `sabueso`                                                         |
+| `apps/web`      | `@sabueso/web`  | La interfaz web (Vite + React)                                                                                    |
+| `docs/`         | —               | Fichas de conceptos (`docs/concepts/`), guías de estudio por paso (`docs/guides/`) y guion de la demo por consola |
 
 ## Comandos
 

@@ -1,5 +1,5 @@
 /**
- * Concept: building G = (N, Σ, P, S) from its rules, with the .glc terminal convention.
+ * Concept: building G = (N, Σ, P, S) from its rules, with the .grammar terminal convention.
  * Reference: Hopcroft 5.1; Augusto 2.4.
  * Card: docs/concepts/02-context-free-grammar.md
  */
@@ -7,7 +7,7 @@ import type { Grammar, Production, SymbolName } from './types.js';
 
 /**
  * A symbol on the right-hand side of a rule. A plain identifier is a nonterminal if it is
- * the left-hand side of some rule, and a terminal otherwise. A literal ('+' in .glc) is
+ * the left-hand side of some rule, and a terminal otherwise. A literal ('+' in .grammar) is
  * always a terminal, named by its content without quotes.
  */
 export type RightSideSymbol = SymbolName | { literal: string };

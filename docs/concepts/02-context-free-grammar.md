@@ -11,7 +11,7 @@ Una gramática libre de contexto es una 4-upla G = (N, Σ, P, S):
 
 Es "libre de contexto" porque el lado izquierdo es un único no terminal: A se puede reemplazar por α sin mirar lo que lo rodea.
 
-**Convención de los archivos `.glc`:** un identificador es no terminal si es lado izquierdo de alguna regla, y terminal en otro caso. Un literal entre comillas (`'+'`) es siempre terminal, y su nombre es el contenido sin comillas. Si el archivo declara `%terminals`, todo identificador que no sea lado izquierdo ni esté declarado es un error.
+**Convención de los archivos `.grammar`:** un identificador es no terminal si es lado izquierdo de alguna regla, y terminal en otro caso. Un literal entre comillas (`'+'`) es siempre terminal, y su nombre es el contenido sin comillas. Si el archivo declara `%terminals`, todo identificador que no sea lado izquierdo ni esté declarado es un error.
 
 ## 2. Ejemplo resuelto a mano
 
