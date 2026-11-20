@@ -1,5 +1,6 @@
 // The `sabueso` program: the list of its commands. Kept apart from command-line.ts so
 // tests can run it in memory, without starting a Node process.
+import { analyzeCommand } from './commands/analyze.js';
 import { cyclesCommand } from './commands/cycles.js';
 import { firstFollowCommand } from './commands/first-follow.js';
 import { genresCommand } from './commands/genres.js';
@@ -8,6 +9,7 @@ import { grammarsCommand } from './commands/grammars.js';
 import { lexCommand } from './commands/lex.js';
 import { minYieldCommand } from './commands/min-yield.js';
 import { nullableCommand } from './commands/nullable.js';
+import { predictiveTableCommand } from './commands/predictive-table.js';
 import { tokensCommand } from './commands/tokens.js';
 import { usefulCommand } from './commands/useful.js';
 import { formatGrammarGroups } from './built-in-grammars.js';
@@ -25,6 +27,8 @@ export const runCommandLine = createCommandLineProgram({
     usefulCommand,
     cyclesCommand,
     firstFollowCommand,
+    predictiveTableCommand,
+    analyzeCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

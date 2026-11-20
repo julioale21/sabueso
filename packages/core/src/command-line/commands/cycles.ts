@@ -8,7 +8,7 @@ import { computeNullable } from '../../analysis/nullable.js';
 import { buildUnitGraph, findCycles, type UnitGraph } from '../../analysis/cycles.js';
 import type { SymbolName } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
-import { formatTable } from '../format.js';
+import { formatCycle, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
@@ -68,9 +68,4 @@ function formatCycles(cycles: readonly SymbolName[][]): string {
     `${cycles.length} cycle(s): some string has infinitely many trees`,
     ...cycles.map((cycle) => `  ${formatCycle(cycle)}`),
   ].join('\n');
-}
-
-/** 'S ⇒+ A ⇒+ S': a cycle written as derivations that come back to its first symbol. */
-function formatCycle(cycle: readonly SymbolName[]): string {
-  return [...cycle, cycle[0] ?? ''].join(' ⇒+ ');
 }

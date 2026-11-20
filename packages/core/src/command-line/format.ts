@@ -23,6 +23,11 @@ export function formatSet(items: Iterable<string>): string {
   return `{${sorted.join(', ')}}`;
 }
 
+/** 'S ⇒+ A ⇒+ S': a cycle written as derivations that come back to its first symbol. */
+export function formatCycle(cycle: readonly string[]): string {
+  return [...cycle, cycle[0] ?? ''].join(' ⇒+ ');
+}
+
 /** Renders G as its 4-tuple (N, Σ, P, S), with the productions numbered. */
 export function formatGrammar(grammar: Grammar): string {
   return [

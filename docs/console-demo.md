@@ -97,3 +97,13 @@ Paso 11. Con qué terminal puede empezar cada no terminal (FIRST) y qué puede v
 npm run sabueso -- first-follow --grammar-file examples/grammars/mini-detective.grammar --steps
 npm run sabueso -- first-follow --grammar g1
 ```
+
+## Tabla LL(1) y análisis completo
+
+Paso 12. La tabla M[A, a]: G0 tiene 13 conflictos (marcados con ✗) y G1 ninguno, así que G1 es LL(1) y, por el teorema, no ambigua. `analyze` junta todos los análisis de los pasos 7 a 12.
+
+```sh
+npm run sabueso -- predictive-table --grammar g0
+npm run sabueso -- predictive-table --grammar g1
+npm run sabueso -- analyze --grammar g1
+```

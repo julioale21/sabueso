@@ -930,6 +930,11 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - `npm run sabueso -- predictive-table --grammar g0` imprime la tabla M[A, a], marca los conflictos y termina con `No es LL(1): k conflictos`.
       - Con `g1`, imprime `Es LL(1) ⇒ no ambigua`.
       - `npm run sabueso -- analyze --grammar g1` resume los pasos 7 a 12 en un solo informe.
+    - **Decisiones (2026-11-20):**
+      - Funciones: `buildPredictiveTable(grammar, sets?)` (recibe FIRST/FOLLOW si ya están calculados) y `predictionSet(production, sets)`, que da el conjunto de predicción de una producción. `analyzeGrammar(grammar)` en `analysis/index.ts` devuelve el `GrammarAnalysis` de la sección 5.
+      - La salida de los comandos sigue en inglés, como el resto: `Not LL(1): k conflict(s)…` y `LL(1): no cell has two productions, so the grammar is unambiguous` en lugar de los textos en español de este punto.
+      - La tabla muestra en cada casilla los números de sus producciones (con `✗` si hay más de una), seguida de la lista numerada de producciones y de los conflictos.
+      - G0 tiene 13 conflictos: 6 por ambigüedad (`Pasos` en 5 columnas y `Linea` en SOS) y 7 por falta de factorización (`Planteo`, `Marco`, `Hecho`, `Desenlace`, `Resolucion`). `arithmetic` tiene 4, por recursión a izquierda.
 
 13. **Ítems y chart.**
     - `earley/item.ts` (crear ítem, clave, avanzar, `nextSymbol`, `isComplete` y `label` legible) y `earley/chart.ts` (agregar con deduplicación de ítems por clave; los enlaces se agregan sin buscar duplicados, según la sección 3.18).
