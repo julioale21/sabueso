@@ -1,6 +1,7 @@
 // The `sabueso` program: the list of its commands. Kept apart from command-line.ts so
 // tests can run it in memory, without starting a Node process.
 import { analyzeCommand } from './commands/analyze.js';
+import { countCommand } from './commands/count.js';
 import { cyclesCommand } from './commands/cycles.js';
 import { earleyCommand } from './commands/earley.js';
 import { epsilonTreesCommand } from './commands/epsilon-trees.js';
@@ -39,6 +40,7 @@ export const runCommandLine = createCommandLineProgram({
     traceCommand,
     epsilonTreesCommand,
     treesCommand,
+    countCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

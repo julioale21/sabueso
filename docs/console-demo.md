@@ -176,3 +176,13 @@ npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV"
 npm run sabueso -- trees --grammar g1 "CRI SOS PIS INT REV"
 npm run sabueso -- trees --grammar g1 "CRI PIS REV"
 ```
+
+## Contar los árboles
+
+Paso 20. Cuántos árboles tiene un relato, sin armarlos. En G0 crecen como los números de Catalan: L1 (200 eventos) tiene C(197), un número de 115 dígitos. En G1, siempre 1.
+
+```sh
+npm run sabueso -- count --grammar g0 "CTX HAL ENC INT SOS PIS DSC REV CNF CAP"
+npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt
+npm run sabueso -- count --grammar g1 --file packages/core/test/fixtures/l1.txt
+```

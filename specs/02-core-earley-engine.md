@@ -1019,6 +1019,11 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:**
       - `npm run sabueso -- count --grammar g0 "CTX HAL ENC INT SOS PIS DSC REV CNF CAP"` imprime `8 árboles`.
       - `npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt` imprime el número completo con su cantidad de dígitos y el tiempo empleado.
+    - **Decisiones (2026-11-20):**
+      - `countTrees(grammar, recognition)` recorre los mismos enlaces que la enumeración, con memoria por ítem (`Map<EarleyItem, TreeCount>`) y el conjunto de ítems en curso para detectar ciclos. Los enlaces `nullable` cuentan los árboles ε del paso 18, con una memoria compartida.
+      - `catalan(n)` queda exportada (recurrencia C(k+1) = C(k)·2(2k+1)/(k+2), exacta con `bigint`): la usan las pruebas y sirve para la defensa.
+      - La opción `--file` vive en `command-line/story-source.ts` (`readStory`), para que la usen también `parse` y `bench`.
+      - Mensajes en inglés: `8 trees: the grammar is ambiguous for this input`, el número completo con `(a number of 115 digits)`, `1 tree: unambiguous…`, `Infinitely many trees…`, y el tiempo.
 
 21. **Derivación más a la izquierda.**
     - `trees/derivation.ts`.
