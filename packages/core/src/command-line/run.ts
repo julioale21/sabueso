@@ -1,4 +1,4 @@
-import { table } from './format.js';
+import { formatTable } from './format.js';
 import { EXIT_CODES, type Command, type CommandLineEnvironment } from './types.js';
 
 export interface CommandLineProgramOptions {
@@ -35,12 +35,14 @@ export function createCommandLineProgram(
   const commands = [...options.commands, help];
 
   function commandList(): string {
-    return table(
+    return formatTable(
       ['Command', 'Description', 'Usage'],
       commands.map((command) => [command.name, command.description, command.usage]),
     );
   }
 
+  // ES: El programa es una función pura de (argumentos, entorno) → código de salida.
+  // ES: El entorno (escribir, leer archivos) se inyecta: por eso las pruebas corren en memoria.
   return async (commandLineArguments, environment) => {
     const [name, ...commandArguments] = commandLineArguments;
     if (name === undefined) {

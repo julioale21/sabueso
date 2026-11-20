@@ -5,16 +5,20 @@
  */
 import { parseGrammarText } from '../../grammar-format/parser.js';
 import type { Grammar } from '../../grammar/types.js';
-import { table } from '../format.js';
+import { formatTable } from '../format.js';
 import {
   builtInGrammarPath,
+  grammarGroups,
   listBuiltInGrammars,
   type BuiltInGrammar,
   type GrammarGroup,
-} from '../grammars.js';
-import { EXIT_CODES, type Command, type CommandLineEnvironment } from '../types.js';
-
-const GROUPS: readonly GrammarGroup[] = ['Géneros', 'Desarrollo'];
+} from '../built-in-grammars.js';
+import {
+  EXIT_CODES,
+  reportUsageError,
+  type Command,
+  type CommandLineEnvironment,
+} from '../types.js';
 
 export const grammarsCommand: Command = {
   name: 'grammars',
@@ -22,13 +26,12 @@ export const grammarsCommand: Command = {
   usage: 'sabueso grammars',
   async run(commandArguments, environment) {
     if (commandArguments.length > 0) {
-      environment.writeError('Usage: sabueso grammars\n');
-      return EXIT_CODES.usage;
+      return reportUsageError('Usage: sabueso grammars', environment);
     }
     const rows = await Promise.all(
       listBuiltInGrammars().map((grammar) => describeGrammar(grammar, environment)),
     );
-    const sections = GROUPS.map((group) => formatGroup(group, rows));
+    const sections = grammarGroups.map((group) => formatGroup(group, rows));
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },
@@ -53,7 +56,7 @@ function formatGroup(group: GrammarGroup, rows: readonly GrammarRow[]): string {
   return [
     `${group}:`,
     '',
-    table(
+    formatTable(
       ['Grammar', 'Aliases', '|N|', '|Σ|', '|P|', 'Description'],
       groupRows.map(({ builtIn, grammar }) => [
         builtIn.id,

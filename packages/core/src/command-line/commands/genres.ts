@@ -5,9 +5,9 @@
  */
 import { genres } from '../../genres/catalog.js';
 import type { Genre } from '../../genres/types.js';
-import { table } from '../format.js';
-import { findBuiltInGrammar } from '../grammars.js';
-import { EXIT_CODES, type Command } from '../types.js';
+import { formatTable } from '../format.js';
+import { findBuiltInGrammar, nameWithAliases } from '../built-in-grammars.js';
+import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
 
 export const genresCommand: Command = {
   name: 'genres',
@@ -15,8 +15,7 @@ export const genresCommand: Command = {
   usage: 'sabueso genres',
   run(commandArguments, environment) {
     if (commandArguments.length > 0) {
-      environment.writeError('Usage: sabueso genres\n');
-      return Promise.resolve(EXIT_CODES.usage);
+      return Promise.resolve(reportUsageError('Usage: sabueso genres', environment));
     }
     environment.writeOutput(`${genres.map(formatGenre).join('\n\n')}\n`);
     return Promise.resolve(EXIT_CODES.ok);
@@ -36,7 +35,7 @@ function formatGenre(genre: Genre): string {
     '',
     `Tags (|Σ| = ${genre.tags.length}):`,
     '',
-    table(
+    formatTable(
       ['Tag', 'Function', 'Example'],
       genre.tags.map((tag) => [tag.tag, tag.narrativeFunction, tag.example]),
     ),
@@ -45,6 +44,6 @@ function formatGenre(genre: Genre): string {
 
 /** 'detective/g1 (g1)': the grammar id with its aliases. */
 function grammarName(id: string): string {
-  const aliases = findBuiltInGrammar(id)?.aliases ?? [];
-  return aliases.length === 0 ? id : `${id} (${aliases.join(', ')})`;
+  const grammar = findBuiltInGrammar(id);
+  return grammar === undefined ? id : nameWithAliases(grammar);
 }

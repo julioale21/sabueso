@@ -1,18 +1,16 @@
 /**
- * Concept: where a command takes its grammar from: a built-in grammar by name, or a .grammar
- * file given with --grammar-file (to try the generic engine on any grammar).
+ * Concept: the built-in grammars of the program, in two groups: the grammars of each genre
+ * (read from the catalog, so a new genre needs no change here) and the internal grammars for
+ * development (the format itself, textbook grammars and analysis cases).
  * Reference: SPEC 02, section 8.2.
- *
- * Built-in grammars come in two groups: the grammars of each genre (read from the catalog,
- * so a new genre needs no change here) and the internal grammars for development.
  */
 import { genres } from '../genres/catalog.js';
 import type { Genre } from '../genres/types.js';
-import type { ParsedArguments } from './arguments.js';
-import type { CommandLineEnvironment } from './types.js';
 
 /** The two groups of built-in grammars. The names are shown to the user, in Spanish. */
-export type GrammarGroup = 'Géneros' | 'Desarrollo';
+export const grammarGroups = ['Géneros', 'Desarrollo'] as const;
+
+export type GrammarGroup = (typeof grammarGroups)[number];
 
 export interface BuiltInGrammar {
   /** The name typed on the command line, e.g. 'detective/g1' or 'arithmetic'. */
@@ -25,25 +23,6 @@ export interface BuiltInGrammar {
   /** Where the .grammar file is, relative to this module (src/ and dist/ have the same depth). */
   location: URL;
 }
-
-/** A grammar chosen on the command line: by name, or by the path of a file. */
-export type GrammarSource =
-  { kind: 'built-in'; grammar: BuiltInGrammar } | { kind: 'file'; path: string };
-
-/** The text of a grammar and the label that names it in the output. */
-export interface GrammarText {
-  label: string;
-  text: string;
-}
-
-/** The option that reads a grammar from a file instead of a built-in name. */
-export const GRAMMAR_FILE_OPTION = '--grammar-file';
-
-/**
- * The option that names a built-in grammar, for commands whose positional arguments are a
- * story: `tokens --grammar g1 "CRI PIS REV"`.
- */
-export const GRAMMAR_OPTION = '--grammar';
 
 /** Short names for the grammars of the detective story, to shorten the commands. */
 const aliases: Readonly<Record<string, readonly string[]>> = {
@@ -119,7 +98,7 @@ export function listBuiltInGrammars(): readonly BuiltInGrammar[] {
   return builtInGrammars;
 }
 
-/** The names of every built-in grammar, for help and error messages. */
+/** The names of every built-in grammar, for error messages. */
 export function builtInGrammarIds(): string[] {
   return builtInGrammars.map((grammar) => grammar.id);
 }
@@ -131,15 +110,15 @@ export function findBuiltInGrammar(name: string): BuiltInGrammar | undefined {
 
 /** The built-in grammars by group, for help: 'Géneros: detective/g1 (g1), detective/g0 (g0)'. */
 export function formatGrammarGroups(): string {
-  const groups: GrammarGroup[] = ['Géneros', 'Desarrollo'];
-  const lines = groups.map((group) => {
+  const lines = grammarGroups.map((group) => {
     const names = builtInGrammars.filter((grammar) => grammar.group === group).map(nameWithAliases);
     return `  ${group}: ${names.join(', ')}`;
   });
   return ['Grammars:', ...lines].join('\n');
 }
 
-function nameWithAliases(grammar: BuiltInGrammar): string {
+/** 'detective/g1 (g1)': the id with its aliases, if it has any. */
+export function nameWithAliases(grammar: BuiltInGrammar): string {
   return grammar.aliases.length === 0
     ? grammar.id
     : `${grammar.id} (${grammar.aliases.join(', ')})`;
@@ -148,74 +127,4 @@ function nameWithAliases(grammar: BuiltInGrammar): string {
 /** The file system path of a built-in grammar. */
 export function builtInGrammarPath(grammar: BuiltInGrammar): string {
   return decodeURIComponent(grammar.location.pathname);
-}
-
-/**
- * Chooses the grammar from the parsed arguments: exactly one built-in name (positional) or one
- * --grammar-file. Returns the message of a usage error otherwise.
- */
-export function resolveGrammarSource(
-  parsed: ParsedArguments,
-  usage: string,
-): GrammarSource | string {
-  const [name, ...extra] = parsed.positionals;
-  if (extra.length > 0) {
-    return `Usage: ${usage}`;
-  }
-  return chooseGrammarSource(name, parsed.values.get(GRAMMAR_FILE_OPTION), usage);
-}
-
-/**
- * Like resolveGrammarSource, for the commands that read a story: the name comes with --grammar,
- * because the positional arguments are the story.
- */
-export function resolveGrammarOption(
-  parsed: ParsedArguments,
-  usage: string,
-): GrammarSource | string {
-  return chooseGrammarSource(
-    parsed.values.get(GRAMMAR_OPTION),
-    parsed.values.get(GRAMMAR_FILE_OPTION),
-    usage,
-  );
-}
-
-/** Exactly one of the two: a built-in name or the path of a file. */
-function chooseGrammarSource(
-  name: string | undefined,
-  path: string | undefined,
-  usage: string,
-): GrammarSource | string {
-  if ((path === undefined) === (name === undefined)) {
-    return `Usage: ${usage}`;
-  }
-  if (path !== undefined) {
-    return { kind: 'file', path };
-  }
-  const grammar = findBuiltInGrammar(name ?? '');
-  return grammar === undefined ? unknownGrammarMessage(name ?? '') : { kind: 'built-in', grammar };
-}
-
-function unknownGrammarMessage(id: string): string {
-  return `Unknown grammar: ${id}. Available grammars: ${builtInGrammarIds().join(', ')}`;
-}
-
-/** Reads the text of the chosen grammar through the injected environment. */
-export async function readGrammarSource(
-  source: GrammarSource,
-  environment: CommandLineEnvironment,
-): Promise<GrammarText> {
-  if (source.kind === 'built-in') {
-    const text = await environment.readFile(builtInGrammarPath(source.grammar));
-    return { label: source.grammar.id, text };
-  }
-  return { label: source.path, text: await readUserFile(source.path, environment) };
-}
-
-async function readUserFile(path: string, environment: CommandLineEnvironment): Promise<string> {
-  try {
-    return await environment.readFile(path);
-  } catch {
-    throw new Error(`Cannot read the grammar file "${path}"`);
-  }
 }

@@ -6,14 +6,19 @@
 import type { AutomatonEvent } from '../../automata/deterministic-finite-automaton.js';
 import { tokenizeGrammar, type LexerState, type Token } from '../../grammar-format/lexer.js';
 import { parseArguments } from '../arguments.js';
-import { table } from '../format.js';
+import { formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   readGrammarSource,
   resolveGrammarSource,
   type GrammarText,
-} from '../grammars.js';
-import { EXIT_CODES, type Command, type CommandLineEnvironment } from '../types.js';
+} from '../grammar-source.js';
+import {
+  EXIT_CODES,
+  reportUsageError,
+  type Command,
+  type CommandLineEnvironment,
+} from '../types.js';
 
 const STATES_FLAG = '--states';
 const LEX_USAGE = `sabueso lex <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${STATES_FLAG}]`;
@@ -40,12 +45,7 @@ export const lexCommand: Command = {
   },
 };
 
-function reportUsageError(message: string, environment: CommandLineEnvironment): number {
-  environment.writeError(`${message}\n`);
-  return EXIT_CODES.usage;
-}
-
-/** Prints the token table and, with --states, the trace of the first rule. */
+/** Prints the token table and, with --states, the trace of the first line with content. */
 function printLex(
   grammar: GrammarText,
   showStates: boolean,
@@ -54,12 +54,12 @@ function printLex(
   const tokens = tokenizeGrammar(grammar.text);
   environment.writeOutput(`${grammar.label}: tokens\n\n${formatTokens(tokens)}\n`);
   if (showStates) {
-    environment.writeOutput(`\n${formatFirstRuleStates(grammar.text)}\n`);
+    environment.writeOutput(`\n${formatFirstLineStates(grammar.text)}\n`);
   }
 }
 
 function formatTokens(tokens: readonly Token[]): string {
-  return table(
+  return formatTable(
     ['Token', 'Text', 'Line:column'],
     tokens.map((token) => [token.kind, token.text, `${token.line}:${token.column}`]),
   );
@@ -73,28 +73,29 @@ interface StatesRow {
 }
 
 /**
- * Runs the DFA on the first rule of the file (the first line that is not blank or a
+ * Runs the DFA on the first line with content (the first line that is not blank or a
  * comment) and shows, for each lexeme, the path through δ.
  */
-function formatFirstRuleStates(text: string): string {
+function formatFirstLineStates(text: string): string {
   const lines = text.split('\n');
-  const index = lines.findIndex(isRuleLine);
+  const index = lines.findIndex(isContentLine);
   const line = lines[index];
   if (line === undefined) {
-    return 'DFA states: the file has no rule to trace, only blank lines and comments';
+    return 'DFA states: the file has no line to trace, only blank lines and comments';
   }
   const rows = traceLine(line);
   return [
     `DFA states for line ${index + 1}: ${line}`,
     '',
-    table(
+    formatTable(
       ['Lexeme', 'States', 'Result'],
       rows.map((row) => [row.lexeme, row.states, row.result]),
     ),
   ].join('\n');
 }
 
-function isRuleLine(line: string): boolean {
+/** A line that is not blank and not a comment: a rule or a directive. */
+function isContentLine(line: string): boolean {
   const trimmed = line.trim();
   return trimmed !== '' && !trimmed.startsWith('#');
 }

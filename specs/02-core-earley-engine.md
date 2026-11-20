@@ -672,7 +672,8 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
       command-line.ts                   # único archivo con node:*; arma environment y llama a runCommandLine
       cli/run.ts
       cli/format.ts
-      command-line/grammars.ts
+      command-line/built-in-grammars.ts   # registro de gramáticas incorporadas (nombres, alias, grupos)
+      command-line/grammar-source.ts      # elige la gramática: un nombre (--grammar) o --grammar-file
       genres/types.ts
       genres/catalog.ts        # catálogo de géneros (solo datos)
       genres/detective-tags.ts
@@ -791,12 +792,12 @@ Además, cada paso deja `npm test` en verde y es un commit propio. Cada paso que
 
 ### 8.2 Arquitectura de la CLI
 
-La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLine` con `environment` inyectado, `format.ts`, el comando `help`, el script `npm run sabueso` y los códigos de salida) **la crea el SPEC 01**. Este spec la usa y le agrega `command-line/grammars.ts`, las opciones `--grammar`, `--file` y `--steps`, y un comando por paso. Se repite la descripción completa como referencia.
+La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLine` con `environment` inyectado, `format.ts`, el comando `help`, el script `npm run sabueso` y los códigos de salida) **la crea el SPEC 01**. Este spec la usa y le agrega `command-line/built-in-grammars.ts` y `command-line/grammar-source.ts`, las opciones `--grammar`, `--file` y `--steps`, y un comando por paso. Se repite la descripción completa como referencia.
 
 - `src/command-line.ts` es el único archivo que toca `node:*`. Lee `process.argv`, arma un objeto `environment` con `writeOutput`, `writeError` y `readFile` (basado en `node:fs`) y llama a `runCommandLine(commandLineArguments, environment)`.
 - `src/command-line/run.ts` contiene `createCommandLineProgram(commands)`, que devuelve `runCommandLine(commandLineArguments, environment): Promise<number>`. `createCommandLineProgram`, el tipo `Command` y `cli/format.ts` se exportan desde `index.ts` para que `@sabueso/natural-language` (SPEC 04) registre sus comandos con la misma infraestructura. Busca el comando en el registro, interpreta las opciones comunes (`--grammar`, `--file` y `--steps`) y devuelve el código de salida.
 - `src/command-line/commands/<comando>.ts` tiene **un archivo por comando**. Cada uno exporta `{ name, description, usage, run(commandArguments, environment) }`. Los comandos no importan `node:*`: leen archivos solo a través de `environment.readFile`. Así se prueban en memoria, sin lanzar procesos.
-- `src/command-line/grammars.ts` resuelve `--grammar`, y también `--grammar-file <ruta>` para un archivo `.grammar` propio (ver Decisiones). Como nombre acepta **solo identificadores de gramáticas incorporadas**: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". Las rutas van siempre por `--grammar-file`, nunca como nombre. Un nombre desconocido termina con código 2 y lista los nombres válidos.
+- `src/command-line/grammar-source.ts` resuelve `--grammar`, y también `--grammar-file <ruta>` para un archivo `.grammar` propio (ver Decisiones). Como nombre acepta **solo identificadores de gramáticas incorporadas**, registradas en `src/command-line/built-in-grammars.ts`: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". Las rutas van siempre por `--grammar-file`, nunca como nombre. Un nombre desconocido termina con código 2 y lista los nombres válidos.
 - `src/command-line/format.ts` tiene las utilidades de salida: tablas alineadas, conjuntos ordenados como `{a, b}` y árboles ASCII.
 - **Ejecución sin pasos manuales:** el `package.json` raíz tiene el script `"sabueso": "tsc -b packages/core && node packages/core/dist/command-line.js"`. Así `npm run sabueso -- <comando> …` compila de forma incremental y ejecuta. También funciona `node packages/core/dist/command-line.js` después de `npm run build`.
 - **Códigos de salida:**
@@ -831,7 +832,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - Con `--states`, imprime además la secuencia de estados del AFD de la primera línea, para explicar δ en la exposición.
      - `npm run sabueso -- lex --grammar-file <ruta>` hace lo mismo con un archivo `.grammar` propio. Con un archivo así, los errores léxicos también se ven por consola (código 1).
      - Los errores léxicos (literal sin cerrar, carácter inválido) se verifican además en las pruebas con textos en memoria.
-   - **Decisión de orden (2026-11-19):** como `lex arithmetic` necesita su archivo, este paso adelanta `grammars/test/arithmetic.grammar` y una primera versión de `command-line/grammars.ts` que solo resuelve `arithmetic`. El paso 5 agrega las demás gramáticas y completa el resolvedor.
+   - **Decisión de orden (2026-11-19):** como `lex arithmetic` necesita su archivo, este paso adelanta `grammars/test/arithmetic.grammar` y una primera versión del registro de gramáticas (hoy `command-line/built-in-grammars.ts` y `command-line/grammar-source.ts`) que solo resuelve `arithmetic`. El paso 5 agrega las demás gramáticas y completa el resolvedor.
 
 4. **Parser LL(1) de `.grammar`.**
    - `grammar-format/parser.ts`: una función por no terminal de `meta.grammar`. Cada función elige la alternativa por el `kind` del lookahead.
@@ -843,7 +844,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - **Decisión (2026-11-19):** `%start` o `%terminals` repetidos son un `GrammarSyntaxError` en la posición de la segunda aparición, porque la segunda pisaría a la primera sin aviso. El spec original no lo definía.
 
 5. **Archivos de gramáticas.**
-   - Escribir `meta.grammar`, `genres/detective/g0.grammar` y `g1.grammar`, las siete de `test/` y `test/fixtures/l1.txt`, más `test/helpers/load.ts` y `command-line/grammars.ts`.
+   - Escribir `meta.grammar`, `genres/detective/g0.grammar` y `g1.grammar`, las siete de `test/` y `test/fixtures/l1.txt`, más `test/helpers/load.ts` y `command-line/built-in-grammars.ts`.
    - Escribir el catálogo: `genres/types.ts`, `genres/catalog.ts` y `genres/detective-tags.ts`.
    - Prueba: todos parsean. G0 tiene 10 no terminales, 14 terminales y 28 producciones. G1 tiene 21 no terminales, 14 terminales y 40 producciones.
    - **Consola:**
@@ -865,6 +866,8 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - `checkAlphabet` informa solo el **primer** símbolo desconocido, como los demás errores.
      - Los comandos que leen un relato eligen la gramática con la opción `--grammar <nombre>` (o `--grammar-file`), porque sus argumentos posicionales son el relato. El relato puede ir entre comillas o como palabras sueltas.
      - Un relato vacío no es un error del tokenizador: ε ∈ Σ\*. Rechazarlo es tarea de Earley (caso I2).
+     - Refactor (2026-11-20, sin cambio de comportamiento): Σ se calcula en su propio paso (`collectTerminals`); `command-line/grammars.ts` se divide en `built-in-grammars.ts` y `grammar-source.ts`; `reportUsageError` compartido; `formatTable`/`formatSet`; convención de nombres: MAYÚSCULAS para valores simples y camelCase para tablas y listas.
+     - Comentarios de estudio temporales en español, con el prefijo `// ES:`, en los flujos clave del código (y en los pasos siguientes). Relacionan el código con la teoría. Se eliminan todos (`grep -rn '// ES:'`) cuando el núcleo esté terminado; el código final queda en inglés.
 
 7. **Anulables.**
    - `analysis/nullable.ts`, por punto fijo, con `onIteration`.

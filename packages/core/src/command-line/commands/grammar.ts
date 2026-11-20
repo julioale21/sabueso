@@ -12,8 +12,13 @@ import {
   readGrammarSource,
   resolveGrammarSource,
   type GrammarText,
-} from '../grammars.js';
-import { EXIT_CODES, type Command, type CommandLineEnvironment } from '../types.js';
+} from '../grammar-source.js';
+import {
+  EXIT_CODES,
+  reportUsageError,
+  type Command,
+  type CommandLineEnvironment,
+} from '../types.js';
 
 const TRACE_FLAG = '--parser-trace';
 const GRAMMAR_USAGE = `sabueso grammar <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${TRACE_FLAG}]`;
@@ -39,11 +44,6 @@ export const grammarCommand: Command = {
     return EXIT_CODES.ok;
   },
 };
-
-function reportUsageError(message: string, environment: CommandLineEnvironment): number {
-  environment.writeError(`${message}\n`);
-  return EXIT_CODES.usage;
-}
 
 /** Prints the parser trace (if asked) and then the grammar. */
 function printGrammar(

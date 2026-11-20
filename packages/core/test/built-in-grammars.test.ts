@@ -1,7 +1,7 @@
 // The grammar files of the project: they all parse, have the sizes of the spec, and agree
 // with the catalog of genres and with the lexer.
 import { describe, expect, it } from 'vitest';
-import { findBuiltInGrammar, listBuiltInGrammars } from '../src/command-line/grammars.js';
+import { findBuiltInGrammar, listBuiltInGrammars } from '../src/command-line/built-in-grammars.js';
 import { formatProduction } from '../src/grammar/build.js';
 import { genres } from '../src/genres/catalog.js';
 import { tokenizeGrammar } from '../src/grammar-format/lexer.js';

@@ -6,7 +6,7 @@ import { grammarCommand } from './commands/grammar.js';
 import { grammarsCommand } from './commands/grammars.js';
 import { lexCommand } from './commands/lex.js';
 import { tokensCommand } from './commands/tokens.js';
-import { formatGrammarGroups } from './grammars.js';
+import { formatGrammarGroups } from './built-in-grammars.js';
 import { createCommandLineProgram } from './run.js';
 
 export const runCommandLine = createCommandLineProgram({

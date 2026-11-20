@@ -9,14 +9,14 @@ import { parseGrammarText } from '../../grammar-format/parser.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
 import { parseArguments } from '../arguments.js';
-import { table } from '../format.js';
+import { formatSet, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammarSource,
   resolveGrammarOption,
-} from '../grammars.js';
-import { EXIT_CODES, type Command, type CommandLineEnvironment } from '../types.js';
+} from '../grammar-source.js';
+import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
 
 const TOKENS_USAGE = `sabueso tokens ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> "<story>"`;
 
@@ -46,11 +46,6 @@ export const tokensCommand: Command = {
   },
 };
 
-function reportUsageError(message: string, environment: CommandLineEnvironment): number {
-  environment.writeError(`${message}\n`);
-  return EXIT_CODES.usage;
-}
-
 function formatTokens(
   grammar: Grammar,
   tokens: readonly SymbolName[],
@@ -68,7 +63,7 @@ function formatTokens(
   return [
     title,
     '',
-    table(['Position', 'Token', 'In Σ'], rows),
+    formatTable(['Position', 'Token', 'In Σ'], rows),
     '',
     error === null ? `${tokens.length} tokens, all in Σ` : formatUnknownSymbol(grammar, error),
   ].join('\n');
@@ -76,9 +71,8 @@ function formatTokens(
 
 /** 'Unknown symbol XYZ at position 1 (event 2): it is not in Σ', followed by Σ. */
 function formatUnknownSymbol(grammar: Grammar, error: ParseError): string {
-  const alphabet = [...grammar.terminals].sort().join(', ');
   return [
     `Unknown symbol ${error.found ?? ''} at position ${error.position} (event ${error.position + 1}): it is not in Σ`,
-    `Σ = {${alphabet}}`,
+    `Σ = ${formatSet(grammar.terminals)}`,
   ].join('\n');
 }

@@ -29,3 +29,9 @@ export const EXIT_CODES = {
   /** Wrong usage: unknown command or missing options. */
   usage: 2,
 } as const;
+
+/** Writes a usage error (the message and a line break) and returns its exit code. */
+export function reportUsageError(message: string, environment: CommandLineEnvironment): number {
+  environment.writeError(`${message}\n`);
+  return EXIT_CODES.usage;
+}

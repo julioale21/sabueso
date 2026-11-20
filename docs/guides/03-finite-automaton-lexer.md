@@ -421,7 +421,10 @@ let state = automaton.initialState;
 let cursor = tokenStart;
 for (;;) {
   const character = text[cursor.index];
-  const next = character === undefined ? undefined : nextState(automaton, state, character);
+  const next =
+    character === undefined
+      ? undefined
+      : automaton.transitions[state][automaton.classifyCharacter(character)];
   if (character === undefined || next === undefined) {
     return { ...cursor, state };
   }
@@ -430,6 +433,8 @@ for (;;) {
   cursor = moveCursorPast(cursor, character);
 }
 ```
+
+`next` es literalmente δ(q, clase(c)): `transitions[state][classifyCharacter(character)]`. Si la celda no existe, vale `undefined` ("no hay transición").
 
 Sigue δ **mientras haya transición**, sin detenerse en el primer estado de aceptación. Se detiene cuando se acaba el texto o cuando δ no tiene transición para el carácter, y devuelve el estado alcanzado y la posición del primer carácter que **no** consumió. Ese carácter queda para el próximo token.
 
@@ -449,7 +454,6 @@ El segundo caso no hace falta en este lexer, porque q₀ no está en F. Está po
 | Pieza                      | Qué es                                                                                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AutomatonToken`           | un token reconocido: `kind`, `text` (el lexema exacto), `line` y `column` donde empieza (desde 1)                                                                  |
-| `nextState` (interna)      | literalmente δ(q, clase(c)): `transitions[state][classifyCharacter(character)]`. Si la celda no existe, devuelve `undefined` ("no hay transición")                 |
 | `moveCursorPast` (interna) | avanza una posición: después de `\n` pasa a la línea siguiente, columna 1; si no, suma una columna. Así cada token sabe su posición sin volver a recorrer el texto |
 
 ### 7.2 `lexer.ts`: la tabla del formato `.grammar`
@@ -487,9 +491,23 @@ La excepción es `q6ReadingLiteral`: tiene bucle, pero no acepta, porque un lite
 
 `as const` hace que TypeScript conozca cada nombre, y `LexerState` es la unión de todos ellos. `lex --states` toma el número del comienzo del nombre para mostrar `q3` en vez de `q3ArrowRead`.
 
-#### `CharacterClass` y `classifyCharacter(character)`
+#### `characterClasses`, `CharacterClass` y `classifyCharacter(character)`
 
-Las 13 clases de la sección 3 y la función que clasifica:
+```ts
+const characterClasses = [
+  'letter',
+  'digit',
+  'whitespace',
+  …,
+  'otherCharacter',
+] as const;
+
+export type CharacterClass = (typeof characterClasses)[number];
+```
+
+Σ: las 13 clases de la sección 3. Es el mismo patrón que `lexerStates`: la lista se escribe una sola vez, con `as const`, y el tipo `CharacterClass` se deduce de ella. `everyClassExcept` recorre esa lista.
+
+La función que clasifica:
 
 1. Primero busca el carácter en una tabla de caracteres especiales (`' '`, `'\n'`, `'-'`, `'→'`, `'ε'`, `'_'`…). Por eso `ε` es `epsilonSign` aunque sea una letra griega: se revisa **antes** que las letras.
 2. Si no es especial y es una letra Unicode (`\p{L}`, incluye acentos y ñ), es `letter`.
@@ -561,11 +579,37 @@ Busca el texto en la tabla de palabras reservadas (`%start` → `START`, `%termi
 
 `endPosition` calcula esa posición: la cantidad de líneas y el largo de la última más uno.
 
-#### `toSyntaxError` (interna)
+#### `unfinishedTokenMessages` y `toSyntaxError` (internas)
 
-Traduce "el autómata se detuvo en el estado q" al mensaje de la tabla de la sección 6. Para un token sin terminar informa dónde **empezaba** (`tokenLine`, `tokenColumn`); para un carácter inválido, dónde está ese carácter.
+```ts
+const unfinishedTokenMessages: Partial<Record<LexerState, string>> = {
+  q2ExpectingArrowHead: "Expected '>' after '-'",
+  q6ReadingLiteral: 'Unterminated literal: missing the closing quote',
+  q8ExpectingDirectiveName: "Expected a directive name after '%'",
+};
 
-### 7.3 La consola: `arguments.ts`, `grammars.ts` y `commands/lex.ts`
+function toSyntaxError(error: AutomatonStoppedError<LexerState>): GrammarSyntaxError {
+  const message = unfinishedTokenMessages[error.state];
+  return message === undefined
+    ? new GrammarSyntaxError(
+        `Invalid character '${error.character ?? ''}'`,
+        error.line,
+        error.column,
+      )
+    : new GrammarSyntaxError(message, error.tokenLine, error.tokenColumn);
+}
+```
+
+Traduce "el autómata se detuvo en el estado q" al mensaje de la tabla de la sección 6:
+
+| Estado donde se detuvo                                 | Mensaje                                     | Posición                                                 |
+| ------------------------------------------------------ | ------------------------------------------- | -------------------------------------------------------- |
+| uno de la tabla `unfinishedTokenMessages` (q₂, q₆, q₈) | el de la tabla: un token quedó a medio leer | dónde **empezaba** el token (`tokenLine`, `tokenColumn`) |
+| cualquier otro                                         | `Invalid character 'x'`                     | dónde está ese carácter (`line`, `column`)               |
+
+Los mensajes son una tabla y no un `switch`: agregar un estado "a medio leer" es agregar una fila.
+
+### 7.3 La consola: `arguments.ts`, `grammar-source.ts` y `commands/lex.ts`
 
 Un comando puede tomar la gramática de dos lugares:
 
@@ -586,7 +630,7 @@ Hay que usar exactamente una de las dos. La opción `--grammar-file` es una deci
 
 Devuelve un mensaje de error de uso si aparece una opción que el comando no declara (`Unknown option: --verbose`) o si a una opción le falta el valor (`Missing value for --grammar-file`).
 
-**`command-line/grammars.ts`**: de dónde sale la gramática. El registro completo (nombres, alias, grupos) está en la guía 05. `lex` usa dos funciones:
+**`command-line/grammar-source.ts`**: de dónde sale la gramática. El registro de gramáticas incorporadas (nombres, alias, grupos) está en `command-line/built-in-grammars.ts` y se explica en la guía 05. `lex` usa dos funciones de `grammar-source.ts`:
 
 | Función                                  | Qué hace                                                                                                                                                                   |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -597,15 +641,16 @@ La ruta relativa de `--grammar-file` se resuelve en `command-line.ts`, el único
 
 **`command-line/commands/lex.ts`**: el comando `lex`.
 
-| Función                 | Qué hace                                                                                                                                                                                                       |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lexCommand.run`        | interpreta los argumentos, resuelve la fuente, lee el texto e imprime. Un error de uso termina con código 2                                                                                                    |
-| `printLex`              | imprime la tabla de tokens y, con `--states`, la traza de estados                                                                                                                                              |
-| `formatTokens`          | la tabla Token / Text / Line:column                                                                                                                                                                            |
-| `formatFirstRuleStates` | traza la primera línea que no está en blanco ni es un comentario. Suele ser una regla, pero puede ser una directiva, como en `story.grammar`. Si el archivo solo tiene comentarios y líneas en blanco, lo dice |
-| `traceLine`             | corre el lexer sobre esa línea con un observador: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                                                                             |
-| `stateName`             | `q3` para `q3ArrowRead`: toma el número con que empieza el nombre (`/^q\d+/`)                                                                                                                                  |
-| `visible`               | muestra el espacio como `␣`, el salto como `⏎` y el tabulador como `⇥`                                                                                                                                         |
+| Función                 | Qué hace                                                                                                                                                                                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lexCommand.run`        | interpreta los argumentos, resuelve la fuente, lee el texto e imprime. Un error de uso se informa con `reportUsageError` (de `types.ts`, compartido por todos los comandos) y termina con código 2                                                                                                    |
+| `printLex`              | imprime la tabla de tokens y, con `--states`, la traza de estados                                                                                                                                                                                                                                     |
+| `formatTokens`          | la tabla Token / Text / Line:column, armada con `formatTable` de `format.ts`                                                                                                                                                                                                                          |
+| `formatFirstLineStates` | traza la primera línea con contenido: la primera que no está en blanco ni es un comentario. Puede ser una regla o una directiva, como en `story.grammar`. Si el archivo solo tiene comentarios y líneas en blanco, escribe `DFA states: the file has no line to trace, only blank lines and comments` |
+| `isContentLine`         | dice si una línea tiene contenido (una regla o una directiva): no está en blanco y no empieza con `#`                                                                                                                                                                                                 |
+| `traceLine`             | corre el lexer sobre esa línea con un observador: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                                                                                                                                                                    |
+| `stateName`             | `q3` para `q3ArrowRead`: toma el número con que empieza el nombre (`/^q\d+/`)                                                                                                                                                                                                                         |
+| `visible`               | muestra el espacio como `␣`, el salto como `⏎` y el tabulador como `⇥`                                                                                                                                                                                                                                |
 
 **Códigos de salida:**
 
@@ -744,9 +789,9 @@ Las demás filas de δ no se comparan una por una: se verifican con los casos de
 | Prueba                    | Qué verifica                                                                                                                                                                    |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lex arithmetic`          | código 0, la tabla de tokens con posiciones reales del archivo (`IDENTIFIER E 3:1`, `LITERAL id 5:18`, `END_OF_FILE 6:1`)                                                       |
-| `lex arithmetic --states` | la traza de la primera regla, fila por fila (`->` = `q0 ─-→ q2 ─>→ q3`, el literal pasa por q₆)                                                                                 |
+| `lex arithmetic --states` | la traza de la primera línea con contenido, fila por fila (`->` = `q0 ─-→ q2 ─>→ q3`, el literal pasa por q₆)                                                                   |
 | `--grammar-file`          | lee un archivo propio (en memoria): `START`, `→` y `ε` con sus posiciones                                                                                                       |
-| `--grammar-file --states` | la traza salta los comentarios y las líneas en blanco; un archivo sin reglas dice que no hay nada que trazar                                                                    |
+| `--grammar-file --states` | la traza salta los comentarios y las líneas en blanco; un archivo sin líneas con contenido dice que no hay nada que trazar                                                      |
 | error léxico del archivo  | código 1 y el mensaje con la posición (`Line 2, column 6: …`)                                                                                                                   |
 | archivo inexistente       | código 1 y `Cannot read the grammar file "missing.grammar"`                                                                                                                     |
 | errores de uso            | sin gramática, con nombre y archivo a la vez, con un argumento de más, `--grammar-file` sin valor, una opción desconocida o un nombre desconocido: código 2 y el mensaje exacto |

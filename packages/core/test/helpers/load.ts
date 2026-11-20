@@ -1,7 +1,10 @@
 // Reads built-in grammars with node:fs, only in the tests. The program itself reads files
 // through the injected environment.
 import { readFileSync } from 'node:fs';
-import { builtInGrammarPath, findBuiltInGrammar } from '../../src/command-line/grammars.js';
+import {
+  builtInGrammarPath,
+  findBuiltInGrammar,
+} from '../../src/command-line/built-in-grammars.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import type { Grammar } from '../../src/grammar/types.js';
 

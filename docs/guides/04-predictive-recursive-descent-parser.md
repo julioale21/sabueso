@@ -318,23 +318,23 @@ Los métodos devuelven los datos que necesita `buildGrammar` (`RightSideSymbol`,
 
 **Fuera de la clase** (constantes y funciones auxiliares):
 
-| Nombre                    | Qué es                                                                                                                                                                     |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tokenDescriptions`       | constante: cómo se nombra cada tipo de token en los mensajes (`'->'`, `a name`, `the end of the line`…)                                                                    |
-| `SYMBOLS_OR_SEQUENCE_END` | constante: {IDENTIFIER, LITERAL, BAR, NEWLINE} = FIRST(Symbols) ∪ FOLLOW(Symbols). `parseSequence` la usa para elegir `Symbols`, y `parseSymbols` para el mensaje de error |
-| `listWithOr`              | "a, b or c", para los mensajes                                                                                                                                             |
-| `describeToken`           | el token encontrado, con su texto si es un nombre o un literal                                                                                                             |
-| `symbolName`              | convierte un símbolo de `%terminals` en su nombre (el identificador, o el contenido del literal)                                                                           |
+| Nombre                 | Qué es                                                                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tokenDescriptions`    | constante: cómo se nombra cada tipo de token en los mensajes (`'->'`, `a name`, `the end of the line`…)                                                                    |
+| `symbolsOrSequenceEnd` | constante: {IDENTIFIER, LITERAL, BAR, NEWLINE} = FIRST(Symbols) ∪ FOLLOW(Symbols). `parseSequence` la usa para elegir `Symbols`, y `parseSymbols` para el mensaje de error |
+| `listWithOr`           | "a, b or c", para los mensajes                                                                                                                                             |
+| `describeToken`        | el token encontrado, con su texto si es un nombre o un literal                                                                                                             |
+| `symbolName`           | convierte un símbolo de `%terminals` en su nombre (el identificador, o el contenido del literal)                                                                           |
 
 ### 7.3 El comando `grammar`
 
 `command-line/commands/grammar.ts`, con la misma estructura que `lex`: acepta un nombre de gramática incorporada **o** `--grammar-file <ruta>`, y la opción `--parser-trace`.
 
-| Función              | Qué hace                                                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `grammarCommand.run` | interpreta los argumentos, lee la gramática e imprime. Error de uso: código 2                                                  |
-| `printGrammar`       | corre `parseGrammarText` con un observador (si se pidió la traza), imprime la traza y después la gramática con `formatGrammar` |
-| `formatTraceStep`    | una línea de la traza: `Sequence [IDENTIFIER] → Symbols`, con sangría según la profundidad                                     |
+| Función              | Qué hace                                                                                                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grammarCommand.run` | interpreta los argumentos, lee la gramática (con `resolveGrammarSource` y `readGrammarSource`, de `grammar-source.ts`) e imprime. Error de uso: `reportUsageError`, código 2 |
+| `printGrammar`       | corre `parseGrammarText` con un observador (si se pidió la traza), imprime la traza y después la gramática con `formatGrammar`                                               |
+| `formatTraceStep`    | una línea de la traza: `Sequence [IDENTIFIER] → Symbols`, con sangría según la profundidad                                                                                   |
 
 ---
 
@@ -366,11 +366,11 @@ Un error de sintaxis o una gramática inválida terminan con código 1 y el mens
 
 ### 8.1 ¿`arithmetic` es el nombre del archivo?
 
-No: es el **nombre** de una gramática incorporada. El programa no busca un archivo `arithmetic.grammar`. Busca el nombre en el registro `packages/core/src/command-line/grammars.ts`, y el registro dice dónde está el archivo:
+No: es el **nombre** de una gramática incorporada. El programa no busca un archivo `arithmetic.grammar`. Busca el nombre en el registro `packages/core/src/command-line/built-in-grammars.ts`, y el registro dice dónde está el archivo:
 
 1. `findBuiltInGrammar('arithmetic')` busca la entrada con ese nombre (o alias).
 2. Su `location` es una ruta **relativa al código**, no a la carpeta donde ejecutas el comando. Por eso funciona desde cualquier carpeta.
-3. `readGrammarSource` lee el archivo.
+3. `readGrammarSource` (de `command-line/grammar-source.ts`) lee el archivo.
 
 Un nombre que no está en el registro es un error de uso (código 2), aunque exista un archivo con ese nombre:
 

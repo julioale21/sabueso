@@ -71,22 +71,7 @@ export const lexerStates = [
 export type LexerState = (typeof lexerStates)[number];
 
 /** Σ of the automaton: the class of each character (guide, section 3). */
-export type CharacterClass =
-  | 'letter'
-  | 'digit'
-  | 'whitespace'
-  | 'lineBreak'
-  | 'hyphen'
-  | 'greaterThan'
-  | 'unicodeArrow'
-  | 'verticalBar'
-  | 'epsilonSign'
-  | 'singleQuote'
-  | 'hash'
-  | 'percentSign'
-  | 'otherCharacter';
-
-const characterClasses: readonly CharacterClass[] = [
+const characterClasses = [
   'letter',
   'digit',
   'whitespace',
@@ -100,7 +85,9 @@ const characterClasses: readonly CharacterClass[] = [
   'hash',
   'percentSign',
   'otherCharacter',
-];
+] as const;
+
+export type CharacterClass = (typeof characterClasses)[number];
 
 /** What the automaton emits. A directive is resolved to START or TERMINALS afterwards. */
 type LexemeKind = 'IDENTIFIER' | 'LITERAL' | 'ARROW' | 'BAR' | 'EPSILON' | 'NEWLINE' | 'DIRECTIVE';
@@ -122,6 +109,8 @@ const singleCharacterClasses: Partial<Record<string, CharacterClass>> = {
 };
 
 /** ε is a Greek letter, but it has its own class, so it is checked before the letters. */
+// ES: El alfabeto del AFD no son los caracteres sino 13 clases. Así δ tiene 13 columnas en
+// ES: lugar de miles (una por carácter Unicode), y la tabla se puede dibujar y defender.
 export function classifyCharacter(character: string): CharacterClass {
   const special = singleCharacterClasses[character];
   if (special !== undefined) {
@@ -153,6 +142,9 @@ export const grammarLexerAutomaton: DeterministicAutomatonDefinition<
   CharacterClass,
   LexemeKind
 > = {
+  // ES: Esto es M = (Q, Σ, δ, q0, F) escrito como dato: cada fila de `transitions` es una
+  // ES: fila de la tabla δ de la guía 03. Un estado sin entrada para una clase = no hay
+  // ES: transición (δ parcial), y ahí termina el token.
   initialState: 'q0Start',
   classifyCharacter,
   transitions: {
@@ -217,6 +209,10 @@ export function tokenizeGrammar(
   text: string,
   onEvent?: (event: AutomatonEvent<LexerState, LexemeKind>) => void,
 ): Token[] {
+  // ES: Dos etapas: el AFD reconoce lexemas (nivel regular) y después cada lexema se
+  // ES: convierte en token (quitar comillas, %start/%terminals). El NEWLINE y END_OF_FILE
+  // ES: finales le garantizan al parser que toda línea termina igual y que siempre hay un
+  // ES: token para mirar (END_OF_FILE hace de $, el fin de la entrada).
   const tokens = readLexemes(text, onEvent).map(toToken);
   return [...tokens, ...closingTokens(text, tokens)];
 }
@@ -280,30 +276,23 @@ function endPosition(text: string): { line: number; column: number } {
 }
 
 /**
- * Turns "the automaton stopped in state q" into the lexical error that state means
- * (guide, section 6).
+ * The states where a token can be left half read, with the error each one means
+ * (guide, section 6). Stopping in any other state means the character itself is invalid.
  */
+const unfinishedTokenMessages: Partial<Record<LexerState, string>> = {
+  q2ExpectingArrowHead: "Expected '>' after '-'",
+  q6ReadingLiteral: 'Unterminated literal: missing the closing quote',
+  q8ExpectingDirectiveName: "Expected a directive name after '%'",
+};
+
+/** Turns "the automaton stopped in state q" into the lexical error that state means. */
 function toSyntaxError(error: AutomatonStoppedError<LexerState>): GrammarSyntaxError {
-  switch (error.state) {
-    case 'q6ReadingLiteral':
-      return new GrammarSyntaxError(
-        'Unterminated literal: missing the closing quote',
-        error.tokenLine,
-        error.tokenColumn,
-      );
-    case 'q2ExpectingArrowHead':
-      return new GrammarSyntaxError("Expected '>' after '-'", error.tokenLine, error.tokenColumn);
-    case 'q8ExpectingDirectiveName':
-      return new GrammarSyntaxError(
-        "Expected a directive name after '%'",
-        error.tokenLine,
-        error.tokenColumn,
-      );
-    default:
-      return new GrammarSyntaxError(
+  const message = unfinishedTokenMessages[error.state];
+  return message === undefined
+    ? new GrammarSyntaxError(
         `Invalid character '${error.character ?? ''}'`,
         error.line,
         error.column,
-      );
-  }
+      )
+    : new GrammarSyntaxError(message, error.tokenLine, error.tokenColumn);
 }

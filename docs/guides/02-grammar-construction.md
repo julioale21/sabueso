@@ -91,8 +91,8 @@ Dependencias entre archivos (cada fila: el archivo de la izquierda importa al de
 export function formatGrammar(grammar: Grammar): string {
   return [
     `${grammar.name}: G = (N, Σ, P, S)`,
-    `N = ${set(grammar.nonterminals)}`,
-    `Σ = ${set(grammar.terminals)}`,
+    `N = ${formatSet(grammar.nonterminals)}`,
+    `Σ = ${formatSet(grammar.terminals)}`,
     `S = ${grammar.start}`,
     'P:',
     ...grammar.productions.map(formatNumberedProduction),
@@ -104,7 +104,7 @@ function formatNumberedProduction(production: Production): string {
 }
 ```
 
-- **`set(...)`:** escribe un conjunto como `{a, b}`, **ordenado**. Así la salida es siempre la misma y se puede comparar en una prueba.
+- **`formatSet(...)`:** escribe un conjunto como `{a, b}`, **ordenado**. Así la salida es siempre la misma y se puede comparar en una prueba.
 - **`formatNumberedProduction`:** el `id` alineado a la derecha en 2 caracteres (`padStart(2)`), seguido de la producción escrita por `formatProduction` del motor.
 - **Por qué está en `command-line/`:** decide detalles de la **terminal** (alineación con espacios, texto plano). La web va a mostrar la gramática con componentes, no con este texto. El motor no sabe de consola.
 
@@ -152,18 +152,19 @@ P:
 
 ## 4. Cómo funciona
 
-`buildGrammar` hace seis pasos. Cada uno es una función con nombre propio, así que el código se lee como el algoritmo:
+`buildGrammar` hace siete pasos. Cada uno es una función con nombre propio, así que el código se lee como el algoritmo:
 
 1. **`requireAtLeastOneRule`:** hay al menos una regla. Obtiene la primera, para el inicio por defecto.
-2. **`createSymbolTable`:** calcula N (los lados izquierdos) y prepara Σ.
-3. **`createProductions`:** recorre los lados derechos, clasifica cada símbolo (completando Σ) y numera las producciones.
+2. **`createSymbolTable`:** calcula N (los lados izquierdos) y valida los terminales declarados.
+3. **`createProductions`:** recorre los lados derechos, valida cada símbolo y numera las producciones. No modifica nada: solo devuelve P.
 4. **`rejectDuplicateProductions`:** P no tiene repetidos.
 5. **`requireNonterminalStart`:** S es el declarado o, si no hay, el lado izquierdo de la primera regla, y tiene que pertenecer a N.
-6. **`groupByLeftSide`:** arma el índice.
+6. **`collectTerminals`:** calcula Σ en su propio paso, igual que N: los declarados más todo símbolo de un lado derecho que no está en N.
+7. **`groupByLeftSide`:** arma el índice.
 
 **El orden importa:**
 
-- N tiene que estar completo **antes** de recorrer los lados derechos (paso 2 antes del 3). Para saber si `T` es no terminal hay que conocer **todos** los lados izquierdos, incluidos los de reglas que aparecen más abajo. Por ejemplo, en `E -> T` / `T -> id`, cuando se lee `T` en la primera regla todavía no se "llegó" a la segunda.
+- N tiene que estar completo **antes** de recorrer los lados derechos (paso 2 antes del 3) y antes de calcular Σ (paso 6). Para saber si `T` es no terminal hay que conocer **todos** los lados izquierdos, incluidos los de reglas que aparecen más abajo. Por ejemplo, en `E -> T` / `T -> id`, cuando se lee `T` en la primera regla todavía no se "llegó" a la segunda.
 - Las comprobaciones que pueden fallar van **antes** del `return`. Si algo falla, se lanza `GrammarBuildError` y nunca se devuelve una gramática a medio validar.
 
 ---
@@ -234,7 +235,7 @@ Con `E → E + T | T`, `T → id`:
 | Acceso       | `productions[2]`                                 | `productionsByLeftSide.get('E')`               |
 | Quién la usa | `formatGrammar`, análisis de punto fijo, árboles | Predictor de Earley, FIRST/FOLLOW, tabla LL(1) |
 
-**Por qué las dos:** por velocidad. Sin el índice, para cada no terminal habría que recorrer y filtrar P entera (`productions.filter(…)`). El Predictor de Earley hace esa pregunta una vez por cada ítem que espera un no terminal, miles de veces en una entrada larga. El índice se arma una sola vez, en `groupByLeftSide` (§5.4.12).
+**Por qué las dos:** por velocidad. Sin el índice, para cada no terminal habría que recorrer y filtrar P entera (`productions.filter(…)`). El Predictor de Earley hace esa pregunta una vez por cada ítem que espera un no terminal, miles de veces en una entrada larga. El índice se arma una sola vez, en `groupByLeftSide` (§5.4.13).
 
 **No son copias.** El índice guarda referencias a los mismos objetos: `productionsByLeftSide.get('E')![0] === productions[0]`. Por eso nunca quedan desincronizadas, y por eso las dos son de solo lectura.
 
@@ -313,20 +314,19 @@ Es un tipo de error propio. Extiende `Error`, así que tiene mensaje y traza com
 ```ts
 interface SymbolTable {
   nonterminals: ReadonlySet<SymbolName>;
+  /** The %terminals declaration, if the grammar has one. */
   declaredTerminals: ReadonlySet<SymbolName> | undefined;
-  terminals: Set<SymbolName>;
 }
 ```
 
-Es el "borrador" de trabajo mientras se construye la gramática. Junta en un solo objeto lo que se sabe de los símbolos, para no pasar tres parámetros a cada función:
+Junta en un solo objeto lo que se sabe de los símbolos **antes** de leer los lados derechos, para no pasar dos parámetros a cada función:
 
-| Campo               | Cuándo se llena                                                       | Mutable            |
-| ------------------- | --------------------------------------------------------------------- | ------------------ |
-| `nonterminals`      | al principio, con todos los lados izquierdos                          | no (`ReadonlySet`) |
-| `declaredTerminals` | al principio, con `%terminals` (o `undefined` si no hay)              | no                 |
-| `terminals`         | empieza con los declarados y **crece** al recorrer los lados derechos | **sí** (`Set`)     |
+| Campo               | Cuándo se llena                                          | Mutable            |
+| ------------------- | -------------------------------------------------------- | ------------------ |
+| `nonterminals`      | al principio, con todos los lados izquierdos             | no (`ReadonlySet`) |
+| `declaredTerminals` | al principio, con `%terminals` (o `undefined` si no hay) | no                 |
 
-Es lo único mutable de todo el proceso, y es privado de `build.ts`. Al final, `terminals` pasa a ser Σ en el `Grammar`, donde ya es de solo lectura.
+Los dos campos son de solo lectura y la tabla es privada de `build.ts`. Σ **no** está en la tabla: se calcula al final, en su propio paso, con `collectTerminals` (§5.4.7). Así ninguna función cambia algo "por debajo" mientras recorre las reglas.
 
 ### 5.3 `build.ts`: la función principal `buildGrammar`
 
@@ -346,7 +346,7 @@ export function buildGrammar(
     name,
     start: requireNonterminalStart(start ?? firstRule.leftSide, symbols.nonterminals),
     nonterminals: symbols.nonterminals,
-    terminals: symbols.terminals,
+    terminals: collectTerminals(productions, symbols),
     productions,
     productionsByLeftSide: groupByLeftSide(symbols.nonterminals, productions),
   };
@@ -366,7 +366,7 @@ export function buildGrammar(
 
 `start ?? firstRule.leftSide` significa: "si `start` vino, úsalo; si es `undefined`, usa el lado izquierdo de la primera regla". Es la convención habitual de los libros: el inicio es el de la primera regla.
 
-Los seis pasos y por qué van en ese orden están en §4.
+Los siete pasos y por qué van en ese orden están en §4.
 
 ### 5.4 `build.ts`: cada función auxiliar, en detalle
 
@@ -415,7 +415,7 @@ function createSymbolTable(
   const nonterminals = collectNonterminals(rules);
   const declared = declaredTerminals === undefined ? undefined : new Set(declaredTerminals);
   declared?.forEach((terminal) => checkDeclaredTerminal(terminal, nonterminals));
-  return { nonterminals, declaredTerminals: declared, terminals: new Set(declared) };
+  return { nonterminals, declaredTerminals: declared };
 }
 ```
 
@@ -424,8 +424,7 @@ function createSymbolTable(
   1. Calcula N con `collectNonterminals`.
   2. Si hay `%terminals`, los convierte en un `Set`. Esto elimina repetidos y permite `has` instantáneo. Si no hay, queda `undefined`, que significa "esta gramática no declara terminales". No es lo mismo que "declara cero terminales".
   3. Valida cada terminal declarado con `checkDeclaredTerminal`. `declared?.forEach(...)` solo se ejecuta si `declared` no es `undefined`.
-  4. Σ **empieza** con los declarados. `new Set(undefined)` crea un conjunto vacío, así que sin `%terminals` Σ arranca vacío.
-- **Por qué los declarados entran a Σ aunque ninguna regla los use:** el autor dijo explícitamente "estos son mis terminales". Por ejemplo, una gramática del policial declara las 14 etiquetas aunque una versión simplificada no use todas. Σ es el alfabeto: el usuario puede escribir esas etiquetas en la entrada, y la gramática simplemente no las acepta en ninguna posición.
+- **Qué no hace:** no calcula Σ. Σ depende de los lados derechos, y se calcula después con `collectTerminals` (§5.4.7).
 
 #### 5.4.4 `collectNonterminals(rules)`
 
@@ -471,7 +470,7 @@ function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable):
   return rules.map((rule, index) => ({
     id: index,
     leftSide: rule.leftSide,
-    rightSide: rule.rightSide.map((symbol) => resolveRightSideSymbol(symbol, symbols)),
+    rightSide: rule.rightSide.map((symbol) => checkRightSideSymbol(symbol, symbols)),
   }));
 }
 ```
@@ -480,36 +479,58 @@ function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable):
 - **Cómo:**
   - `rules.map((rule, index) => …)` recorre las reglas en orden y da la posición `index`, que es el `id`. Por eso la numeración empieza en 0 y sigue el orden del archivo.
   - El lado izquierdo se copia tal cual: ya se sabe que es un no terminal.
-  - Cada símbolo del lado derecho pasa por `resolveRightSideSymbol`, que lo clasifica, lo valida y devuelve su nombre.
-- **Efecto secundario importante:** al resolver los símbolos, `resolveRightSideSymbol` va **agregando a Σ** los terminales que encuentra (`symbols.terminals` es mutable). Cuando `createProductions` termina, Σ está completo.
+  - Cada símbolo del lado derecho pasa por `checkRightSideSymbol`, que lo valida y devuelve su nombre.
+- **Es una función pura:** solo lee `symbols` y devuelve P. No agrega nada a Σ ni a ningún otro conjunto. Σ se calcula después, a partir de P, con `collectTerminals` (§5.4.7).
 - **Un lado derecho vacío** (`rightSide: []`) da un `.map` vacío, es decir, la producción ε. No necesita un caso especial.
 
-#### 5.4.7 `resolveRightSideSymbol(symbol, symbols)`
+#### 5.4.7 `collectTerminals(productions, symbols)`
 
 ```ts
-function resolveRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): SymbolName {
-  const name =
-    typeof symbol === 'string'
-      ? resolveIdentifier(symbol, symbols)
-      : resolveLiteral(symbol.literal, symbols);
-  if (!symbols.nonterminals.has(name)) {
-    symbols.terminals.add(name);
+function collectTerminals(
+  productions: readonly Production[],
+  symbols: SymbolTable,
+): Set<SymbolName> {
+  const terminals = new Set(symbols.declaredTerminals);
+  for (const symbol of productions.flatMap((production) => production.rightSide)) {
+    if (!symbols.nonterminals.has(symbol)) {
+      terminals.add(symbol);
+    }
   }
-  return name;
+  return terminals;
 }
 ```
 
-- **Qué hace:** transforma un símbolo "como se escribió" en su nombre definitivo, y lo registra en Σ si es terminal.
-- **Cómo distingue las dos clases:** `typeof symbol === 'string'`.
-  - Si es un `string`, es un **identificador**: se valida con `resolveIdentifier`.
-  - Si no, es un objeto `{ literal }`, un **literal**: se valida con `resolveLiteral`. TypeScript entiende que en esa rama `symbol` tiene la propiedad `literal` (ver el Anexo, "narrowing").
-- **La clasificación:** después de validar, si el nombre **no** está en N, es terminal y se agrega a Σ. Agregar un elemento que ya está en un `Set` no hace nada, así que `+` usado tres veces queda una vez en Σ.
-- **Devuelve** el nombre (`'E'`, `'+'`, `'id'`), que es lo que se guarda en `Production.rightSide`.
+- **Qué hace:** calcula **Σ = declarados ∪ { símbolos de los lados derechos que no están en N }**.
+- **Por qué en su propio paso:** igual que N tiene `collectNonterminals`, Σ tiene `collectTerminals`. Cada conjunto de la 4-upla sale de una función con nombre propio. Ninguna validación lo va llenando de a poco.
+- **Paso a paso:**
+  1. Σ **empieza** con los declarados. `new Set(undefined)` crea un conjunto vacío, así que sin `%terminals` Σ arranca vacío.
+  2. `productions.flatMap((production) => production.rightSide)` junta los lados derechos de todas las producciones en una sola lista.
+  3. Cada símbolo que **no** está en N es terminal y se agrega. Agregar un elemento que ya está en un `Set` no hace nada, así que `+` usado tres veces queda una vez en Σ.
+- **Por qué recibe `productions` y no `rules`:** en P los símbolos ya están validados y los literales ya son nombres (`'+'` → `+`). No hace falta distinguir identificadores de literales.
+- **Por qué los declarados entran a Σ aunque ninguna regla los use:** el autor dijo explícitamente "estos son mis terminales". Por ejemplo, una gramática del policial declara las 14 etiquetas aunque una versión simplificada no use todas. Σ es el alfabeto: el usuario puede escribir esas etiquetas en la entrada, y la gramática simplemente no las acepta en ninguna posición.
+- **El orden se conserva:** primero los declarados, después los demás en orden de aparición.
 
-#### 5.4.8 `resolveIdentifier(identifier, symbols)`
+#### 5.4.8 `checkRightSideSymbol(symbol, symbols)`
 
 ```ts
-function resolveIdentifier(identifier: SymbolName, symbols: SymbolTable): SymbolName {
+function checkRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): SymbolName {
+  return typeof symbol === 'string'
+    ? checkIdentifier(symbol, symbols)
+    : checkLiteral(symbol.literal, symbols);
+}
+```
+
+- **Qué hace:** transforma un símbolo "como se escribió" en su nombre definitivo, después de validarlo.
+- **Cómo distingue las dos clases:** `typeof symbol === 'string'`.
+  - Si es un `string`, es un **identificador**: se valida con `checkIdentifier`.
+  - Si no, es un objeto `{ literal }`, un **literal**: se valida con `checkLiteral`. TypeScript entiende que en esa rama `symbol` tiene la propiedad `literal` (ver el Anexo, "narrowing").
+- **Devuelve** el nombre (`'E'`, `'+'`, `'id'`), que es lo que se guarda en `Production.rightSide`.
+- **No clasifica:** decidir si el nombre es terminal le toca a `collectTerminals` (§5.4.7).
+
+#### 5.4.9 `checkIdentifier(identifier, symbols)`
+
+```ts
+function checkIdentifier(identifier: SymbolName, symbols: SymbolTable): SymbolName {
   rejectReservedName(identifier);
   const isTerminal = !symbols.nonterminals.has(identifier);
   const isUndeclared =
@@ -539,10 +560,10 @@ function resolveIdentifier(identifier: SymbolName, symbols: SymbolTable): Symbol
 
 - **Sin `%terminals`** (`declaredTerminals === undefined`), `isUndeclared` es siempre `false` y la convención se aplica libremente. Es cómodo para gramáticas chicas de prueba como `E → E + T | T`.
 
-#### 5.4.9 `resolveLiteral(literal, symbols)`
+#### 5.4.10 `checkLiteral(literal, symbols)`
 
 ```ts
-function resolveLiteral(literal: string, symbols: SymbolTable): SymbolName {
+function checkLiteral(literal: string, symbols: SymbolTable): SymbolName {
   if (literal === '') {
     throw new GrammarBuildError('Empty literal: write ε for the empty string');
   }
@@ -561,7 +582,7 @@ function resolveLiteral(literal: string, symbols: SymbolTable): SymbolName {
   3. **Mismo nombre que un no terminal:** si existe la regla `E → …` y además se escribe `'E'`, el símbolo `E` sería a la vez no terminal (por la regla) y terminal (por el literal). Eso viola N ∩ Σ = ∅.
 - **Los literales no se comparan con `%terminals`:** las comillas ya son una declaración explícita de que el símbolo es terminal.
 
-#### 5.4.10 `rejectDuplicateProductions(productions)`
+#### 5.4.11 `rejectDuplicateProductions(productions)`
 
 ```ts
 function rejectDuplicateProductions(productions: readonly Production[]): void {
@@ -580,10 +601,10 @@ function rejectDuplicateProductions(productions: readonly Production[]): void {
 - **Por qué:** en la teoría P es un **conjunto**, y una producción repetida casi siempre es un error de edición. Además, una producción duplicada haría que Earley encuentre **dos árboles idénticos** para la misma entrada, y la gramática parecería ambigua sin serlo.
 - **Cómo compara:** convierte cada producción en una **clave de texto** y la guarda en un `Set` de claves vistas. Si una clave ya estaba, la producción es repetida.
 - **¿Por qué `JSON.stringify` y no unir con espacios?** Para que dos producciones distintas nunca den la misma clave. Con espacios, `A → 'b c'` (un literal con un espacio adentro, un solo símbolo) y `A → b c` (dos símbolos) darían las dos `"A b c"`. Con JSON dan `["A","b c"]` y `["A","b","c"]`, que son distintas. JSON marca con comillas dónde empieza y termina cada símbolo.
-- **Por qué compara después de resolver:** compara `Production` y no `GrammarRule`, así que `S → 'a'` y `S → a` (un literal y un identificador terminal con el mismo nombre) se detectan como la misma producción. En la gramática resultante lo son.
+- **Por qué compara después de validar:** compara `Production` y no `GrammarRule`, así que `S → 'a'` y `S → a` (un literal y un identificador terminal con el mismo nombre) se detectan como la misma producción. En la gramática resultante lo son.
 - **Error:** `Duplicate production: T → id`.
 
-#### 5.4.11 `requireNonterminalStart(start, nonterminals)`
+#### 5.4.12 `requireNonterminalStart(start, nonterminals)`
 
 ```ts
 function requireNonterminalStart(
@@ -602,7 +623,7 @@ function requireNonterminalStart(
 - **Cuándo puede fallar:** solo con un `%start` explícito. El inicio por defecto (el lado izquierdo de la primera regla) siempre pertenece a N.
 - **Error:** `Start symbol "X" is not the left-hand side of any rule`.
 
-#### 5.4.12 `groupByLeftSide(nonterminals, productions)`
+#### 5.4.13 `groupByLeftSide(nonterminals, productions)`
 
 ```ts
 function groupByLeftSide(
@@ -627,7 +648,7 @@ function groupByLeftSide(
 - **`?.push`:** `get` puede devolver `undefined` para TypeScript, aunque acá nunca pase, porque todo lado izquierdo está en N. El `?.` satisface al compilador sin agregar un caso que no ocurre.
 - **Resultado del ejemplo:** `E → [0, 1]`, `T → [2]`.
 
-#### 5.4.13 `rejectReservedName(symbol)`
+#### 5.4.14 `rejectReservedName(symbol)`
 
 ```ts
 function rejectReservedName(symbol: SymbolName): void {
@@ -641,7 +662,7 @@ function rejectReservedName(symbol: SymbolName): void {
 - **Por qué:** el motor usa `$` para dos cosas internas:
   - **`$` como marcador de fin de entrada en FOLLOW.** FOLLOW(S) incluye `$`, que significa "después de S puede terminar la cadena". Si un usuario tuviera un terminal `$`, no se distinguiría "puede venir el terminal `$`" de "puede terminar la entrada".
   - **`$S` como inicio aumentado** (`AUGMENTED_START`).
-- **Se llama desde varios lugares:** `collectNonterminals` (lados izquierdos), `checkDeclaredTerminal` (`%terminals`), `resolveIdentifier` y `resolveLiteral` (lados derechos). Ningún símbolo entra a la gramática sin pasar por ella.
+- **Se llama desde varios lugares:** `collectNonterminals` (lados izquierdos), `checkDeclaredTerminal` (`%terminals`), `checkIdentifier` y `checkLiteral` (lados derechos). Ningún símbolo entra a la gramática sin pasar por ella.
 
 ---
 
@@ -658,18 +679,18 @@ buildGrammar('expressions', [
 // start: undefined, declaredTerminals: undefined
 ```
 
-| Paso | Función                      | Resultado                                                               |
-| ---- | ---------------------------- | ----------------------------------------------------------------------- |
-| 1    | `requireAtLeastOneRule`      | hay 3 reglas → `firstRule = E → E + T`                                  |
-| 2    | `collectNonterminals`        | N = {E, T}                                                              |
-| 2    | `createSymbolTable`          | sin `%terminals` → `declaredTerminals = undefined`, Σ = {}              |
-| 3    | `createProductions`, regla 0 | `E` ∈ N → no terminal · `+` ∉ N → Σ = {+} · `T` ∈ N → no terminal       |
-| 3    | regla 1                      | `T` ∈ N → no terminal                                                   |
-| 3    | regla 2                      | `id` ∉ N → Σ = {+, id}                                                  |
-| 3    | numeración                   | 0: E → E + T, 1: E → T, 2: T → id                                       |
-| 4    | `rejectDuplicateProductions` | claves `["E","E","+","T"]`, `["E","T"]`, `["T","id"]`: todas distintas  |
-| 5    | `requireNonterminalStart`    | `start` no vino → S = `E` (lado izquierdo de la primera regla); E ∈ N ✓ |
-| 6    | `groupByLeftSide`            | E → [0, 1], T → [2]                                                     |
+| Paso | Función                      | Resultado                                                                              |
+| ---- | ---------------------------- | -------------------------------------------------------------------------------------- |
+| 1    | `requireAtLeastOneRule`      | hay 3 reglas → `firstRule = E → E + T`                                                 |
+| 2    | `collectNonterminals`        | N = {E, T}                                                                             |
+| 2    | `createSymbolTable`          | sin `%terminals` → `declaredTerminals = undefined`                                     |
+| 3    | `createProductions`, regla 0 | `E`, `+` y `T` son válidos (ninguno usa `$`, no hay `%terminals`)                      |
+| 3    | reglas 1 y 2                 | `T` e `id` son válidos                                                                 |
+| 3    | numeración                   | 0: E → E + T, 1: E → T, 2: T → id                                                      |
+| 4    | `rejectDuplicateProductions` | claves `["E","E","+","T"]`, `["E","T"]`, `["T","id"]`: todas distintas                 |
+| 5    | `requireNonterminalStart`    | `start` no vino → S = `E` (lado izquierdo de la primera regla); E ∈ N ✓                |
+| 6    | `collectTerminals`           | Σ arranca vacío · lados derechos `E + T`, `T`, `id` · `+` ∉ N y `id` ∉ N → Σ = {+, id} |
+| 7    | `groupByLeftSide`            | E → [0, 1], T → [2]                                                                    |
 
 **Salida:**
 
@@ -703,7 +724,7 @@ buildGrammar(
 ```
 
 1. N = {Relato, Pistas}. Los declarados son {CRI, PIS, REV} y ninguno es lado izquierdo ✓.
-2. Al resolver la regla 0:
+2. Al validar la regla 0 (en `createProductions`):
    - `CRI` no está en N y sí está declarado ✓.
    - `Pistass` **no** está en N (`isTerminal = true`) y **no** está declarado (`isUndeclared = true`), así que lanza el error:
 
@@ -726,9 +747,9 @@ Error: Undeclared symbol "Pistass": it is not the left-hand side of any rule and
 | ------------------------------------------------------------------- | ---------------------------- | -------------------------------- | ----------------------------------------- |
 | `Grammar "X" has no rules`                                          | `requireAtLeastOneRule`      | P ≠ ∅ (si no, no hay S ∈ N)      | `buildGrammar('x', [])`                   |
 | `"E" is declared as a terminal but is the left-hand side of a rule` | `checkDeclaredTerminal`      | N ∩ Σ = ∅                        | `%terminals E` y una regla `E → …`        |
-| `Undeclared symbol "X": …`                                          | `resolveIdentifier`          | evitar terminales "accidentales" | `%terminals a` y `S → X` sin regla para X |
-| `Empty literal: write ε for the empty string`                       | `resolveLiteral`             | ε ∉ Σ                            | `S → ''`                                  |
-| `Literal 'E' has the same name as a nonterminal`                    | `resolveLiteral`             | N ∩ Σ = ∅                        | regla `E → …` y `S → 'E'`                 |
+| `Undeclared symbol "X": …`                                          | `checkIdentifier`            | evitar terminales "accidentales" | `%terminals a` y `S → X` sin regla para X |
+| `Empty literal: write ε for the empty string`                       | `checkLiteral`               | ε ∉ Σ                            | `S → ''`                                  |
+| `Literal 'E' has the same name as a nonterminal`                    | `checkLiteral`               | N ∩ Σ = ∅                        | regla `E → …` y `S → 'E'`                 |
 | `Duplicate production: T → id`                                      | `rejectDuplicateProductions` | P es un conjunto                 | `T → id` escrita dos veces                |
 | `Start symbol "X" is not the left-hand side of any rule`            | `requireNonterminalStart`    | S ∈ N                            | `%start X` sin regla para X               |
 | `"X" contains '$', which is reserved`                               | `rejectReservedName`         | `$` reservado para FOLLOW y $S   | un símbolo `$S` o `'$'`                   |
@@ -786,7 +807,7 @@ Notación: los literales van entre comillas, como en un archivo `.grammar`.
 | `cyclic`                 | `S → A \| 'a'`, `A → S`                                                                                     | El ciclo S ⇒ A ⇒ S es válido al construir. Detectar ciclos es un análisis posterior (paso 10).                                                                        | S → [0, 1], A → [2]                                      |
 | `literal-and-identifier` | `S → 'a' a`                                                                                                 | El literal `'a'` y el identificador terminal `a` son **el mismo** terminal.                                                                                           | Σ = {a}, P = `S → a a`                                   |
 | `keywords`               | `S → 'if' C 'then' S \| 'skip'`, `C → 'true'`                                                               | Un literal puede tener varios caracteres: `if`, `then` y `skip` son un solo terminal cada uno.                                                                        | Σ = {if, then, skip, true}                               |
-| `literal-with-space`     | `A → 'b c'`, `A → b c`                                                                                      | `'b c'` es **un** símbolo y `b c` son **dos**: son producciones distintas aunque se escriban igual. Verifica la clave JSON de `rejectDuplicateProductions` (§5.4.10). | Σ = {b c, b, c}; lados derechos `['b c']` y `['b', 'c']` |
+| `literal-with-space`     | `A → 'b c'`, `A → b c`                                                                                      | `'b c'` es **un** símbolo y `b c` son **dos**: son producciones distintas aunque se escriban igual. Verifica la clave JSON de `rejectDuplicateProductions` (§5.4.11). | Σ = {b c, b, c}; lados derechos `['b c']` y `['b', 'c']` |
 
 **¿Por qué incluir `useless`, `empty-language` y `cyclic`?** Para dejar claro qué valida la **construcción** y qué valida el **análisis**. `buildGrammar` verifica la forma (la 4-upla está bien definida). Que el lenguaje sea vacío, que haya símbolos inútiles o ciclos son **propiedades** de una gramática válida, y las calculan los pasos 9 y 10. Rechazarlas al construir impediría analizarlas.
 
@@ -860,17 +881,18 @@ Porque en el dominio las etiquetas (`CRI`, `PIS`) y los no terminales (`Relato`,
 
 ## Anexo: Detalles de TypeScript que aparecen en el código
 
-| Construcción                                 | Dónde                                  | Qué significa                                                                                                                                |
-| -------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type A = B \| C`                            | `RightSideSymbol`                      | **Unión:** un valor es de tipo B **o** de tipo C.                                                                                            |
-| `typeof x === 'string'`                      | `resolveRightSideSymbol`               | **Narrowing:** dentro de cada rama del `?:`, TypeScript sabe cuál de los dos tipos de la unión es `x`. En la rama falsa permite `x.literal`. |
-| `param?: T`                                  | `start?`, `declaredTerminals?`         | Parámetro **opcional**: si no se pasa, vale `undefined`.                                                                                     |
-| `a ?? b`                                     | `start ?? firstRule.leftSide`          | `a` si no es `null`/`undefined`; si no, `b`.                                                                                                 |
-| `x?.metodo()`                                | `declared?.forEach`, `get(...)?.push`  | Llama al método solo si `x` no es `null`/`undefined`.                                                                                        |
-| `readonly T[]`, `ReadonlySet`, `ReadonlyMap` | tipos de `Grammar`                     | Versiones de solo lectura: no permiten `push`, `add`, `set`.                                                                                 |
-| `Iterable<T>`                                | `declaredTerminals`                    | Cualquier cosa que se pueda recorrer con `for…of`: array, `Set`, etc.                                                                        |
-| `new Set(iterable)`                          | `createSymbolTable`                    | Conjunto con los elementos del iterable, sin repetidos. `new Set(undefined)` es vacío.                                                       |
-| `[a, ...lista]`                              | `rejectDuplicateProductions`           | **Spread:** un array con `a` seguido de los elementos de `lista`.                                                                            |
-| `` `texto ${x}` ``                           | mensajes                               | **Template literal:** inserta `x` dentro del texto.                                                                                          |
-| `export` / sin `export`                      | `buildGrammar` / `collectNonterminals` | Lo exportado es la API del módulo. Lo demás es privado del archivo y es un detalle de implementación.                                        |
-| `class X extends Error`                      | `GrammarBuildError`                    | Error propio que hereda mensaje y traza; se reconoce con `instanceof`.                                                                       |
+| Construcción                                 | Dónde                                   | Qué significa                                                                                                                                |
+| -------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type A = B \| C`                            | `RightSideSymbol`                       | **Unión:** un valor es de tipo B **o** de tipo C.                                                                                            |
+| `typeof x === 'string'`                      | `checkRightSideSymbol`                  | **Narrowing:** dentro de cada rama del `?:`, TypeScript sabe cuál de los dos tipos de la unión es `x`. En la rama falsa permite `x.literal`. |
+| `param?: T`                                  | `start?`, `declaredTerminals?`          | Parámetro **opcional**: si no se pasa, vale `undefined`.                                                                                     |
+| `a ?? b`                                     | `start ?? firstRule.leftSide`           | `a` si no es `null`/`undefined`; si no, `b`.                                                                                                 |
+| `x?.metodo()`                                | `declared?.forEach`, `get(...)?.push`   | Llama al método solo si `x` no es `null`/`undefined`.                                                                                        |
+| `readonly T[]`, `ReadonlySet`, `ReadonlyMap` | tipos de `Grammar`                      | Versiones de solo lectura: no permiten `push`, `add`, `set`.                                                                                 |
+| `Iterable<T>`                                | `declaredTerminals`                     | Cualquier cosa que se pueda recorrer con `for…of`: array, `Set`, etc.                                                                        |
+| `new Set(iterable)`                          | `createSymbolTable`, `collectTerminals` | Conjunto con los elementos del iterable, sin repetidos. `new Set(undefined)` es vacío.                                                       |
+| `lista.flatMap(f)`                           | `collectTerminals`                      | Aplica `f` a cada elemento y junta las listas resultantes en una sola.                                                                       |
+| `[a, ...lista]`                              | `rejectDuplicateProductions`            | **Spread:** un array con `a` seguido de los elementos de `lista`.                                                                            |
+| `` `texto ${x}` ``                           | mensajes                                | **Template literal:** inserta `x` dentro del texto.                                                                                          |
+| `export` / sin `export`                      | `buildGrammar` / `collectNonterminals`  | Lo exportado es la API del módulo. Lo demás es privado del archivo y es un detalle de implementación.                                        |
+| `class X extends Error`                      | `GrammarBuildError`                     | Error propio que hereda mensaje y traza; se reconoce con `instanceof`.                                                                       |

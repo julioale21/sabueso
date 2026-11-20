@@ -19,6 +19,8 @@ export function tokenizeSequence(text: string): SymbolName[] {
  * error of the first token outside Σ, or null when the whole story is over Σ.
  */
 export function checkAlphabet(tokens: readonly SymbolName[], grammar: Grammar): ParseError | null {
+  // ES: Verifica w ∈ Σ* (cada símbolo es una etiqueta que existe) antes de preguntar
+  // ES: w ∈ L(G), que es trabajo de Earley. Separar los dos errores da mejores mensajes.
   const position = tokens.findIndex((token) => !grammar.terminals.has(token));
   if (position === -1) {
     return null;

@@ -31,8 +31,6 @@ interface SymbolTable {
   nonterminals: ReadonlySet<SymbolName>;
   /** The %terminals declaration, if the grammar has one. */
   declaredTerminals: ReadonlySet<SymbolName> | undefined;
-  /** Σ, filled while the right-hand sides are resolved. */
-  terminals: Set<SymbolName>;
 }
 
 /**
@@ -50,6 +48,12 @@ export function buildGrammar(
   start?: SymbolName,
   declaredTerminals?: Iterable<SymbolName>,
 ): Grammar {
+  // ES: Arma la 4-upla G = (N, Σ, P, S) en un orden que importa:
+  // ES: 1. N primero: son los lados izquierdos. Sin N no se puede clasificar nada.
+  // ES: 2. P: con N conocido, cada símbolo de un lado derecho es no terminal (∈ N) o
+  // ES:    terminal (∉ N). Acá se valida cada símbolo, pero no se modifica nada.
+  // ES: 3. Σ: los terminales que aparecieron en P, más los de %terminals. N ∩ Σ = ∅ por construcción.
+  // ES: 4. S: debe ser un no terminal; si no, L(G) no tendría de dónde derivarse.
   const firstRule = requireAtLeastOneRule(name, rules);
   const symbols = createSymbolTable(rules, declaredTerminals);
   const productions = createProductions(rules, symbols);
@@ -59,7 +63,7 @@ export function buildGrammar(
     name,
     start: requireNonterminalStart(start ?? firstRule.leftSide, symbols.nonterminals),
     nonterminals: symbols.nonterminals,
-    terminals: symbols.terminals,
+    terminals: collectTerminals(productions, symbols),
     productions,
     productionsByLeftSide: groupByLeftSide(symbols.nonterminals, productions),
   };
@@ -86,7 +90,7 @@ function createSymbolTable(
   const nonterminals = collectNonterminals(rules);
   const declared = declaredTerminals === undefined ? undefined : new Set(declaredTerminals);
   declared?.forEach((terminal) => checkDeclaredTerminal(terminal, nonterminals));
-  return { nonterminals, declaredTerminals: declared, terminals: new Set(declared) };
+  return { nonterminals, declaredTerminals: declared };
 }
 
 /** N: a symbol is a nonterminal exactly when it is the left-hand side of some rule. */
@@ -112,23 +116,33 @@ function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable):
   return rules.map((rule, index) => ({
     id: index,
     leftSide: rule.leftSide,
-    rightSide: rule.rightSide.map((symbol) => resolveRightSideSymbol(symbol, symbols)),
+    rightSide: rule.rightSide.map((symbol) => checkRightSideSymbol(symbol, symbols)),
   }));
 }
 
-/** Returns the name of a right-hand-side symbol, adding it to Σ when it is a terminal. */
-function resolveRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): SymbolName {
-  const name =
-    typeof symbol === 'string'
-      ? resolveIdentifier(symbol, symbols)
-      : resolveLiteral(symbol.literal, symbols);
-  if (!symbols.nonterminals.has(name)) {
-    symbols.terminals.add(name);
+/** Σ: the declared terminals, plus every right-hand-side symbol that is not in N. */
+function collectTerminals(
+  productions: readonly Production[],
+  symbols: SymbolTable,
+): Set<SymbolName> {
+  const terminals = new Set(symbols.declaredTerminals);
+  for (const symbol of productions.flatMap((production) => production.rightSide)) {
+    if (!symbols.nonterminals.has(symbol)) {
+      terminals.add(symbol);
+    }
   }
-  return name;
+  return terminals;
 }
 
-function resolveIdentifier(identifier: SymbolName, symbols: SymbolTable): SymbolName {
+/** The name of a right-hand-side symbol, once it is checked: an identifier or a literal. */
+function checkRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): SymbolName {
+  return typeof symbol === 'string'
+    ? checkIdentifier(symbol, symbols)
+    : checkLiteral(symbol.literal, symbols);
+}
+
+/** An identifier that is not in N is a terminal; with %terminals, it must be declared. */
+function checkIdentifier(identifier: SymbolName, symbols: SymbolTable): SymbolName {
   rejectReservedName(identifier);
   const isTerminal = !symbols.nonterminals.has(identifier);
   const isUndeclared =
@@ -141,7 +155,8 @@ function resolveIdentifier(identifier: SymbolName, symbols: SymbolTable): Symbol
   return identifier;
 }
 
-function resolveLiteral(literal: string, symbols: SymbolTable): SymbolName {
+/** A literal is always a terminal, so it cannot be empty or share a name with a nonterminal. */
+function checkLiteral(literal: string, symbols: SymbolTable): SymbolName {
   if (literal === '') {
     throw new GrammarBuildError('Empty literal: write ε for the empty string');
   }
@@ -174,6 +189,8 @@ function requireNonterminalStart(
   return start;
 }
 
+// ES: Índice A → [sus producciones]. Earley lo usa en el Predictor: al ver "• A" necesita
+// ES: todas las A → α sin recorrer P entera.
 function groupByLeftSide(
   nonterminals: ReadonlySet<SymbolName>,
   productions: readonly Production[],

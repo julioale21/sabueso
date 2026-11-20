@@ -50,7 +50,7 @@ describe('sabueso lex', () => {
   it('with --states on a file without rules, says there is nothing to trace', async () => {
     const { environment, output } = createMemoryEnvironment({ 'empty.grammar': '# only\n' });
     await runCommandLine(['lex', '--grammar-file', 'empty.grammar', '--states'], environment);
-    expect(output()).toContain('DFA states: the file has no rule to trace');
+    expect(output()).toContain('DFA states: the file has no line to trace');
   });
 
   it('reports a lexical error of the file with its position and exits with 1', async () => {

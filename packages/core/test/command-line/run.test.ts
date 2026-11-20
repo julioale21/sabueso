@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runCommandLine } from '../../src/command-line/program.js';
-import { set, table } from '../../src/command-line/format.js';
+import { formatSet, formatTable } from '../../src/command-line/format.js';
 import { createCommandLineProgram } from '../../src/command-line/run.js';
 import { createMemoryEnvironment } from './memory-environment.js';
 
@@ -58,9 +58,9 @@ describe('help', () => {
 });
 
 describe('format', () => {
-  it('table aligns the columns', () => {
+  it('formatTable aligns the columns', () => {
     expect(
-      table(
+      formatTable(
         ['Symbol', 'Kind'],
         [
           ['S', 'nonterminal'],
@@ -72,8 +72,8 @@ describe('format', () => {
     );
   });
 
-  it('set sorts and removes duplicates', () => {
-    expect(set(['c', 'a', 'b', 'a'])).toBe('{a, b, c}');
-    expect(set([])).toBe('{}');
+  it('formatSet sorts and removes duplicates', () => {
+    expect(formatSet(['c', 'a', 'b', 'a'])).toBe('{a, b, c}');
+    expect(formatSet([])).toBe('{}');
   });
 });

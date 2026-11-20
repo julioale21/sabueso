@@ -1,6 +1,6 @@
 # Guía de estudio: las gramáticas del proyecto (G0, G1 y las internas)
 
-> **Paso 5 del SPEC 02.** Archivos: `packages/core/grammars/` (10 archivos `.grammar`), `packages/core/src/genres/`, `packages/core/src/command-line/grammars.ts`, `packages/core/src/command-line/program.ts`, los comandos `genres` y `grammars`, `test/helpers/load.ts` y `test/fixtures/l1.txt`.
+> **Paso 5 del SPEC 02.** Archivos: `packages/core/grammars/` (10 archivos `.grammar`), `packages/core/src/genres/`, `packages/core/src/command-line/built-in-grammars.ts`, `packages/core/src/command-line/program.ts`, los comandos `genres` y `grammars`, `test/helpers/load.ts` y `test/fixtures/l1.txt`.
 > Fichas relacionadas: [`01-alphabet-and-language.md`](../concepts/01-alphabet-and-language.md), [`02-context-free-grammar.md`](../concepts/02-context-free-grammar.md). La ficha 21 (ambigüedad de G0 contra G1) se escribe en borrador en el paso 19 y se completa en el paso 27.
 
 ---
@@ -42,18 +42,19 @@ Los números de la última columna son **pasos** del spec (sección 8.3), no fic
 
 ### 2.2 El código
 
-| Archivo                                 | Objetivo                                                                                                                                                            |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/genres/types.ts`                   | los tipos `Genre` (un género: nombre, gramática oficial y alternativa, etiquetas) y `TagInfo` (una etiqueta: terminal, función narrativa y ejemplo)                 |
-| `src/genres/detective-tags.ts`          | las **14 etiquetas** del policial con su función y un ejemplo: es el alfabeto Σ, con significado. Son datos de dominio, en español                                  |
-| `src/genres/catalog.ts`                 | el **catálogo**: la lista de géneros. Solo datos; el motor no lo importa                                                                                            |
-| `src/command-line/grammars.ts`          | el **registro de gramáticas incorporadas**: nombre → archivo, alias (`g1`, `g0`) y grupo ("Géneros" o "Desarrollo"). Las de género se arman **leyendo el catálogo** |
-| `src/command-line/commands/genres.ts`   | el comando `genres`: muestra el catálogo                                                                                                                            |
-| `src/command-line/commands/grammars.ts` | el comando `grammars`: lee las 10 gramáticas con la cadena completa (lexer → parser → `buildGrammar`) y muestra \|N\|, \|Σ\| y \|P\|                                |
-| `src/command-line/run.ts` (cambio)      | `createCommandLineProgram` acepta una opción nueva, `helpFooter`: un texto que `help` muestra al final                                                              |
-| `src/command-line/program.ts` (cambio)  | registra los comandos `genres` y `grammars`, y pasa `helpFooter: formatGrammarGroups()` (las gramáticas por grupo)                                                  |
-| `test/helpers/load.ts`                  | lee gramáticas con `node:fs`, **solo en las pruebas** (el programa lee a través del `environment`)                                                                  |
-| `test/fixtures/l1.txt`                  | **L1**: `CRI`, 198 × `PIS`, `REV`. 200 eventos, el relato largo de las pruebas de rendimiento                                                                       |
+| Archivo                                 | Objetivo                                                                                                                                                                          |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/genres/types.ts`                   | los tipos `Genre` (un género: nombre, gramática oficial y alternativa, etiquetas) y `TagInfo` (una etiqueta: terminal, función narrativa y ejemplo)                               |
+| `src/genres/detective-tags.ts`          | las **14 etiquetas** del policial con su función y un ejemplo: es el alfabeto Σ, con significado. Son datos de dominio, en español                                                |
+| `src/genres/catalog.ts`                 | el **catálogo**: la lista de géneros. Solo datos; el motor no lo importa                                                                                                          |
+| `src/command-line/built-in-grammars.ts` | el **registro de gramáticas incorporadas**: nombre → archivo, alias (`g1`, `g0`) y grupo ("Géneros" o "Desarrollo"). Las de género se arman **leyendo el catálogo**               |
+| `src/command-line/grammar-source.ts`    | de dónde toma un comando su gramática: un nombre del registro o `--grammar-file` (ver la guía 03, §7.3)                                                                           |
+| `src/command-line/commands/genres.ts`   | el comando `genres`: muestra el catálogo. Escribe cada gramática con sus alias usando `nameWithAliases` del registro                                                              |
+| `src/command-line/commands/grammars.ts` | el comando `grammars`: lee las 10 gramáticas con la cadena completa (lexer → parser → `buildGrammar`) y muestra \|N\|, \|Σ\| y \|P\|, una tabla por cada grupo de `grammarGroups` |
+| `src/command-line/run.ts` (cambio)      | `createCommandLineProgram` acepta una opción nueva, `helpFooter`: un texto que `help` muestra al final                                                                            |
+| `src/command-line/program.ts` (cambio)  | registra los comandos `genres` y `grammars`, y pasa `helpFooter: formatGrammarGroups()` (las gramáticas por grupo)                                                                |
+| `test/helpers/load.ts`                  | lee gramáticas con `node:fs`, **solo en las pruebas** (el programa lee a través del `environment`)                                                                                |
+| `test/fixtures/l1.txt`                  | **L1**: `CRI`, 198 × `PIS`, `REV`. 200 eventos, el relato largo de las pruebas de rendimiento                                                                                     |
 
 ---
 
@@ -373,7 +374,7 @@ Con eso, sin tocar nada más:
 
 Dos detalles:
 
-- **Alias cortos:** `g1` y `g0` son del policial de enigma. Si el nuevo género quiere los suyos (por ejemplo `noir`), se agregan a la tabla de alias de `command-line/grammars.ts`.
+- **Alias cortos:** `g1` y `g0` son del policial de enigma. Si el nuevo género quiere los suyos (por ejemplo `noir`), se agregan a la tabla `aliases` de `command-line/built-in-grammars.ts`.
 - **La lista exacta de gramáticas:** `test/built-in-grammars.test.ts` verifica la lista de las 10 gramáticas y sus tamaños, así que hay que sumar la nueva. Es intencional: ninguna gramática se agrega ni se pierde sin que una prueba lo note.
 
 ---
@@ -382,7 +383,7 @@ Dos detalles:
 
 ### 9.1 El registro de gramáticas
 
-`command-line/grammars.ts` tiene las 10 gramáticas en dos grupos:
+`command-line/built-in-grammars.ts` tiene las 10 gramáticas en dos grupos. Los grupos están en la constante `grammarGroups` (`['Géneros', 'Desarrollo'] as const`), y el tipo `GrammarGroup` se deduce de ella:
 
 | Grupo      | Gramáticas                                                                                                               |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -393,7 +394,10 @@ Dos detalles:
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `listBuiltInGrammars()`             | las 10, primero las de género                                                                                                               |
 | `findBuiltInGrammar(name)`          | busca por nombre **o alias**: `g1` y `detective/g1` dan la misma                                                                            |
+| `builtInGrammarIds()`               | los nombres de las 10, para el mensaje `Unknown grammar: …`                                                                                 |
 | `formatGrammarGroups()`             | el texto que `help` muestra al final                                                                                                        |
+| `nameWithAliases(grammar)`          | `detective/g1 (g1)`: el nombre con sus alias. La usan `formatGrammarGroups` y el comando `genres`                                           |
+| `builtInGrammarPath(grammar)`       | la ruta del archivo `.grammar` en el disco                                                                                                  |
 | `genreGrammars(genre)` (interna)    | arma la oficial y la alternativa de un género. La ruta sale del id de la gramática: `detective/g1` → `grammars/genres/detective/g1.grammar` |
 | `developmentGrammar(...)` (interna) | arma una gramática del grupo Desarrollo                                                                                                     |
 

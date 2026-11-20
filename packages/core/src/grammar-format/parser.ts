@@ -50,6 +50,8 @@ export function parseGrammarText(
   name: string,
   onTrace?: (step: ParserTraceStep) => void,
 ): Grammar {
+  // ES: La cadena completa de lectura: texto → (AFD, lenguaje regular) → tokens →
+  // ES: (LL(1), libre de contexto) → reglas → (buildGrammar) → G = (N, Σ, P, S).
   const file = parseGrammarFile(tokenizeGrammar(text), onTrace);
   return buildGrammar(name, file.rules, file.start, file.declaredTerminals);
 }
@@ -63,7 +65,7 @@ export function parseGrammarFile(
 }
 
 /** FIRST(Symbols) ∪ FOLLOW(Symbols): the tokens that can start or end a sequence of symbols. */
-const SYMBOLS_OR_SEQUENCE_END: readonly TokenKind[] = ['IDENTIFIER', 'LITERAL', 'BAR', 'NEWLINE'];
+const symbolsOrSequenceEnd: readonly TokenKind[] = ['IDENTIFIER', 'LITERAL', 'BAR', 'NEWLINE'];
 
 /** How each token kind is called in error messages. */
 const tokenDescriptions: Record<TokenKind, string> = {
@@ -83,6 +85,11 @@ const tokenDescriptions: Record<TokenKind, string> = {
  * looks at the current token (the lookahead), picks the only alternative that can start
  * with it, and calls the methods of the symbols of that alternative, in order.
  */
+// ES: Análisis descendente predictivo: la derivación más a la izquierda se arma de arriba
+// ES: (File) hacia abajo, y en cada no terminal se elige la producción mirando UN token.
+// ES: Funciona sin retroceso porque meta.grammar es LL(1): para cada no terminal, los
+// ES: conjuntos de predicción de sus alternativas (FIRST, o FOLLOW si derivan ε) son disjuntos.
+// ES: La pila del autómata de pila equivalente es la pila de llamadas de estos métodos.
 class GrammarFileParser {
   private position = 0;
   private depth = 0;
@@ -194,8 +201,8 @@ class GrammarFileParser {
       return [];
     }
     // Symbols is chosen on FIRST(Symbols) ∪ FOLLOW(Sequence) = {IDENTIFIER, LITERAL, BAR, NEWLINE}.
-    if (!SYMBOLS_OR_SEQUENCE_END.includes(kind)) {
-      throw this.unexpected(['EPSILON', ...SYMBOLS_OR_SEQUENCE_END]);
+    if (!symbolsOrSequenceEnd.includes(kind)) {
+      throw this.unexpected(['EPSILON', ...symbolsOrSequenceEnd]);
     }
     this.trace('Sequence', 'Symbols');
     return this.nested(() => this.parseSymbols());
@@ -203,6 +210,9 @@ class GrammarFileParser {
 
   /** Symbols -> Symbol Symbols | ε */
   private parseSymbols(): RightSideSymbol[] {
+    // ES: El caso clave de LL(1) con ε: se elige "Symbols → ε" solo si el token siguiente
+    // ES: puede venir DESPUÉS de Symbols (FOLLOW = {BAR, NEWLINE}). Si no está ni en FIRST ni
+    // ES: en FOLLOW, el error se detecta acá mismo y el mensaje lista ambos conjuntos.
     const kind = this.lookahead().kind;
     if (kind === 'BAR' || kind === 'NEWLINE') {
       // ε is chosen when the lookahead is in FOLLOW(Symbols) = {BAR, NEWLINE}.
@@ -210,7 +220,7 @@ class GrammarFileParser {
       return [];
     }
     if (kind !== 'IDENTIFIER' && kind !== 'LITERAL') {
-      throw this.unexpected(SYMBOLS_OR_SEQUENCE_END);
+      throw this.unexpected(symbolsOrSequenceEnd);
     }
     this.trace('Symbols', 'Symbol Symbols');
     const symbol = this.nested(() => this.parseSymbol());
@@ -241,6 +251,8 @@ class GrammarFileParser {
 
   /** Consumes the lookahead if it has the given kind; otherwise it is a syntax error. */
   private expect(kind: TokenKind): Token {
+    // ES: Equivale a "emparejar" un terminal: en el autómata de pila, sacar el terminal del
+    // ES: tope y avanzar en la entrada. Si no coincide, la cadena no está en L(meta.grammar).
     const token = this.lookahead();
     if (token.kind !== kind) {
       throw this.unexpected([kind]);

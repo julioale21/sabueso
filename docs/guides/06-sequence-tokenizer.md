@@ -1,6 +1,6 @@
 # Guía de estudio: 06 — El relato como cadena sobre Σ
 
-> **Paso 6 del SPEC 02.** Archivos: `packages/core/src/input/sequence.ts`, `packages/core/src/earley/diagnostics.ts` (solo el tipo `ParseError`), `packages/core/src/command-line/commands/tokens.ts` y la opción `--grammar` en `packages/core/src/command-line/grammars.ts`.
+> **Paso 6 del SPEC 02.** Archivos: `packages/core/src/input/sequence.ts`, `packages/core/src/earley/diagnostics.ts` (solo el tipo `ParseError`), `packages/core/src/command-line/commands/tokens.ts` y la opción `--grammar` en `packages/core/src/command-line/grammar-source.ts`.
 > Ficha teórica relacionada: [`docs/concepts/01-alphabet-and-language.md`](../concepts/01-alphabet-and-language.md).
 
 ---
@@ -113,18 +113,19 @@ export function checkAlphabet(tokens: readonly SymbolName[], grammar: Grammar): 
 1. Lee las opciones: `--grammar <nombre>` o `--grammar-file <ruta>`. Los argumentos sueltos son el relato.
 2. Lee la gramática con la cadena completa (lexer → parser → `buildGrammar`).
 3. Une los argumentos sueltos con espacios y llama a `tokenizeSequence`. Así da lo mismo escribir `"CRI PIS REV"` entre comillas que `CRI PIS REV` suelto.
-4. Llama a `checkAlphabet` e imprime una tabla: posición, token y si está en Σ.
-5. Termina con código 0 si todo está en Σ, o 1 si hay un símbolo desconocido. En ese caso también imprime Σ completo, para que el usuario vea qué etiquetas existen.
+4. Llama a `checkAlphabet` e imprime una tabla con `formatTable`: posición, token y si está en Σ.
+5. Termina con código 0 si todo está en Σ, o 1 si hay un símbolo desconocido. En ese caso también imprime Σ completo con `formatSet` (`Σ = {…}`, ordenado), para que el usuario vea qué etiquetas existen.
+6. Un error de uso se informa con `reportUsageError` (de `types.ts`, el mismo de todos los comandos) y termina con código 2.
 
-### 5.5 La opción `--grammar` (`src/command-line/grammars.ts`)
+### 5.5 La opción `--grammar` (`src/command-line/grammar-source.ts`)
 
 Los comandos de los pasos 3 a 5 reciben la gramática como argumento suelto (`lex g1`). Los que leen un relato no pueden: sus argumentos sueltos son el relato. Por eso usan `--grammar g1`, como pide el spec para `earley`, `trees`, `count` y los demás.
 
-| Función                | Para qué comandos                           | De dónde saca el nombre                          |
-| ---------------------- | ------------------------------------------- | ------------------------------------------------ |
-| `resolveGrammarSource` | los que leen solo una gramática (`grammar`) | el argumento suelto                              |
-| `resolveGrammarOption` | los que leen un relato (`tokens`)           | la opción `--grammar`                            |
-| `chooseGrammarSource`  | (interna, la usan las dos)                  | exige exactamente uno: nombre o `--grammar-file` |
+| Función                | Para qué comandos                                  | De dónde saca el nombre                          |
+| ---------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| `resolveGrammarSource` | los que leen solo una gramática (`lex`, `grammar`) | el argumento suelto                              |
+| `resolveGrammarOption` | los que leen un relato (`tokens`)                  | la opción `--grammar`                            |
+| `chooseGrammarSource`  | (interna, la usan las dos)                         | exige exactamente uno: nombre o `--grammar-file` |
 
 ---
 

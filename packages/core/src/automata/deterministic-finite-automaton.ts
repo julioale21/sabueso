@@ -84,6 +84,9 @@ export function runDeterministicAutomaton<
   text: string,
   onEvent?: (event: AutomatonEvent<State, TokenKind>) => void,
 ): AutomatonToken<TokenKind>[] {
+  // ES: Un AFD solo acepta o rechaza una cadena. Para usarlo como lexer se lo corre muchas
+  // ES: veces: cada token es una corrida desde q0. Cuando δ no tiene transición, la corrida
+  // ES: termina; si el estado ∈ F, lo leído es un token y se vuelve a q0 con el resto del texto.
   const tokens: AutomatonToken<TokenKind>[] = [];
   let cursor: Cursor = { index: 0, line: 1, column: 1 };
   while (cursor.index < text.length) {
@@ -113,11 +116,17 @@ function readLongestToken<
   tokenStart: Cursor,
   onEvent: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined,
 ): Cursor & { state: State } {
+  // ES: Es δ̂ (la función de transición extendida) aplicada al prefijo más largo posible:
+  // ES: se avanza mientras exista δ(q, clase(c)). Nunca retrocede: en este formato ningún
+  // ES: token necesita volver atrás, así que "el más largo" (maximal munch) es seguro.
   let state = automaton.initialState;
   let cursor = tokenStart;
   for (;;) {
     const character = text[cursor.index];
-    const next = character === undefined ? undefined : nextState(automaton, state, character);
+    const next =
+      character === undefined
+        ? undefined
+        : automaton.transitions[state][automaton.classifyCharacter(character)];
     if (character === undefined || next === undefined) {
       return { ...cursor, state };
     }
@@ -125,15 +134,6 @@ function readLongestToken<
     state = next;
     cursor = moveCursorPast(cursor, character);
   }
-}
-
-/** δ(state, class(character)), or undefined when the table has no transition. */
-function nextState<State extends string, CharacterClass extends string, TokenKind extends string>(
-  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>,
-  state: State,
-  character: string,
-): State | undefined {
-  return automaton.transitions[state][automaton.classifyCharacter(character)];
 }
 
 /**
@@ -150,6 +150,8 @@ function tokenKindOfFinalState<
   end: Cursor & { state: State },
   blockingCharacter: string | undefined,
 ): TokenKind | null {
+  // ES: Aceptar = terminar en un estado de F. Si el estado no está en F (por ejemplo q6,
+  // ES: un literal sin cerrar), la cadena leída no es un token y es un error léxico.
   const kind = automaton.acceptingStates[end.state];
   const consumedSomething = end.index > tokenStart.index;
   if (kind === undefined || !consumedSomething) {

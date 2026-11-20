@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { builtInGrammarPath, listBuiltInGrammars } from '../../src/command-line/grammars.js';
+import {
+  builtInGrammarPath,
+  listBuiltInGrammars,
+} from '../../src/command-line/built-in-grammars.js';
 import type { CommandLineEnvironment } from '../../src/command-line/types.js';
 
 /** An in-memory CommandLineEnvironment that records everything the program writes. */
