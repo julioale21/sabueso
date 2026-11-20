@@ -22,3 +22,10 @@ npm run sabueso -- demo-grammar
 npm run sabueso -- lex arithmetic
 npm run sabueso -- lex arithmetic --states
 ```
+
+## Parser LL(1)
+
+```sh
+npm run sabueso -- grammar arithmetic
+npm run sabueso -- grammar arithmetic --parser-trace
+```

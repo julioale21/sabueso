@@ -840,6 +840,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - **Consola:**
      - `npm run sabueso -- grammar arithmetic` imprime G = (N, Σ, P, S). También acepta `--grammar-file <ruta>`.
      - Con `--parser-trace`, imprime cada llamada recursiva del parser con el lookahead que decidió la alternativa (por ejemplo, `Sequence [IDENTIFIER] → Symbols`).
+   - **Decisión (2026-11-19):** `%start` o `%terminals` repetidos son un `GrammarSyntaxError` en la posición de la segunda aparición, porque la segunda pisaría a la primera sin aviso. El spec original no lo definía.
 
 5. **Archivos de gramáticas.**
    - Escribir `meta.grammar`, `genres/detective/g0.grammar` y `g1.grammar`, las siete de `test/` y `test/fixtures/l1.txt`, más `test/helpers/load.ts` y `command-line/grammars.ts`.
