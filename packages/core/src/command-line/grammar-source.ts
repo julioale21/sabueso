@@ -3,6 +3,8 @@
  * file given with --grammar-file (to try the generic engine on any grammar).
  * Reference: SPEC 02, section 8.2.
  */
+import { parseGrammarText } from '../grammar-format/parser.js';
+import type { Grammar } from '../grammar/types.js';
 import type { ParsedArguments } from './arguments.js';
 import {
   builtInGrammarIds,
@@ -91,6 +93,15 @@ export async function readGrammarSource(
     return { label: source.grammar.id, text };
   }
   return { label: source.path, text: await readUserFile(source.path, environment) };
+}
+
+/** Reads the chosen grammar and builds it with the whole chain: lexer → parser → buildGrammar. */
+export async function readGrammar(
+  source: GrammarSource,
+  environment: CommandLineEnvironment,
+): Promise<Grammar> {
+  const { label, text } = await readGrammarSource(source, environment);
+  return parseGrammarText(text, label);
 }
 
 async function readUserFile(path: string, environment: CommandLineEnvironment): Promise<string> {

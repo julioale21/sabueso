@@ -5,7 +5,6 @@
  * Card: docs/concepts/01-alphabet-and-language.md
  */
 import type { ParseError } from '../../earley/diagnostics.js';
-import { parseGrammarText } from '../../grammar-format/parser.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
 import { parseArguments } from '../arguments.js';
@@ -13,7 +12,7 @@ import { formatSet, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
-  readGrammarSource,
+  readGrammar,
   resolveGrammarOption,
 } from '../grammar-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -36,8 +35,7 @@ export const tokensCommand: Command = {
     if (typeof source === 'string') {
       return reportUsageError(source, environment);
     }
-    const { label, text } = await readGrammarSource(source, environment);
-    const grammar = parseGrammarText(text, label);
+    const grammar = await readGrammar(source, environment);
     // The story can come as one quoted argument or as several words: both mean the same.
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const error = checkAlphabet(tokens, grammar);

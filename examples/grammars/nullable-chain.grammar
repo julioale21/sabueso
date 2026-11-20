@@ -1,0 +1,9 @@
+# A grammar whose nullable symbols appear one per round, to watch the fixed point grow:
+#   round 1: A (A -> ε)
+#   round 2: B (B -> A A, and A is already nullable)
+#   round 3: S (S -> B B)
+#   round 4: nothing new: the fixed point.
+# Try it with: npm run sabueso -- nullable --grammar-file examples/grammars/nullable-chain.grammar --steps
+S -> A B 'x' | B B
+B -> A A | 'b'
+A -> 'a' | ε

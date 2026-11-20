@@ -57,3 +57,13 @@ Paso 6. Separa el relato en tokens y verifica que cada uno esté en Σ. `XYZ` no
 npm run sabueso -- tokens --grammar g1 "CRI PIS REV"
 npm run sabueso -- tokens --grammar g1 "CRI XYZ REV"
 ```
+
+## Símbolos anulables
+
+Paso 7. El punto fijo de los anulables (A ⇒\* ε), ronda por ronda. En G1 son las 10 partes opcionales; en G0, ∅. El archivo de ejemplo agrega un anulable por ronda.
+
+```sh
+npm run sabueso -- nullable --grammar g1 --steps
+npm run sabueso -- nullable --grammar g0
+npm run sabueso -- nullable --grammar-file examples/grammars/nullable-chain.grammar --steps
+```

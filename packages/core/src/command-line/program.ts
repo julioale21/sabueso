@@ -5,6 +5,7 @@ import { genresCommand } from './commands/genres.js';
 import { grammarCommand } from './commands/grammar.js';
 import { grammarsCommand } from './commands/grammars.js';
 import { lexCommand } from './commands/lex.js';
+import { nullableCommand } from './commands/nullable.js';
 import { tokensCommand } from './commands/tokens.js';
 import { formatGrammarGroups } from './built-in-grammars.js';
 import { createCommandLineProgram } from './run.js';
@@ -16,6 +17,7 @@ export const runCommandLine = createCommandLineProgram({
     grammarsCommand,
     grammarCommand,
     tokensCommand,
+    nullableCommand,
     lexCommand,
     demoGrammarCommand,
   ],

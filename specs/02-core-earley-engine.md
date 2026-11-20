@@ -873,6 +873,12 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - `analysis/nullable.ts`, por punto fijo, con `onIteration`.
    - Pruebas: G0 da ∅. `parentheses` da {S}. `epsilon-trap` da {A}. G1 da {MarcoOpc, PerOpc, CtxOpc, HallazgoOpc, Libres, Lineas, CuerpoLinea, EpiOpc, Cierre, CapOpc}. Ficha 07.
    - **Consola:** `npm run sabueso -- nullable --grammar g1 --steps` imprime el conjunto después de cada iteración y el resultado final.
+   - **Decisiones (2026-11-20):**
+     - La función se llama `computeNullable(grammar, onIteration?)` y devuelve `Set<SymbolName>`.
+     - El punto fijo es **por rondas** (cada ronda mira solo el conjunto de la anterior), no "agregar sobre la marcha". Así la ronda i tiene significado teórico (altura del árbol ε más bajo) y la cantidad de rondas no depende del orden de las producciones. La última ronda no agrega nada: es la verificación del punto fijo. G1 da 2 rondas.
+     - Con `--steps` la tabla muestra, por ronda, cuántos anulables hay y cuáles se agregaron (el conjunto completo solo al final, para que la tabla no sea demasiado ancha). El conjunto vacío se imprime ∅.
+     - `readGrammar(source, environment)` en `grammar-source.ts` lee y construye la gramática elegida; la comparten `tokens`, `nullable` y los análisis siguientes.
+     - Ejemplo nuevo `examples/grammars/nullable-chain.grammar`, con un anulable por ronda, para mostrar cómo crece el punto fijo.
 
 8. **Longitud mínima.**
    - `analysis/min-yield.ts`.
