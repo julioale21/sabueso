@@ -8,7 +8,7 @@ describe('sabueso command line', () => {
   it('help lists the commands', async () => {
     const { environment, output } = createMemoryEnvironment();
     expect(await runCommandLine(['help'], environment)).toBe(0);
-    expect(output()).toMatch(/^demo-grammar\s/m);
+    expect(output()).toMatch(/^grammar\s/m);
     expect(output()).toMatch(/^help\s/m);
   });
 
@@ -25,7 +25,7 @@ describe('sabueso command line', () => {
     expect(await runCommandLine(['foo'], environment)).toBe(2);
     expect(output()).toBe('');
     expect(errors()).toContain('Unknown command: foo');
-    expect(errors()).toMatch(/^demo-grammar\s/m);
+    expect(errors()).toMatch(/^grammar\s/m);
   });
 });
 

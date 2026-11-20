@@ -1,6 +1,6 @@
 # Guía de estudio: la gramática libre de contexto en el núcleo
 
-> **Paso 2 del SPEC 02.** Archivos: `packages/core/src/grammar/types.ts`, `packages/core/src/grammar/build.ts`, `packages/core/src/command-line/format.ts` y `packages/core/src/command-line/commands/demo-grammar.ts`.
+> **Paso 2 del SPEC 02.** Archivos: `packages/core/src/grammar/types.ts`, `packages/core/src/grammar/build.ts`, y `packages/core/src/command-line/format.ts`. En consola, la gramática se muestra con el comando `grammar` (paso 4).
 > Ficha teórica relacionada: [`docs/concepts/02-context-free-grammar.md`](../concepts/02-context-free-grammar.md).
 
 Esta guía explica **qué hace cada pieza, cómo funciona por dentro y por qué está diseñada así**. Es la base de todo el núcleo: el lexer, el parser, los análisis, Earley, CNF, CYK y el autómata de pila trabajan sobre el objeto `Grammar` que se construye acá.
@@ -58,7 +58,7 @@ El programa necesita dos cosas:
 
 ### El mapa: cómo se conectan las piezas
 
-Este paso implementa **solo** la construcción de la gramática. Cuando se escribió, el lexer y el parser no existían. Por eso `demo-grammar` escribe las reglas a mano en el código. Hoy la cadena completa es:
+Este paso implementa **solo** la construcción de la gramática a partir de reglas ya separadas. El texto del archivo lo leen el lexer y el parser de los pasos 3 y 4. La cadena completa es:
 
 | #   | Etapa               | Entrada                      | Salida          | Paso          | Archivo                            |
 | --- | ------------------- | ---------------------------- | --------------- | ------------- | ---------------------------------- |
@@ -76,14 +76,14 @@ Dependencias entre archivos (cada fila: el archivo de la izquierda importa al de
 
 | Archivo                                 | Importa a                | Para qué                                        |
 | --------------------------------------- | ------------------------ | ----------------------------------------------- |
-| `command-line/commands/demo-grammar.ts` | `grammar/build.ts`       | construir la gramática (`buildGrammar`)         |
-| `command-line/commands/demo-grammar.ts` | `command-line/format.ts` | convertirla en texto (`formatGrammar`)          |
+| `command-line/commands/grammar.ts`      | `grammar-format/parser.ts` | leer el archivo (`parseGrammarText`, que termina en `buildGrammar`) |
+| `command-line/commands/grammar.ts`      | `command-line/format.ts` | convertirla en texto (`formatGrammar`)          |
 | `command-line/format.ts`                | `grammar/build.ts`       | escribir cada producción (`formatProduction`)   |
 | `grammar/build.ts`                      | `grammar/types.ts`       | los tipos `Grammar`, `Production`, `SymbolName` |
 
 **Regla de arquitectura:** `grammar/` (el motor) **no importa nada** de `command-line/` (la consola). La consola usa al motor, nunca al revés. Por eso el mismo motor sirve para la consola, la web (SPEC 03) y la entrada en español controlado (SPEC 04), que convierte frases en etiquetas.
 
-### La presentación: `format.ts` y `demo-grammar.ts`
+### La presentación: `format.ts`
 
 #### `formatGrammar(grammar)` en `command-line/format.ts`
 
@@ -108,44 +108,34 @@ function formatNumberedProduction(production: Production): string {
 - **`formatNumberedProduction`:** el `id` alineado a la derecha en 2 caracteres (`padStart(2)`), seguido de la producción escrita por `formatProduction` del motor.
 - **Por qué está en `command-line/`:** decide detalles de la **terminal** (alineación con espacios, texto plano). La web va a mostrar la gramática con componentes, no con este texto. El motor no sabe de consola.
 
-#### `demoGrammarCommand` en `command-line/commands/demo-grammar.ts`
+#### El recorrido de `npm run sabueso -- grammar arithmetic`
 
-```ts
-export const demoGrammarCommand: Command = {
-  name: 'demo-grammar',
-  description: 'Build the expression grammar in code and print G = (N, Σ, P, S)',
-  usage: 'sabueso demo-grammar',
-  run(_commandArguments, environment) {
-    environment.writeOutput(`${formatGrammar(buildExpressionGrammar())}\n`);
-    return Promise.resolve(EXIT_CODES.ok);
-  },
-};
-```
-
-Une las piezas: **motor** (`buildGrammar`) → **presentación** (`formatGrammar`) → **salida** (`environment.writeOutput`). Escribe por el `environment` y no con `console.log`, así que una prueba puede capturar la salida en memoria. Se registra en `command-line/program.ts` y por eso aparece en `help`.
-
-#### El recorrido de `npm run sabueso -- demo-grammar`
-
-1. **`command-line.ts`** arma el `environment` real (escribe en `process.stdout`) y llama a `runCommandLine(['demo-grammar'], environment)`.
-2. **`program.ts`** define `runCommandLine` con `createCommandLineProgram(...)`, que recibe la lista de comandos (`genres`, `grammars`, `grammar`, `lex` y `demo-grammar`). `help` se agrega solo.
-3. **`run.ts`** busca el comando llamado `demo-grammar` y llama a `command.run([], environment)`.
-4. **`demo-grammar.ts`**:
-   1. llama a `buildGrammar(...)` y obtiene el `Grammar` (motor);
-   2. llama a `formatGrammar(...)` y obtiene el texto (presentación);
-   3. llama a `environment.writeOutput(texto)` y devuelve `0`.
+1. **`command-line.ts`** arma el `environment` real (escribe en `process.stdout`, lee archivos del disco) y llama a `runCommandLine(['grammar', 'arithmetic'], environment)`.
+2. **`program.ts`** define `runCommandLine` con `createCommandLineProgram(...)`, que recibe la lista de comandos. `help` se agrega solo.
+3. **`run.ts`** busca el comando llamado `grammar` y llama a `command.run(['arithmetic'], environment)`.
+4. **`commands/grammar.ts`**:
+   1. lee `grammars/test/arithmetic.grammar` por el `environment`;
+   2. llama a `parseGrammarText(...)`: lexer → parser → **`buildGrammar`** (este paso), y obtiene el `Grammar`;
+   3. llama a `formatGrammar(...)` y obtiene el texto (presentación);
+   4. llama a `environment.writeOutput(texto)` y devuelve `0`.
 5. **`command-line.ts`** asigna `process.exitCode = 0`.
+
+Escribe por el `environment` y no con `console.log`, así que una prueba puede capturar la salida en memoria.
 
 Salida:
 
 ```
-expressions: G = (N, Σ, P, S)
-N = {E, T}
-Σ = {+, id}
+arithmetic: G = (N, Σ, P, S)
+N = {E, F, T}
+Σ = {(, ), *, +, id}
 S = E
 P:
    0  E → E + T
    1  E → T
-   2  T → id
+   2  T → T * F
+   3  T → F
+   4  F → ( E )
+   5  F → id
 ```
 
 ---
@@ -668,7 +658,7 @@ function rejectReservedName(symbol: SymbolName): void {
 
 ## 6. Ejemplo recorrido a mano
 
-**Entrada** (la que escribe `demo-grammar` en el código; con un archivo, la misma lista la produce el parser del paso 4):
+**Entrada** (escrita en código; con un archivo `.grammar`, la misma lista la produce el parser del paso 4):
 
 ```ts
 buildGrammar('expressions', [
@@ -760,7 +750,7 @@ Todos son `GrammarBuildError`, y todos se lanzan **antes** de devolver la gramá
 
 ## 8. Consola y pruebas
 
-El comando `npm run sabueso -- demo-grammar` y su salida están en §3. Para un archivo real, `npm run sabueso -- grammar g1`.
+El recorrido de `npm run sabueso -- grammar arithmetic` y su salida están en §3. Con el relato: `npm run sabueso -- grammar g1`.
 
 ### `packages/core/test/grammar-build.test.ts` (solo el motor)
 
@@ -829,9 +819,9 @@ Cada caso verifica que se lance un `GrammarBuildError` (no otro tipo de error) c
 | `parentheses` completa                     | ε se escribe `ε`, N y Σ salen ordenados (`{(, )}`) y la salida es exacta línea por línea. |
 | 11 producciones (`D → 'd0' \| … \| 'd10'`) | Los `id` de dos dígitos quedan alineados: `   9  D → d9` y `  10  D → d10`.               |
 
-### `packages/core/test/command-line/demo-grammar.test.ts` (el recorrido completo)
+### El recorrido completo
 
-Ejecuta el comando con `createMemoryEnvironment()`, un environment falso que guarda en memoria lo que se escribe, y compara la salida **exacta**, línea por línea.
+Las pruebas del comando `grammar`, que pasa por `buildGrammar` con archivos reales, están en `packages/core/test/command-line/grammar.test.ts` (guía 04). Usan `createMemoryEnvironment()`, un environment falso que guarda en memoria lo que se escribe.
 
 Para correrlas: `npm test`.
 

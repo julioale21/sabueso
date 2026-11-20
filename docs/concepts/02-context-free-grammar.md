@@ -43,7 +43,7 @@ Por lo tanto, `CRI PIS REV` ∈ L(G). En general, L(G) = { CRI PISⁿ REV | n �
 | Construcción y validación de G      | `buildGrammar` en `packages/core/src/grammar/build.ts`                                                                                                                                               |
 | Producción en notación de la teoría | `formatProduction` en `grammar/build.ts`                                                                                                                                                             |
 | Producción ε                        | `rightSide: []` (lado derecho vacío) en `Production`, `grammar/types.ts`                                                                                                                             |
-| Comando de consola                  | `npm run sabueso -- demo-grammar` arma `E → E + T \| T`, `T → id` en código e imprime la 4-upla. `npm run sabueso -- grammar g1` imprime la de G1: 21 no terminales, 14 terminales y 40 producciones |
+| Comando de consola                  | `npm run sabueso -- grammar g1` imprime la de G1: 21 no terminales, 14 terminales y 40 producciones |
 
 ## 4. Qué prueba lo verifica
 
@@ -51,7 +51,6 @@ Por lo tanto, `CRI PIS REV` ∈ L(G). En general, L(G) = { CRI PISⁿ REV | n �
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core/test/grammar-build.test.ts`             | Clasificación de N y Σ, numeración, índice, símbolo inicial, producciones ε, literales y un caso por cada mensaje de error                      |
 | `packages/core/test/grammar-build-cases.test.ts`       | 15 gramáticas válidas (compara la 4-upla completa) y 14 rechazadas (compara el mensaje exacto). Casos en `test/fixtures/grammar-build-cases.ts` |
-| `packages/core/test/command-line/demo-grammar.test.ts` | La salida exacta del comando                                                                                                                    |
 
 ## 5. Referencia bibliográfica
 

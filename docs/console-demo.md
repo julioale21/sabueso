@@ -12,14 +12,6 @@ Lista los comandos y, al final, las gramáticas incorporadas por grupo.
 npm run sabueso -- help
 ```
 
-## Gramática libre de contexto
-
-Paso 2. Arma una gramática en código y muestra la 4-upla G = (N, Σ, P, S).
-
-```sh
-npm run sabueso -- demo-grammar
-```
-
 ## Lexer AFD
 
 Paso 3. Los tokens de `arithmetic.grammar`. Con `--states`, el recorrido de δ.
