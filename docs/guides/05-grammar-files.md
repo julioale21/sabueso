@@ -254,6 +254,56 @@ Con G1, `CRI SOS PIS INT REV` tiene **un solo árbol**: la lectura 4 de la secci
 
 **Fundamento de género:** no se puede descartar una sospecha que nunca se planteó. El cambio de lenguaje es una decisión deliberada, y el paso 27 (`compareLanguages`) lo va a mostrar buscando relatos que una acepta y la otra no.
 
+### 6.5 Validación: ¿las gramáticas generan el lenguaje que esperamos?
+
+En este paso el programa todavía no analiza relatos (eso llega con Earley, pasos 11 a 17). Para no esperar hasta entonces, se validaron G0 y G1 con un **script descartable, fuera del repo**, que lee los archivos `.grammar` reales e implementa por su cuenta el conteo de árboles (programación dinámica sobre las particiones de la cadena) y la generación de cadenas. Hizo tres comprobaciones, y **pasaron todas**.
+
+**a) Los relatos de prueba del spec (tabla 9.1).** Cantidad de árboles, donde 0 es rechazo:
+
+| Caso | Relato                                    | G0                     | G1  |
+| ---- | ----------------------------------------- | ---------------------- | --- |
+| V1   | `CTX HAL ENC INT SOS PIS DSC REV CNF CAP` | 8                      | 1   |
+| V2   | `HAL PIS REV EPI`                         | 1                      | 1   |
+| V3   | `CRI ENC SOS INT DSC PIS SOS ATQ REV CAP` | 112                    | 1   |
+| A1   | `CRI SOS PIS INT REV`                     | 4                      | 1   |
+| M1   | `CRI PIS REV`                             | 1                      | 1   |
+| I1   | `CTX PER PIS REV` (sin crimen)            | 0                      | 0   |
+| I2   | relato vacío                              | 0                      | 0   |
+| I3   | `CRI REV` (sin investigación)             | 0                      | 0   |
+| I4   | `CRI PIS` (sin desenlace)                 | 0                      | 0   |
+| I5   | `CRI DSC REV`                             | 1                      | 0   |
+| I7   | `CRI SOS DSC DSC REV`                     | 4                      | 0   |
+| L1   | `CRI` + 198 × `PIS` + `REV`               | C(197), de 115 dígitos | 1   |
+
+Los doce coinciden con lo que exige el spec.
+
+**b) Generación acotada.** Se generaron **todos** los relatos de hasta 7 eventos de cada gramática:
+
+| Medida                            | Resultado                                                                |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| relatos de G0 / de G1             | 34.420 / 19.986                                                          |
+| L(G1) ⊆ L(G0)                     | se cumple: ningún relato de G1 queda fuera de G0                         |
+| relatos solo en G0                | 14.434, todos con un descarte inválido (`CRI DSC REV`, `HAL DSC REV`, …) |
+| relatos de G1 con más de un árbol | 0                                                                        |
+| relatos de G0 con más de un árbol | 28.965; el más corto es `CRI SOS SOS REV`                                |
+
+**c) Las reglas del género.** Sobre cada relato generado se verificó lo que esperamos de un policial de enigma:
+
+- abre con el crimen (`CRI` o `HAL`), quizás después del marco;
+- hay al menos un paso de investigación antes de la revelación;
+- hay exactamente una revelación (`REV`);
+- después de `REV` solo pueden venir `CNF`, `CAP` y `EPI`, en ese orden;
+- `ENC` aparece a lo sumo una vez;
+- en G1, todo `DSC` cierra una sospecha abierta.
+
+Los 34.420 relatos de G0 y los 19.986 de G1 cumplen todas.
+
+**Qué demuestra y qué no:**
+
+- Que G1 no es ambigua **está demostrado** para todas las cadenas, por el teorema LL(1) (el paso 6 lo verifica en código). La generación solo lo confirma hasta 7 eventos.
+- Que L(G1) ⊆ L(G0) y que se cumplen las reglas del género está verificado **hasta 7 eventos**: es evidencia, no una demostración para relatos más largos. Comparar dos gramáticas libres de contexto en general es indecidible, así que una búsqueda acotada es lo máximo que se puede automatizar.
+- Estas comprobaciones pasan a ser pruebas permanentes del proyecto más adelante: la tabla 9.1 con Earley (pasos 11 a 17), y la generación acotada y `compareLanguages` en el paso 27. Las reglas del género (c) no están en el spec; la propuesta es sumarlas como prueba en el paso 27.
+
 ---
 
 ## 7. `meta.grammar`
@@ -281,9 +331,29 @@ export const genres: readonly Genre[] = [
 ```
 
 - **Un género es un lenguaje** sobre su propio alfabeto de etiquetas. El catálogo lo describe con datos: su nombre, sus gramáticas y su alfabeto Σ con significado.
-- **Sumar un género** (por ejemplo, el policial negro, del trabajo futuro del anteproyecto): crear `grammars/genres/<id>/` con sus `.grammar`, sus etiquetas y una entrada en el catálogo. El registro de `command-line/grammars.ts` arma las gramáticas de género **leyendo el catálogo**, así que no hay que tocarlo. Solo los alias cortos (`g1`, `g0`) son propios del policial.
 - **El motor no importa el catálogo:** sigue siendo genérico. El catálogo lo usan la CLI (y la web, en el SPEC 03).
 - Una prueba verifica que **las etiquetas del catálogo son exactamente Σ** de G0 y de G1.
+
+### 8.1 Cómo sumar un género
+
+Por ejemplo, el policial negro (del trabajo futuro del anteproyecto). Son tres archivos nuevos y una entrada en el catálogo:
+
+| #   | Qué                                                        | Dónde                                                                                                                          |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | las gramáticas del género, con nombre `<género>/<versión>` | `packages/core/grammars/genres/noir/g1.grammar` (y una alternativa, si se quiere)                                              |
+| 2   | sus etiquetas, con función narrativa y ejemplo             | `packages/core/src/genres/noir-tags.ts`, igual a `detective-tags.ts`                                                           |
+| 3   | una entrada en el catálogo                                 | `packages/core/src/genres/catalog.ts`: `{ id: 'noir', name: 'Policial negro', officialGrammar: 'noir/g1', tags: noirTags, … }` |
+
+Con eso, sin tocar nada más:
+
+- **los comandos lo reconocen:** `grammar noir/g1` y `lex noir/g1` funcionan, y el género aparece en `genres`, `grammars` y `help`, porque el registro de gramáticas **lee el catálogo**;
+- **las pruebas del catálogo lo validan solas:** recorren cada género y verifican que sus gramáticas existan y que sus etiquetas sean exactamente Σ;
+- **el motor no cambia:** Earley y los análisis trabajan con cualquier gramática.
+
+Dos detalles:
+
+- **Alias cortos:** `g1` y `g0` son del policial de enigma. Si el nuevo género quiere los suyos (por ejemplo `noir`), se agregan a la tabla de alias de `command-line/grammars.ts`.
+- **La lista exacta de gramáticas:** `test/built-in-grammars.test.ts` verifica la lista de las 10 gramáticas y sus tamaños, así que hay que sumar la nueva. Es intencional: ninguna gramática se agrega ni se pierde sin que una prueba lo note.
 
 ---
 
@@ -391,6 +461,12 @@ No: L(G1) ⊊ L(G0). G1 rechaza un descarte sin sospecha abierta (`CRI DSC REV`)
 
 **¿Se puede decidir si una gramática cualquiera es ambigua?**
 No, es indecidible. Solo se puede buscar un testigo hasta un largo k (una semidecisión): si la gramática es ambigua, el testigo aparece aumentando k. Para G1 no hace falta: el teorema LL(1) lo demuestra.
+
+**¿Cómo sabes que G1 genera el lenguaje que esperás?**
+Se validó con un script independiente: los doce relatos de la tabla 9.1 dan los árboles esperados en G0 y en G1, y se generaron todos los relatos de hasta 7 eventos (34.420 de G0, 19.986 de G1). Todos cumplen las reglas del género, L(G1) ⊆ L(G0) y ningún relato de G1 tiene más de un árbol. Hasta 7 eventos es evidencia, no demostración: comparar gramáticas en general es indecidible. Lo que sí está demostrado para todo largo es que G1 no es ambigua, por ser LL(1).
+
+**¿Cómo se agrega otro género?**
+Con datos, sin tocar el motor: sus archivos `.grammar` en `grammars/genres/<id>/`, sus etiquetas y una entrada en el catálogo. El registro de gramáticas, los comandos y las pruebas del catálogo lo toman automáticamente.
 
 **¿Para qué están las gramáticas de `test/`?**
 Para probar que el motor es genérico (funciona con gramáticas de libro sin cambios) y para demostrar conceptos aislados: la ambigüedad clásica, ε, el caso que rompe al Earley clásico, los inútiles, el lenguaje vacío y los ciclos.
