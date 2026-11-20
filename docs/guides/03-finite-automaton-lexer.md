@@ -389,30 +389,29 @@ El ejecutor no sabe qué significa cada estado, así que no puede escribir un me
 #### `runDeterministicAutomaton(automaton, text, onEvent?)`
 
 ```ts
-export function runDeterministicAutomaton(automaton, text, onEvent?) {
-  const tokens = [];
-  let cursor = { index: 0, line: 1, column: 1 };
-  while (cursor.index < text.length) {
-    const end = readLongestToken(automaton, text, cursor, onEvent);
-    const lexeme = text.slice(cursor.index, end.index);
-    const kind = tokenKindOfFinalState(automaton, cursor, end, text[end.index]);
-    onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
-    if (kind !== null) {
-      tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
-    }
-    cursor = end;
+const tokens: AutomatonToken<TokenKind>[] = [];
+let cursor: Cursor = { index: 0, line: 1, column: 1 };
+while (cursor.index < text.length) {
+  const end = readLongestToken(automaton, text, cursor, onEvent);
+  const lexeme = text.slice(cursor.index, end.index);
+  const kind = tokenKindOfFinalState(automaton, cursor, end, text[end.index]);
+  onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
+  if (kind !== null) {
+    tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
   }
-  return tokens;
+  cursor = end;
 }
+return tokens;
 ```
 
-El ciclo de la sección 4.3, una vuelta por token:
-
-1. `readLongestToken`: lee el token más largo posible desde q₀.
-2. `text.slice(...)`: el texto del token (el **lexema**).
-3. `tokenKindOfFinalState`: verifica que terminó en un estado de F y obtiene su tipo; si no, lanza `AutomatonStoppedError`.
-4. Si el tipo no es `null`, guarda el token; si es `null` (espacio, comentario), lo descarta.
-5. El siguiente token empieza donde terminó este.
+- Un AFD solo dice "acepto" o "rechazo" una cadena. Para usarlo como lexer, se corre **muchas veces**: una corrida desde q₀ por token. Es el ciclo de la sección 4.3.
+- `cursor` empieza en `{ index: 0, line: 1, column: 1 }`: el índice recorre el texto y la línea y la columna (desde 1) son para los mensajes de error.
+- `while (cursor.index < text.length)`: una vuelta por token, hasta consumir todo el texto.
+- `readLongestToken(...)` devuelve `end`: dónde terminó el token y en qué estado quedó el autómata.
+- `text.slice(cursor.index, end.index)` es el **lexema**: el texto exacto entre el comienzo y el final del token.
+- `text[end.index]` es el carácter que frenó al autómata (o `undefined` al final del texto). Se le pasa a `tokenKindOfFinalState` solo para el mensaje de error.
+- `if (kind !== null)`: `null` significa "acepta y se descarta" (espacios y comentarios). El evento `accept` se emite igual, para que `lex --states` muestre también lo descartado.
+- `cursor = end`: el próximo token empieza en el primer carácter que este no consumió. No se retrocede nunca.
 
 #### `readLongestToken` (interna): el _maximal munch_
 
@@ -434,27 +433,55 @@ for (;;) {
 }
 ```
 
-`next` es literalmente δ(q, clase(c)): `transitions[state][classifyCharacter(character)]`. Si la celda no existe, vale `undefined` ("no hay transición").
-
-Sigue δ **mientras haya transición**, sin detenerse en el primer estado de aceptación. Se detiene cuando se acaba el texto o cuando δ no tiene transición para el carácter, y devuelve el estado alcanzado y la posición del primer carácter que **no** consumió. Ese carácter queda para el próximo token.
+- Es δ̂, la función de transición extendida, aplicada al **prefijo más largo** posible del resto del texto.
+- `for (;;)` es un ciclo sin condición: la única salida es el `return`. Se escribe así porque hay **dos** motivos para parar, y los dos se revisan en el mismo `if`.
+- `text[cursor.index]` vale `undefined` cuando el índice pasó el final del texto. Es la **primera salida**: se acabó la entrada.
+- `next` es literalmente δ(q, clase(c)): `transitions[state][classifyCharacter(character)]`. Si la celda no existe, vale `undefined`. Es la **segunda salida**: no hay transición (δ es parcial).
+- El ternario evita llamar a `classifyCharacter(undefined)` cuando ya no hay carácter.
+- `return { ...cursor, state }`: devuelve la posición del primer carácter **no** consumido, junto con el estado alcanzado. Ese carácter queda para el próximo token.
+- No se detiene en el primer estado de aceptación: sigue mientras haya transición. Eso es el _maximal munch_. Nunca retrocede, porque ningún token de este formato lo necesita.
 
 #### `tokenKindOfFinalState` (interna)
 
-Devuelve el tipo de token del estado donde terminó el token. Lanza `AutomatonStoppedError` en dos casos:
+```ts
+const kind = automaton.acceptingStates[end.state];
+const consumedSomething = end.index > tokenStart.index;
+if (kind === undefined || !consumedSomething) {
+  throw new AutomatonStoppedError(
+    end.state,
+    blockingCharacter,
+    end.line,
+    end.column,
+    tokenStart.line,
+    tokenStart.column,
+  );
+}
+return kind;
+```
 
-- el estado **no está en F** (`acceptingStates[state]` es `undefined`): por ejemplo, un literal sin cerrar termina en `q6ReadingLiteral`;
-- **no se consumió nada**: q₀ no tiene transición para el primer carácter (un carácter inválido).
+- Aceptar es terminar en un estado de F. `acceptingStates[end.state]` da el tipo de token, `null` (acepta y se descarta) o `undefined` (el estado no está en F).
+- Por eso se compara con `=== undefined` y no con `!kind`: `null` es una aceptación válida.
+- `kind === undefined`: el token quedó a medio leer. Por ejemplo, un literal sin cerrar termina en `q6ReadingLiteral`.
+- `consumedSomething`: si `end.index` es igual a `tokenStart.index`, q₀ no tuvo transición para el primer carácter. Es un carácter inválido.
+- En este lexer el segundo caso ya queda cubierto por el primero, porque q₀ no está en F. La condición está porque el ejecutor sirve para cualquier tabla: si el estado inicial de otra tabla aceptara, saldría un token vacío, `cursor` no avanzaría y el `while` de `runDeterministicAutomaton` no terminaría nunca.
+- El error guarda dos posiciones: la del carácter que frenó (`end`) y la del comienzo del token (`tokenStart`). El lexer elige cuál mostrar (ver `toSyntaxError`).
 
-Distingue `undefined` (no acepta) de `null` (acepta y se descarta).
+#### `moveCursorPast(cursor, character)` (interna)
 
-El segundo caso no hace falta en este lexer, porque q₀ no está en F. Está porque el ejecutor sirve para cualquier tabla: si el estado inicial de otra tabla aceptara, un carácter sin transición daría un token vacío, el cursor no avanzaría y el ciclo no terminaría nunca.
+```ts
+return character === '\n'
+  ? { index: cursor.index + 1, line: cursor.line + 1, column: 1 }
+  : { index: cursor.index + 1, line: cursor.line, column: cursor.column + 1 };
+```
 
-#### Piezas cortas
+- El índice siempre avanza uno.
+- Después de `'\n'` empieza una línea nueva: suma una línea y vuelve a la columna 1. Si no, suma una columna.
+- Devuelve un cursor nuevo en vez de modificar el anterior. Así `tokenStart` conserva el comienzo del token mientras `cursor` avanza.
+- Gracias a esto cada token sabe su posición sin volver a recorrer el texto.
 
-| Pieza                      | Qué es                                                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AutomatonToken`           | un token reconocido: `kind`, `text` (el lexema exacto), `line` y `column` donde empieza (desde 1)                                                                  |
-| `moveCursorPast` (interna) | avanza una posición: después de `\n` pasa a la línea siguiente, columna 1; si no, suma una columna. Así cada token sabe su posición sin volver a recorrer el texto |
+#### `AutomatonToken`
+
+Un token reconocido: `kind`, `text` (el lexema exacto), y `line` y `column` donde empieza (desde 1).
 
 ### 7.2 `lexer.ts`: la tabla del formato `.grammar`
 
@@ -509,13 +536,43 @@ export type CharacterClass = (typeof characterClasses)[number];
 
 La función que clasifica:
 
-1. Primero busca el carácter en una tabla de caracteres especiales (`' '`, `'\n'`, `'-'`, `'→'`, `'ε'`, `'_'`…). Por eso `ε` es `epsilonSign` aunque sea una letra griega: se revisa **antes** que las letras.
-2. Si no es especial y es una letra Unicode (`\p{L}`, incluye acentos y ñ), es `letter`.
-3. Si es `0`–`9`, es `digit`; si no, `otherCharacter`.
+```ts
+export function classifyCharacter(character: string): CharacterClass {
+  const special = singleCharacterClasses[character];
+  if (special !== undefined) {
+    return special;
+  }
+  if (/^\p{L}$/u.test(character)) {
+    return 'letter';
+  }
+  return /^[0-9]$/.test(character) ? 'digit' : 'otherCharacter';
+}
+```
+
+- `singleCharacterClasses` es una tabla de caracteres especiales (`' '`, `'\t'`, `'\r'`, `'\n'`, `'-'`, `'→'`, `'ε'`, `'_'`…). Se consulta **primero**.
+- El orden importa por `ε`: es una letra griega, así que `\p{L}` la daría por `letter`. Como la tabla especial se revisa antes, `ε` sale `epsilonSign`. Si no, `ε` se leería como un identificador.
+- `'_'` también está en la tabla, como `letter`: `\p{L}` no lo incluye.
+- `/^\p{L}$/u`: cualquier letra Unicode, incluidas las acentuadas y la ñ. La bandera `u` es necesaria para usar `\p{…}`.
+- Lo último son los dígitos `0`–`9`; todo lo demás es `otherCharacter`, una clase sin transiciones desde q₀.
+- Es la razón por la que δ tiene 13 columnas en vez de una por carácter Unicode.
 
 #### `everyClassExcept(excluded, target)` (interna)
 
-Arma una fila de δ que va a `target` con **todas** las clases salvo las excluidas. Se usa para las filas de "todo salvo…": `q6ReadingLiteral` (todo salvo `'` y salto) e `q10ReadingComment` (todo salvo salto). Escribir esas filas a mano repetiría el mismo estado en 11 o 12 columnas.
+```ts
+const row: Partial<Record<CharacterClass, LexerState>> = {};
+for (const characterClass of characterClasses) {
+  if (!excluded.includes(characterClass)) {
+    row[characterClass] = target;
+  }
+}
+return row;
+```
+
+- Arma una fila de δ que va a `target` con **todas** las clases salvo las de `excluded`.
+- Recorre `characterClasses`, la misma lista de la que sale el tipo. Si mañana se agrega una clase, la fila la incluye sola.
+- Se usa en las filas de "todo salvo…": `q10ReadingComment` (todo salvo salto de línea) y `q6ReadingLiteral` (todo salvo `'` y salto de línea).
+- En `q6ReadingLiteral` la comilla se agrega después, con su propio destino: `...everyClassExcept(['singleQuote', 'lineBreak'], 'q6ReadingLiteral'), singleQuote: 'q7LiteralRead'`.
+- Escribir esas filas a mano repetiría el mismo estado en 11 o 12 columnas.
 
 #### `grammarLexerAutomaton`
 
@@ -553,18 +610,43 @@ La función pública del lexer, en tres pasos:
 
 #### `readLexemes` (interna)
 
-Llama a `runDeterministicAutomaton` con la tabla del formato. Si el autómata se detiene fuera de F, convierte el `AutomatonStoppedError` en un `GrammarSyntaxError` con `toSyntaxError`.
+```ts
+try {
+  return runDeterministicAutomaton(grammarLexerAutomaton, text, onEvent);
+} catch (error) {
+  if (error instanceof AutomatonStoppedError) {
+    throw toSyntaxError(error as AutomatonStoppedError<LexerState>);
+  }
+  throw error;
+}
+```
+
+- Corre el ejecutor genérico con la tabla del formato.
+- Si el autómata se detiene fuera de F, el error genérico se traduce a un `GrammarSyntaxError` del formato con `toSyntaxError`.
+- `as AutomatonStoppedError<LexerState>`: `instanceof` no conoce el parámetro de tipo, así que hay que decirle a TypeScript que el estado es un `LexerState`. Es seguro: el autómata es `grammarLexerAutomaton`.
+- `throw error` al final: cualquier otro error (por ejemplo, un error de programación) sigue de largo sin disfrazarse de error léxico.
 
 #### `toToken` (interna)
 
-Ajusta el texto de cada lexema:
+```ts
+const position = { line: lexeme.line, column: lexeme.column };
+switch (lexeme.kind) {
+  case 'LITERAL':
+    return { kind: 'LITERAL', text: lexeme.text.slice(1, -1), ...position };
+  case 'NEWLINE':
+    return { kind: 'NEWLINE', text: '', ...position };
+  case 'DIRECTIVE':
+    return { kind: resolveDirective(lexeme), text: lexeme.text, ...position };
+  default:
+    return { kind: lexeme.kind, text: lexeme.text, ...position };
+}
+```
 
-| Lexema                     | Token                                              |
-| -------------------------- | -------------------------------------------------- |
-| `'+'` (`LITERAL`)          | texto `+`: se quitan las comillas                  |
-| salto de línea (`NEWLINE`) | texto vacío                                        |
-| `%start` (`DIRECTIVE`)     | tipo `START` o `TERMINALS`, con `resolveDirective` |
-| los demás                  | sin cambios                                        |
+- `position` se arma una vez y se copia con `...position` en cada caso: el token conserva dónde empezaba el lexema.
+- `LITERAL`: `slice(1, -1)` quita el primer y el último carácter, es decir, las dos comillas. `'+'` queda `+`.
+- `NEWLINE`: el texto queda vacío, porque un `\n` no se ve en una tabla.
+- `DIRECTIVE`: el autómata solo reconoce la forma `%` + letras. `resolveDirective` decide si es `START` o `TERMINALS` (sección 4.4).
+- `default`: los demás (`IDENTIFIER`, `ARROW`, `BAR`, `EPSILON`) pasan sin cambios. TypeScript acepta `lexeme.kind` como `TokenKind` porque en esta rama ya no puede ser `DIRECTIVE`.
 
 #### `resolveDirective` (interna)
 
@@ -572,12 +654,31 @@ Busca el texto en la tabla de palabras reservadas (`%start` → `START`, `%termi
 
 #### `closingTokens` y `endPosition` (internas)
 
-`closingTokens` agrega, en la posición del final del texto:
+```ts
+function closingTokens(text: string, tokens: readonly Token[]): Token[] {
+  const end = endPosition(text);
+  const closing: Token[] = [];
+  if (tokens.at(-1)?.kind !== 'NEWLINE') {
+    closing.push({ kind: 'NEWLINE', text: '', ...end });
+  }
+  closing.push({ kind: 'END_OF_FILE', text: '', ...end });
+  return closing;
+}
 
-- un `NEWLINE`, solo si el último token no es un `NEWLINE`;
-- `END_OF_FILE`, siempre.
+function endPosition(text: string): { line: number; column: number } {
+  const lines = text.split('\n');
+  const lastLine = lines.at(-1) ?? '';
+  return { line: lines.length, column: lastLine.length + 1 };
+}
+```
 
-`endPosition` calcula esa posición: la cantidad de líneas y el largo de la última más uno.
+- `tokens.at(-1)` es el último token. El `NEWLINE` extra se agrega solo si ese token **no** es un `NEWLINE`: cuando el archivo no termina en salto de línea, o cuando termina en un comentario sin salto.
+- Si `tokens` está vacío (texto vacío o solo espacios), `tokens.at(-1)` es `undefined`, `?.kind` también, y se agrega el `NEWLINE`.
+- Así el parser puede exigir que **toda** regla termine en `NEWLINE`, incluida la última (sección 4.5).
+- `END_OF_FILE` se agrega siempre. Cumple el papel de `$`, el fin de la entrada: el parser siempre tiene un token para mirar.
+- `endPosition`: `split('\n')` da tantos pedazos como líneas, así que `lines.length` es el número de la última línea. La columna es el largo de esa línea más uno, justo después de su último carácter.
+- Si el texto termina en `\n`, el último pedazo es `''`: la posición es el comienzo de una línea nueva y vacía (por eso `END_OF_FILE` está en 6:1 en un archivo de 5 líneas).
+- `?? ''` solo satisface a TypeScript: `split` siempre devuelve al menos un elemento.
 
 #### `unfinishedTokenMessages` y `toSyntaxError` (internas)
 
@@ -600,14 +701,12 @@ function toSyntaxError(error: AutomatonStoppedError<LexerState>): GrammarSyntaxE
 }
 ```
 
-Traduce "el autómata se detuvo en el estado q" al mensaje de la tabla de la sección 6:
-
-| Estado donde se detuvo                                 | Mensaje                                     | Posición                                                 |
-| ------------------------------------------------------ | ------------------------------------------- | -------------------------------------------------------- |
-| uno de la tabla `unfinishedTokenMessages` (q₂, q₆, q₈) | el de la tabla: un token quedó a medio leer | dónde **empezaba** el token (`tokenLine`, `tokenColumn`) |
-| cualquier otro                                         | `Invalid character 'x'`                     | dónde está ese carácter (`line`, `column`)               |
-
-Los mensajes son una tabla y no un `switch`: agregar un estado "a medio leer" es agregar una fila.
+- `unfinishedTokenMessages` lista los estados que no están en F y donde un token puede quedar **a medio leer**: q₂ (`-` sin `>`), q₆ (literal sin cerrar) y q₈ (`%` sin nombre). Es la tabla de la sección 6.
+- `unfinishedTokenMessages[error.state]`: el estado donde se detuvo el autómata decide el mensaje. El ejecutor no sabe qué significa cada estado; el lexer sí.
+- Si el estado está en la tabla, la posición es `tokenLine`, `tokenColumn`: dónde **empezaba** el token. Para un literal sin cerrar, interesa la comilla que lo abrió, no el final de la línea.
+- Si no está, el autómata se detuvo en q₀ sin consumir nada: el carácter mismo es inválido. La posición es la de ese carácter (`line`, `column`).
+- `error.character ?? ''`: `character` es `undefined` si el texto se terminó. En ese caso no hay carácter para mostrar.
+- Los mensajes son una tabla y no un `switch`: agregar un estado "a medio leer" es agregar una fila.
 
 ### 7.3 La consola: `arguments.ts`, `grammar-source.ts` y `commands/lex.ts`
 

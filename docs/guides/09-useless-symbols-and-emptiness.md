@@ -63,7 +63,36 @@ Para el proyecto sirve como **validador**: alguien que escribe un `.grammar` con
 
 ## 5. El código, función por función
 
-### 5.1 `computeProductive(grammar, onIteration?)`
+### 5.1 `analyzeUsefulSymbols(grammar, onIteration?)`
+
+```ts
+const productive = computeProductive(grammar, (iteration, symbols) =>
+  onIteration?.('productive', iteration, symbols),
+);
+const isEmpty = !productive.has(grammar.start);
+const productions = grammar.productions.filter((production) =>
+  usesOnly(production, productive, grammar),
+);
+const reachable = isEmpty
+  ? new Set<SymbolName>()
+  : computeReachable(grammar.start, productions, (iteration, symbols) =>
+      onIteration?.('reachable', iteration, symbols),
+    );
+const useless = new Set(
+  [...grammar.nonterminals].filter((symbol) => !productive.has(symbol) || !reachable.has(symbol)),
+);
+```
+
+- El orden es el de Hopcroft 7.1.1: primero productivos, después se filtran las producciones, y recién entonces alcanzables. Al revés puede quedar un inútil (sección 6).
+- `isEmpty = !productive.has(grammar.start)`: es la prueba de vacuidad. L(G) = ∅ si y solo si S no es productivo.
+- `grammar.productions.filter(... usesOnly(production, productive, grammar))`: se quedan solo las producciones que usan terminales y productivos. Una producción con un no productivo nunca termina en una cadena de Σ\*, así que se descarta.
+- `computeReachable(grammar.start, productions, ...)`: recibe las producciones **filtradas**. Así, un símbolo que solo se alcanzaba a través de una producción descartada queda como no alcanzable.
+- `isEmpty ? new Set<SymbolName>() : ...`: si L(G) = ∅, no corre la fase de alcanzables. Ningún símbolo es útil, y el conjunto vacío hace que todos queden inútiles.
+- `!productive.has(symbol) || !reachable.has(symbol)`: la definición de inútil. Útil exige las dos cosas, así que basta con que falle una.
+- Cada fase llama a `onIteration` con su nombre (`'productive'` o `'reachable'`). Con eso `--steps` arma dos tablas.
+- Devuelve también `usefulGrammar`: `null` si L(G) = ∅; si no, el resultado de `buildUsefulGrammar` (sección 5.5).
+
+### 5.2 `computeProductive(grammar, onIteration?)`
 
 ```ts
 return leastFixedPoint(
@@ -74,9 +103,12 @@ return leastFixedPoint(
 );
 ```
 
-Usa el mismo `leastFixedPoint` que los anulables (guía 07, sección 5.1): parte de ∅ y en cada ronda entran los lados izquierdos de las producciones que solo usan terminales y productivos ya conocidos. La única diferencia con los anulables es la regla: `usesOnly` acepta terminales.
+- Usa el mismo `leastFixedPoint` que los anulables (guía 07, sección 5.1). Parte de `[]`, es decir, de ∅.
+- `leftSidesWhere(...)`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
+- `usesOnly(production, productive, grammar)`: la condición. Todo el lado derecho son terminales o productivos ya conocidos.
+- La única diferencia con los anulables es esa regla: `usesOnly` acepta terminales, porque un terminal ya es una cadena de Σ\*. En la ronda 1 entran los A con lado derecho de solo terminales (o ε).
 
-### 5.2 `usesOnly(production, nonterminals, grammar)`
+### 5.3 `usesOnly(production, nonterminals, grammar)`
 
 ```ts
 return production.rightSide.every(
@@ -84,9 +116,9 @@ return production.rightSide.every(
 );
 ```
 
-¿Todos los símbolos son terminales o están en el conjunto dado? Se usa dos veces: para decidir si una producción hace productivo a su lado izquierdo, y para filtrar las producciones antes de los alcanzables.
+¿Todos los símbolos son terminales o están en el conjunto dado? Con ε (lado derecho vacío), `every` da `true`. Se usa dos veces: para decidir si una producción hace productivo a su lado izquierdo, y para filtrar las producciones antes de los alcanzables.
 
-### 5.3 `computeReachable(start, productions, onIteration?)`
+### 5.4 `computeReachable(start, productions, onIteration?)` y `nonterminalsUsedBy`
 
 ```ts
 const nonterminals = new Set(productions.map((production) => production.leftSide));
@@ -97,16 +129,36 @@ return leastFixedPoint(
 );
 ```
 
-- Otra vez `leastFixedPoint`, pero arranca con `[start]` en lugar de ∅. Cada ronda agrega los no terminales que aparecen en los lados derechos de los ya alcanzados (`nonterminalsUsedBy`).
+- Otra vez `leastFixedPoint`, pero arranca con `[start]` en lugar de ∅: S es alcanzable sin aplicar ninguna regla.
 - Recibe las **producciones** (no la gramática) porque trabaja sobre las que quedaron después de quitar los no productivos.
+- `nonterminals` sale de los lados izquierdos de esas producciones. Sirve para separar no terminales de terminales en el lado derecho.
 
-### 5.4 `analyzeUsefulSymbols(grammar, onIteration?)`
+La regla de cada ronda es `nonterminalsUsedBy`:
 
-Une todo en el orden de la sección 4. Su `onIteration` recibe además la fase (`'productive'` o `'reachable'`), para que `--steps` muestre las dos tablas. Si L(G) = ∅, no corre la fase de alcanzables.
+```ts
+return productions
+  .filter((production) => symbols.has(production.leftSide))
+  .flatMap((production) => production.rightSide)
+  .filter((symbol) => nonterminals.has(symbol));
+```
+
+- `filter(... symbols.has(production.leftSide))`: las producciones de los símbolos ya alcanzados.
+- `flatMap(... production.rightSide)`: junta todos sus lados derechos en una sola lista de símbolos.
+- `filter(... nonterminals.has(symbol))`: se queda con los no terminales. Si S ⇒\* αAβ, A es alcanzable.
+- La ronda i agrega los no terminales a distancia i de S.
 
 ### 5.5 `buildUsefulGrammar(grammar, productions, reachable)`
 
-Toma las producciones productivas con lado izquierdo alcanzable y llama a `buildGrammar`. Las producciones se numeran de nuevo, y Σ queda solo con los terminales que se usan.
+```ts
+const rules = productiveProductions
+  .filter((production) => reachable.has(production.leftSide))
+  .map(({ leftSide, rightSide }) => ({ leftSide, rightSide }));
+return buildGrammar(`${grammar.name} without useless symbols`, rules, grammar.start);
+```
+
+- Parte de las producciones productivas y se queda con las de lado izquierdo alcanzable.
+- `.map(({ leftSide, rightSide }) => ...)`: tira el resto de los campos (como el id) y deja solo la regla.
+- `buildGrammar` vuelve a construir la gramática: las producciones se numeran de nuevo y Σ queda solo con los terminales que se usan.
 
 ### 5.6 El comando `useful`
 

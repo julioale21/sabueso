@@ -1,0 +1,12 @@
+# A small detective story, used to explain LL(1), FIRST and FOLLOW by hand
+# (guide 11 and the defense notes). It is LL(1): no cell of its table has two rules.
+# Try it with: npm run sabueso -- first-follow --grammar-file examples/grammars/mini-detective.grammar --steps
+%start Relato
+Relato    -> Inicio Pistas Final
+Inicio    -> CRI Hallazgo | HAL
+Hallazgo  -> HAL | ε
+Pistas    -> Pista MasPistas
+MasPistas -> Pista MasPistas | ε
+Pista     -> PIS | INT
+Final     -> REV Epilogo
+Epilogo   -> EPI | ε

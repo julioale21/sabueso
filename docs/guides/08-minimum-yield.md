@@ -71,7 +71,10 @@ for (;;) {
 }
 ```
 
+- `current.set(nonterminal, Infinity)`: ∞ significa "todavía no se conoce ninguna cadena de terminales para A". Si al final A sigue en ∞, A no es productivo.
 - `Infinity` es el ∞ de JavaScript: `Infinity + 1` sigue siendo `Infinity` y cualquier número es menor. Así un lado derecho con un símbolo improductivo nunca mejora nada.
+- `for (;;)` es un ciclo sin condición. La única salida es el `return`, cuando `sameValues` dice que la ronda no cambió nada: el punto fijo.
+- El ciclo termina porque los valores solo bajan y son naturales (o ∞): no pueden bajar para siempre.
 - Devuelve un `Map` con todos los no terminales, en el orden de la gramática.
 
 ### 5.2 `minYieldRound(productions, previous)`
@@ -87,7 +90,10 @@ for (const production of productions) {
 return next;
 ```
 
-- Igual que en los anulables, mira solo la ronda anterior (`previous`) y escribe en una copia (`next`).
+- Igual que en los anulables, lee solo la ronda anterior (`previous`) y escribe en una copia (`next`). Así la ronda i depende solo de la ronda i − 1 (árboles de altura ≤ i), y no del orden de las producciones.
+- `new Map(previous)`: cada A empieza la ronda con su valor anterior. Un valor solo cambia si baja.
+- `length < (next.get(production.leftSide) ?? Infinity)` compara con `next`, no con `previous`: si A tiene varias producciones, se queda con la menor de esta ronda.
+- `?? Infinity` es para TypeScript, porque `get` puede devolver `undefined`. Todo lado izquierdo ya está en el mapa; si no estuviera, ∞ es el valor neutro: cualquier largo lo mejora.
 
 ### 5.3 `minYieldOfSequence(symbols, minYield)`
 
@@ -101,7 +107,13 @@ return symbols.reduce((total, symbol) => total + (minYield.get(symbol) ?? 1), 0)
 
 ### 5.4 `sameValues(first, second)`
 
+```ts
+return [...first].every(([symbol, value]) => second.get(symbol) === value);
+```
+
 - Compara dos mapas valor por valor. Es la condición de punto fijo.
+- `[...first]` convierte el mapa en pares `[symbol, value]`. Alcanza con recorrer `first`: los dos mapas tienen las mismas claves, porque `minYieldRound` parte de una copia.
+- `===` también sirve con ∞: `Infinity === Infinity` es `true`.
 
 ### 5.5 El comando `min-yield`
 

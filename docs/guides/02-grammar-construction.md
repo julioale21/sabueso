@@ -327,6 +327,12 @@ export function buildGrammar(
   start?: SymbolName,
   declaredTerminals?: Iterable<SymbolName>,
 ): Grammar {
+  // Builds the 4-tuple G = (N, Σ, P, S) in an order that matters:
+  // 1. N first: the left-hand sides. Without N nothing can be classified.
+  // 2. P: with N known, each right-side symbol is a nonterminal (∈ N) or a
+  //    terminal (∉ N). Each symbol is checked here, but nothing is changed.
+  // 3. Σ: the terminals in P, plus those of %terminals. N ∩ Σ = ∅ by construction.
+  // 4. S: must be a nonterminal; otherwise L(G) would have nothing to derive from.
   const firstRule = requireAtLeastOneRule(name, rules);
   const symbols = createSymbolTable(rules, declaredTerminals);
   const productions = createProductions(rules, symbols);

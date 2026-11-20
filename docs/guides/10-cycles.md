@@ -68,12 +68,31 @@ for (const symbol of grammar.nonterminals) {
 return search.cycles;
 ```
 
-Arma el grafo y lanza la búsqueda desde cada no terminal. Los que ya se exploraron se saltean solos.
+- `computeNullable(grammar)`: primero los anulables (paso 7). El grafo los necesita para saber qué símbolos pueden desaparecer.
+- `new CycleSearch(graph)`: una sola búsqueda para todo el grafo. Así `finished` se comparte entre los arranques.
+- `for ... search.visit(symbol)`: arranca desde cada no terminal, porque el grafo puede tener partes no conectadas. Los que ya se exploraron se saltean solos dentro de `visit`.
 
 ### 5.2 `buildUnitGraph(grammar, nullable)`
 
-- Empieza con una lista vacía de aristas para cada no terminal.
-- Para cada producción, agrega las aristas que devuelve `unitTargets`, sin repetir.
+```ts
+const graph: UnitGraph = new Map();
+for (const nonterminal of grammar.nonterminals) {
+  graph.set(nonterminal, []);
+}
+for (const production of grammar.productions) {
+  for (const target of unitTargets(production, grammar, nullable)) {
+    const edges = graph.get(production.leftSide) ?? [];
+    if (!edges.includes(target)) {
+      edges.push(target);
+    }
+  }
+}
+return graph;
+```
+
+- El primer `for` le da a cada no terminal una lista vacía. Así un símbolo sin aristas aparece igual en el grafo (y en `--graph` como `—`).
+- `graph.get(production.leftSide) ?? []`: el `?? []` solo está para el tipo, porque `get` puede devolver `undefined`. En la práctica la lista ya existe, y `push` la modifica dentro del mapa.
+- `if (!edges.includes(target))`: no repite aristas. Dos producciones A → B y A → B C (con C anulable) dan la misma arista A → B.
 
 ### 5.3 `unitTargets(production, grammar, nullable)`
 
@@ -85,18 +104,41 @@ return symbols.filter(
 );
 ```
 
-Los no terminales B del lado derecho tales que **todos los demás** símbolos son anulables. Un terminal nunca es anulable, así que cualquier terminal en el lado derecho corta todas las aristas de esa producción.
+- `filter((symbol, position) => ...)`: recorre el lado derecho con la posición de cada símbolo. Se usa la posición, no el nombre, porque un símbolo puede repetirse (A → B B).
+- `grammar.nonterminals.has(symbol)`: solo un no terminal puede ser destino de una arista.
+- `symbols.every((other, index) => index === position || nullable.has(other))`: se lee "todos los **otros** símbolos son anulables". `index === position` saltea al propio candidato; el resto tiene que estar en `nullable`.
+- Es la definición de A → α B β con α y β anulables: A puede convertirse solo en B.
+- Un terminal nunca es anulable. Así que cualquier terminal en el lado derecho corta todas las aristas de esa producción.
 
 ### 5.4 La clase `CycleSearch`
 
-| Campo / método  | Qué hace                                                                                                                                                      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `path`          | el camino actual de la búsqueda, desde el primer símbolo visitado                                                                                             |
-| `finished`      | los símbolos cuya búsqueda ya terminó: desde ellos no se puede encontrar nada nuevo                                                                           |
-| `cycles`        | los ciclos encontrados                                                                                                                                        |
-| `visit(symbol)` | si ya terminó, vuelve; si está en `path`, guarda el ciclo `path.slice(posición)`; si no, lo agrega a `path`, visita sus aristas, lo saca y lo marca terminado |
+Tiene tres campos: `path` (el camino actual, desde el primer símbolo visitado), `finished` (los símbolos ya explorados del todo) y `cycles` (los ciclos encontrados). El trabajo está en `visit`:
 
-Es la DFS clásica de tres colores: "sin visitar" (ni en `path` ni en `finished`), "en el camino" (en `path`) y "terminado" (en `finished`).
+```ts
+if (this.finished.has(symbol)) {
+  return;
+}
+const position = this.path.indexOf(symbol);
+if (position !== -1) {
+  this.cycles.push(this.path.slice(position));
+  return;
+}
+this.path.push(symbol);
+for (const next of this.graph.get(symbol) ?? []) {
+  this.visit(next);
+}
+this.path.pop();
+this.finished.add(symbol);
+```
+
+Es la DFS clásica de tres colores. Cada `if` es un estado:
+
+- **Terminado** (`this.finished.has(symbol)`): ya se exploró todo lo que sale de él. No hay nada nuevo: se vuelve.
+- **En el camino** (`position !== -1`): llegamos a un símbolo que todavía estamos explorando. Es una arista de retroceso.
+- `this.path.slice(position)`: el tramo del camino desde ese símbolo hasta el actual. Con la arista que acabamos de seguir, cierra el ciclo. Por ejemplo, con `path = [S, A, B]` y una arista B → A, el ciclo es `[A, B]`: A ⇒⁺ B ⇒⁺ A.
+- **Nuevo** (ni terminado ni en el camino): `push` lo agrega al camino, se visitan sus aristas y `pop` lo saca. Así `path` siempre es el camino desde la raíz hasta el símbolo actual.
+- `this.finished.add(symbol)`: va después del `pop`. Desde ese momento, otra rama que llegue a él no lo vuelve a explorar.
+- Se registra un ciclo por cada arista de retroceso, no todos los ciclos simples (sección 4).
 
 ### 5.5 El comando `cycles`
 

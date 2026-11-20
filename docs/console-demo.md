@@ -88,3 +88,12 @@ npm run sabueso -- cycles --grammar test-cyclic --graph
 npm run sabueso -- cycles --grammar g1
 npm run sabueso -- cycles --grammar-file examples/grammars/hidden-cycle.grammar --graph
 ```
+
+## FIRST y FOLLOW
+
+Paso 11. Con qué terminal puede empezar cada no terminal (FIRST) y qué puede venir detrás (FOLLOW). Con `--steps`, las rondas de los dos puntos fijos. El mini policial es el ejemplo explicado a mano en la guía 11.
+
+```sh
+npm run sabueso -- first-follow --grammar-file examples/grammars/mini-detective.grammar --steps
+npm run sabueso -- first-follow --grammar g1
+```

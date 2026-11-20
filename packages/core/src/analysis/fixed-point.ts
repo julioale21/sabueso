@@ -44,3 +44,51 @@ export function leftSidesWhere(
 ): SymbolName[] {
   return productions.filter(condition).map((production) => production.leftSide);
 }
+
+/** One set per symbol, as FIRST and FOLLOW are. */
+export type SetsBySymbol = Map<SymbolName, Set<SymbolName>>;
+
+/** Called after each round with its number (from 1) and every set as known so far. */
+export type SetsFixedPointObserver = (
+  round: number,
+  known: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
+) => void;
+
+/**
+ * The same least fixed point when there is one set per symbol (FIRST, FOLLOW): starts from
+ * `start` and, each round, adds the [symbol, member] pairs the rule finds using only the
+ * sets known at the end of the previous round. Stops when a round adds no member to any set.
+ */
+export function leastFixedPointOfSets(
+  start: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
+  newMembersOfRound: (
+    knownBefore: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
+  ) => Iterable<[SymbolName, SymbolName]>,
+  onIteration?: SetsFixedPointObserver,
+): SetsBySymbol {
+  // Same scheme as leastFixedPoint, with one set per symbol growing at once. A round
+  // copies every set and adds what the rule finds; if the total size did not change,
+  // no set changed: fixed point.
+  let knownBefore = copySets(start);
+  for (let round = 1; ; round++) {
+    const knownAfter = copySets(knownBefore);
+    for (const [symbol, member] of newMembersOfRound(knownBefore)) {
+      knownAfter.get(symbol)?.add(member);
+    }
+    onIteration?.(round, knownAfter);
+    if (totalSize(knownAfter) === totalSize(knownBefore)) {
+      return knownAfter; // nothing new in any set: fixed point
+    }
+    knownBefore = knownAfter;
+  }
+}
+
+/** A deep copy: a new set for each symbol, so later rounds never change earlier ones. */
+function copySets(sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>): SetsBySymbol {
+  return new Map([...sets].map(([symbol, members]) => [symbol, new Set(members)]));
+}
+
+/** How many members all the sets have together. */
+function totalSize(sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>): number {
+  return [...sets.values()].reduce((total, members) => total + members.size, 0);
+}

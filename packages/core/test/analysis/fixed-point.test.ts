@@ -1,6 +1,10 @@
 // The least fixed point by rounds, shared by the nullable, productive and reachable analyses.
 import { describe, expect, it } from 'vitest';
-import { leastFixedPoint, leftSidesWhere } from '../../src/analysis/fixed-point.js';
+import {
+  leastFixedPoint,
+  leastFixedPointOfSets,
+  leftSidesWhere,
+} from '../../src/analysis/fixed-point.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import type { SymbolName } from '../../src/grammar/types.js';
 
@@ -59,5 +63,37 @@ describe('leftSidesWhere', () => {
     const grammar = parseGrammarText("S -> A 'x' | ε\nA -> 'a'\n", 'small');
     const emptyRightSide = leftSidesWhere(grammar.productions, (p) => p.rightSide.length === 0);
     expect(emptyRightSide).toEqual(['S']);
+  });
+});
+
+describe('leastFixedPointOfSets', () => {
+  /** Each round, a copies what b has, and b copies what c has. */
+  const copyRule = (known: ReadonlyMap<string, ReadonlySet<string>>): [string, string][] => [
+    ...[...(known.get('b') ?? [])].map((member): [string, string] => ['a', member]),
+    ...[...(known.get('c') ?? [])].map((member): [string, string] => ['b', member]),
+  ];
+  const start = new Map([
+    ['a', new Set<string>()],
+    ['b', new Set<string>()],
+    ['c', new Set(['x'])],
+  ]);
+
+  it('grows every set until no set changes', () => {
+    const result = leastFixedPointOfSets(start, copyRule);
+    expect(result.get('a')).toEqual(new Set(['x']));
+    expect(result.get('b')).toEqual(new Set(['x']));
+  });
+
+  it('a member found in a round only counts in the next one', () => {
+    const sizes: number[] = [];
+    leastFixedPointOfSets(start, copyRule, (_round, known) =>
+      sizes.push(known.get('a')?.size ?? 0),
+    );
+    expect(sizes).toEqual([0, 1, 1]);
+  });
+
+  it('does not change the start sets', () => {
+    leastFixedPointOfSets(start, copyRule);
+    expect(start.get('a')).toEqual(new Set());
   });
 });

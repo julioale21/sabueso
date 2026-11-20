@@ -289,44 +289,297 @@ Todos son `GrammarSyntaxError`, el mismo error del lexer. Los errores de **const
 
 Guarda el estado del recorrido: la lista de tokens, la **posición** del token actual, la **profundidad** (para la traza) y lo que va reconociendo (`file`: reglas y directivas).
 
-**Los métodos de los no terminales**, uno por regla de `meta.grammar`:
-
-| Método                  | Regla                                        | Qué devuelve o guarda                                                                               |
-| ----------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `parseFile`             | File → Element File \| END_OF_FILE           | el archivo completo. Se llama a sí mismo por cada elemento, sin aumentar la profundidad de la traza |
-| `parseElement`          | Element → NEWLINE \| Directive \| Rule       | decide por el lookahead qué tipo de línea es                                                        |
-| `parseDirective`        | Directive → START … \| TERMINALS …           | guarda `start` o `declaredTerminals`, una sola vez                                                  |
-| `parseRule`             | Rule → IDENTIFIER ARROW Alternatives NEWLINE | agrega **una regla por alternativa**                                                                |
-| `parseAlternatives`     | Alternatives → Sequence MoreAlternatives     | la lista de lados derechos                                                                          |
-| `parseMoreAlternatives` | MoreAlternatives → BAR … \| ε                | `BAR`: otra alternativa; `NEWLINE` (su FOLLOW): ε; otro token: error                                |
-| `parseSequence`         | Sequence → EPSILON \| Symbols                | un lado derecho; `ε` da la lista vacía                                                              |
-| `parseSymbols`          | Symbols → Symbol Symbols \| ε                | nombre o literal: un símbolo más; `BAR` o `NEWLINE` (su FOLLOW): ε; otro token: error               |
-| `parseSymbol`           | Symbol → IDENTIFIER \| LITERAL               | un nombre, o `{ literal }` para lo que iba entre comillas                                           |
-
 Los métodos devuelven los datos que necesita `buildGrammar` (`RightSideSymbol`, del paso 2), así que el parser no clasifica terminales ni no terminales: eso sigue siendo trabajo de la construcción.
 
-**Los métodos auxiliares**:
+### 7.3 Los métodos de los no terminales
 
-| Método                                 | Qué hace                                                                                    |
-| -------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `lookahead()`                          | el token actual, sin consumirlo. Siempre hay uno, porque el lexer termina con `END_OF_FILE` |
-| `expect(kind)`                         | consume el token si es del tipo esperado; si no, lanza el error de sintaxis                 |
-| `unexpected(expected)`                 | arma el mensaje "Expected …, but found …" con la posición del token encontrado              |
-| `onlyOnce(directive, previous, value)` | rechaza una directiva repetida                                                              |
-| `nested(parse)`                        | ejecuta una llamada un nivel más adentro, para la sangría de la traza                       |
-| `trace(nonterminal, alternative)`      | avisa la decisión al observador, si hay uno                                                 |
+Uno por regla de `meta.grammar`. Todos siguen el mismo patrón: miran `lookahead()`, eligen una fila de la tabla de la sección 4.2, avisan la decisión con `trace` y recorren la alternativa.
 
-**Fuera de la clase** (constantes y funciones auxiliares):
+#### `parseFile()`: File → Element File | END_OF_FILE
+
+```ts
+if (this.lookahead().kind === 'END_OF_FILE') {
+  this.trace('File', 'END_OF_FILE');
+  return this.file;
+}
+this.trace('File', 'Element File');
+this.nested(() => this.parseElement());
+return this.parseFile();
+```
+
+- `END_OF_FILE` es la única salida. El lexer siempre lo pone al final, así que el parser nunca pregunta "¿quedan tokens?".
+- `return this.file`: el resultado no se arma con los valores de retorno. Se va llenando en el campo `file` desde `parseDirective` y `parseRule`.
+- Cualquier otro token elige `Element File` sin verificarlo: si no sirve, `parseElement` lanza el error con todo FIRST(Element).
+- `return this.parseFile()` es la regla `File → Element File` tal cual. Va fuera de `nested`: por eso todos los `Element` salen en la traza con la misma sangría, y no en escalera.
+
+#### `parseElement()`: Element → NEWLINE | Directive | Rule
+
+```ts
+switch (this.lookahead().kind) {
+  case 'NEWLINE':
+    this.trace('Element', 'NEWLINE');
+    this.expect('NEWLINE');
+    return;
+  case 'START':
+  case 'TERMINALS':
+    this.trace('Element', 'Directive');
+    this.nested(() => this.parseDirective());
+    return;
+  case 'IDENTIFIER':
+    this.trace('Element', 'Rule');
+    this.nested(() => this.parseRule());
+    return;
+  default:
+    throw this.unexpected(['IDENTIFIER', 'START', 'TERMINALS', 'NEWLINE']);
+}
+```
+
+- El `switch` es la fila Element de la tabla LL(1): cada `case` es un token de FIRST de una alternativa.
+- `START` y `TERMINALS` comparten `case` porque los dos empiezan `Directive`. Cuál de las dos es lo decide `parseDirective`.
+- Una línea vacía (`NEWLINE`) se consume y no produce nada.
+- `default`: el token no está en FIRST(Element). El error lista los cuatro válidos. `END_OF_FILE` nunca llega aquí: `parseFile` ya lo atendió.
+
+#### `parseDirective()` y `onlyOnce`: Directive → START IDENTIFIER NEWLINE | TERMINALS Symbols NEWLINE
+
+```ts
+const directive = this.lookahead();
+if (directive.kind === 'START') {
+  this.trace('Directive', 'START IDENTIFIER NEWLINE');
+  this.expect('START');
+  const start = this.expect('IDENTIFIER').text;
+  this.expect('NEWLINE');
+  this.file.start = this.onlyOnce(directive, this.file.start, start);
+  return;
+}
+this.trace('Directive', 'TERMINALS Symbols NEWLINE');
+this.expect('TERMINALS');
+const terminals = this.nested(() => this.parseSymbols()).map(symbolName);
+this.expect('NEWLINE');
+this.file.declaredTerminals = this.onlyOnce(directive, this.file.declaredTerminals, terminals);
+```
+
+```ts
+private onlyOnce<T>(directive: Token, previous: T | undefined, value: T): T {
+  if (previous !== undefined) {
+    throw new GrammarSyntaxError(
+      `${directive.text} appears more than once`,
+      directive.line,
+      directive.column,
+    );
+  }
+  return value;
+}
+```
+
+- `const directive = this.lookahead()` guarda el token `%start` o `%terminals` antes de consumirlo. Su línea y columna son la posición del error si la directiva se repite.
+- No hay `else` con error: `parseElement` solo llama aquí con `START` o `TERMINALS`. Si no es `START`, es `TERMINALS`.
+- `%terminals` reusa `parseSymbols`: acepta la misma sintaxis que un lado derecho, nombres y literales.
+- `.map(symbolName)`: `parseSymbols` devuelve nombres o `{ literal }`; para `%terminals` solo importa el nombre.
+- `onlyOnce`: si `previous` ya tiene valor, la directiva apareció antes y es error. Si no, devuelve `value` para guardarlo.
+- `onlyOnce` es genérica (`<T>`) porque sirve para `start` (un texto) y para `declaredTerminals` (una lista).
+
+#### `parseRule()`: Rule → IDENTIFIER ARROW Alternatives NEWLINE
+
+```ts
+this.trace('Rule', 'IDENTIFIER ARROW Alternatives NEWLINE');
+const leftSide = this.expect('IDENTIFIER').text;
+this.expect('ARROW');
+const alternatives = this.nested(() => this.parseAlternatives());
+this.expect('NEWLINE');
+for (const rightSide of alternatives) {
+  this.file.rules.push({ leftSide, rightSide });
+}
+```
+
+- Rule tiene una sola alternativa: no hay nada que decidir. Si el primer token no es `IDENTIFIER`, el error lo da `expect`.
+- Las cuatro líneas del medio son la regla, símbolo por símbolo: terminal (`expect`), terminal, no terminal (`parseAlternatives`), terminal.
+- El `for`: `E -> E '+' T | T` da **dos** `GrammarRule`, una por alternativa. Así P tiene una producción por cada lado derecho.
+
+#### `parseAlternatives()`: Alternatives → Sequence MoreAlternatives
+
+Una sola alternativa: lee una `Sequence`, después las demás (`parseMoreAlternatives`) y las junta en una lista (`[first, ...rest]`).
+
+#### `parseMoreAlternatives()`: MoreAlternatives → BAR Sequence MoreAlternatives | ε
+
+```ts
+const kind = this.lookahead().kind;
+if (kind === 'NEWLINE') {
+  // ε is chosen when the lookahead is in FOLLOW(MoreAlternatives) = {NEWLINE}.
+  this.trace('MoreAlternatives', 'ε');
+  return [];
+}
+if (kind !== 'BAR') {
+  throw this.unexpected(['BAR', 'NEWLINE']);
+}
+this.trace('MoreAlternatives', 'BAR Sequence MoreAlternatives');
+this.expect('BAR');
+const sequence = this.nested(() => this.parseSequence());
+const rest = this.nested(() => this.parseMoreAlternatives());
+return [sequence, ...rest];
+```
+
+- `kind === 'NEWLINE'` elige ε. `NEWLINE` no puede empezar la otra alternativa, pero está en FOLLOW(MoreAlternatives) = {NEWLINE}. Es la regla LL(1) para una alternativa que deriva ε.
+- `return []`: ε no consume nada. El `NEWLINE` queda para `parseRule`, que lo consume con `expect`.
+- `kind !== 'BAR'`: el token no está ni en FIRST ni en FOLLOW. El error sale aquí mismo y lista los dos.
+- La llamada a sí misma reemplaza un ciclo: cada `|` es una vuelta más.
+
+#### `parseSequence()`: Sequence → EPSILON | Symbols
+
+```ts
+const kind = this.lookahead().kind;
+if (kind === 'EPSILON') {
+  this.trace('Sequence', 'EPSILON');
+  this.expect('EPSILON');
+  return [];
+}
+// Symbols is chosen on FIRST(Symbols) ∪ FOLLOW(Sequence) = {IDENTIFIER, LITERAL, BAR, NEWLINE}.
+if (!symbolsOrSequenceEnd.includes(kind)) {
+  throw this.unexpected(['EPSILON', ...symbolsOrSequenceEnd]);
+}
+this.trace('Sequence', 'Symbols');
+return this.nested(() => this.parseSymbols());
+```
+
+- `EPSILON` es la `ε` escrita en el archivo. Se consume y da la lista vacía.
+- `symbolsOrSequenceEnd.includes(kind)` elige `Symbols` con cuatro tokens, no solo con FIRST(Symbols) = {IDENTIFIER, LITERAL}. Como Symbols puede derivar ε, también se elige con FOLLOW(Sequence) = {BAR, NEWLINE}.
+- Ejemplo: en `S -> | a`, la primera Sequence ve `BAR`, elige `Symbols`, y Symbols deriva ε. Por eso `S -> ε` y `S ->` (nada) dan el mismo lado derecho vacío.
+- FOLLOW(Sequence) = FOLLOW(Symbols) = {BAR, NEWLINE}: por eso una sola constante sirve a `parseSequence` y a `parseSymbols`.
+- El error agrega `EPSILON` a la lista: son todos los tokens de la fila Sequence de la tabla.
+
+#### `parseSymbols()`: Symbols → Symbol Symbols | ε
+
+```ts
+const kind = this.lookahead().kind;
+if (kind === 'BAR' || kind === 'NEWLINE') {
+  // ε is chosen when the lookahead is in FOLLOW(Symbols) = {BAR, NEWLINE}.
+  this.trace('Symbols', 'ε');
+  return [];
+}
+if (kind !== 'IDENTIFIER' && kind !== 'LITERAL') {
+  throw this.unexpected(symbolsOrSequenceEnd);
+}
+this.trace('Symbols', 'Symbol Symbols');
+const symbol = this.nested(() => this.parseSymbol());
+const rest = this.nested(() => this.parseSymbols());
+return [symbol, ...rest];
+```
+
+- `kind === 'BAR' || kind === 'NEWLINE'`: ε se elige solo si el token está en FOLLOW(Symbols). Es el caso clave de LL(1) con ε: no se elige ε "porque no hay otra cosa", sino porque ese token puede venir después de Symbols.
+- `kind !== 'IDENTIFIER' && kind !== 'LITERAL'`: el token no está ni en FIRST ni en FOLLOW. Error inmediato, y `symbolsOrSequenceEnd` (FIRST ∪ FOLLOW) es la lista de esperados. Ejemplo: `S -> a ε` falla en la `ε`.
+- `[symbol, ...rest]`: un símbolo y, por recursión, los demás. Termina cuando llega `|` o el fin de línea.
+
+#### `parseSymbol()`: Symbol → IDENTIFIER | LITERAL
+
+```ts
+const token = this.lookahead();
+if (token.kind === 'LITERAL') {
+  this.trace('Symbol', 'LITERAL');
+  this.expect('LITERAL');
+  return { literal: token.text };
+}
+this.trace('Symbol', 'IDENTIFIER');
+return this.expect('IDENTIFIER').text;
+```
+
+- Solo pregunta por `LITERAL`. Si no lo es, va a `IDENTIFIER`, y `expect` da el error si tampoco lo es (en la práctica `parseSymbols` ya filtró el token).
+- Un literal vuelve como `{ literal: token.text }` y un nombre como texto. Un literal siempre es terminal; un nombre lo clasifica después `buildGrammar`.
+
+### 7.4 Los métodos auxiliares
+
+#### `lookahead()`
+
+```ts
+const token = this.tokens[this.position] ?? this.tokens.at(-1);
+if (token === undefined) {
+  throw new Error('The token list is empty: it must end with END_OF_FILE');
+}
+return token;
+```
+
+- `this.tokens[this.position]` es el token actual. Mirarlo no avanza la posición.
+- `?? this.tokens.at(-1)`: si la posición se pasó del final, devuelve el último token, que es `END_OF_FILE`. Leer más allá del final sigue viendo "fin de archivo", como el `$` de la teoría. En el uso normal no pasa (nadie consume `END_OF_FILE`); es una red de seguridad.
+- El `throw` solo ocurre con una lista vacía. Es un error de programación, no de sintaxis: por eso es `Error` y no `GrammarSyntaxError`.
+
+#### `expect(kind)`
+
+```ts
+// This is "matching" a terminal: in the pushdown automaton, pop the terminal from the
+// top and advance the input. If it does not match, the string is not in L(meta.grammar).
+const token = this.lookahead();
+if (token.kind !== kind) {
+  throw this.unexpected([kind]);
+}
+this.position++;
+return token;
+```
+
+- Es el paso de "match" del autómata de pila: el terminal esperado coincide con la entrada y se avanza.
+- `this.position++` es el único lugar donde avanza la entrada.
+- `[kind]`: el mensaje espera un solo token, el que exige la regla.
+- Devuelve el token porque a veces se necesita su texto (`this.expect('IDENTIFIER').text`).
+
+#### `unexpected(expected)`, `listWithOr` y `describeToken`
+
+```ts
+const found = this.lookahead();
+const options = listWithOr(expected.map((kind) => tokenDescriptions[kind]));
+return new GrammarSyntaxError(
+  `Expected ${options}, but found ${describeToken(found)}`,
+  found.line,
+  found.column,
+);
+```
+
+```ts
+return items.length <= 1
+  ? (items[0] ?? '')
+  : `${items.slice(0, -1).join(', ')} or ${items.at(-1) ?? ''}`;
+```
+
+```ts
+const description = tokenDescriptions[token.kind];
+return token.kind === 'IDENTIFIER' || token.kind === 'LITERAL'
+  ? `${description} ("${token.text}")`
+  : description;
+```
+
+- `unexpected` **devuelve** el error, no lo lanza: quien llama escribe `throw this.unexpected(...)`. Así TypeScript ve que el método termina ahí (por ejemplo, en el `default` del `switch`).
+- `expected` es la fila de la tabla LL(1): los tokens que tenían alternativa. Por eso el mensaje dice exactamente qué se podía escribir.
+- `found.line`, `found.column`: la posición es la del token que no sirvió.
+- `listWithOr`: con 0 o 1 elementos devuelve ese único (o `''`). Si hay más, une todos menos el último con comas y agrega `or` y el último. Los `?? ''` son para TypeScript: `items[0]` y `at(-1)` pueden ser `undefined` en el tipo.
+- `describeToken` agrega el texto solo a `IDENTIFIER` y `LITERAL`. En los demás tipos el texto no aporta: `'->'` siempre es `->`.
+
+#### `nested(parse)`
+
+```ts
+this.depth++;
+try {
+  return parse();
+} finally {
+  this.depth--;
+}
+```
+
+- Sube la profundidad, corre la llamada y la baja. Esa profundidad es la sangría de `--parser-trace`.
+- Recibe una función (`() => this.parseElement()`) y no un resultado, porque la profundidad tiene que subir **antes** de que la llamada empiece.
+- `finally` baja la profundidad salga como salga `parse()`: con `return` o con un error. Es la forma segura de deshacer un cambio de estado.
+- Es genérica (`<T>`): devuelve lo mismo que la llamada.
+
+#### `trace(nonterminal, alternative)`
+
+Avisa la decisión al observador con `this.onTrace?.(...)`: si no hay observador, no hace nada. Se llama antes de consumir, así `lookahead()` es el token que decidió.
+
+### 7.5 Fuera de la clase
 
 | Nombre                 | Qué es                                                                                                                                                                     |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tokenDescriptions`    | constante: cómo se nombra cada tipo de token en los mensajes (`'->'`, `a name`, `the end of the line`…)                                                                    |
 | `symbolsOrSequenceEnd` | constante: {IDENTIFIER, LITERAL, BAR, NEWLINE} = FIRST(Symbols) ∪ FOLLOW(Symbols). `parseSequence` la usa para elegir `Symbols`, y `parseSymbols` para el mensaje de error |
-| `listWithOr`           | "a, b or c", para los mensajes                                                                                                                                             |
-| `describeToken`        | el token encontrado, con su texto si es un nombre o un literal                                                                                                             |
+| `listWithOr`           | "a, b or c", para los mensajes (ver 7.4)                                                                                                                                   |
+| `describeToken`        | el token encontrado, con su texto si es un nombre o un literal (ver 7.4)                                                                                                   |
 | `symbolName`           | convierte un símbolo de `%terminals` en su nombre (el identificador, o el contenido del literal)                                                                           |
 
-### 7.3 El comando `grammar`
+### 7.6 El comando `grammar`
 
 `command-line/commands/grammar.ts`, con la misma estructura que `lex`: acepta un nombre de gramática incorporada **o** `--grammar-file <ruta>`, y la opción `--parser-trace`.
 
