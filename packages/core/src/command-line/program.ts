@@ -1,5 +1,6 @@
 // The `sabueso` program: the list of its commands. Kept apart from command-line.ts so
 // tests can run it in memory, without starting a Node process.
+import { cyclesCommand } from './commands/cycles.js';
 import { genresCommand } from './commands/genres.js';
 import { grammarCommand } from './commands/grammar.js';
 import { grammarsCommand } from './commands/grammars.js';
@@ -21,6 +22,7 @@ export const runCommandLine = createCommandLineProgram({
     nullableCommand,
     minYieldCommand,
     usefulCommand,
+    cyclesCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

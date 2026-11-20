@@ -908,6 +908,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `analysis/cycles.ts`.
     - Pruebas: `cyclic.grammar` da el ciclo [S, A]. G0, G1 y `arithmetic` no tienen ciclos. Ficha 09.
     - **Consola:** `npm run sabueso -- cycles --grammar test-cyclic` imprime `S ⇒+ A ⇒+ S`.
+    - **Decisiones (2026-11-20):**
+      - `findCycles(grammar)` devuelve un ciclo por cada arista de retroceso de la DFS sobre el grafo unitario (en el orden de la gramática). Alcanza para decidir si G es cíclica y para mostrar los ciclos; no enumera todos los ciclos simples.
+      - `buildUnitGraph(grammar, nullable)` queda exportada: el comando la muestra con `--graph`.
+      - Ejemplo nuevo `examples/grammars/hidden-cycle.grammar`: un ciclo escondido detrás de símbolos anulables (`S → A S B` con A y B anulables).
 
 11. **FIRST y FOLLOW.**
     - `analysis/first-follow.ts`, con `onIteration`.

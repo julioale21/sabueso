@@ -78,3 +78,13 @@ npm run sabueso -- useful --grammar test-useless --steps
 npm run sabueso -- useful --grammar test-empty
 npm run sabueso -- useful --grammar-file examples/grammars/useless-order.grammar --steps
 ```
+
+## Ciclos
+
+Paso 10. Los ciclos A ⇒+ A, que dan infinitos árboles. Con `--graph`, el grafo unitario donde se buscan. G1 no tiene ciclos; el archivo de ejemplo tiene uno escondido detrás de símbolos anulables.
+
+```sh
+npm run sabueso -- cycles --grammar test-cyclic --graph
+npm run sabueso -- cycles --grammar g1
+npm run sabueso -- cycles --grammar-file examples/grammars/hidden-cycle.grammar --graph
+```

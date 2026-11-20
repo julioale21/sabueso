@@ -1,0 +1,8 @@
+# A cycle that hides behind nullable symbols: S -> A S B is not a unit production,
+# but A and B can vanish (A -> ε, B -> ε), so S ⇒ A S B ⇒+ S. The string x then has
+# infinitely many trees: S ⇒ x, S ⇒ A S B ⇒ S ⇒ x, and so on.
+# Compare with G0: Pasos -> Pasos Pasos is not a cycle, because Pasos is not nullable.
+# Try it with: npm run sabueso -- cycles --grammar-file examples/grammars/hidden-cycle.grammar --graph
+S -> A S B | 'x'
+A -> ε | 'a'
+B -> ε | 'b'
