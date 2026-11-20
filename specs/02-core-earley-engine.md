@@ -90,7 +90,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 
 - M = (Q, Σc, δ, q0, F), donde Σc son **clases de caracteres** (letra, dígito, espacio, salto de línea, `-`, `>`, `→`, `|`, `ε`, `'`, `#`, `%` y otro).
 - δ se implementa como **tabla explícita**: un objeto `Record<Estado, Partial<Record<ClaseChar, Estado>>>`, no como `if` anidados. Así la tabla puede mostrarse en la exposición igual que en el pizarrón.
-- **Separación motor y tabla:** `automata/deterministic-finite-automaton.ts` es un **ejecutor genérico de AFD**. Recibe una definición `DeterministicAutomatonDefinition` (estados, función de clasificación de caracteres, tabla δ, estados de aceptación con el tipo de token que emiten, y estados que se descartan, como espacios y comentarios) y aplica _maximal munch_. `grammar-format/lexer.ts` solo declara la tabla del formato `.grammar`. Se separa porque el SPEC 04 reutiliza el mismo ejecutor con otras dos tablas (texto en español y archivos de léxico y reglas), así que el concepto "un AFD es una tabla más un ejecutor" se ve en código.
+- **Separación motor y tabla:** `automata/deterministic-finite-automaton.ts` es un **ejecutor genérico de AFD**. Recibe una definición `DeterministicAutomatonDefinition` (estado inicial `initialState`, función de clasificación `classifyCharacter`, tabla δ `transitions`, y estados de aceptación `acceptingStates` con el tipo de token que emiten, o `null` para los que se descartan, como espacios y comentarios). Los estados del lexer de `.grammar` se llaman con su número del grafo seguido de su significado (`q0Start`, `q1ReadingIdentifier`, `q2ExpectingArrowHead`…) y aplica _maximal munch_. `grammar-format/lexer.ts` solo declara la tabla del formato `.grammar`. Se separa porque el SPEC 04 reutiliza el mismo ejecutor con otras dos tablas (texto en español y archivos de léxico y reglas), así que el concepto "un AFD es una tabla más un ejecutor" se ve en código.
 - Regla de _maximal munch_: el token se emite cuando no hay transición posible desde un estado de aceptación.
 - Referencias: Augusto 1.3; Hopcroft 2.2.
 
@@ -455,14 +455,18 @@ interface Grammar {
 const AUGMENTED_START = '$S'; // never produced by the lexer
 
 // src/automata/deterministic-finite-automaton.ts
-interface DeterministicAutomatonDefinition<S extends string, C extends string, K extends string> {
-  start: S;
-  classify: (ch: string) => C;
-  delta: Record<S, Partial<Record<C, S>>>;
-  accepting: Partial<Record<S, K | null>>; // null = recognized but discarded (whitespace, comments)
+interface DeterministicAutomatonDefinition<
+  State extends string,
+  CharacterClass extends string,
+  TokenKind extends string,
+> {
+  initialState: State; // q0
+  classifyCharacter: (character: string) => CharacterClass;
+  transitions: Record<State, Partial<Record<CharacterClass, State>>>; // δ
+  acceptingStates: Partial<Record<State, TokenKind | null>>; // F; null = recognized but discarded (whitespace, comments)
 }
-interface AutomatonToken<K> {
-  kind: K;
+interface AutomatonToken<TokenKind> {
+  kind: TokenKind;
   text: string;
   line: number;
   column: number;
@@ -792,7 +796,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
 - `src/command-line.ts` es el único archivo que toca `node:*`. Lee `process.argv`, arma un objeto `environment` con `writeOutput`, `writeError` y `readFile` (basado en `node:fs`) y llama a `runCommandLine(commandLineArguments, environment)`.
 - `src/command-line/run.ts` contiene `createCommandLineProgram(commands)`, que devuelve `runCommandLine(commandLineArguments, environment): Promise<number>`. `createCommandLineProgram`, el tipo `Command` y `cli/format.ts` se exportan desde `index.ts` para que `@sabueso/natural-language` (SPEC 04) registre sus comandos con la misma infraestructura. Busca el comando en el registro, interpreta las opciones comunes (`--grammar`, `--file` y `--steps`) y devuelve el código de salida.
 - `src/command-line/commands/<comando>.ts` tiene **un archivo por comando**. Cada uno exporta `{ name, description, usage, run(commandArguments, environment) }`. Los comandos no importan `node:*`: leen archivos solo a través de `environment.readFile`. Así se prueban en memoria, sin lanzar procesos.
-- `src/command-line/grammars.ts` resuelve `--grammar`. Acepta **solo identificadores de gramáticas incorporadas**: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". No acepta rutas: el programa trabaja con sus gramáticas, no con gramáticas que cargue el usuario. Un nombre desconocido termina con código 2 y lista los nombres válidos.
+- `src/command-line/grammars.ts` resuelve `--grammar`, y también `--grammar-file <ruta>` para un archivo `.grammar` propio (ver Decisiones). Como nombre acepta **solo identificadores de gramáticas incorporadas**: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". Las rutas van siempre por `--grammar-file`, nunca como nombre. Un nombre desconocido termina con código 2 y lista los nombres válidos.
 - `src/command-line/format.ts` tiene las utilidades de salida: tablas alineadas, conjuntos ordenados como `{a, b}` y árboles ASCII.
 - **Ejecución sin pasos manuales:** el `package.json` raíz tiene el script `"sabueso": "tsc -b packages/core && node packages/core/dist/command-line.js"`. Así `npm run sabueso -- <comando> …` compila de forma incremental y ejecuta. También funciona `node packages/core/dist/command-line.js` después de `npm run build`.
 - **Códigos de salida:**
@@ -825,14 +829,16 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - **Consola:**
      - `npm run sabueso -- lex arithmetic` imprime la tabla de tokens (tipo, texto, línea:columna).
      - Con `--states`, imprime además la secuencia de estados del AFD de la primera línea, para explicar δ en la exposición.
-     - Los errores léxicos (literal sin cerrar, carácter inválido) se verifican en las pruebas con textos en memoria, porque la CLI solo lee gramáticas incorporadas.
+     - `npm run sabueso -- lex --grammar-file <ruta>` hace lo mismo con un archivo `.grammar` propio. Con un archivo así, los errores léxicos también se ven por consola (código 1).
+     - Los errores léxicos (literal sin cerrar, carácter inválido) se verifican además en las pruebas con textos en memoria.
+   - **Decisión de orden (2026-11-19):** como `lex arithmetic` necesita su archivo, este paso adelanta `grammars/test/arithmetic.grammar` y una primera versión de `command-line/grammars.ts` que solo resuelve `arithmetic`. El paso 5 agrega las demás gramáticas y completa el resolvedor.
 
 4. **Parser LL(1) de `.grammar`.**
    - `grammar-format/parser.ts`: una función por no terminal de `meta.grammar`. Cada función elige la alternativa por el `kind` del lookahead.
    - Expone `parseGrammarText(text, name)` y la arma con `buildGrammar`.
    - Pruebas: errores de sintaxis con línea y columna. Ficha 04.
    - **Consola:**
-     - `npm run sabueso -- grammar arithmetic` imprime G = (N, Σ, P, S).
+     - `npm run sabueso -- grammar arithmetic` imprime G = (N, Σ, P, S). También acepta `--grammar-file <ruta>`.
      - Con `--parser-trace`, imprime cada llamada recursiva del parser con el lookahead que decidió la alternativa (por ejemplo, `Sequence [IDENTIFIER] → Symbols`).
 
 5. **Archivos de gramáticas.**
@@ -1265,7 +1271,8 @@ Las decisiones generales de tecnología (TypeScript estricto, `tsc` + `node`, si
 - **Sí:** G1 cambia el lenguaje (L(G1) ⊊ L(G0)). El género no admite descartar una sospecha inexistente, el anteproyecto pide comparar "qué relatos acepta una y no la otra", y `compareLanguages` lo exhibe.
 - **Sí:** el formato `.grammar` propio, con lexer AFD y parser LL(1). El anteproyecto pide gramáticas como archivos de texto, y el lector aplica dos conceptos de la materia en vez de ser código ad hoc.
 - **No:** gramáticas en JSON. No requiere parser, pero pierde el AFD y el LL(1), y es menos legible para la cátedra.
-- **Sí:** solo gramáticas incorporadas, también en la CLI (`--grammar` acepta nombres, no rutas). El propósito del programa es analizar relatos policiales con sus gramáticas, no cargar gramáticas del usuario. El motor sigue siendo genérico por dentro, y eso se verifica con las gramáticas de libro en las pruebas.
+- **Sí:** gramáticas incorporadas por nombre (`--grammar g1`, o el nombre como argumento en `lex` y `grammar`). El propósito del programa es analizar relatos policiales con sus gramáticas.
+- **Sí (decisión del 2026-11-19, cambia la anterior "solo gramáticas incorporadas"):** además, los comandos que leen una gramática aceptan `--grammar-file <ruta>` con un archivo `.grammar` propio. Sirve para probar el lexer y el parser a mano con textos nuevos, y para mostrar en la defensa que el motor es genérico con una gramática escrita en el momento. La ruta relativa se resuelve desde el directorio donde se ejecutó el comando (`INIT_CWD` de npm).
 - **Sí:** la directiva `%terminals`. Evita que un error de tipeo en un no terminal se convierta silenciosamente en terminal, el error más probable al editar gramáticas.
 - **Sí:** soporte de ε con Aycock-Horspool. G1 lo necesita (tiene 10 anulables), las gramáticas de libro también, y el bug de ε es un concepto atómico excelente para la exposición.
 - **No:** prohibir ε. Habría que reescribir G1 sin ε, con más producciones y menos legibilidad, y se perdería el caso didáctico.

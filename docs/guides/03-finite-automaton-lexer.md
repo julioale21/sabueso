@@ -65,21 +65,21 @@ Es **determinista** porque para cada par (estado, clase) hay a lo sumo una trans
 
 El autómata no mira caracteres sueltos, sino **clases**. Si tuviera una transición por cada carácter posible, δ tendría miles de columnas; con clases tiene 13. Antes de consultar δ, cada carácter se clasifica:
 
-| Clase       | Caracteres                                               |
-| ----------- | -------------------------------------------------------- |
-| `letter`    | letras (incluidas las acentuadas) y `_`, **excepto** `ε` |
-| `digit`     | `0`–`9`                                                  |
-| `space`     | espacio, tabulación, retorno de carro (`\r`)             |
-| `newline`   | salto de línea (`\n`)                                    |
-| `hyphen`    | `-`                                                      |
-| `greater`   | `>`                                                      |
-| `arrowSign` | `→`                                                      |
-| `bar`       | `\|`                                                     |
-| `epsilon`   | `ε`                                                      |
-| `quote`     | `'`                                                      |
-| `hash`      | `#`                                                      |
-| `percent`   | `%`                                                      |
-| `other`     | cualquier otro carácter                                  |
+| Clase            | Caracteres                                               |
+| ---------------- | -------------------------------------------------------- |
+| `letter`         | letras (incluidas las acentuadas) y `_`, **excepto** `ε` |
+| `digit`          | `0`–`9`                                                  |
+| `whitespace`     | espacio, tabulación, retorno de carro (`\r`)             |
+| `lineBreak`      | salto de línea (`\n`)                                    |
+| `hyphen`         | `-`                                                      |
+| `greaterThan`    | `>`                                                      |
+| `unicodeArrow`   | `→`                                                      |
+| `verticalBar`    | `\|`                                                     |
+| `epsilonSign`    | `ε`                                                      |
+| `singleQuote`    | `'`                                                      |
+| `hash`           | `#`                                                      |
+| `percentSign`    | `%`                                                      |
+| `otherCharacter` | cualquier otro carácter                                  |
 
 Decisiones:
 
@@ -105,60 +105,60 @@ Cómo leerlo:
 - **Flecha con etiqueta:** la transición δ para esa clase de carácter (sección 3). Una flecha que vuelve al mismo estado es un bucle: el estado sigue consumiendo caracteres de esa clase.
 - **Sin flecha** para un carácter: el autómata se detiene (ver la sección 4.3).
 
-| Estado | Nombre en el código | Acepta                              |
-| ------ | ------------------- | ----------------------------------- |
-| q₀     | `start`             | no (inicial)                        |
-| q₁     | `inIdentifier`      | `IDENTIFIER`                        |
-| q₂     | `afterHyphen`       | no                                  |
-| q₃     | `arrow`             | `ARROW`                             |
-| q₄     | `bar`               | `BAR`                               |
-| q₅     | `epsilon`           | `EPSILON`                           |
-| q₆     | `inLiteral`         | no                                  |
-| q₇     | `literal`           | `LITERAL`                           |
-| q₈     | `afterPercent`      | no                                  |
-| q₉     | `inDirective`       | `START` o `TERMINALS` (sección 4.4) |
-| q₁₀    | `inComment`         | descartado                          |
-| q₁₁    | `inSpace`           | descartado                          |
-| q₁₂    | `newline`           | `NEWLINE`                           |
+| Estado | Nombre en el código        | Acepta                              |
+| ------ | -------------------------- | ----------------------------------- |
+| q₀     | `q0Start`                  | no (inicial)                        |
+| q₁     | `q1ReadingIdentifier`      | `IDENTIFIER`                        |
+| q₂     | `q2ExpectingArrowHead`     | no                                  |
+| q₃     | `q3ArrowRead`              | `ARROW`                             |
+| q₄     | `q4BarRead`                | `BAR`                               |
+| q₅     | `q5EpsilonRead`            | `EPSILON`                           |
+| q₆     | `q6ReadingLiteral`         | no                                  |
+| q₇     | `q7LiteralRead`            | `LITERAL`                           |
+| q₈     | `q8ExpectingDirectiveName` | no                                  |
+| q₉     | `q9ReadingDirective`       | `START` o `TERMINALS` (sección 4.4) |
+| q₁₀    | `q10ReadingComment`        | descartado                          |
+| q₁₁    | `q11ReadingSpaces`         | descartado                          |
+| q₁₂    | `q12NewlineRead`           | `NEWLINE`                           |
 
 ### 4.2 Tabla de transiciones δ
 
 Una celda vacía significa "no hay transición": el autómata se detiene ahí.
 
-| Estado              | Acepta                | letter | digit | space | newline | hyphen | greater | arrowSign | bar | epsilon | quote | hash | percent | other |
-| ------------------- | --------------------- | ------ | ----- | ----- | ------- | ------ | ------- | --------- | --- | ------- | ----- | ---- | ------- | ----- |
-| **q₀** start        | no                    | q₁     |       | q₁₁   | q₁₂     | q₂     |         | q₃        | q₄  | q₅      | q₆    | q₁₀  | q₈      |       |
-| **q₁** inIdentifier | `IDENTIFIER`          | q₁     | q₁    |       |         |        |         |           |     |         |       |      |         |       |
-| **q₂** afterHyphen  | no                    |        |       |       |         |        | q₃      |           |     |         |       |      |         |       |
-| **q₃** arrow        | `ARROW`               |        |       |       |         |        |         |           |     |         |       |      |         |       |
-| **q₄** bar          | `BAR`                 |        |       |       |         |        |         |           |     |         |       |      |         |       |
-| **q₅** epsilon      | `EPSILON`             |        |       |       |         |        |         |           |     |         |       |      |         |       |
-| **q₆** inLiteral    | no                    | q₆     | q₆    | q₆    |         | q₆     | q₆      | q₆        | q₆  | q₆      | q₇    | q₆   | q₆      | q₆    |
-| **q₇** literal      | `LITERAL`             |        |       |       |         |        |         |           |     |         |       |      |         |       |
-| **q₈** afterPercent | no                    | q₉     |       |       |         |        |         |           |     |         |       |      |         |       |
-| **q₉** inDirective  | `START` o `TERMINALS` | q₉     |       |       |         |        |         |           |     |         |       |      |         |       |
-| **q₁₀** inComment   | descartado            | q₁₀    | q₁₀   | q₁₀   |         | q₁₀    | q₁₀     | q₁₀       | q₁₀ | q₁₀     | q₁₀   | q₁₀  | q₁₀     | q₁₀   |
-| **q₁₁** inSpace     | descartado            |        |       | q₁₁   |         |        |         |           |     |         |       |      |         |       |
-| **q₁₂** newline     | `NEWLINE`             |        |       |       |         |        |         |           |     |         |       |      |         |       |
+| Estado                            | Acepta                | letter | digit | whitespace | lineBreak | hyphen | greaterThan | unicodeArrow | verticalBar | epsilonSign | singleQuote | hash | percentSign | otherCharacter |
+| --------------------------------- | --------------------- | ------ | ----- | ---------- | --------- | ------ | ----------- | ------------ | ----------- | ----------- | ----------- | ---- | ----------- | -------------- |
+| **q₀** `q0Start`                  | no                    | q₁     |       | q₁₁        | q₁₂       | q₂     |             | q₃           | q₄          | q₅          | q₆          | q₁₀  | q₈          |                |
+| **q₁** `q1ReadingIdentifier`      | `IDENTIFIER`          | q₁     | q₁    |            |           |        |             |              |             |             |             |      |             |                |
+| **q₂** `q2ExpectingArrowHead`     | no                    |        |       |            |           |        | q₃          |              |             |             |             |      |             |                |
+| **q₃** `q3ArrowRead`              | `ARROW`               |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₄** `q4BarRead`                | `BAR`                 |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₅** `q5EpsilonRead`            | `EPSILON`             |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₆** `q6ReadingLiteral`         | no                    | q₆     | q₆    | q₆         |           | q₆     | q₆          | q₆           | q₆          | q₆          | q₇          | q₆   | q₆          | q₆             |
+| **q₇** `q7LiteralRead`            | `LITERAL`             |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₈** `q8ExpectingDirectiveName` | no                    | q₉     |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₉** `q9ReadingDirective`       | `START` o `TERMINALS` | q₉     |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₁₀** `q10ReadingComment`       | descartado            | q₁₀    | q₁₀   | q₁₀        |           | q₁₀    | q₁₀         | q₁₀          | q₁₀         | q₁₀         | q₁₀         | q₁₀  | q₁₀         | q₁₀            |
+| **q₁₁** `q11ReadingSpaces`        | descartado            |        |       | q₁₁        |           |        |             |              |             |             |             |      |             |                |
+| **q₁₂** `q12NewlineRead`          | `NEWLINE`             |        |       |            |           |        |             |              |             |             |             |      |             |                |
 
 ### 4.3 Cómo se lee un token: _maximal munch_
 
 El ejecutor repite este ciclo hasta llegar al final del texto:
 
-1. Empieza en `start`.
+1. Empieza en `q0Start`.
 2. Lee caracteres y sigue δ **mientras haya transición**.
 3. Cuando no hay transición (o se acaba el texto), mira dónde quedó:
-   - **en un estado de aceptación:** emite el token de ese estado (o lo descarta, si es espacio o comentario) y vuelve a `start` con el carácter que no pudo consumir;
+   - **en un estado de aceptación:** emite el token de ese estado (o lo descarta, si es espacio o comentario) y vuelve a `q0Start` con el carácter que no pudo consumir;
    - **en un estado que no es de aceptación:** es un **error léxico**, con la línea y la columna.
 
 Se llama _maximal munch_ ("el mordisco más grande") porque el autómata **no se detiene en el primer estado de aceptación**: sigue mientras pueda, y emite el token más largo posible. Ejemplos:
 
-- `Pistas` es **un** identificador, no seis de una letra: `inIdentifier` acepta después de `P`, pero sigue mientras lea letras.
-- `->` es **una** flecha: después de `-` el autómata está en `afterHyphen` y sigue con `>`.
+- `Pistas` es **un** identificador, no seis de una letra: `q1ReadingIdentifier` acepta después de `P`, pero sigue mientras lea letras.
+- `->` es **una** flecha: después de `-` el autómata está en `q2ExpectingArrowHead` y sigue con `>`.
 
 ### 4.4 Las directivas
 
-`inDirective` acepta cualquier `%` seguido de letras. La palabra se compara después con una tabla de palabras reservadas:
+`q9ReadingDirective` acepta cualquier `%` seguido de letras. La palabra se compara después con una tabla de palabras reservadas:
 
 | Texto leído                        | Token                        |
 | ---------------------------------- | ---------------------------- |
@@ -318,13 +318,13 @@ npm run sabueso -- lex --grammar-file examples/grammars/story.grammar --states
 
 ## 6. Errores léxicos
 
-| Error                 | Dónde se detiene el autómata                                                     | Ejemplo                       |
-| --------------------- | -------------------------------------------------------------------------------- | ----------------------------- |
-| Literal sin cerrar    | en `inLiteral`, al llegar a un salto de línea o al final del texto               | `E -> '+`                     |
-| Carácter inválido     | en `start`, sin transición para la clase del carácter                            | `E -> @`, `E -> >`, `E -> 1a` |
-| Guion suelto          | en `afterHyphen`, sin `>` a continuación                                         | `E - T`                       |
-| `%` sin palabra       | en `afterPercent`, sin una letra a continuación                                  | `% start`                     |
-| Directiva desconocida | en `inDirective` (acepta), pero la palabra no está en la tabla de la sección 4.4 | `%inicio S`                   |
+| Error                 | Dónde se detiene el autómata                                                            | Ejemplo                       |
+| --------------------- | --------------------------------------------------------------------------------------- | ----------------------------- |
+| Literal sin cerrar    | en `q6ReadingLiteral`, al llegar a un salto de línea o al final del texto               | `E -> '+`                     |
+| Carácter inválido     | en `q0Start`, sin transición para la clase del carácter                                 | `E -> @`, `E -> >`, `E -> 1a` |
+| Guion suelto          | en `q2ExpectingArrowHead`, sin `>` a continuación                                       | `E - T`                       |
+| `%` sin palabra       | en `q8ExpectingDirectiveName`, sin una letra a continuación                             | `% start`                     |
+| Directiva desconocida | en `q9ReadingDirective` (acepta), pero la palabra no está en la tabla de la sección 4.4 | `%inicio S`                   |
 
 Todos lanzan `GrammarSyntaxError`, con la **línea y la columna** del problema: el comienzo del token sin terminar (literal, `-`, `%`, directiva) o el carácter inválido. El mensaje empieza con la posición, por ejemplo `Line 1, column 6: Invalid character '@'`.
 
@@ -343,36 +343,40 @@ El SPEC 04 va a reutilizar el mismo ejecutor con otras tablas (texto en español
 
 ### 7.1 `deterministic-finite-automaton.ts`: el ejecutor genérico
 
-#### `DeterministicAutomatonDefinition<S, C, K>`
+#### `DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>`
 
 ```ts
-interface DeterministicAutomatonDefinition<S extends string, C extends string, K extends string> {
-  start: S;
-  classify: (character: string) => C;
-  delta: Record<S, Partial<Record<C, S>>>;
-  accepting: Partial<Record<S, K | null>>;
+interface DeterministicAutomatonDefinition<
+  State extends string,
+  CharacterClass extends string,
+  TokenKind extends string,
+> {
+  initialState: State;
+  classifyCharacter: (character: string) => CharacterClass;
+  transitions: Record<State, Partial<Record<CharacterClass, State>>>;
+  acceptingStates: Partial<Record<State, TokenKind | null>>;
 }
 ```
 
 Es M = (Q, Σ, δ, q₀, F) **como datos**:
 
-| Campo                   | Teoría | Significado                                                                                                         |
-| ----------------------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `S` (parámetro de tipo) | Q      | los nombres de los estados                                                                                          |
-| `C` (parámetro de tipo) | Σ      | las clases de caracteres                                                                                            |
-| `K` (parámetro de tipo) | —      | los tipos de token que emiten los estados de aceptación                                                             |
-| `start`                 | q₀     | estado inicial de cada token                                                                                        |
-| `classify`              | —      | convierte un carácter en su clase, antes de consultar δ                                                             |
-| `delta`                 | δ      | para cada estado, una fila: clase → estado siguiente. `Partial` porque una celda puede faltar ("no hay transición") |
-| `accepting`             | F      | los estados de aceptación, con el token que emiten; `null` = acepta y se descarta                                   |
+| Campo                                | Teoría | Significado                                                                                                         |
+| ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------- |
+| `State` (parámetro de tipo)          | Q      | los nombres de los estados                                                                                          |
+| `CharacterClass` (parámetro de tipo) | Σ      | las clases de caracteres                                                                                            |
+| `TokenKind` (parámetro de tipo)      | —      | los tipos de token que emiten los estados de aceptación                                                             |
+| `initialState`                       | q₀     | estado inicial de cada token                                                                                        |
+| `classifyCharacter`                  | —      | convierte un carácter en su clase, antes de consultar δ                                                             |
+| `transitions`                        | δ      | para cada estado, una fila: clase → estado siguiente. `Partial` porque una celda puede faltar ("no hay transición") |
+| `acceptingStates`                    | F      | los estados de aceptación, con el token que emiten; `null` = acepta y se descarta                                   |
 
-Los tres parámetros de tipo (`S`, `C`, `K`) hacen que TypeScript verifique la tabla: una transición a un estado que no existe, o una clase mal escrita, no compila.
+Los tres parámetros de tipo (`State`, `CharacterClass`, `TokenKind`) hacen que TypeScript verifique la tabla: una transición a un estado que no existe, o una clase mal escrita, no compila.
 
-#### `AutomatonToken<K>`
+#### `AutomatonToken<TokenKind>`
 
 ```ts
-interface AutomatonToken<K> {
-  kind: K;
+interface AutomatonToken<TokenKind> {
+  kind: TokenKind;
   text: string;
   line: number;
   column: number;
@@ -381,17 +385,17 @@ interface AutomatonToken<K> {
 
 Un token reconocido: su tipo, el texto exacto que consumió y dónde empieza (línea y columna desde 1).
 
-#### `AutomatonEvent<S, K>`
+#### `AutomatonEvent<State, TokenKind>`
 
 ```ts
-type AutomatonEvent<S, K> =
-  | { type: 'transition'; from: S; character: string; to: S }
-  | { type: 'accept'; state: S; text: string; kind: K | null };
+type AutomatonEvent<State, TokenKind> =
+  | { type: 'transition'; from: State; character: string; to: State }
+  | { type: 'accept'; state: State; text: string; kind: TokenKind | null };
 ```
 
 Lo que el autómata hace, paso a paso: cada transición δ(from, clase(character)) = to, y cada token que termina. El ejecutor se los avisa a un observador opcional (`onEvent`). Así funciona `lex --states` sin que el ejecutor sepa nada de la consola.
 
-#### `AutomatonStuckError<S>`
+#### `AutomatonStoppedError<State>`
 
 Error que se lanza cuando el autómata **se detiene en un estado que no acepta**. Guarda:
 
@@ -400,18 +404,18 @@ Error que se lanza cuando el autómata **se detiene en un estado que no acepta**
 - `line`, `column`: la posición de ese carácter;
 - `tokenLine`, `tokenColumn`: dónde empezaba el token sin terminar.
 
-El ejecutor no sabe qué significa cada estado, así que no puede escribir un mensaje útil. Por eso devuelve el **estado**, y el lexer lo traduce ("detenido en `inLiteral`" = "literal sin cerrar").
+El ejecutor no sabe qué significa cada estado, así que no puede escribir un mensaje útil. Por eso devuelve el **estado**, y el lexer lo traduce ("detenido en `q6ReadingLiteral`" = "literal sin cerrar").
 
-#### `runDeterministicAutomaton(definition, text, onEvent?)`
+#### `runDeterministicAutomaton(automaton, text, onEvent?)`
 
 ```ts
-export function runDeterministicAutomaton(definition, text, onEvent?) {
+export function runDeterministicAutomaton(automaton, text, onEvent?) {
   const tokens = [];
   let cursor = { index: 0, line: 1, column: 1 };
   while (cursor.index < text.length) {
-    const end = readLongestToken(definition, text, cursor, onEvent);
+    const end = readLongestToken(automaton, text, cursor, onEvent);
     const lexeme = text.slice(cursor.index, end.index);
-    const kind = acceptedKind(definition, cursor, end, text[end.index]);
+    const kind = tokenKindOfFinalState(automaton, cursor, end, text[end.index]);
     onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
     if (kind !== null) {
       tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
@@ -426,24 +430,24 @@ El ciclo de la sección 4.3, una vuelta por token:
 
 1. `readLongestToken`: lee el token más largo posible desde q₀.
 2. `text.slice(...)`: el texto del token (el **lexema**).
-3. `acceptedKind`: verifica que terminó en un estado de F y obtiene su tipo; si no, lanza `AutomatonStuckError`.
+3. `tokenKindOfFinalState`: verifica que terminó en un estado de F y obtiene su tipo; si no, lanza `AutomatonStoppedError`.
 4. Si el tipo no es `null`, guarda el token; si es `null` (espacio, comentario), lo descarta.
 5. El siguiente token empieza donde terminó este.
 
 #### `readLongestToken` (interna): el _maximal munch_
 
 ```ts
-let state = definition.start;
+let state = automaton.initialState;
 let cursor = tokenStart;
 for (;;) {
   const character = text[cursor.index];
-  const next = character === undefined ? undefined : nextState(definition, state, character);
+  const next = character === undefined ? undefined : nextState(automaton, state, character);
   if (character === undefined || next === undefined) {
     return { ...cursor, state };
   }
   onEvent?.({ type: 'transition', from: state, character, to: next });
   state = next;
-  cursor = advance(cursor, character);
+  cursor = moveCursorPast(cursor, character);
 }
 ```
 
@@ -452,21 +456,21 @@ Sigue δ **mientras haya transición**, sin detenerse en el primer estado de ace
 #### `nextState` (interna)
 
 ```ts
-return definition.delta[state][definition.classify(character)];
+return automaton.transitions[state][automaton.classifyCharacter(character)];
 ```
 
 Es literalmente δ(q, clase(c)): busca la fila del estado y, en ella, la columna de la clase. Si la celda no existe, devuelve `undefined` ("no hay transición").
 
-#### `acceptedKind` (interna)
+#### `tokenKindOfFinalState` (interna)
 
-Devuelve el tipo de token del estado donde terminó el token. Lanza `AutomatonStuckError` en dos casos:
+Devuelve el tipo de token del estado donde terminó el token. Lanza `AutomatonStoppedError` en dos casos:
 
-- el estado **no está en F** (`accepting[state]` es `undefined`): por ejemplo, un literal sin cerrar termina en `inLiteral`;
+- el estado **no está en F** (`acceptingStates[state]` es `undefined`): por ejemplo, un literal sin cerrar termina en `q6ReadingLiteral`;
 - **no se consumió nada**: q₀ no tiene transición para el primer carácter (un carácter inválido).
 
 Distingue `undefined` (no acepta) de `null` (acepta y se descarta).
 
-#### `advance` (interna)
+#### `moveCursorPast` (interna)
 
 Avanza una posición: después de `\n` pasa a la línea siguiente y a la columna 1; si no, suma una columna. Así cada token sabe su línea y columna sin recorrer el texto otra vez.
 
@@ -483,42 +487,60 @@ El error de un archivo `.grammar` mal escrito, con `line` y `column`. El mensaje
 #### `lexerStates` y `LexerState`
 
 ```ts
-export const lexerStates = ['start', 'inIdentifier', 'afterHyphen', …, 'newline'] as const;
+export const lexerStates = [
+  'q0Start',
+  'q1ReadingIdentifier',
+  'q2ExpectingArrowHead',
+  …,
+  'q12NewlineRead',
+] as const;
 export type LexerState = (typeof lexerStates)[number];
 ```
 
-Q, en el orden del grafo: `lexerStates[n]` es el estado qₙ de la sección 4. `as const` hace que TypeScript conozca cada nombre, y `LexerState` es la unión de todos ellos. `lex --states` usa la posición en esta lista para mostrar `q3` en vez de `arrow`.
+Q: los 13 estados. Cada nombre **empieza con su número del grafo** (q0…q12) y sigue con lo que significa, según un patrón:
+
+| Patrón        | Significa                                               | Acepta       | Ejemplos                                           |
+| ------------- | ------------------------------------------------------- | ------------ | -------------------------------------------------- |
+| `…Reading…`   | dentro de algo que puede seguir (el estado tiene bucle) | sí, salvo q₆ | `q1ReadingIdentifier`, `q11ReadingSpaces`          |
+| `…Read`       | se leyó un token completo (el estado no tiene salidas)  | sí           | `q3ArrowRead`, `q4BarRead`                         |
+| `…Expecting…` | se leyó algo incompleto; detenerse acá es un error      | no           | `q2ExpectingArrowHead`, `q8ExpectingDirectiveName` |
+
+La excepción es `q6ReadingLiteral`: tiene bucle, pero no acepta, porque un literal sin la comilla de cierre no es un token.
+
+`as const` hace que TypeScript conozca cada nombre, y `LexerState` es la unión de todos ellos. `lex --states` toma el número del comienzo del nombre para mostrar `q3` en vez de `q3ArrowRead`.
 
 #### `CharacterClass` y `classifyCharacter(character)`
 
 Las 13 clases de la sección 3 y la función que clasifica:
 
-1. Primero busca el carácter en una tabla de caracteres especiales (`' '`, `'\n'`, `'-'`, `'→'`, `'ε'`, `'_'`…). Por eso `ε` es `epsilon` aunque sea una letra griega: se revisa **antes** que las letras.
+1. Primero busca el carácter en una tabla de caracteres especiales (`' '`, `'\n'`, `'-'`, `'→'`, `'ε'`, `'_'`…). Por eso `ε` es `epsilonSign` aunque sea una letra griega: se revisa **antes** que las letras.
 2. Si no es especial y es una letra Unicode (`\p{L}`, incluye acentos y ñ), es `letter`.
-3. Si es `0`–`9`, es `digit`; si no, `other`.
+3. Si es `0`–`9`, es `digit`; si no, `otherCharacter`.
 
 #### `everyClassExcept(excluded, target)` (interna)
 
-Arma una fila de δ que va a `target` con **todas** las clases salvo las excluidas. Se usa para las filas de "todo salvo…": `inLiteral` (todo salvo `'` y salto) e `inComment` (todo salvo salto). Escribir esas filas a mano repetiría el mismo estado en 11 o 12 columnas.
+Arma una fila de δ que va a `target` con **todas** las clases salvo las excluidas. Se usa para las filas de "todo salvo…": `q6ReadingLiteral` (todo salvo `'` y salto) e `q10ReadingComment` (todo salvo salto). Escribir esas filas a mano repetiría el mismo estado en 11 o 12 columnas.
 
 #### `grammarLexerAutomaton`
 
 La tabla M de las secciones 4.1 y 4.2, escrita como datos:
 
 ```ts
-delta: {
-  start: { letter: 'inIdentifier', space: 'inSpace', newline: 'newline', hyphen: 'afterHyphen', … },
-  inIdentifier: { letter: 'inIdentifier', digit: 'inIdentifier' },
-  afterHyphen: { greater: 'arrow' },
-  arrow: {},
+initialState: 'q0Start',
+classifyCharacter,
+transitions: {
+  q0Start: { letter: 'q1ReadingIdentifier', hyphen: 'q2ExpectingArrowHead', unicodeArrow: 'q3ArrowRead', … },
+  q1ReadingIdentifier: { letter: 'q1ReadingIdentifier', digit: 'q1ReadingIdentifier' },
+  q2ExpectingArrowHead: { greaterThan: 'q3ArrowRead' },
+  q3ArrowRead: {},
   …
 },
-accepting: { inIdentifier: 'IDENTIFIER', arrow: 'ARROW', …, inComment: null, inSpace: null },
+acceptingStates: { q1ReadingIdentifier: 'IDENTIFIER', q3ArrowRead: 'ARROW', …, q11ReadingSpaces: null },
 ```
 
-Un estado sin transiciones (`arrow: {}`) es un estado donde el token ya terminó. La prueba `the automaton of the guide` compara esta tabla con la de esta guía.
+Un estado sin transiciones (`q3ArrowRead: {}`) es un estado donde el token ya terminó. La prueba `the automaton of the guide` compara esta tabla con la de esta guía.
 
-`inDirective` emite `DIRECTIVE`, un tipo interno que todavía no es `START` ni `TERMINALS` (ver la sección 4.4).
+`q9ReadingDirective` emite `DIRECTIVE`, un tipo interno que todavía no es `START` ni `TERMINALS` (ver la sección 4.4).
 
 #### `tokenizeGrammar(text, onEvent?)`
 
@@ -537,7 +559,7 @@ La función pública del lexer, en tres pasos:
 
 #### `readLexemes` (interna)
 
-Llama a `runDeterministicAutomaton` con la tabla del formato. Si el autómata se detiene fuera de F, convierte el `AutomatonStuckError` en un `GrammarSyntaxError` con `toSyntaxError`.
+Llama a `runDeterministicAutomaton` con la tabla del formato. Si el autómata se detiene fuera de F, convierte el `AutomatonStoppedError` en un `GrammarSyntaxError` con `toSyntaxError`.
 
 #### `toToken` (interna)
 
@@ -567,12 +589,12 @@ Busca el texto en la tabla de palabras reservadas (`%start` → `START`, `%termi
 
 Traduce "el autómata se detuvo en el estado q" al error que eso significa (sección 6):
 
-| Estado donde se detuvo | Mensaje                                           | Posición               |
-| ---------------------- | ------------------------------------------------- | ---------------------- |
-| q₆ `inLiteral`         | `Unterminated literal: missing the closing quote` | la comilla de apertura |
-| q₂ `afterHyphen`       | `Expected '>' after '-'`                          | el guion               |
-| q₈ `afterPercent`      | `Expected a directive name after '%'`             | el `%`                 |
-| q₀ `start`             | `Invalid character 'x'`                           | el carácter inválido   |
+| Estado donde se detuvo        | Mensaje                                           | Posición               |
+| ----------------------------- | ------------------------------------------------- | ---------------------- |
+| q₆ `q6ReadingLiteral`         | `Unterminated literal: missing the closing quote` | la comilla de apertura |
+| q₂ `q2ExpectingArrowHead`     | `Expected '>' after '-'`                          | el guion               |
+| q₈ `q8ExpectingDirectiveName` | `Expected a directive name after '%'`             | el `%`                 |
+| q₀ `q0Start`                  | `Invalid character 'x'`                           | el carácter inválido   |
 
 ### 7.3 La consola: `arguments.ts`, `grammars.ts` y `commands/lex.ts`
 
@@ -616,7 +638,7 @@ La ruta relativa de `--grammar-file` se resuelve en `command-line.ts`, el único
 | `formatTokens`          | la tabla Token / Text / Line:column                                                                                                                        |
 | `formatFirstRuleStates` | busca la primera regla del archivo (la primera línea que no está en blanco ni es un comentario) y muestra su traza. Si el archivo no tiene reglas, lo dice |
 | `traceLine`             | corre el lexer sobre esa línea con un observador: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                         |
-| `stateName`             | `q3` para `arrow`: la posición en `lexerStates`                                                                                                            |
+| `stateName`             | `q3` para `q3ArrowRead`: la posición en `lexerStates`                                                                                                      |
 | `visible`               | muestra el espacio como `␣`, el salto como `⏎` y el tabulador como `⇥`                                                                                     |
 
 **Códigos de salida:**
@@ -733,8 +755,8 @@ Guiada por datos, como la del paso 2: los casos están en `test/fixtures/lexer-c
 | ---------------------------------- | -------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------ | -------- |
 | `unterminated literal`             | `E -> '+`                                    | q₆, fin del texto                            | `Unterminated literal: missing the closing quote`            | 1:6      |
 | `literal cut by a line break`      | `E -> 'x` en la línea 3, seguido de un salto | q₆, salto de línea                           | `Unterminated literal: …`                                    | 3:6      |
-| `invalid character`                | `E -> @`                                     | q₀, clase `other`                            | `Invalid character '@'`                                      | 1:6      |
-| `lone greater-than sign`           | `E > T`                                      | q₀, clase `greater`                          | `Invalid character '>'`                                      | 1:3      |
+| `invalid character`                | `E -> @`                                     | q₀, clase `otherCharacter`                   | `Invalid character '@'`                                      | 1:6      |
+| `lone greater-than sign`           | `E > T`                                      | q₀, clase `greaterThan`                      | `Invalid character '>'`                                      | 1:3      |
 | `identifier starting with a digit` | `E -> 1a`                                    | q₀, clase `digit`                            | `Invalid character '1'`                                      | 1:6      |
 | `lone hyphen`                      | `E - T`                                      | q₂, sin `>`                                  | `Expected '>' after '-'`                                     | 1:3      |
 | `percent without a name`           | `% start E`                                  | q₈, sin letra                                | `Expected a directive name after '%'`                        | 1:1      |
@@ -746,7 +768,7 @@ Guiada por datos, como la del paso 2: los casos están en `test/fixtures/lexer-c
 | -------------------- | ----------------------------------------------------------------------------- |
 | los 13 estados       | `lexerStates` es q₀…q₁₂ en el orden del grafo, y δ tiene una fila por estado  |
 | F                    | los estados de aceptación y lo que emite cada uno                             |
-| fila de q₀           | la fila completa de `start` de la tabla δ                                     |
+| fila de q₀           | la fila completa de `q0Start` de la tabla δ                                   |
 | clases de caracteres | 18 caracteres de ejemplo y su clase (letras con acento, `_`, `ε`, `\r`, `$`…) |
 
 ### 9.3 La consola: `test/command-line/lex.test.ts` y `arguments.test.ts`
