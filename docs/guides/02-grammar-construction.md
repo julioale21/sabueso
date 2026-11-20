@@ -127,16 +127,79 @@ Un símbolo es un texto: `'E'`, `'+'`, `'CRI'`, `'Pistas'`. Es un alias de `stri
 | `productions`           | P          | `readonly Production[]`                          | Lista y no conjunto, porque **el orden importa** (define los `id`). Los repetidos se rechazan al construir. |
 | `productionsByLeftSide` | — (índice) | `ReadonlyMap<SymbolName, readonly Production[]>` | Acceso directo a las producciones de cada no terminal.                                                      |
 
-### `productionsByLeftSide`: un índice, no información nueva
+### `productions` y `productionsByLeftSide`: las mismas producciones, dos organizaciones
 
-Agrupa P por lado izquierdo:
-
-```
-E → [ (0) E → E + T,  (1) E → T ]
-T → [ (2) T → id ]
+```ts
+productions: readonly Production[];
+productionsByLeftSide: ReadonlyMap<SymbolName, readonly Production[]>;
 ```
 
-No agrega información (todo está en `productions`), pero hace **rápida** una pregunta muy frecuente: "¿cuáles son las producciones de A?". El **Predictor** de Earley la hace todo el tiempo ("espero una E en esta posición, entonces agrego todas las producciones de E"). Sin el índice, cada vez habría que recorrer P completa.
+Contienen **las mismas producciones**, organizadas de dos maneras para responder preguntas distintas. Con la gramática `E → E + T | T`, `T → id`:
+
+**`productions`** es **P completa, en orden**: una lista donde la posición es el `id`.
+
+```ts
+productions = [
+  { id: 0, leftSide: 'E', rightSide: ['E', '+', 'T'] }, // posición 0
+  { id: 1, leftSide: 'E', rightSide: ['T'] }, // posición 1
+  { id: 2, leftSide: 'T', rightSide: ['id'] }, // posición 2
+];
+```
+
+**`productionsByLeftSide`** son **las mismas producciones agrupadas por lado izquierdo**: un mapa de cada no terminal a su lista.
+
+```ts
+productionsByLeftSide = Map {
+  'E' => [ (producción 0), (producción 1) ],
+  'T' => [ (producción 2) ],
+}
+```
+
+#### Qué pregunta responde cada una
+
+|                | `productions`                                                                                                    | `productionsByLeftSide`                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Tipo           | lista (`Production[]`)                                                                                           | mapa: no terminal → lista                                |
+| Pregunta       | "¿Cuál es la producción número 2?" o "Dame todas, en orden."                                                     | "¿Cuáles son las producciones de E?"                     |
+| Cómo se accede | `productions[2]`                                                                                                 | `productionsByLeftSide.get('E')`                         |
+| Quién la usa   | mostrar P numerada (`formatGrammar`), recorrer todas (análisis de punto fijo), buscar por `id` (árboles, trazas) | el **Predictor** de Earley, FIRST/FOLLOW, la tabla LL(1) |
+
+#### Por qué tener las dos si la información es la misma
+
+Por **velocidad**. Sin el mapa, para saber las producciones de E habría que recorrer P entera y filtrar:
+
+```ts
+productions.filter((production) => production.leftSide === 'E'); // recorre las n producciones
+```
+
+Con el mapa es un acceso directo:
+
+```ts
+productionsByLeftSide.get('E'); // va directo a la lista de E
+```
+
+El **Predictor** de Earley hace esa pregunta **una vez por cada ítem que espera un no terminal** ("espero una E en esta posición, entonces agrego todas las producciones de E"). En una entrada larga son miles de veces. Con G1, de 40 producciones, filtrar cada vez sería un gasto inútil. El mapa se arma **una sola vez**, en `groupByLeftSide` (sección 6.12), al construir la gramática.
+
+#### No son copias: son los mismos objetos
+
+`groupByLeftSide` no crea producciones nuevas. Mete en el mapa **referencias** a los mismos objetos de `productions`:
+
+```ts
+grammar.productionsByLeftSide.get('E')![0] === grammar.productions[0]; // true: es el mismo objeto
+```
+
+Por eso nunca pueden quedar desincronizadas, y por eso las dos son de solo lectura: si alguien pudiera modificar una producción desde un lado, cambiaría también en el otro.
+
+#### Las dos partes del tipo del mapa
+
+```ts
+ReadonlyMap<SymbolName, readonly Production[]>;
+//          └─ clave    └─ valor
+//             'E'         [producción 0, producción 1]
+```
+
+- **`ReadonlyMap`:** no se pueden agregar ni quitar entradas (`set`, `delete`).
+- **`readonly Production[]`:** tampoco se pueden modificar las listas de adentro (`push`).
 
 ### `Readonly…`: la gramática es inmutable
 
