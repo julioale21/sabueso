@@ -56,3 +56,19 @@ function replaceLeftmostNonterminal(
   const position = form.indexOf(production.leftSide);
   return [...form.slice(0, position), ...production.rightSide, ...form.slice(position + 1)];
 }
+
+/**
+ * The derivation as text, one numbered step per line:
+ *
+ *    0   Relato
+ *    1 ⇒ Planteo Investigacion Desenlace
+ */
+export function renderDerivation(steps: readonly DerivationStep[]): string {
+  const width = String(steps.length - 1).length;
+  return steps
+    .map((step, index) => {
+      const form = step.form.length === 0 ? 'ε' : step.form.join(' ');
+      return `${String(index).padStart(width)} ${index === 0 ? ' ' : '⇒'} ${form}`;
+    })
+    .join('\n');
+}

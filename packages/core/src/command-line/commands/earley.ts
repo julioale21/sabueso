@@ -5,13 +5,13 @@
  * Cards: docs/concepts/13-predictor.md, 14-scanner.md, 15-completer.md
  */
 import type { Chart, EarleySet } from '../../earley/chart.js';
-import { diagnose, type ParseError } from '../../earley/diagnostics.js';
+import { diagnose } from '../../earley/diagnostics.js';
 import { dottedRule, isComplete, type EarleyItem, type Link } from '../../earley/item.js';
 import { recognize } from '../../earley/recognizer.js';
 import type { SymbolName } from '../../grammar/types.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
 import { parseArguments } from '../arguments.js';
-import { formatTable } from '../format.js';
+import { formatRejection, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
@@ -66,23 +66,6 @@ export const earleyCommand: Command = {
     return accepted ? EXIT_CODES.ok : EXIT_CODES.rejected;
   },
 };
-
-/**
- * 'REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL'. The position counts
- * from 0, as in the spec; the event counts from 1, as a person does.
- */
-function formatRejection(error: ParseError): string {
-  if (error.kind === 'unknown-symbol') {
-    return `REJECTED · position ${error.position} (event ${error.position + 1}) · ${error.found ?? ''} is not in Σ`;
-  }
-  const place =
-    error.kind === 'unexpected-end'
-      ? `position ${error.position} (end of input)`
-      : `position ${error.position} (event ${error.position + 1}) · found ${error.found ?? ''}`;
-  const expected =
-    error.expected.length === 0 ? 'incomplete input' : `expected: ${error.expected.join(', ')}`;
-  return `REJECTED · ${place} · ${expected}`;
-}
 
 /** Every set, in order: 'S1 (after CRI)' and a table of its items. */
 function formatChart(chart: Chart, tokens: readonly SymbolName[], classicEpsilon: boolean): string {

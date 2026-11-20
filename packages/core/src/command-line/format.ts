@@ -1,4 +1,5 @@
 // Plain-text formatting helpers shared by the commands.
+import type { ParseError } from '../earley/diagnostics.js';
 import { formatProduction } from '../grammar/build.js';
 import type { Grammar, Production } from '../grammar/types.js';
 
@@ -43,4 +44,21 @@ export function formatGrammar(grammar: Grammar): string {
 /** '   0  E → E + T': the production id right-aligned, then the production. */
 function formatNumberedProduction(production: Production): string {
   return `  ${String(production.id).padStart(2)}  ${formatProduction(production)}`;
+}
+
+/**
+ * 'REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL'. The position counts
+ * from 0, as in the spec; the event counts from 1, as a person does.
+ */
+export function formatRejection(error: ParseError): string {
+  if (error.kind === 'unknown-symbol') {
+    return `REJECTED · position ${error.position} (event ${error.position + 1}) · ${error.found ?? ''} is not in Σ`;
+  }
+  const place =
+    error.kind === 'unexpected-end'
+      ? `position ${error.position} (end of input)`
+      : `position ${error.position} (event ${error.position + 1}) · found ${error.found ?? ''}`;
+  const expected =
+    error.expected.length === 0 ? 'incomplete input' : `expected: ${error.expected.join(', ')}`;
+  return `REJECTED · ${place} · ${expected}`;
 }

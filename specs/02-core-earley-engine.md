@@ -1037,6 +1037,11 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `src/index.ts`: `parseGrammarText`, `buildGrammar`, `analyzeGrammar`, `parse`, `renderTree`, `renderDerivation`, `runDeterministicAutomaton`, `createCommandLineProgram` y el catálogo de géneros (`genres`), más los tipos públicos, y los módulos de FNC, CYK, AP y búsquedas acotadas a medida que se agregan. `buildGrammar` y `runDeterministicAutomaton` se exportan porque el SPEC 04 los reutiliza.
     - Prueba de integración que usa solo la API pública.
     - **Consola:** `npm run sabueso -- parse --grammar g0 [--trees N] [--trace] "CRI SOS PIS INT REV"` combina reconocimiento, diagnóstico, conteo, árboles y derivación del primer árbol. Es el comando "completo" que usa la API pública.
+    - **Decisiones (2026-11-20):**
+      - `parse(grammar, input, options)` vive en `src/parse.ts`: la entrada puede ser el texto o los tokens. Con un símbolo fuera de Σ devuelve el error sin correr Earley (`chart: []`). Con `countTrees: false`, `treeCount` es `null`. La derivación es la del primer árbol.
+      - `renderDerivation(steps)` se agrega a `trees/derivation.ts`. El mensaje de rechazo de la consola (`formatRejection`) pasa a `command-line/format.ts`, compartido por `earley` y `parse`.
+      - `index.ts` exporta, además de lo pedido: `formatProduction`, `tokenizeGrammar`, `GrammarSyntaxError`, `AUGMENTED_START`, `tokenizeSequence`, `checkAlphabet`, `dottedRule`, `label`, `EXIT_CODES`, `formatTable`, `formatSet` y los tipos de cada resultado.
+      - El comando `parse` muestra un árbol por defecto (`--trees n` para más) y acepta `--file`.
 
 23. **FNC: START, DEL y UNIT.**
     - `chomsky-normal-form/add-new-start.ts`, `chomsky-normal-form/remove-epsilon-productions.ts` y `chomsky-normal-form/remove-unit-productions.ts`.

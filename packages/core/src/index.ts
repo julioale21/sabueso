@@ -1,4 +1,53 @@
-// Public API of the core: what other packages (the web app) can import.
+// Public API of the core: what other packages (the web app of SPEC 03, the controlled
+// Spanish of SPEC 04) can import. Everything else is internal.
+
+// Grammars: build them in code or read them from a .grammar text.
 export { buildGrammar, formatProduction, GrammarBuildError } from './grammar/build.js';
 export type { GrammarRule, RightSideSymbol } from './grammar/build.js';
+export { AUGMENTED_START } from './grammar/types.js';
 export type { Grammar, Production, SymbolName } from './grammar/types.js';
+export { parseGrammarText } from './grammar-format/parser.js';
+export type { ParserTraceStep } from './grammar-format/parser.js';
+export { GrammarSyntaxError, tokenizeGrammar } from './grammar-format/lexer.js';
+export type { Token, TokenKind } from './grammar-format/lexer.js';
+
+// The generic DFA executor (reused by SPEC 04).
+export {
+  AutomatonStoppedError,
+  runDeterministicAutomaton,
+} from './automata/deterministic-finite-automaton.js';
+export type {
+  AutomatonEvent,
+  AutomatonToken,
+  DeterministicAutomatonDefinition,
+} from './automata/deterministic-finite-automaton.js';
+
+// The analysis of a grammar (steps 7 to 12).
+export { analyzeGrammar } from './analysis/index.js';
+export type { GrammarAnalysis } from './analysis/index.js';
+export type { PredictiveTable, PredictiveTableConflict } from './analysis/predictive-table.js';
+
+// A story: the whole analysis in one call (steps 6 and 13 to 21).
+export { parse } from './parse.js';
+export type { ParseOptions, ParseResult } from './parse.js';
+export { checkAlphabet, tokenizeSequence } from './input/sequence.js';
+export type { ParseError } from './earley/diagnostics.js';
+export type { Chart, EarleySet } from './earley/chart.js';
+export type { EarleyItem, Link } from './earley/item.js';
+export { dottedRule, label } from './earley/item.js';
+export type { TraceEvent, TraceOperation } from './earley/trace.js';
+export type { ParseTree, TreeCount } from './trees/tree.js';
+export type { DerivationStep } from './trees/derivation.js';
+export { renderDerivation } from './trees/derivation.js';
+export { renderTree } from './trees/render.js';
+
+// The catalog of genres.
+export { genres } from './genres/catalog.js';
+export type { Genre, TagInfo } from './genres/types.js';
+
+// The command-line infrastructure (reused by SPEC 04 to add its commands).
+export { createCommandLineProgram } from './command-line/run.js';
+export type { CommandLineProgramOptions } from './command-line/run.js';
+export { EXIT_CODES } from './command-line/types.js';
+export type { Command, CommandLineEnvironment } from './command-line/types.js';
+export { formatSet, formatTable } from './command-line/format.js';

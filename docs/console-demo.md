@@ -195,3 +195,12 @@ Paso 21. El árbol escrito como sucesión de reemplazos, desde el símbolo inici
 npm run sabueso -- derive --grammar g1 "CRI SOS PIS INT REV"
 npm run sabueso -- derive --grammar g0 --tree 2 "CRI SOS PIS INT REV"
 ```
+
+## El análisis completo
+
+Paso 22. El comando que usa la API pública: veredicto, diagnóstico, cantidad de árboles, los primeros árboles y la derivación del primero. Es lo que va a mostrar la pantalla principal de la web.
+
+```sh
+npm run sabueso -- parse --grammar g0 "CRI SOS PIS INT REV"
+npm run sabueso -- parse --grammar g1 "CTX PER PIS REV"
+```

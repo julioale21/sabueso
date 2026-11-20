@@ -14,6 +14,7 @@ import { itemsCommand } from './commands/items.js';
 import { lexCommand } from './commands/lex.js';
 import { minYieldCommand } from './commands/min-yield.js';
 import { nullableCommand } from './commands/nullable.js';
+import { parseCommand } from './commands/parse.js';
 import { predictiveTableCommand } from './commands/predictive-table.js';
 import { tokensCommand } from './commands/tokens.js';
 import { traceCommand } from './commands/trace.js';
@@ -43,6 +44,7 @@ export const runCommandLine = createCommandLineProgram({
     treesCommand,
     countCommand,
     deriveCommand,
+    parseCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),
