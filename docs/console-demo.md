@@ -156,3 +156,13 @@ Paso 17. Cada ítem que agrega Earley, numerado y en orden, con la operación y 
 npm run sabueso -- trace --grammar g1 "CRI PIS REV"
 npm run sabueso -- trace --grammar g0 "CRI SOS PIS INT REV"
 ```
+
+## Árboles ε
+
+Paso 18. Los subárboles de un símbolo que deriva ε, generados desde la gramática y contados. En G1, cada anulable tiene exactamente uno; el archivo de ejemplo tiene un símbolo con 4.
+
+```sh
+npm run sabueso -- epsilon-trees --grammar g1 CuerpoLinea
+npm run sabueso -- epsilon-trees --grammar g1
+npm run sabueso -- epsilon-trees --grammar-file examples/grammars/epsilon-choices.grammar S
+```

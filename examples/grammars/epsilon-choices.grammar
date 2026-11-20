@@ -1,0 +1,8 @@
+# A symbol that derives ε in more than one way, to see several ε-trees:
+#   A -> ε directly, or A -> B -> ε: 2 ε-trees for A.
+#   S -> A A: 2 × 2 = 4 ε-trees for S.
+# In G1 every nullable symbol has exactly 1 ε-tree; here they multiply.
+# Try it with: npm run sabueso -- epsilon-trees --grammar-file examples/grammars/epsilon-choices.grammar S
+S -> A A | 'x'
+A -> ε | B
+B -> ε | 'b'

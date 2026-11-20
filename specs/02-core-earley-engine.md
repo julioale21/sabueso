@@ -998,6 +998,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `trees/epsilon.ts`: genera y cuenta los árboles ε de un símbolo anulable.
     - Prueba: en G1, todo anulable tiene exactamente 1 árbol ε.
     - **Consola:** `npm run sabueso -- epsilon-trees --grammar g1 CuerpoLinea` imprime la cantidad de árboles ε y los árboles en ASCII.
+    - **Decisiones (2026-11-20):**
+      - Se adelantan dos archivos del paso 19, porque este paso ya los necesita: `trees/tree.ts` (el tipo `ParseTree`, `TreeCount` y la aritmética `addCounts`/`multiplyCounts`, donde `'infinite'` absorbe salvo frente a 0) y `trees/render.ts` (`renderTree`, el dibujo con `├─` y `└─`).
+      - `countEpsilonTrees(grammar, nullable, symbol)` cuenta con memoización y detecta ciclos con el conjunto de símbolos "en curso" (`'infinite'`). `epsilonTrees(grammar, nullable, symbol)` genera los árboles saltando las producciones que repetirían un símbolo del camino: con un ciclo, lista solo los árboles sin símbolos repetidos.
+      - Sin símbolo, el comando lista la cuenta de cada anulable. Ejemplo nuevo `examples/grammars/epsilon-choices.grammar` (un símbolo con 4 árboles ε).
 
 19. **Enumeración y render de árboles.**
     - `trees/tree.ts`, `trees/enumerate.ts` (`function*` con límite) y `trees/render.ts` (árbol ASCII con `├─` y `└─`).
