@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Autómata de pila de G1</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
+    />
+    <style>
+      /* Layout: controls on top, then automaton + tape + choices beside the stack, then derivation and the full ID table. */
+      :root {
+        --bg: #f7f7fb;
+        --surface: #ffffff;
+        --fg: #1d1c2b;
+        --muted: #5d5b73;
+        --line: #dddbe9;
+        --expand: #5b55c9;
+        --expand-soft: #ecebfb;
+        --match: #2f6f58;
+        --match-soft: #e3f2ec;
+        --accept: #a35a00;
+        --accept-soft: #fbefdc;
+        --focus: #5b55c9;
+        --display: 'Space Grotesk', system-ui, sans-serif;
+        --body: 'IBM Plex Sans', system-ui, sans-serif;
+        --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #14131c;
+          --surface: #1d1c28;
+          --fg: #ecebf5;
+          --muted: #a6a3bd;
+          --line: #34324a;
+          --expand: #a29cf2;
+          --expand-soft: #2a2750;
+          --match: #7fd0ae;
+          --match-soft: #1d3a30;
+          --accept: #f0b363;
+          --accept-soft: #3d2e17;
+          --focus: #a29cf2;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #14131c;
+        --surface: #1d1c28;
+        --fg: #ecebf5;
+        --muted: #a6a3bd;
+        --line: #34324a;
+        --expand: #a29cf2;
+        --expand-soft: #2a2750;
+        --match: #7fd0ae;
+        --match-soft: #1d3a30;
+        --accept: #f0b363;
+        --accept-soft: #3d2e17;
+        --focus: #a29cf2;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.5;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 24px 48px;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        gap: 20px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-size: clamp(24px, 4vw, 34px);
+        margin: 0;
+        text-wrap: balance;
+      }
+      h2 {
+        font-family: var(--display);
+        font-size: 17px;
+        margin: 0 0 10px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 6px 0 0;
+        max-width: 72ch;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.92em;
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        min-width: 0;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      button,
+      select {
+        font: inherit;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--fg);
+        border-radius: 8px;
+        padding: 7px 14px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--expand);
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      button.primary {
+        background: var(--expand);
+        border-color: var(--expand);
+        color: var(--surface);
+        font-weight: 600;
+      }
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+      .counter {
+        font-family: var(--mono);
+        color: var(--muted);
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+        gap: 20px;
+      }
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .left {
+        display: grid;
+        gap: 20px;
+        min-width: 0;
+      }
+      .step-title {
+        font-family: var(--display);
+        font-size: 18px;
+        margin: 0;
+      }
+      .badge {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-right: 8px;
+        vertical-align: 2px;
+      }
+      .b-expand {
+        background: var(--expand-soft);
+        color: var(--expand);
+      }
+      .b-match {
+        background: var(--match-soft);
+        color: var(--match);
+      }
+      .b-start {
+        background: var(--line);
+        color: var(--muted);
+      }
+      .b-accept {
+        background: var(--accept-soft);
+        color: var(--accept);
+      }
+      .explain {
+        margin: 8px 0 0;
+        color: var(--fg);
+      }
+      .tape {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .cell {
+        font-family: var(--mono);
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        min-width: 52px;
+        text-align: center;
+      }
+      .cell.read {
+        color: var(--muted);
+        text-decoration: line-through;
+        opacity: 0.6;
+      }
+      .cell.head {
+        border-color: var(--match);
+        background: var(--match-soft);
+        font-weight: 600;
+      }
+      .cell.end {
+        color: var(--muted);
+      }
+      .choices {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 6px;
+      }
+      .choices li {
+        font-family: var(--mono);
+        font-size: 13.5px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        overflow-wrap: anywhere;
+      }
+      .choices li.chosen {
+        border-color: var(--expand);
+        background: var(--expand-soft);
+      }
+      .choices li.chosen::after {
+        content: '  ← elegida';
+        color: var(--expand);
+        font-weight: 600;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 8px 0 0;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-height: 60px;
+      }
+      .slot {
+        font-family: var(--mono);
+        padding: 7px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        overflow-wrap: anywhere;
+      }
+      .slot.nt {
+        color: var(--expand);
+      }
+      .slot.t {
+        color: var(--match);
+      }
+      .slot.top {
+        border-width: 2px;
+      }
+      .slot.new {
+        background: var(--expand-soft);
+      }
+      .stack-empty {
+        font-family: var(--mono);
+        color: var(--accept);
+        padding: 8px 0;
+      }
+      .label {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      svg text {
+        font-family: var(--body);
+      }
+      .loop {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 2.5;
+      }
+      .loop.on-expand {
+        stroke: var(--expand);
+        stroke-width: 3.5;
+      }
+      .loop.on-match {
+        stroke: var(--match);
+        stroke-width: 3.5;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13.5px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      td {
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+      }
+      tr.row {
+        cursor: pointer;
+      }
+      tr.row:hover td {
+        background: var(--bg);
+      }
+      tr.current td {
+        background: var(--expand-soft);
+      }
+      tr.future td {
+        color: var(--muted);
+        opacity: 0.55;
+      }
+      .forms {
+        margin: 0;
+        padding-left: 22px;
+        font-family: var(--mono);
+        font-size: 13.5px;
+        display: grid;
+        gap: 3px;
+      }
+      .forms li.current {
+        font-weight: 600;
+      }
+      .forms .done {
+        color: var(--match);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .slot,
+        .cell,
+        .loop {
+          transition:
+            background 0.2s,
+            border-color 0.2s,
+            stroke 0.2s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Autómata de pila de G1, paso a paso</h1>
+        <p class="lead">
+          Construcción GLC → AP (Hopcroft 6.3.1): un solo estado <code>q</code>, la pila empieza con
+          <code>Relato</code> y acepta cuando la pila queda vacía después de leer todo el relato.
+          Cada paso es una descripción instantánea: entrada que falta, contenido de la pila y la
+          transición que se usó.
+        </p>
+      </header>
+
+      <div class="panel controls" role="group" aria-label="Controles">
+        <label for="run" class="label" style="margin: 0">Relato</label>
+        <select id="run"></select>
+        <button id="reset" type="button">Inicio</button>
+        <button id="prev" type="button">← Anterior</button>
+        <button id="next" type="button" class="primary">Siguiente →</button>
+        <button id="play" type="button">Reproducir</button>
+        <span class="counter" id="counter"></span>
+      </div>
+
+      <div class="grid">
+        <div class="left">
+          <section class="panel" aria-live="polite">
+            <p class="step-title" id="stepTitle"></p>
+            <p class="explain" id="explain"></p>
+          </section>
+
+          <section class="panel">
+            <h2>El autómata</h2>
+            <svg
+              viewBox="0 0 520 210"
+              width="100%"
+              role="img"
+              aria-label="Un estado q con dos lazos: expandir arriba y emparejar abajo"
+            >
+              <defs>
+                <marker
+                  id="ar"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M0,1 L9,5 L0,9" fill="none" stroke="currentColor" stroke-width="1.6" />
+                </marker>
+              </defs>
+              <g style="color: var(--muted)">
+                <path
+                  d="M40,105 L120,105"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  marker-end="url(#ar)"
+                />
+                <text x="40" y="94" font-size="13" fill="var(--muted)">inicio</text>
+              </g>
+              <path
+                id="loopExpand"
+                class="loop"
+                d="M140,80 C100,0 210,0 170,80"
+                marker-end="url(#ar)"
+                style="color: var(--expand)"
+              />
+              <path
+                id="loopMatch"
+                class="loop"
+                d="M170,130 C210,210 100,210 140,130"
+                marker-end="url(#ar)"
+                style="color: var(--match)"
+              />
+              <circle
+                cx="155"
+                cy="105"
+                r="30"
+                fill="var(--expand-soft)"
+                stroke="var(--expand)"
+                stroke-width="2"
+              />
+              <text
+                x="155"
+                y="113"
+                text-anchor="middle"
+                font-size="22"
+                font-weight="700"
+                fill="var(--expand)"
+              >
+                q
+              </text>
+              <text x="215" y="34" font-size="14" font-weight="600" fill="var(--expand)">
+                ε, A / β — expandir
+              </text>
+              <text x="215" y="54" font-size="12.5" fill="var(--muted)">
+                tope = no terminal A: lo reemplaza por el
+              </text>
+              <text x="215" y="70" font-size="12.5" fill="var(--muted)">
+                lado derecho de una A → β (40 en G1)
+              </text>
+              <text x="215" y="160" font-size="14" font-weight="600" fill="var(--match)">
+                a, a / ε — emparejar
+              </text>
+              <text x="215" y="180" font-size="12.5" fill="var(--muted)">
+                tope = terminal a igual a la entrada:
+              </text>
+              <text x="215" y="196" font-size="12.5" fill="var(--muted)">
+                lo saca y avanza (14 en G1)
+              </text>
+            </svg>
+          </section>
+
+          <section class="panel">
+            <h2>Entrada</h2>
+            <div class="tape" id="tape"></div>
+            <p class="note">Tachado: ya leído. Resaltado: el próximo evento.</p>
+          </section>
+
+          <section class="panel">
+            <h2 id="choicesTitle">Transiciones posibles</h2>
+            <ul class="choices" id="choices"></ul>
+            <p class="note" id="choicesNote"></p>
+          </section>
+        </div>
+
+        <section class="panel">
+          <h2>Pila</h2>
+          <p class="label">tope ↓</p>
+          <div class="stack" id="stack"></div>
+          <p class="note">
+            Violeta: no terminal (se expande). Verde: terminal (se empareja). La pila es lo que
+            falta derivar.
+          </p>
+        </section>
+      </div>
+
+      <section class="panel">
+        <h2>Derivación más a la izquierda</h2>
+        <p class="note" style="margin: 0 0 10px">
+          Lo ya leído + la pila es siempre una forma sentencial. Cada expansión agrega un paso ⇒ de
+          la derivación; los emparejamientos no cambian la forma.
+        </p>
+        <ol class="forms" id="forms" start="0"></ol>
+      </section>
+
+      <section class="panel">
+        <h2>Todas las descripciones instantáneas</h2>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Paso</th>
+                <th>Entrada que falta</th>
+                <th>Pila (tope a la izquierda)</th>
+                <th>Transición</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <p class="note">Clic en una fila para ir a ese paso. Teclado: ← y →.</p>
+      </section>
+    </div>
+
+    <script>
+      const DATA = {
+        productions: [
+          { id: 0, left: 'Relato', right: ['Planteo', 'Investigacion', 'Desenlace'] },
+          { id: 1, left: 'Planteo', right: ['Hecho', 'MarcoOpc'] },
+          { id: 2, left: 'Planteo', right: ['Marco', 'Hecho'] },
+          { id: 3, left: 'MarcoOpc', right: ['Marco'] },
+          { id: 4, left: 'MarcoOpc', right: [] },
+          { id: 5, left: 'Marco', right: ['CTX', 'PerOpc'] },
+          { id: 6, left: 'Marco', right: ['PER', 'CtxOpc'] },
+          { id: 7, left: 'PerOpc', right: ['PER'] },
+          { id: 8, left: 'PerOpc', right: [] },
+          { id: 9, left: 'CtxOpc', right: ['CTX'] },
+          { id: 10, left: 'CtxOpc', right: [] },
+          { id: 11, left: 'Hecho', right: ['CRI', 'HallazgoOpc'] },
+          { id: 12, left: 'Hecho', right: ['HAL'] },
+          { id: 13, left: 'HallazgoOpc', right: ['HAL'] },
+          { id: 14, left: 'HallazgoOpc', right: [] },
+          { id: 15, left: 'Investigacion', right: ['Pasos'] },
+          { id: 16, left: 'Investigacion', right: ['ENC', 'Pasos'] },
+          { id: 17, left: 'Pasos', right: ['Evidencia', 'Libres', 'Lineas'] },
+          { id: 18, left: 'Pasos', right: ['Linea', 'Lineas'] },
+          { id: 19, left: 'Libres', right: ['Evidencia', 'Libres'] },
+          { id: 20, left: 'Libres', right: [] },
+          { id: 21, left: 'Lineas', right: ['Linea', 'Lineas'] },
+          { id: 22, left: 'Lineas', right: [] },
+          { id: 23, left: 'Linea', right: ['SOS', 'CuerpoLinea'] },
+          { id: 24, left: 'CuerpoLinea', right: ['Evidencia', 'CuerpoLinea'] },
+          { id: 25, left: 'CuerpoLinea', right: ['Descarte'] },
+          { id: 26, left: 'CuerpoLinea', right: [] },
+          { id: 27, left: 'Descarte', right: ['DSC', 'Libres'] },
+          { id: 28, left: 'Evidencia', right: ['PIS'] },
+          { id: 29, left: 'Evidencia', right: ['INT'] },
+          { id: 30, left: 'Evidencia', right: ['ATQ'] },
+          { id: 31, left: 'Desenlace', right: ['Resolucion', 'EpiOpc'] },
+          { id: 32, left: 'EpiOpc', right: ['EPI'] },
+          { id: 33, left: 'EpiOpc', right: [] },
+          { id: 34, left: 'Resolucion', right: ['REV', 'Cierre'] },
+          { id: 35, left: 'Cierre', right: ['CNF', 'CapOpc'] },
+          { id: 36, left: 'Cierre', right: ['CAP'] },
+          { id: 37, left: 'Cierre', right: [] },
+          { id: 38, left: 'CapOpc', right: ['CAP'] },
+          { id: 39, left: 'CapOpc', right: [] },
+        ],
+        runs: {
+          M1: {
+            label: 'CRI PIS REV (relato mínimo, M1)',
+            input: ['CRI', 'PIS', 'REV'],
+            steps: [
+              { pos: 0, stack: ['Relato'], via: null },
+              {
+                pos: 0,
+                stack: ['Planteo', 'Investigacion', 'Desenlace'],
+                via: {
+                  kind: 'expand',
+                  id: 0,
+                  left: 'Relato',
+                  right: ['Planteo', 'Investigacion', 'Desenlace'],
+                },
+              },
+              {
+                pos: 0,
+                stack: ['Hecho', 'MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 1, left: 'Planteo', right: ['Hecho', 'MarcoOpc'] },
+              },
+              {
+                pos: 0,
+                stack: ['CRI', 'HallazgoOpc', 'MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 11, left: 'Hecho', right: ['CRI', 'HallazgoOpc'] },
+              },
+              {
+                pos: 1,
+                stack: ['HallazgoOpc', 'MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'match', terminal: 'CRI' },
+              },
+              {
+                pos: 1,
+                stack: ['MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 14, left: 'HallazgoOpc', right: [] },
+              },
+              {
+                pos: 1,
+                stack: ['Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 4, left: 'MarcoOpc', right: [] },
+              },
+              {
+                pos: 1,
+                stack: ['Pasos', 'Desenlace'],
+                via: { kind: 'expand', id: 15, left: 'Investigacion', right: ['Pasos'] },
+              },
+              {
+                pos: 1,
+                stack: ['Evidencia', 'Libres', 'Lineas', 'Desenlace'],
+                via: {
+                  kind: 'expand',
+                  id: 17,
+                  left: 'Pasos',
+                  right: ['Evidencia', 'Libres', 'Lineas'],
+                },
+              },
+              {
+                pos: 1,
+                stack: ['PIS', 'Libres', 'Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 28, left: 'Evidencia', right: ['PIS'] },
+              },
+              {
+                pos: 2,
+                stack: ['Libres', 'Lineas', 'Desenlace'],
+                via: { kind: 'match', terminal: 'PIS' },
+              },
+              {
+                pos: 2,
+                stack: ['Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 20, left: 'Libres', right: [] },
+              },
+              {
+                pos: 2,
+                stack: ['Desenlace'],
+                via: { kind: 'expand', id: 22, left: 'Lineas', right: [] },
+              },
+              {
+                pos: 2,
+                stack: ['Resolucion', 'EpiOpc'],
+                via: { kind: 'expand', id: 31, left: 'Desenlace', right: ['Resolucion', 'EpiOpc'] },
+              },
+              {
+                pos: 2,
+                stack: ['REV', 'Cierre', 'EpiOpc'],
+                via: { kind: 'expand', id: 34, left: 'Resolucion', right: ['REV', 'Cierre'] },
+              },
+              { pos: 3, stack: ['Cierre', 'EpiOpc'], via: { kind: 'match', terminal: 'REV' } },
+              {
+                pos: 3,
+                stack: ['EpiOpc'],
+                via: { kind: 'expand', id: 37, left: 'Cierre', right: [] },
+              },
+              { pos: 3, stack: [], via: { kind: 'expand', id: 33, left: 'EpiOpc', right: [] } },
+            ],
+          },
+          A1: {
+            label: 'CRI SOS PIS INT REV (caso A1)',
+            input: ['CRI', 'SOS', 'PIS', 'INT', 'REV'],
+            steps: [
+              { pos: 0, stack: ['Relato'], via: null },
+              {
+                pos: 0,
+                stack: ['Planteo', 'Investigacion', 'Desenlace'],
+                via: {
+                  kind: 'expand',
+                  id: 0,
+                  left: 'Relato',
+                  right: ['Planteo', 'Investigacion', 'Desenlace'],
+                },
+              },
+              {
+                pos: 0,
+                stack: ['Hecho', 'MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 1, left: 'Planteo', right: ['Hecho', 'MarcoOpc'] },
+              },
+              {
+                pos: 0,
+                stack: ['CRI', 'HallazgoOpc', 'MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 11, left: 'Hecho', right: ['CRI', 'HallazgoOpc'] },
+              },
+              {
+                pos: 1,
+                stack: ['HallazgoOpc', 'MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'match', terminal: 'CRI' },
+              },
+              {
+                pos: 1,
+                stack: ['MarcoOpc', 'Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 14, left: 'HallazgoOpc', right: [] },
+              },
+              {
+                pos: 1,
+                stack: ['Investigacion', 'Desenlace'],
+                via: { kind: 'expand', id: 4, left: 'MarcoOpc', right: [] },
+              },
+              {
+                pos: 1,
+                stack: ['Pasos', 'Desenlace'],
+                via: { kind: 'expand', id: 15, left: 'Investigacion', right: ['Pasos'] },
+              },
+              {
+                pos: 1,
+                stack: ['Linea', 'Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 18, left: 'Pasos', right: ['Linea', 'Lineas'] },
+              },
+              {
+                pos: 1,
+                stack: ['SOS', 'CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 23, left: 'Linea', right: ['SOS', 'CuerpoLinea'] },
+              },
+              {
+                pos: 2,
+                stack: ['CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: { kind: 'match', terminal: 'SOS' },
+              },
+              {
+                pos: 2,
+                stack: ['Evidencia', 'CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: {
+                  kind: 'expand',
+                  id: 24,
+                  left: 'CuerpoLinea',
+                  right: ['Evidencia', 'CuerpoLinea'],
+                },
+              },
+              {
+                pos: 2,
+                stack: ['PIS', 'CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 28, left: 'Evidencia', right: ['PIS'] },
+              },
+              {
+                pos: 3,
+                stack: ['CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: { kind: 'match', terminal: 'PIS' },
+              },
+              {
+                pos: 3,
+                stack: ['Evidencia', 'CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: {
+                  kind: 'expand',
+                  id: 24,
+                  left: 'CuerpoLinea',
+                  right: ['Evidencia', 'CuerpoLinea'],
+                },
+              },
+              {
+                pos: 3,
+                stack: ['INT', 'CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 29, left: 'Evidencia', right: ['INT'] },
+              },
+              {
+                pos: 4,
+                stack: ['CuerpoLinea', 'Lineas', 'Desenlace'],
+                via: { kind: 'match', terminal: 'INT' },
+              },
+              {
+                pos: 4,
+                stack: ['Lineas', 'Desenlace'],
+                via: { kind: 'expand', id: 26, left: 'CuerpoLinea', right: [] },
+              },
+              {
+                pos: 4,
+                stack: ['Desenlace'],
+                via: { kind: 'expand', id: 22, left: 'Lineas', right: [] },
+              },
+              {
+                pos: 4,
+                stack: ['Resolucion', 'EpiOpc'],
+                via: { kind: 'expand', id: 31, left: 'Desenlace', right: ['Resolucion', 'EpiOpc'] },
+              },
+              {
+                pos: 4,
+                stack: ['REV', 'Cierre', 'EpiOpc'],
+                via: { kind: 'expand', id: 34, left: 'Resolucion', right: ['REV', 'Cierre'] },
+              },
+              { pos: 5, stack: ['Cierre', 'EpiOpc'], via: { kind: 'match', terminal: 'REV' } },
+              {
+                pos: 5,
+                stack: ['EpiOpc'],
+                via: { kind: 'expand', id: 37, left: 'Cierre', right: [] },
+              },
+              { pos: 5, stack: [], via: { kind: 'expand', id: 33, left: 'EpiOpc', right: [] } },
+            ],
+          },
+        },
+      };
+      const productions = DATA.productions;
+      const nonterminals = new Set(productions.map((p) => p.left));
+      const byLeft = {};
+      for (const p of productions) (byLeft[p.left] ||= []).push(p);
+      const rhs = (p) => (p.right.length ? p.right.join(' ') : 'ε');
+      const fmt = (list) => (list.length ? list.join(' ') : 'ε');
+
+      const $ = (id) => document.getElementById(id);
+      let runKey = 'M1',
+        index = 0,
+        timer = null;
+
+      const sel = $('run');
+      for (const [key, run] of Object.entries(DATA.runs)) {
+        const o = document.createElement('option');
+        o.value = key;
+        o.textContent = run.label;
+        sel.appendChild(o);
+      }
+      sel.addEventListener('change', () => {
+        runKey = sel.value;
+        index = 0;
+        stop();
+        renderTable();
+        render();
+      });
+
+      function run() {
+        return DATA.runs[runKey];
+      }
+      function viaText(v) {
+        if (!v) return '— (configuración inicial)';
+        return v.kind === 'expand'
+          ? `expandir (${v.id}) ${v.left} → ${v.right.length ? v.right.join(' ') : 'ε'}`
+          : `emparejar ${v.terminal}`;
+      }
+
+      function sententialForms() {
+        // One form per expansion: consumed input + stack after it.
+        const r = run(),
+          forms = [];
+        r.steps.forEach((s, i) => {
+          if (i === 0 || s.via.kind === 'expand')
+            forms.push({ step: i, read: r.input.slice(0, s.pos), stack: s.stack, via: s.via });
+        });
+        return forms;
+      }
+
+      function render() {
+        const r = run(),
+          s = r.steps[index],
+          last = r.steps.length - 1;
+        const v = s.via,
+          accepted = index === last;
+        $('counter').textContent = `paso ${index} de ${last}`;
+        $('prev').disabled = $('reset').disabled = index === 0;
+        $('next').disabled = index === last;
+
+        // Step title and explanation
+        let badge, text;
+        if (!v) {
+          badge = '<span class="badge b-start">inicio</span>';
+          text = `La pila tiene solo el símbolo inicial, <code>Relato</code>, y falta leer todo el relato. Todavía no se usó ninguna transición.`;
+        } else if (v.kind === 'expand') {
+          badge = '<span class="badge b-expand">expandir</span>';
+          text = `El tope era el no terminal <code>${v.left}</code>. Se usó la transición ε, ${v.left} / ${v.right.length ? v.right.join(' ') : 'ε'} de la producción (${v.id}): se saca <code>${v.left}</code> y se apila <code>${v.right.length ? v.right.join(' ') : 'nada (producción ε)'}</code>. No se lee entrada.`;
+        } else {
+          badge = '<span class="badge b-match">emparejar</span>';
+          text = `El tope era el terminal <code>${v.terminal}</code> y el próximo evento también era <code>${v.terminal}</code>: se saca de la pila y se avanza en la entrada.`;
+        }
+        if (accepted)
+          text += ` <strong>Pila vacía y entrada leída: el autómata acepta.</strong> El relato pertenece a L(G1).`;
+        $('stepTitle').innerHTML =
+          `${badge}${accepted ? '<span class="badge b-accept">acepta</span>' : ''}Paso ${index}: ${viaText(v)}`;
+        $('explain').innerHTML = text;
+
+        // Graph highlight
+        $('loopExpand').classList.toggle('on-expand', !!v && v.kind === 'expand');
+        $('loopMatch').classList.toggle('on-match', !!v && v.kind === 'match');
+
+        // Tape
+        const tape = $('tape');
+        tape.innerHTML = '';
+        r.input.forEach((t, i) => {
+          const c = document.createElement('span');
+          c.className = 'cell' + (i < s.pos ? ' read' : '') + (i === s.pos ? ' head' : '');
+          c.textContent = t;
+          tape.appendChild(c);
+        });
+        const end = document.createElement('span');
+        end.className = 'cell end' + (s.pos === r.input.length ? ' head' : '');
+        end.textContent = 'fin';
+        tape.appendChild(end);
+
+        // Stack
+        const stack = $('stack');
+        stack.innerHTML = '';
+        const pushed = v && v.kind === 'expand' ? v.right.length : 0;
+        if (!s.stack.length) {
+          const e = document.createElement('div');
+          e.className = 'stack-empty';
+          e.textContent = 'pila vacía';
+          stack.appendChild(e);
+        }
+        s.stack.forEach((sym, i) => {
+          const d = document.createElement('div');
+          d.className =
+            'slot ' +
+            (nonterminals.has(sym) ? 'nt' : 't') +
+            (i === 0 ? ' top' : '') +
+            (i < pushed ? ' new' : '');
+          d.textContent = sym;
+          stack.appendChild(d);
+        });
+
+        // Possible transitions from the current configuration (the non-determinism)
+        const top = s.stack[0],
+          nextVia = r.steps[index + 1]?.via;
+        const ul = $('choices');
+        ul.innerHTML = '';
+        if (top === undefined) {
+          $('choicesTitle').textContent = 'Transiciones posibles';
+          ul.innerHTML = '<li>ninguna: la pila está vacía</li>';
+          $('choicesNote').textContent =
+            'Aceptación por pila vacía: no hacen falta estados finales.';
+        } else if (nonterminals.has(top)) {
+          $('choicesTitle').textContent = `Transiciones posibles con tope ${top}`;
+          for (const p of byLeft[top]) {
+            const li = document.createElement('li');
+            li.textContent = `ε, ${top} / ${rhs(p)}   (${p.id})`;
+            if (nextVia && nextVia.kind === 'expand' && nextVia.id === p.id)
+              li.className = 'chosen';
+            ul.appendChild(li);
+          }
+          $('choicesNote').textContent =
+            byLeft[top].length > 1
+              ? `No determinismo: ${byLeft[top].length} transiciones posibles. El camino de aceptación usa la marcada; las otras ramas no llegan a pila vacía. Como G1 es LL(1), el próximo evento (${r.input[s.pos] ?? 'fin'}) alcanza para elegir.`
+              : 'Una sola producción: no hay nada que elegir.';
+        } else {
+          $('choicesTitle').textContent = `Transiciones posibles con tope ${top}`;
+          const li = document.createElement('li');
+          li.textContent = `${top}, ${top} / ε`;
+          li.className = 'chosen';
+          ul.appendChild(li);
+          $('choicesNote').textContent =
+            `El tope es un terminal: solo se puede emparejar, y solo si el próximo evento es ${top}.`;
+        }
+
+        // Derivation
+        const forms = sententialForms(),
+          ol = $('forms');
+        ol.innerHTML = '';
+        forms.forEach((f, i) => {
+          const li = document.createElement('li');
+          const isCurrent =
+            f.step <= index && (forms[i + 1] === undefined || forms[i + 1].step > index);
+          if (f.step > index) return;
+          if (isCurrent) li.className = 'current';
+          const formText = [...f.read, ...f.stack];
+          li.innerHTML =
+            (i === 0 ? '' : '⇒ ') +
+            (formText.length
+              ? formText
+                  .map((x) => (nonterminals.has(x) ? x : `<span class="done">${x}</span>`))
+                  .join(' ')
+              : 'ε') +
+            (f.via ? `  <span style="color:var(--muted)">(${f.via.id})</span>` : '');
+          ol.appendChild(li);
+        });
+
+        // Table
+        document.querySelectorAll('#rows tr').forEach((tr, i) => {
+          tr.classList.toggle('current', i === index);
+          tr.classList.toggle('future', i > index);
+        });
+        const cur = document.querySelector('#rows tr.current');
+        if (cur && timer) cur.scrollIntoView({ block: 'nearest' });
+      }
+
+      function renderTable() {
+        const r = run(),
+          tb = $('rows');
+        tb.innerHTML = '';
+        r.steps.forEach((s, i) => {
+          const tr = document.createElement('tr');
+          tr.className = 'row';
+          tr.tabIndex = 0;
+          tr.innerHTML = `<td>${i}</td><td>${fmt(r.input.slice(s.pos))}</td><td>${fmt(s.stack)}</td><td>${viaText(s.via)}${i === r.steps.length - 1 ? ' — acepta' : ''}</td>`;
+          tr.addEventListener('click', () => {
+            stop();
+            index = i;
+            render();
+          });
+          tr.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              stop();
+              index = i;
+              render();
+            }
+          });
+          tb.appendChild(tr);
+        });
+      }
+
+      function go(d) {
+        const last = run().steps.length - 1;
+        index = Math.max(0, Math.min(last, index + d));
+        render();
+      }
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+        $('play').textContent = 'Reproducir';
+      }
+      $('next').onclick = () => {
+        stop();
+        go(1);
+      };
+      $('prev').onclick = () => {
+        stop();
+        go(-1);
+      };
+      $('reset').onclick = () => {
+        stop();
+        index = 0;
+        render();
+      };
+      $('play').onclick = () => {
+        if (timer) return stop();
+        if (index === run().steps.length - 1) index = 0;
+        $('play').textContent = 'Pausa';
+        timer = setInterval(() => {
+          if (index >= run().steps.length - 1) return stop();
+          go(1);
+        }, 1100);
+      };
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'SELECT') return;
+        if (e.key === 'ArrowRight') {
+          stop();
+          go(1);
+        }
+        if (e.key === 'ArrowLeft') {
+          stop();
+          go(-1);
+        }
+      });
+
+      renderTable();
+      render();
+    </script>
+  </body>
+</html>

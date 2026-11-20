@@ -992,6 +992,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `pushdown-automaton/build.ts` y `pushdown-automaton/simulate.ts`.
     - Pruebas: P1 y la correspondencia entre el camino de aceptación y la derivación de A1 con G1. Ficha 24.
     - **Consola:** `npm run sabueso -- pushdown-automaton --grammar g1 "CRI SOS PIS INT REV"` imprime las transiciones (con `--transitions`), el resultado, la cantidad de configuraciones exploradas y el camino de aceptación como tabla de descripciones instantáneas (posición, entrada restante, pila).
+    - **Adelanto (2026-11-20):** la ficha 24 se escribió en borrador antes del código, con el grafo (`docs/guides/images/24-pushdown-automaton.svg`), la corrida de `CRI PIS REV` con G1 como tabla de descripciones instantáneas y una página interactiva paso a paso (`docs/interactive/pushdown-automaton-g1.html`, también con A1). En este paso, la prueba del comando debe reproducir esa misma tabla.
 
 27. **Búsquedas acotadas.**
     - `bounded/generate.ts`, `bounded/ambiguity.ts` y `bounded/compare.ts`.

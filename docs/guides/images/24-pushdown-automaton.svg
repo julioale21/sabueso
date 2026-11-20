@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 520" width="820" height="520" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9" fill="none" stroke="#777" stroke-width="1.4"/></marker></defs>
+<style>.edge{fill:none;stroke:#888;stroke-width:1.8;marker-end:url(#arrow)}</style>
+<rect width="820" height="520" fill="#ffffff"/>
+<text x="30" y="40" font-size="22" fill="#222" font-weight="bold">Autómata de pila de G1 (construcción GLC → AP)</text>
+<text x="30" y="66" font-size="15" fill="#555">Un solo estado q. Etiqueta de cada transición: entrada, tope de la pila / lo que se apila.</text>
+
+<!-- start arrow -->
+<path d="M150,290 L330,290" class="edge"/>
+<text x="150" y="276" font-size="16" fill="#333">inicio</text>
+<text x="150" y="314" font-size="15" fill="#555">pila inicial: Relato</text>
+
+<!-- state q -->
+<circle cx="380" cy="290" r="46" fill="#ecebfb" stroke="#5b55c9" stroke-width="2.4"/>
+<text x="380" y="300" text-anchor="middle" font-size="30" fill="#2f2a7a" font-weight="bold">q</text>
+
+<!-- top loop: expand -->
+<path d="M352,254 C300,140 460,140 408,254" class="edge"/>
+<rect x="470" y="112" width="320" height="104" rx="8" fill="#ecebfb" stroke="#5b55c9" stroke-width="1.2"/>
+<text x="484" y="138" font-size="18" fill="#2f2a7a" font-weight="bold">ε, A / β   (expandir)</text>
+<text x="484" y="162" font-size="14" fill="#333">una por producción A → β: 40 en G1</text>
+<text x="484" y="184" font-size="14" fill="#333">ej.: ε, Hecho / CRI HallazgoOpc</text>
+<text x="484" y="204" font-size="14" fill="#333">ej.: ε, MarcoOpc / ε  (producción ε)</text>
+<path d="M468,160 L432,182" fill="none" stroke="#aaa" stroke-width="1.2" stroke-dasharray="4 3"/>
+
+<!-- bottom loop: match -->
+<path d="M408,326 C460,440 300,440 352,326" class="edge"/>
+<rect x="470" y="368" width="320" height="84" rx="8" fill="#e6f4ef" stroke="#2f6f58" stroke-width="1.2"/>
+<text x="484" y="394" font-size="18" fill="#1d4a3a" font-weight="bold">a, a / ε   (emparejar)</text>
+<text x="484" y="418" font-size="14" fill="#333">una por terminal: 14 en G1</text>
+<text x="484" y="440" font-size="14" fill="#333">ej.: CRI, CRI / ε</text>
+<path d="M468,400 L432,392" fill="none" stroke="#aaa" stroke-width="1.2" stroke-dasharray="4 3"/>
+
+<!-- acceptance -->
+<text x="30" y="488" font-size="15" fill="#555">Acepta por pila vacía: cuando la pila queda vacía y se leyó toda la entrada. No tiene estados finales.</text>
+</svg>
