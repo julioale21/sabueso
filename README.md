@@ -4,6 +4,20 @@ Sabueso decide si un relato respeta la estructura del **policial de enigma**, us
 
 Laboratorio Integrador Final de **Fundamentos Teóricos de Informática**.
 
+## Estado actual
+
+Hechos los pasos 1 a 5 del SPEC 02. El núcleo lee gramáticas en formato `.grammar` (lexer AFD y parser LL(1)) y trae las gramáticas del policial: G0 (ambigua) y G1 (la oficial). El analizador de Earley llega en los pasos 13 a 17.
+
+Para probarlo:
+
+```sh
+npm run sabueso -- genres       # el policial de enigma y sus 14 etiquetas
+npm run sabueso -- grammars     # las 10 gramáticas con |N|, |Σ| y |P|
+npm run sabueso -- grammar g1   # G1 completa: G = (N, Σ, P, S)
+```
+
+El recorrido completo está en [`docs/console-demo.md`](docs/console-demo.md).
+
 ## Requisitos
 
 - Node.js 24 (la versión fijada en `.nvmrc`). La mínima soportada es 20.19.
@@ -12,19 +26,20 @@ Laboratorio Integrador Final de **Fundamentos Teóricos de Informática**.
 ## Primeros pasos
 
 ```sh
-nvm use          # Node 24, según .nvmrc
+nvm use          # Node 24, según .nvmrc (sin nvm: instala Node 24 a mano)
 npm install      # instala dependencias y activa los hooks de git
 ```
 
-`npm install` también ejecuta `git config core.hooksPath .githooks` (script `prepare`). Si clonaste o hiciste `git init` después de instalar, vuelve a correr `npm install` para activar los hooks.
+`npm install` también activa los hooks de git (script `prepare`: `git config core.hooksPath .githooks`). Si creaste el repositorio con `git init` después de instalar, vuelve a correr `npm install`.
 
 ## Estructura
 
-| Carpeta         | Paquete         | Qué contiene                                                                                                      |
-| --------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `packages/core` | `@sabueso/core` | El núcleo: gramáticas, motor de Earley y la CLI `sabueso`                                                         |
-| `apps/web`      | `@sabueso/web`  | La interfaz web (Vite + React)                                                                                    |
-| `docs/`         | —               | Fichas de conceptos (`docs/concepts/`), guías de estudio por paso (`docs/guides/`) y guion de la demo por consola |
+| Carpeta         | Paquete         | Qué contiene                                                                                                                              |
+| --------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core` | `@sabueso/core` | El núcleo: gramáticas (`packages/core/grammars/`), lector de `.grammar`, motor de Earley (en curso) y la CLI `sabueso`                    |
+| `apps/web`      | `@sabueso/web`  | La interfaz web (Vite + React)                                                                                                            |
+| `docs/`         | —               | Fichas de conceptos (`docs/concepts/`), guías de estudio por paso (`docs/guides/`) y [guion de la demo por consola](docs/console-demo.md) |
+| `specs/`        | —               | Los specs del proyecto, uno por etapa (ver abajo)                                                                                         |
 
 ## Comandos
 
@@ -47,25 +62,11 @@ npm install      # instala dependencias y activa los hooks de git
 
 El proyecto se implementa por specs, en este orden:
 
-| Spec                                                            | Contenido                                                                      | Estado   |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------- |
-| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Approved |
-| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Borrador |
-| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador |
-| [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador |
+| Spec                                                            | Contenido                                                                      | Estado                               |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------ |
+| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Aprobado, terminado                  |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Aprobado, en curso (pasos 1–5 de 30) |
+| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                             |
+| [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                             |
 
 La guía para la exposición está en [`presentation-guide.md`](presentation-guide.md).
-
-## Repositorio remoto
-
-Crear el repositorio remoto es un paso manual:
-
-1. Crear un repositorio vacío llamado `sabueso` en GitHub (sin README, `.gitignore` ni licencia).
-2. Conectarlo y subir la rama principal:
-
-   ```sh
-   git remote add origin git@github.com:<usuario>/sabueso.git
-   git push -u origin main
-   ```
-
-3. En la pestaña **Actions** del repositorio, el workflow **CI** debería quedar en verde.

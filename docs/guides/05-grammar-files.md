@@ -1,7 +1,7 @@
 # Guía de estudio: las gramáticas del proyecto (G0, G1 y las internas)
 
-> **Paso 5 del SPEC 02.** Archivos: `packages/core/grammars/` (10 archivos `.grammar`), `packages/core/src/genres/`, `packages/core/src/command-line/grammars.ts`, los comandos `genres` y `grammars`, `test/helpers/load.ts` y `test/fixtures/l1.txt`.
-> Fichas relacionadas: [`01-alphabet-and-language.md`](../concepts/01-alphabet-and-language.md), [`02-context-free-grammar.md`](../concepts/02-context-free-grammar.md). La ficha 21 (ambigüedad de G0 contra G1) se escribe en el paso 21.
+> **Paso 5 del SPEC 02.** Archivos: `packages/core/grammars/` (10 archivos `.grammar`), `packages/core/src/genres/`, `packages/core/src/command-line/grammars.ts`, `packages/core/src/command-line/program.ts`, los comandos `genres` y `grammars`, `test/helpers/load.ts` y `test/fixtures/l1.txt`.
+> Fichas relacionadas: [`01-alphabet-and-language.md`](../concepts/01-alphabet-and-language.md), [`02-context-free-grammar.md`](../concepts/02-context-free-grammar.md). La ficha 21 (ambigüedad de G0 contra G1) se escribe en borrador en el paso 19 y se completa en el paso 27.
 
 ---
 
@@ -23,20 +23,22 @@ Desde este paso, toda gramática es un **dato** (un archivo de texto), no códig
 
 ### 2.1 Las gramáticas (`packages/core/grammars/`)
 
-| Archivo                             | Nombre en la CLI       | Para qué está                                                                                 | Qué paso la usa                         |
-| ----------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `genres/detective/g1.grammar`       | `detective/g1`, `g1`   | **la oficial**: decide si un relato es un policial de enigma. No ambigua y LL(1)              | Earley (11–17), árboles (18–20)         |
-| `genres/detective/g0.grammar`       | `detective/g0`, `g0`   | **la del anteproyecto**, sin cambios. Natural pero ambigua: sirve para estudiar la ambigüedad | comparación G0/G1 (21), conteo (19)     |
-| `meta.grammar`                      | `meta`                 | la gramática del **formato `.grammar`**. Documenta el parser del paso 4                       | certificación LL(1) (6)                 |
-| `test/arithmetic-ambiguous.grammar` | `arithmetic-ambiguous` | ambigüedad clásica de libro: `id + id * id` tiene dos árboles                                 | árboles y ambigüedad                    |
-| `test/arithmetic.grammar`           | `arithmetic`           | la misma, no ambigua, con precedencia. Recursiva a izquierda: **no** es LL(1)                 | lexer y parser (3–4), LL(1) (6), Earley |
-| `test/parentheses.grammar`          | `parentheses`          | paréntesis balanceados, con ε; su lenguaje contiene la cadena vacía                           | anulables (7), Earley, CYK              |
-| `test/epsilon-trap.grammar`         | `epsilon-trap`         | `S → A A x`, `A → ε`: **el caso que rompe al Earley clásico**                                 | el arreglo de ε (16)                    |
-| `test/useless.grammar`              | `test-useless`         | símbolos inútiles: A no es productivo, C no es alcanzable                                     | inútiles (8)                            |
-| `test/empty.grammar`                | `test-empty`           | lenguaje vacío, L(G) = ∅                                                                      | vacuidad (8)                            |
-| `test/cyclic.grammar`               | `test-cyclic`          | un ciclo S ⇒ A ⇒ S: infinitos árboles                                                         | ciclos (9), conteo `'infinite'` (19)    |
+| Archivo                             | Nombre en la CLI       | Para qué está                                                                                 | Qué paso la usa                                                               |
+| ----------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `genres/detective/g1.grammar`       | `detective/g1`, `g1`   | **la oficial**: decide si un relato es un policial de enigma. No ambigua y LL(1)              | FIRST/FOLLOW y LL(1) (11–12), Earley (13–17), árboles (18–21)                 |
+| `genres/detective/g0.grammar`       | `detective/g0`, `g0`   | **la del anteproyecto**, sin cambios. Natural pero ambigua: sirve para estudiar la ambigüedad | conflictos LL(1) (12), árboles (19), conteo (20), comparación con G1 (27)     |
+| `meta.grammar`                      | `meta`                 | la gramática del **formato `.grammar`**. Documenta el parser del paso 4                       | tabla LL(1) sin conflictos (12)                                               |
+| `test/arithmetic-ambiguous.grammar` | `arithmetic-ambiguous` | ambigüedad clásica de libro: `id + id * id` tiene dos árboles                                 | Earley (14), caso AR1 de la tabla 9.3 (2 árboles), pruebas diferenciales (28) |
+| `test/arithmetic.grammar`           | `arithmetic`           | la misma, no ambigua, con precedencia. Recursiva a izquierda: **no** es LL(1)                 | lexer y parser (3–4), conflictos LL(1) (12), Earley (14)                      |
+| `test/parentheses.grammar`          | `parentheses`          | paréntesis balanceados, con ε; su lenguaje contiene la cadena vacía                           | anulables (7), longitud mínima (8), ítems (13), ε (15), CYK (25)              |
+| `test/epsilon-trap.grammar`         | `epsilon-trap`         | `S → A A x`, `A → ε`: **el caso que rompe al Earley clásico**                                 | el arreglo de ε (15)                                                          |
+| `test/useless.grammar`              | `test-useless`         | símbolos inútiles: A no es productivo, C no es alcanzable                                     | inútiles (9)                                                                  |
+| `test/empty.grammar`                | `test-empty`           | lenguaje vacío, L(G) = ∅                                                                      | vacuidad (9)                                                                  |
+| `test/cyclic.grammar`               | `test-cyclic`          | un ciclo S ⇒ A ⇒ S: infinitos árboles                                                         | ciclos (10), conteo `'infinite'` (20)                                         |
 
 Las de `test/` son **internas**: no identifican ningún género. Sirven para dos cosas: probar que el motor es genérico ("el mismo motor funciona con gramáticas de libro", criterio del anteproyecto) y demostrar conceptos aislados por consola.
+
+Los números de la última columna son **pasos** del spec (sección 8.3), no fichas: por ejemplo, la tabla LL(1) es el paso 12 pero la ficha 06.
 
 ### 2.2 El código
 
@@ -47,8 +49,9 @@ Las de `test/` son **internas**: no identifican ningún género. Sirven para dos
 | `src/genres/catalog.ts`                 | el **catálogo**: la lista de géneros. Solo datos; el motor no lo importa                                                                                            |
 | `src/command-line/grammars.ts`          | el **registro de gramáticas incorporadas**: nombre → archivo, alias (`g1`, `g0`) y grupo ("Géneros" o "Desarrollo"). Las de género se arman **leyendo el catálogo** |
 | `src/command-line/commands/genres.ts`   | el comando `genres`: muestra el catálogo                                                                                                                            |
-| `src/command-line/commands/grammars.ts` | el comando `grammars`: lee las 10 gramáticas con la cadena completa y muestra \|N\|, \|Σ\| y \|P\|                                                                  |
-| `src/command-line/run.ts` (cambio)      | `help` puede terminar con un texto extra (`helpFooter`): ahí se listan las gramáticas por grupo                                                                     |
+| `src/command-line/commands/grammars.ts` | el comando `grammars`: lee las 10 gramáticas con la cadena completa (lexer → parser → `buildGrammar`) y muestra \|N\|, \|Σ\| y \|P\|                                |
+| `src/command-line/run.ts` (cambio)      | `createCommandLineProgram` acepta una opción nueva, `helpFooter`: un texto que `help` muestra al final                                                              |
+| `src/command-line/program.ts` (cambio)  | registra los comandos `genres` y `grammars`, y pasa `helpFooter: formatGrammarGroups()` (las gramáticas por grupo)                                                  |
 | `test/helpers/load.ts`                  | lee gramáticas con `node:fs`, **solo en las pruebas** (el programa lee a través del `environment`)                                                                  |
 | `test/fixtures/l1.txt`                  | **L1**: `CRI`, 198 × `PIS`, `REV`. 200 eventos, el relato largo de las pruebas de rendimiento                                                                       |
 
@@ -112,9 +115,15 @@ Planteo (`CRI`) y Desenlace (`REV`) tienen un solo árbol. Todo pasa en **Pasos*
 | 3     | `Linea(SOS PIS) INT`   | la pista                     | la pista se relaciona con la sospecha; el interrogatorio no |
 | 4     | `Linea(SOS PIS INT)`   | la pista y el interrogatorio | todo lo que sigue es parte de la sospecha                   |
 
-**4 árboles, pero 3 lecturas.** Los árboles 1 y 2 cuentan lo mismo: difieren solo en cómo `Pasos → Pasos Pasos` agrupa, que no cambia el significado. El anteproyecto habla de "tres lecturas"; el motor va a contar árboles. La ficha 21 (paso 21) desarrolla esta diferencia.
+**4 árboles, pero 3 lecturas.** Los árboles 1 y 2 cuentan lo mismo: difieren solo en cómo `Pasos → Pasos Pasos` agrupa, que no cambia el significado. El anteproyecto habla de "tres lecturas"; el motor va a contar árboles. La ficha 21 (pasos 19 y 27) desarrolla esta diferencia.
 
-El conteo se verificó a mano: la cantidad de árboles de Pasos para una cadena w es (árboles de un solo Paso) + Σ sobre cada corte w = u·v de (árboles de u) × (árboles de v). Para `SOS PIS INT`: 1 (la sospecha abarca todo) + 1 (corte `SOS | PIS INT`) + 2 (corte `SOS PIS | INT`, porque `SOS PIS` tiene 2 árboles) = 4.
+El conteo se verificó a mano. Sea P(w) la cantidad de árboles de `Pasos` sobre w:
+
+1. Si w es un solo paso, P(w) = 1.
+2. Si w = SOS·u, con u no vacía, la regla `Linea → SOS Pasos` suma P(u) árboles: la sospecha abarca todo u.
+3. Por cada corte w = u·v (u y v no vacías), `Pasos → Pasos Pasos` suma P(u) × P(v).
+
+Para `SOS PIS INT`: 1 (la sospecha abarca todo) + 1 (corte `SOS | PIS INT`) + 2 (corte `SOS PIS | INT`, porque `SOS PIS` tiene 2 árboles) = **4**.
 
 ---
 
@@ -144,15 +153,15 @@ Los valores se verificaron calculando los árboles a mano (con la recurrencia de
 
 **Consecuencias para el diseño:**
 
-- No se pueden **enumerar** todos los árboles de un relato largo: el paso 19 los **cuenta** con programación dinámica, sin construirlos, y usa `bigint` porque C(197) no entra en un número común. La enumeración (paso 18) se hace **acotada**: muestra los primeros k árboles y el total.
-- Para L1 con G0, contar los árboles es un criterio de rendimiento del spec: menos de 3 segundos.
+- No se pueden **enumerar** todos los árboles de un relato largo: el paso 20 los **cuenta** con programación dinámica, sin construirlos, y usa `bigint` porque C(197) no entra en un número común. La enumeración (paso 19) se hace **acotada**: muestra los primeros k árboles y el total.
+- Para L1 con G0, reconocer el relato y contar sus árboles debe tardar menos de 3 segundos (criterio de rendimiento del spec, sección 9.5).
 - **G1 siempre da 1 árbol**: es no ambigua. Por eso es la oficial.
 
 ### 5.2 La otra "cota": las búsquedas acotadas
 
 En el spec aparece otra cota, distinta. **Decidir si una gramática cualquiera es ambigua es indecidible** (Hopcroft 9.5.2): no existe un algoritmo que lo responda siempre. Lo que sí se puede hacer es **buscar** un testigo: generar todas las cadenas hasta un largo k y ver si alguna tiene dos árboles. Si la gramática es ambigua, aumentando k el testigo **siempre aparece**; si no lo es, la búsqueda no puede probarlo. Es una **semidecisión**. Eso es el paso 27 (búsquedas acotadas).
 
-Para G1 no hace falta buscar: la no ambigüedad se **demuestra** con el teorema "toda gramática LL(1) es no ambigua", y el paso 6 verifica en código que G1 es LL(1).
+Para G1 no hace falta buscar: la no ambigüedad se **demuestra** con el teorema "toda gramática LL(1) es no ambigua", y el paso 12 verifica en código que G1 es LL(1).
 
 ---
 
@@ -202,7 +211,9 @@ Descarte -> DSC Libres
 | `Desenlace → Resolucion \| Resolucion EPI`              | `Desenlace → Resolucion EpiOpc`, `EpiOpc → EPI \| ε`                              | las dos empezaban con Resolucion     |
 | `Resolucion → REV \| REV CNF \| REV CAP \| REV CNF CAP` | `Resolucion → REV Cierre`, `Cierre → CNF CapOpc \| CAP \| ε`, `CapOpc → CAP \| ε` | las cuatro empezaban con REV         |
 
-La factorización **no cambia el lenguaje** de esas partes: solo reorganiza las reglas para decidir con un token. Por eso G1 tiene más no terminales (21 contra 10) y más producciones (40 contra 28).
+La factorización **no cambia el lenguaje** de esas partes: solo reorganiza las reglas para decidir con un token.
+
+Con las cuatro transformaciones, G1 pasa de 10 a 21 no terminales. La factorización agrega 7 (`MarcoOpc`, `PerOpc`, `CtxOpc`, `HallazgoOpc`, `EpiOpc`, `Cierre`, `CapOpc`). Las listas y el cuerpo de línea agregan 5 (`Libres`, `Lineas`, `CuerpoLinea`, `Descarte`, `Evidencia`). `Paso` desaparece. Las producciones pasan de 28 a 40.
 
 ### 6.3 El resultado
 
@@ -234,7 +245,7 @@ CapOpc        -> CAP | ε
 
 Con G1, `CRI SOS PIS INT REV` tiene **un solo árbol**: la lectura 4 de la sección 4.2 (la sospecha abarca la pista y el interrogatorio, porque no viene otra `SOS` antes del desenlace).
 
-**G1 es LL(1)**, y por eso no ambigua. Las celdas delicadas, verificadas a mano en el spec (el paso 6 lo repite en código):
+**G1 es LL(1)**, y por eso no ambigua. Las celdas delicadas, verificadas a mano en el spec (el paso 12 lo repite en código):
 
 | Decisión                                     | Tokens de una alternativa | Tokens de la otra                          | Disjuntos |
 | -------------------------------------------- | ------------------------- | ------------------------------------------ | --------- |
@@ -245,7 +256,15 @@ Con G1, `CRI SOS PIS INT REV` tiene **un solo árbol**: la lectura 4 de la secci
 
 ### 6.4 G1 cambia el lenguaje, a propósito
 
-**L(G1) ⊊ L(G0):** todo relato válido en G1 es válido en G0, pero no al revés. G1 rechaza dos cosas que G0 acepta:
+**L(G1) ⊊ L(G0):** todo relato válido en G1 es válido en G0, pero no al revés.
+
+**La inclusión L(G1) ⊆ L(G0) se demuestra** (spec, sección 4.4; la demostración completa va en la ficha 21):
+
+1. `Relato` e `Investigacion` tienen la misma forma en las dos gramáticas, con el `ENC` opcional incluido.
+2. `Planteo` y `Desenlace` generan los mismos lenguajes en G0 y en G1: la factorización no los cambia.
+3. En G0, `Pasos` genera **toda** cadena no vacía sobre {PIS, INT, DSC, ATQ, SOS}. Los `Pasos` de G1 son cadenas no vacías sobre ese mismo alfabeto, así que G0 también las genera.
+
+La inclusión es **estricta**: G1 rechaza dos cosas que G0 acepta:
 
 | Relato                | G0     | G1      | Por qué G1 lo rechaza                    |
 | --------------------- | ------ | ------- | ---------------------------------------- |
@@ -256,7 +275,7 @@ Con G1, `CRI SOS PIS INT REV` tiene **un solo árbol**: la lectura 4 de la secci
 
 ### 6.5 Validación: ¿las gramáticas generan el lenguaje que esperamos?
 
-En este paso el programa todavía no analiza relatos (eso llega con Earley, pasos 11 a 17). Para no esperar hasta entonces, se validaron G0 y G1 con un **script descartable, fuera del repo**, que lee los archivos `.grammar` reales e implementa por su cuenta el conteo de árboles (programación dinámica sobre las particiones de la cadena) y la generación de cadenas. Hizo tres comprobaciones, y **pasaron todas**.
+En este paso el programa todavía no analiza relatos: eso llega con Earley (pasos 13 a 17). Para no esperar, G0 y G1 se validaron con un **script descartable, que no está en el repo**. El script lee los archivos `.grammar` reales y tiene su propio conteo de árboles (programación dinámica sobre las particiones de la cadena) y su propio generador de cadenas. Hizo tres comprobaciones, y **pasaron todas**.
 
 **a) Los relatos de prueba del spec (tabla 9.1).** Cantidad de árboles, donde 0 es rechazo:
 
@@ -275,14 +294,14 @@ En este paso el programa todavía no analiza relatos (eso llega con Earley, paso
 | I7   | `CRI SOS DSC DSC REV`                     | 4                      | 0   |
 | L1   | `CRI` + 198 × `PIS` + `REV`               | C(197), de 115 dígitos | 1   |
 
-Los doce coinciden con lo que exige el spec.
+Los doce coinciden con lo que exige el spec. Falta I6 (`CRI XYZ REV`) porque no es una cuestión de árboles: `XYZ` no está en Σ, y ese error lo detecta el tokenizador de secuencias (paso 6) antes de analizar.
 
 **b) Generación acotada.** Se generaron **todos** los relatos de hasta 7 eventos de cada gramática:
 
 | Medida                            | Resultado                                                                |
 | --------------------------------- | ------------------------------------------------------------------------ |
 | relatos de G0 / de G1             | 34.420 / 19.986                                                          |
-| L(G1) ⊆ L(G0)                     | se cumple: ningún relato de G1 queda fuera de G0                         |
+| L(G1) ⊆ L(G0)                     | se cumple, como confirma la demostración de 6.4                          |
 | relatos solo en G0                | 14.434, todos con un descarte inválido (`CRI DSC REV`, `HAL DSC REV`, …) |
 | relatos de G1 con más de un árbol | 0                                                                        |
 | relatos de G0 con más de un árbol | 28.965; el más corto es `CRI SOS SOS REV`                                |
@@ -300,9 +319,11 @@ Los 34.420 relatos de G0 y los 19.986 de G1 cumplen todas.
 
 **Qué demuestra y qué no:**
 
-- Que G1 no es ambigua **está demostrado** para todas las cadenas, por el teorema LL(1) (el paso 6 lo verifica en código). La generación solo lo confirma hasta 7 eventos.
-- Que L(G1) ⊆ L(G0) y que se cumplen las reglas del género está verificado **hasta 7 eventos**: es evidencia, no una demostración para relatos más largos. Comparar dos gramáticas libres de contexto en general es indecidible, así que una búsqueda acotada es lo máximo que se puede automatizar.
-- Estas comprobaciones pasan a ser pruebas permanentes del proyecto más adelante: la tabla 9.1 con Earley (pasos 11 a 17), y la generación acotada y `compareLanguages` en el paso 27. Las reglas del género (c) no están en el spec; la propuesta es sumarlas como prueba en el paso 27.
+- Que G1 no es ambigua **está demostrado** para todas las cadenas, por el teorema LL(1) (el paso 12 lo verifica en código). La generación solo lo confirma hasta 7 eventos.
+- Que L(G1) ⊆ L(G0) también **está demostrado** (sección 6.4): `Pasos` de G0 genera toda cadena no vacía sobre {PIS, INT, DSC, ATQ, SOS}, y el resto de las partes genera lo mismo en las dos. La generación acotada solo lo confirma.
+- Comparar dos gramáticas libres de contexto **en general** es indecidible. Para este par hay una demostración directa, pero no hay un algoritmo que sirva para cualquier par: por eso el paso 27 usa una búsqueda acotada.
+- Lo que queda **solo como evidencia** son las reglas del género (c): están verificadas hasta 7 eventos, no demostradas para relatos más largos.
+- Estas comprobaciones pasan a ser pruebas permanentes del proyecto más adelante: la tabla 9.1 con Earley (pasos 14 a 16) y el conteo de árboles (paso 20), y la generación acotada y `compareLanguages` en el paso 27. Las reglas del género (c) no están en el spec; la propuesta es sumarlas como prueba en el paso 27.
 
 ---
 
@@ -336,13 +357,13 @@ export const genres: readonly Genre[] = [
 
 ### 8.1 Cómo sumar un género
 
-Por ejemplo, el policial negro (del trabajo futuro del anteproyecto). Son tres archivos nuevos y una entrada en el catálogo:
+Por ejemplo, el policial negro (del trabajo futuro del anteproyecto). Son dos archivos nuevos (tres si tiene gramática alternativa) y una entrada en el catálogo, que ya existe:
 
-| #   | Qué                                                        | Dónde                                                                                                                          |
-| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | las gramáticas del género, con nombre `<género>/<versión>` | `packages/core/grammars/genres/noir/g1.grammar` (y una alternativa, si se quiere)                                              |
-| 2   | sus etiquetas, con función narrativa y ejemplo             | `packages/core/src/genres/noir-tags.ts`, igual a `detective-tags.ts`                                                           |
-| 3   | una entrada en el catálogo                                 | `packages/core/src/genres/catalog.ts`: `{ id: 'noir', name: 'Policial negro', officialGrammar: 'noir/g1', tags: noirTags, … }` |
+| #   | Qué                                                        | Dónde                                                                                                                                                        |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | las gramáticas del género, con nombre `<género>/<versión>` | `packages/core/grammars/genres/noir/g1.grammar` (y una alternativa, si se quiere)                                                                            |
+| 2   | sus etiquetas, con función narrativa y ejemplo             | `packages/core/src/genres/noir-tags.ts`, igual a `detective-tags.ts`                                                                                         |
+| 3   | una entrada en el catálogo                                 | `packages/core/src/genres/catalog.ts`: importar `noirTags` y agregar `{ id: 'noir', name: 'Policial negro', officialGrammar: 'noir/g1', tags: noirTags, … }` |
 
 Con eso, sin tocar nada más:
 
@@ -368,13 +389,13 @@ Dos detalles:
 | Géneros    | `detective/g1` (alias `g1`), `detective/g0` (alias `g0`)                                                                 |
 | Desarrollo | `meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty`, `test-cyclic` |
 
-| Función                             | Qué hace                                                                         |
-| ----------------------------------- | -------------------------------------------------------------------------------- |
-| `listBuiltInGrammars()`             | las 10, primero las de género                                                    |
-| `findBuiltInGrammar(nombre)`        | busca por nombre **o alias**: `g1` y `detective/g1` dan la misma                 |
-| `formatGrammarGroups()`             | el texto que `help` muestra al final                                             |
-| `genreGrammars(genre)` (interna)    | arma la oficial y la alternativa de un género, en `grammars/genres/<id>.grammar` |
-| `developmentGrammar(...)` (interna) | arma una gramática del grupo Desarrollo                                          |
+| Función                             | Qué hace                                                                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `listBuiltInGrammars()`             | las 10, primero las de género                                                                                                               |
+| `findBuiltInGrammar(name)`          | busca por nombre **o alias**: `g1` y `detective/g1` dan la misma                                                                            |
+| `formatGrammarGroups()`             | el texto que `help` muestra al final                                                                                                        |
+| `genreGrammars(genre)` (interna)    | arma la oficial y la alternativa de un género. La ruta sale del id de la gramática: `detective/g1` → `grammars/genres/detective/g1.grammar` |
+| `developmentGrammar(...)` (interna) | arma una gramática del grupo Desarrollo                                                                                                     |
 
 ### 9.2 Consola
 
@@ -426,17 +447,20 @@ arithmetic-ambiguous           1    5    4    E → E + E | E * E | ( E ) | id: 
 
 ### 10.2 Comandos
 
-| Prueba                                | Qué verifica                                                                  |
-| ------------------------------------- | ----------------------------------------------------------------------------- |
-| `genres`                              | el policial, sus dos gramáticas con alias y la tabla de etiquetas             |
-| `grammars`                            | los dos grupos, en orden, con los tamaños correctos                           |
-| `grammar g0` y `grammar detective/g0` | el alias y el nombre completo dan la misma gramática, con sus 28 producciones |
-| `help`                                | termina con las gramáticas por grupo                                          |
-| errores de uso                        | `genres` y `grammars` no aceptan argumentos                                   |
+| Archivo (`test/command-line/`)       | Prueba                                | Qué verifica                                                                  |
+| ------------------------------------ | ------------------------------------- | ----------------------------------------------------------------------------- |
+| `genres.test.ts`                     | `genres`                              | el policial, sus dos gramáticas con alias y la tabla de las 14 etiquetas      |
+| `grammars.test.ts`                   | `grammars`                            | los dos grupos, en orden, con los tamaños correctos                           |
+| `grammar.test.ts`                    | `grammar g0` y `grammar detective/g0` | el alias y el nombre completo dan la misma gramática, con sus 28 producciones |
+| `run.test.ts`                        | `help`                                | termina con las gramáticas por grupo                                          |
+| `genres.test.ts`, `grammars.test.ts` | errores de uso                        | `genres` y `grammars` no aceptan argumentos (código 2)                        |
 
 ---
 
 ## 11. Preguntas probables en la defensa
+
+**¿Por qué las gramáticas son archivos `.grammar` y no código?**
+Porque el anteproyecto pide que "modificar la gramática no requiere tocar el código". Una gramática es un dato: se lee con el lexer y el parser de los pasos 3 y 4. Cambiar G1, o sumar un género, no toca el motor.
 
 **¿Qué es una gramática ambigua?**
 Una que tiene al menos una cadena con dos árboles de derivación distintos (o dos derivaciones más a la izquierda distintas).
@@ -454,7 +478,7 @@ Con n pasos sin sospechas, C(n−1), el número de Catalan: crece exponencialmen
 Con un criterio narrativo: una sospecha abarca todo hasta la próxima sospecha o el desenlace, y un descarte cierra la sospecha abierta. En la gramática: listas recursivas a derecha en lugar de `Pasos → Pasos Pasos`, y un cuerpo de línea que se extiende mientras haya evidencias. Además, se factorizó a izquierda para que sea LL(1).
 
 **¿Cómo se sabe que G1 no es ambigua?**
-Porque es LL(1), y toda gramática LL(1) es no ambigua: para cada prefijo y cada token hay una sola producción aplicable, así que la derivación más a la izquierda es única. El paso 6 lo verifica en código: la tabla LL(1) de G1 no tiene conflictos.
+Porque es LL(1), y toda gramática LL(1) es no ambigua: para cada prefijo y cada token hay una sola producción aplicable, así que la derivación más a la izquierda es única. El paso 12 lo verifica en código: la tabla LL(1) de G1 no tiene conflictos.
 
 **¿G0 y G1 generan el mismo lenguaje?**
 No: L(G1) ⊊ L(G0). G1 rechaza un descarte sin sospecha abierta (`CRI DSC REV`) y dos descartes de la misma sospecha. Es un cambio deliberado: no se puede descartar una sospecha que nunca se planteó.
@@ -462,8 +486,8 @@ No: L(G1) ⊊ L(G0). G1 rechaza un descarte sin sospecha abierta (`CRI DSC REV`)
 **¿Se puede decidir si una gramática cualquiera es ambigua?**
 No, es indecidible. Solo se puede buscar un testigo hasta un largo k (una semidecisión): si la gramática es ambigua, el testigo aparece aumentando k. Para G1 no hace falta: el teorema LL(1) lo demuestra.
 
-**¿Cómo sabes que G1 genera el lenguaje que esperás?**
-Se validó con un script independiente: los doce relatos de la tabla 9.1 dan los árboles esperados en G0 y en G1, y se generaron todos los relatos de hasta 7 eventos (34.420 de G0, 19.986 de G1). Todos cumplen las reglas del género, L(G1) ⊆ L(G0) y ningún relato de G1 tiene más de un árbol. Hasta 7 eventos es evidencia, no demostración: comparar gramáticas en general es indecidible. Lo que sí está demostrado para todo largo es que G1 no es ambigua, por ser LL(1).
+**¿Cómo sabes que G1 genera el lenguaje que esperas?**
+Se validó con un script independiente: los doce relatos de la tabla 9.1 dan los árboles esperados en G0 y en G1, y se generaron todos los relatos de hasta 7 eventos (34.420 de G0, 19.986 de G1). Todos cumplen las reglas del género, y ningún relato de G1 tiene más de un árbol. Dos cosas están demostradas para todo largo: que G1 no es ambigua, por ser LL(1), y que L(G1) ⊆ L(G0), porque `Pasos` de G0 genera toda cadena no vacía sobre {PIS, INT, DSC, ATQ, SOS} y las demás partes generan lo mismo en las dos. La generación solo las confirma. Lo que queda como evidencia hasta 7 eventos son las reglas del género.
 
 **¿Cómo se agrega otro género?**
 Con datos, sin tocar el motor: sus archivos `.grammar` en `grammars/genres/<id>/`, sus etiquetas y una entrada en el catálogo. El registro de gramáticas, los comandos y las pruebas del catálogo lo toman automáticamente.

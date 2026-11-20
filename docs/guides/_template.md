@@ -1,6 +1,10 @@
 # Guía de estudio: NN — Nombre del paso
 
-> Plantilla de guía. Copiarla como `docs/guides/NN-step-name.md` (nombre de archivo en inglés, contenido en español), donde NN es el número de paso del spec. La ficha del concepto (`docs/concepts/`) es el resumen teórico; esta guía es la explicación completa del código y de sus decisiones. Para los diagramas, usar tablas y listas numeradas, no cajas dibujadas con caracteres: se desalinean en las vistas previas que no usan fuente monoespaciada.
+> Plantilla de guía. Copiarla como `docs/guides/NN-step-name.md` (nombre de archivo en inglés, contenido en español), donde NN es el número de paso del spec (sección 8.3). Ojo: los pasos y las fichas tienen numeraciones distintas (el paso 12, tabla LL(1), usa la ficha 06). Cuando la guía cite otro paso, tomar el número de la sección 8.3; cuando cite una ficha, el de la tabla 7.1. La ficha del concepto (`docs/concepts/`) es el resumen teórico; esta guía es la explicación completa del código y de sus decisiones. Para los diagramas, usar tablas, listas numeradas o una imagen SVG, nunca cajas dibujadas con caracteres: se desalinean en las vistas previas sin fuente monoespaciada. Los SVG van en `docs/guides/images/`, junto al script que los genera (ver la guía 03).
+>
+> Estilo: tuteo ("sabes", no "sabés"); identificadores de código en inglés, también los parámetros (`findBuiltInGrammar(name)`); oraciones cortas; rutas completas desde la raíz del repo la primera vez y abreviadas (`src/…`, `test/…`, relativas a `packages/core`) después.
+
+> Las secciones son una guía, no un molde: si el paso no tiene algoritmo o no lanza errores, se omiten, y se pueden agregar secciones propias del paso. Lo que no puede faltar: el problema, cómo funciona, el código, el ejemplo a mano, consola y pruebas, y las preguntas de la defensa.
 
 > **Paso N del SPEC 0X.** Archivos: `packages/core/src/…`.
 > Ficha teórica relacionada: [`docs/concepts/NN-….md`](../concepts/NN-….md).
@@ -38,7 +42,7 @@ Una entrada chica, paso a paso, con una tabla del estado en cada paso. Es el mis
 
 ## 8. Consola y pruebas
 
-- Comando: `npm run sabueso -- …`, con su salida.
+- Comando: `npm run sabueso -- …`, con su salida. Agregarlo también a `docs/console-demo.md`: `demo-doc.test.ts` ejecuta cada comando de ese archivo y falla si alguno termina con código 2.
 - Pruebas: archivo y qué verifica cada una.
 
 ## 9. Preguntas probables en la defensa

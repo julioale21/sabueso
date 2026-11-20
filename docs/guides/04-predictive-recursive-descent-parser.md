@@ -21,7 +21,7 @@ Pero una lista de palabras todavía no es una gramática. Falta reconocer la **e
 | 2   | **Parser (LL(1))** | **tokens**           | **`GrammarRule[]`, `%start`, `%terminals`** | **4** | **este paso** |
 | 3   | `buildGrammar`     | `GrammarRule[]`      | `Grammar`                                   | 2     | ✅            |
 
-Con este paso la cadena queda completa: `parseGrammarText(texto, nombre)` recibe el texto de un archivo y devuelve G = (N, Σ, P, S). A partir de ahora, las gramáticas se leen de archivos y no se escriben en código.
+`buildGrammar` se escribió antes (paso 2), pero en la cadena se ejecuta al final. Con este paso la cadena queda completa: `parseGrammarText(texto, nombre)` recibe el texto de un archivo y devuelve G = (N, Σ, P, S). A partir de ahora, las gramáticas se leen de archivos y no se escriben en código.
 
 ---
 
@@ -41,15 +41,22 @@ Un **parser descendente** construye la derivación desde el símbolo inicial hac
 
 Una gramática es **LL(1)** si, para cada no terminal, las alternativas se pueden distinguir mirando un solo token. Formalmente: en la tabla M[A, a] (sección 4) no hay ninguna celda con dos producciones. (Aho, Lam, Sethi y Ullman, _Compiladores_, 4.4.)
 
+**Ojo: lo que es LL(1) es el formato, no las gramáticas que se leen.** El parser recorre `meta.grammar`, la gramática del formato `.grammar`. La gramática que describe cada archivo puede ser cualquiera: `arithmetic.grammar` es recursiva a izquierda y G0 tiene conflictos, y las dos se leen sin problema. Después, Earley las acepta igual.
+
 ### 2.2 Por qué así, y no de otra forma
 
-| Alternativa                                           | Por qué no                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Earley**                                            | El problema del huevo y la gallina: Earley necesita una gramática ya cargada para funcionar. Para leer la **primera** gramática hace falta un lector escrito a mano.                                                                                                                                                                                                                                                                    |
-| **Probar alternativas y retroceder** (_backtracking_) | Funciona, pero puede ser exponencial y da malos mensajes de error ("no encontré nada"). El formato lo diseñamos nosotros, y lo diseñamos para que un token alcance.                                                                                                                                                                                                                                                                     |
-| **Un AFD sobre los tokens**                           | Honestamente, alcanzaría: el formato no tiene estructuras anidadas, así que el lenguaje de sus tokens es regular. Se eligió LL(1) porque es el método **sistemático** que sale directo de una gramática (`meta.grammar`): una función por no terminal. Además, los mensajes de error salen de FIRST y FOLLOW ("se esperaba `\|` o fin de línea"), y la misma teoría LL(1) se usa en el paso 6 para **certificar que G1 no es ambigua**. |
+| Alternativa                                           | Por qué no                                                                                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Earley**                                            | Huevo y gallina: Earley necesita una gramática ya cargada. Para leer la **primera** hace falta un lector a mano. |
+| **Probar alternativas y retroceder** (_backtracking_) | Puede ser exponencial y da malos mensajes de error. El formato se diseñó para que alcance un token.              |
 
-La idea para la defensa: **cada lenguaje se lee con la herramienta mínima que alcanza**. Los caracteres → tokens con un AFD; los tokens → reglas con un parser LL(1); los relatos con Earley, que sirve para cualquier gramática libre de contexto.
+**¿Y un AFD sobre los tokens?** Alcanzaría: el formato no tiene anidamiento, así que el lenguaje de sus tokens es regular. Se eligió LL(1) igual, por tres motivos:
+
+1. Sale **directo** de una gramática (`meta.grammar`): una función por no terminal.
+2. Los mensajes de error salen de FIRST y FOLLOW ("Expected '|' or the end of the line").
+3. Es la misma teoría que el paso 12 usa para **certificar que G1 no es ambigua**.
+
+La idea para la defensa: **cada lenguaje se lee con una herramienta a su medida**. Caracteres → tokens con un AFD; tokens → reglas con un parser LL(1), que sale directo de `meta.grammar`; relatos con Earley, que sirve para cualquier gramática libre de contexto.
 
 ### 2.3 La gramática del formato: `meta.grammar`
 
@@ -71,11 +78,15 @@ Cómo se lee:
 
 - **File:** un archivo es una lista de elementos que termina en `END_OF_FILE`.
 - **Element:** cada línea es una línea en blanco (o un comentario, que el lexer ya descartó), una directiva o una regla.
+- **Directive:** `%start X` o `%terminals a b c`.
 - **Rule:** nombre, flecha, alternativas y fin de línea.
 - **Alternatives / MoreAlternatives:** una secuencia, y después cero o más `| secuencia`.
 - **Sequence:** `ε` explícito, o una lista de símbolos (que puede estar vacía: `A -> a |` también es ε).
+- **Symbol:** un nombre (`E`) o un literal entre comillas (`'+'`).
 
-El archivo `meta.grammar` se escribe en el paso 5. En el paso 6, el propio programa calcula su tabla LL(1) y verifica que tiene 0 conflictos.
+El lexer agrega siempre un `NEWLINE` antes de `END_OF_FILE`. Por eso `Rule` puede exigir el fin de línea aunque el archivo no termine con un salto (prueba `no final line break`).
+
+El archivo `meta.grammar` se escribe en el paso 5. En el paso 12, el propio programa calcula su tabla LL(1) y verifica que tiene 0 conflictos.
 
 ---
 
@@ -106,7 +117,7 @@ Cada no terminal de `meta.grammar` es un método del parser (`parseFile`, `parse
 
 Si el lookahead no corresponde a ninguna alternativa, es un **error de sintaxis**, con línea, columna y la lista de tokens que se esperaban.
 
-Por ejemplo, `Rule -> IDENTIFIER ARROW Alternatives NEWLINE` se traduce casi literalmente:
+Por ejemplo, `Rule -> IDENTIFIER ARROW Alternatives NEWLINE` se traduce casi literalmente. Este fragmento está simplificado: el código real además avisa la decisión (`this.trace(...)`) y hace la llamada con `this.nested(...)`, para la sangría de la traza.
 
 ```ts
 private parseRule(): void {
@@ -131,7 +142,7 @@ Calculados a mano para `meta.grammar`:
 
 | No terminal      | FIRST                                              | FOLLOW                                             |
 | ---------------- | -------------------------------------------------- | -------------------------------------------------- |
-| File             | IDENTIFIER, START, TERMINALS, NEWLINE, END_OF_FILE | (fin)                                              |
+| File             | IDENTIFIER, START, TERMINALS, NEWLINE, END_OF_FILE | $ (nada viene después: File es el inicio)          |
 | Element          | IDENTIFIER, START, TERMINALS, NEWLINE              | IDENTIFIER, START, TERMINALS, NEWLINE, END_OF_FILE |
 | Directive        | START, TERMINALS                                   | igual que Element                                  |
 | Rule             | IDENTIFIER                                         | igual que Element                                  |
@@ -163,11 +174,11 @@ Con eso, la **tabla de decisiones** M[A, lookahead], que es exactamente lo que h
 | Symbol           | IDENTIFIER                                 | IDENTIFIER                            |
 | Symbol           | LITERAL                                    | LITERAL                               |
 
-**Ninguna celda tiene dos alternativas**: por eso `meta.grammar` es LL(1) y alcanza un token para decidir. Las tres decisiones delicadas son las de ε:
+**Ninguna celda tiene dos alternativas**: por eso `meta.grammar` es LL(1) y alcanza un token para decidir. Las tres decisiones delicadas son las de los no terminales que pueden derivar la cadena vacía, porque ahí también cuenta el FOLLOW:
 
 - **MoreAlternatives:** `BAR` (hay otra alternativa) o `NEWLINE` (terminó la regla). Disjuntos.
 - **Symbols:** `IDENTIFIER`/`LITERAL` (sigue la secuencia) o `BAR`/`NEWLINE` (terminó). Disjuntos.
-- **Sequence:** `EPSILON` o lo demás. Disjuntos.
+- **Sequence:** `EPSILON` o FIRST(Symbols) ∪ FOLLOW(Sequence) = {IDENTIFIER, LITERAL, BAR, NEWLINE}. Disjuntos.
 
 ### 4.3 La traza es la derivación más a la izquierda
 
@@ -197,13 +208,16 @@ La línea `A -> a | ε`. Tokens: `IDENTIFIER(A) ARROW IDENTIFIER(a) BAR EPSILON 
 
 Resultado: dos producciones, `A → a` y `A → ε`.
 
-Es exactamente la salida de:
+Para verlo por consola:
 
 ```sh
-npm run sabueso -- grammar --grammar-file <archivo con esa línea> --parser-trace
+printf 'A -> a | ε\n' > /tmp/a.grammar
+npm run sabueso -- grammar --grammar-file /tmp/a.grammar --parser-trace
 ```
 
 ```text
+Parser trace (nonterminal [lookahead] → alternative):
+
 File [IDENTIFIER] → Element File
   Element [IDENTIFIER] → Rule
     Rule [IDENTIFIER] → IDENTIFIER ARROW Alternatives NEWLINE
@@ -216,29 +230,45 @@ File [IDENTIFIER] → Element File
           Sequence [EPSILON] → EPSILON
           MoreAlternatives [NEWLINE] → ε
 File [END_OF_FILE] → END_OF_FILE
+
+/tmp/a.grammar: G = (N, Σ, P, S)
+N = {A}
+Σ = {a}
+S = A
+P:
+   0  A → a
+   1  A → ε
 ```
 
-La sangría muestra la recursión: cada nivel es una llamada dentro de la anterior. `File` siempre queda en el nivel 0, porque cada elemento del archivo se procesa desde el mismo `File`.
+La prueba `the parser trace` (en `parser.test.ts`) compara estas 12 líneas una por una.
+
+La sangría muestra la recursión: cada nivel es una llamada dentro de la anterior. Hay una excepción a propósito: `File` siempre queda en el nivel 0, porque `parseFile` se llama a sí mismo para el resto del archivo **sin** `nested`. Así la traza no se corre un nivel a la derecha por cada línea. Es una decisión de presentación: en el árbol de derivación, cada `File` sí es hijo del anterior.
 
 ---
 
 ## 6. Errores de sintaxis
 
-Cada error dice **qué tokens se esperaban** (los de la fila de la tabla) y **cuál se encontró**, con línea y columna:
+Cada error dice **qué tokens se esperaban** (los de la fila de la tabla) y **cuál se encontró**, con línea y columna. Por consola se ve así, con código de salida 1:
 
-| Texto                           | Mensaje                                                                               | Por qué                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `S a`                           | `Expected '->', but found a name ("a")`                                               | Rule exige ARROW después del nombre                             |
-| `-> b` al comienzo de una línea | `Expected a name, %start, %terminals or the end of the line, but found '->'`          | ARROW no está en FIRST(Element)                                 |
-| `S -> ε a`                      | `Expected '\|' or the end of the line, but found a name ("a")`                        | después de ε solo puede venir FOLLOW(Sequence)                  |
-| `S -> a ε`                      | `Expected a name, a quoted literal, '\|' or the end of the line, but found 'ε'`       | ε no está en FIRST(Symbols) ∪ FOLLOW(Symbols)                   |
-| `S -> -> a`                     | `Expected 'ε', a name, a quoted literal, '\|' or the end of the line, but found '->'` | ARROW no puede empezar una secuencia                            |
-| `%start` (sin nombre)           | `Expected a name, but found the end of the line`                                      | Directive → START IDENTIFIER NEWLINE                            |
-| `%start` dos veces              | `%start appears more than once`                                                       | decisión de diseño: la segunda pisaría a la primera en silencio |
+```text
+Error: Line 1, column 3: Expected '->', but found a name ("a")
+```
+
+En la tabla se muestra el mensaje sin el prefijo `Error: Line …, column …:`.
+
+| Texto                           | Mensaje                                                                               | Por qué                                        |
+| ------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `S a`                           | `Expected '->', but found a name ("a")`                                               | Rule exige ARROW después del nombre            |
+| `-> b` al comienzo de una línea | `Expected a name, %start, %terminals or the end of the line, but found '->'`          | ARROW no está en FIRST(Element)                |
+| `S -> ε a`                      | `Expected '\|' or the end of the line, but found a name ("a")`                        | después de ε solo puede venir FOLLOW(Sequence) |
+| `S -> a ε`                      | `Expected a name, a quoted literal, '\|' or the end of the line, but found 'ε'`       | ε no está en FIRST(Symbols) ∪ FOLLOW(Symbols)  |
+| `S -> -> a`                     | `Expected 'ε', a name, a quoted literal, '\|' or the end of the line, but found '->'` | ARROW no puede empezar una secuencia           |
+| `%start` (sin nombre)           | `Expected a name, but found the end of the line`                                      | Directive → START IDENTIFIER NEWLINE           |
+| `%start` dos veces              | `%start appears more than once`                                                       | ver la decisión de abajo                       |
 
 Todos son `GrammarSyntaxError`, el mismo error del lexer. Los errores de **construcción** (un símbolo no declarado, una producción repetida) siguen siendo `GrammarBuildError`, de `buildGrammar`: el parser verifica la **sintaxis**; `buildGrammar`, que la gramática sea **válida**.
 
-**Decisión de diseño:** el spec no dice qué pasa si `%start` o `%terminals` aparecen dos veces. Se eligió que sea un error, con la posición de la segunda aparición, porque aceptar la segunda haría que la primera se ignore sin aviso.
+**Decisión de diseño:** el spec original no decía qué pasa si `%start` o `%terminals` aparecen dos veces. Se eligió que sea un error en la posición de la segunda aparición, porque si no, la segunda pisaría a la primera sin aviso. La decisión quedó registrada en el paso 4 del spec (2026-11-19). Lo hace `onlyOnce`.
 
 ---
 
@@ -261,17 +291,17 @@ Guarda el estado del recorrido: la lista de tokens, la **posición** del token a
 
 **Los métodos de los no terminales**, uno por regla de `meta.grammar`:
 
-| Método                  | Regla                                        | Qué devuelve o guarda                                       |
-| ----------------------- | -------------------------------------------- | ----------------------------------------------------------- |
-| `parseFile`             | File → Element File \| END_OF_FILE           | el archivo completo. Se llama a sí mismo por cada elemento  |
-| `parseElement`          | Element → NEWLINE \| Directive \| Rule       | decide por el lookahead qué tipo de línea es                |
-| `parseDirective`        | Directive → START … \| TERMINALS …           | guarda `start` o `declaredTerminals`, una sola vez          |
-| `parseRule`             | Rule → IDENTIFIER ARROW Alternatives NEWLINE | agrega **una regla por alternativa**                        |
-| `parseAlternatives`     | Alternatives → Sequence MoreAlternatives     | la lista de lados derechos                                  |
-| `parseMoreAlternatives` | MoreAlternatives → BAR … \| ε                | elige ε solo con NEWLINE (su FOLLOW); con otro token, error |
-| `parseSequence`         | Sequence → EPSILON \| Symbols                | un lado derecho; `ε` da la lista vacía                      |
-| `parseSymbols`          | Symbols → Symbol Symbols \| ε                | elige ε solo con BAR o NEWLINE (su FOLLOW)                  |
-| `parseSymbol`           | Symbol → IDENTIFIER \| LITERAL               | un nombre, o `{ literal }` para lo que iba entre comillas   |
+| Método                  | Regla                                        | Qué devuelve o guarda                                                                               |
+| ----------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `parseFile`             | File → Element File \| END_OF_FILE           | el archivo completo. Se llama a sí mismo por cada elemento, sin aumentar la profundidad de la traza |
+| `parseElement`          | Element → NEWLINE \| Directive \| Rule       | decide por el lookahead qué tipo de línea es                                                        |
+| `parseDirective`        | Directive → START … \| TERMINALS …           | guarda `start` o `declaredTerminals`, una sola vez                                                  |
+| `parseRule`             | Rule → IDENTIFIER ARROW Alternatives NEWLINE | agrega **una regla por alternativa**                                                                |
+| `parseAlternatives`     | Alternatives → Sequence MoreAlternatives     | la lista de lados derechos                                                                          |
+| `parseMoreAlternatives` | MoreAlternatives → BAR … \| ε                | `BAR`: otra alternativa; `NEWLINE` (su FOLLOW): ε; otro token: error                                |
+| `parseSequence`         | Sequence → EPSILON \| Symbols                | un lado derecho; `ε` da la lista vacía                                                              |
+| `parseSymbols`          | Symbols → Symbol Symbols \| ε                | nombre o literal: un símbolo más; `BAR` o `NEWLINE` (su FOLLOW): ε; otro token: error               |
+| `parseSymbol`           | Symbol → IDENTIFIER \| LITERAL               | un nombre, o `{ literal }` para lo que iba entre comillas                                           |
 
 Los métodos devuelven los datos que necesita `buildGrammar` (`RightSideSymbol`, del paso 2), así que el parser no clasifica terminales ni no terminales: eso sigue siendo trabajo de la construcción.
 
@@ -286,15 +316,15 @@ Los métodos devuelven los datos que necesita `buildGrammar` (`RightSideSymbol`,
 | `nested(parse)`                        | ejecuta una llamada un nivel más adentro, para la sangría de la traza                       |
 | `trace(nonterminal, alternative)`      | avisa la decisión al observador, si hay uno                                                 |
 
-**Funciones sueltas**:
+**Fuera de la clase** (constantes y funciones auxiliares):
 
-| Función                   | Qué hace                                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------------------------ |
-| `tokenDescriptions`       | cómo se llama cada tipo de token en los mensajes (`'->'`, `a name`, `the end of the line`…)      |
-| `SYMBOLS_OR_SEQUENCE_END` | FIRST(Symbols) ∪ FOLLOW(Symbols): los tokens con que puede empezar o terminar una secuencia      |
-| `listWithOr`              | "a, b or c", para los mensajes                                                                   |
-| `describeToken`           | el token encontrado, con su texto si es un nombre o un literal                                   |
-| `symbolName`              | el nombre de un símbolo declarado en `%terminals` (el identificador, o el contenido del literal) |
+| Nombre                    | Qué es                                                                                                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tokenDescriptions`       | constante: cómo se nombra cada tipo de token en los mensajes (`'->'`, `a name`, `the end of the line`…)                                                                    |
+| `SYMBOLS_OR_SEQUENCE_END` | constante: {IDENTIFIER, LITERAL, BAR, NEWLINE} = FIRST(Symbols) ∪ FOLLOW(Symbols). `parseSequence` la usa para elegir `Symbols`, y `parseSymbols` para el mensaje de error |
+| `listWithOr`              | "a, b or c", para los mensajes                                                                                                                                             |
+| `describeToken`           | el token encontrado, con su texto si es un nombre o un literal                                                                                                             |
+| `symbolName`              | convierte un símbolo de `%terminals` en su nombre (el identificador, o el contenido del literal)                                                                           |
 
 ### 7.3 El comando `grammar`
 
@@ -336,51 +366,21 @@ Un error de sintaxis o una gramática inválida terminan con código 1 y el mens
 
 ### 8.1 ¿`arithmetic` es el nombre del archivo?
 
-No exactamente: `arithmetic` es el **nombre** de una gramática incorporada, no el nombre del archivo. Coinciden porque el archivo se llama `arithmetic.grammar`, pero el programa no busca un archivo con ese nombre. Busca el nombre en una lista, y la lista dice dónde está el archivo.
+No: es el **nombre** de una gramática incorporada. El programa no busca un archivo `arithmetic.grammar`. Busca el nombre en el registro `packages/core/src/command-line/grammars.ts`, y el registro dice dónde está el archivo:
 
-La lista está en `packages/core/src/command-line/grammars.ts`:
+1. `findBuiltInGrammar('arithmetic')` busca la entrada con ese nombre (o alias).
+2. Su `location` es una ruta **relativa al código**, no a la carpeta donde ejecutas el comando. Por eso funciona desde cualquier carpeta.
+3. `readGrammarSource` lee el archivo.
 
-```ts
-const builtInGrammars: readonly BuiltInGrammar[] = [
-  {
-    id: 'arithmetic', // el nombre que se escribe
-    location: new URL('../../grammars/test/arithmetic.grammar', import.meta.url), // el archivo
-  },
-];
-```
-
-Con `grammar arithmetic`:
-
-1. `findBuiltInGrammar('arithmetic')` busca en la lista una entrada con `id: 'arithmetic'`.
-2. Toma su `location`, la ruta del archivo **relativa al código**, no a la carpeta donde se ejecuta el comando. Por eso funciona desde cualquier carpeta.
-3. `readGrammarSource` lee ese archivo.
-
-Un nombre que no está en la lista da error, aunque exista un archivo con ese nombre:
+Un nombre que no está en el registro es un error de uso (código 2), aunque exista un archivo con ese nombre:
 
 ```text
-Unknown grammar: story. Available grammars: arithmetic
+Unknown grammar: story. Available grammars: detective/g1, detective/g0, meta, arithmetic-ambiguous, arithmetic, parentheses, epsilon-trap, test-useless, test-empty, test-cyclic
 ```
 
-**Por qué un nombre y no el archivo.** Se ve mejor en el paso 5, cuando la lista crezca y el nombre deje de coincidir con el archivo:
+Para leer un archivo cualquiera está `--grammar-file`, que recibe una **ruta** relativa a la carpeta actual. `grammar --grammar-file packages/core/grammars/test/arithmetic.grammar` da la misma gramática que `grammar arithmetic`; solo cambia la etiqueta de la primera línea (la ruta en lugar del nombre).
 
-| Nombre que se escribe          | Archivo                                |
-| ------------------------------ | -------------------------------------- |
-| `arithmetic`                   | `grammars/test/arithmetic.grammar`     |
-| `detective/g1` o su alias `g1` | `grammars/genres/detective/g1.grammar` |
-| `test-useless`                 | `grammars/test/useless.grammar`        |
-
-- **Nombres cortos y estables:** se escribe `g1`, no `packages/core/grammars/genres/detective/g1.grammar`.
-- **Alias:** dos nombres pueden apuntar al mismo archivo (`g1` y `detective/g1`).
-- **Independencia:** si un archivo se mueve de carpeta, el nombre no cambia. Solo cambia la `location` en la lista.
-
-**Para usar un archivo directamente** está `--grammar-file`, que sí recibe una **ruta**, relativa a la carpeta donde se ejecuta el comando:
-
-```sh
-npm run sabueso -- grammar --grammar-file examples/grammars/story.grammar
-npm run sabueso -- grammar --grammar-file packages/core/grammars/test/arithmetic.grammar
-```
-
-El segundo comando lee el mismo archivo que `grammar arithmetic`, pero indicando la ruta. La única diferencia en la salida es la etiqueta: muestra la ruta en lugar del nombre.
+En el paso 4 el registro solo tenía `arithmetic`. El paso 5 lo completa con alias y grupos: ver la guía 05, sección 9.1.
 
 ---
 
@@ -433,14 +433,15 @@ Los dos últimos muestran la división de trabajo: la **sintaxis** es correcta (
 
 ### 9.2 El comando: `test/command-line/grammar.test.ts`
 
-| Prueba               | Qué verifica                                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `grammar arithmetic` | la salida exacta de la 4-upla                                                                                      |
-| `--parser-trace`     | la traza antes de la gramática, con sangría                                                                        |
-| `--grammar-file`     | lee un archivo propio                                                                                              |
-| error de sintaxis    | código 1 y el mensaje con posición                                                                                 |
-| gramática inválida   | código 1 y el error de `buildGrammar`                                                                              |
-| errores de uso       | sin gramática, nombre y archivo a la vez, una opción de otro comando (`--states`), un nombre desconocido: código 2 |
+| Prueba                                | Qué verifica                                                                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `grammar arithmetic`                  | la salida exacta de la 4-upla                                                                                      |
+| `--parser-trace`                      | la traza antes de la gramática, con sangría                                                                        |
+| `--grammar-file`                      | lee un archivo propio                                                                                              |
+| error de sintaxis                     | código 1 y el mensaje con posición                                                                                 |
+| gramática inválida                    | código 1 y el error de `buildGrammar`                                                                              |
+| errores de uso                        | sin gramática, nombre y archivo a la vez, una opción de otro comando (`--states`), un nombre desconocido: código 2 |
+| `grammar detective/g0` y `grammar g0` | el nombre y el alias dan la misma gramática, con 28 producciones (agregada en el paso 5)                           |
 
 ---
 
@@ -466,3 +467,12 @@ El de sintaxis (`GrammarSyntaxError`) es un archivo mal escrito: falta una flech
 
 **¿Cuándo elige el parser la alternativa ε?**
 Solo cuando el lookahead está en el FOLLOW del no terminal. Por ejemplo, `MoreAlternatives → ε` solo con NEWLINE. Con cualquier otro token no elige ε a ciegas: informa el error con la lista de lo que se esperaba.
+
+**¿Las gramáticas que lee el parser tienen que ser LL(1)?**
+No. LL(1) es `meta.grammar`, la gramática del formato. `arithmetic` (recursiva a izquierda) y G0 (con conflictos) no son LL(1), y el parser las lee igual, porque lo que recorre es la sintaxis del archivo, no el lenguaje que la gramática genera.
+
+**¿Qué devuelve el parser? ¿Ya es la gramática?**
+No. `parseGrammarFile` devuelve un `ParsedGrammarFile`: las reglas (una por alternativa), `start` y `declaredTerminals`, sin clasificar terminales y no terminales. Eso lo hace `buildGrammar`, que además valida.
+
+**¿Por qué el parser no imprime la traza?**
+Avisa cada decisión a un observador opcional (`onTrace`). El comando decide si imprime o no. Es el mismo patrón que `onEvent` en el AFD: el núcleo no depende de la consola, y la prueba puede capturar la traza.

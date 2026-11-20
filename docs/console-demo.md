@@ -1,10 +1,12 @@
 # Guion de la demo por consola
 
-Los comandos de la demo de la exposición, en el orden en que se muestran. Cada spec agrega los suyos.
+Los comandos de la demo de la exposición, en el orden en que se muestran. Cada paso del spec agrega los suyos, y el paso 29 del SPEC 02 completa el recorrido.
 
 La prueba `packages/core/test/command-line/demo-doc.test.ts` ejecuta todas las líneas `npm run sabueso -- …` de los bloques de código de este archivo, y falla si alguna termina con código 2 (uso incorrecto). Así el guion siempre corresponde a comandos que existen.
 
 ## Ayuda
+
+Lista los comandos y, al final, las gramáticas incorporadas por grupo.
 
 ```sh
 npm run sabueso -- help
@@ -12,11 +14,15 @@ npm run sabueso -- help
 
 ## Gramática libre de contexto
 
+Paso 2. Arma una gramática en código y muestra la 4-upla G = (N, Σ, P, S).
+
 ```sh
 npm run sabueso -- demo-grammar
 ```
 
 ## Lexer AFD
+
+Paso 3. Los tokens de `arithmetic.grammar`. Con `--states`, el recorrido de δ.
 
 ```sh
 npm run sabueso -- lex arithmetic
@@ -25,12 +31,16 @@ npm run sabueso -- lex arithmetic --states
 
 ## Parser LL(1)
 
+Paso 4. Lee el archivo y muestra G. Con `--parser-trace`, cada decisión del parser y su lookahead.
+
 ```sh
 npm run sabueso -- grammar arithmetic
 npm run sabueso -- grammar arithmetic --parser-trace
 ```
 
 ## Las gramáticas del proyecto
+
+Paso 5. El catálogo de géneros, los tamaños de las 10 gramáticas, y G0 (28 producciones) contra G1 (40).
 
 ```sh
 npm run sabueso -- genres

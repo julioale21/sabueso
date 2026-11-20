@@ -1,6 +1,6 @@
 # NN — Nombre del concepto
 
-> Plantilla de ficha. Copiarla como `docs/concepts/NN-concept-name.md` (nombre de archivo en inglés, contenido en español) y completar las cinco partes.
+> Plantilla de ficha. Copiarla como `docs/concepts/NN-concept-name.md` (nombre de archivo en inglés, contenido en español), donde NN es el número de la tabla 7.1 del spec (no el número de paso). Completar las cinco partes en no más de unas 2 páginas: una ficha es una o dos diapositivas.
 
 ## 1. Definición formal
 
@@ -8,7 +8,7 @@ La definición tal como la da la bibliografía de la materia, con su notación. 
 
 ## 2. Ejemplo resuelto a mano
 
-Un caso chico, resuelto paso a paso sin el programa, con la entrada, cada paso intermedio y el resultado. Es el mismo caso que después se muestra por consola y que verifica la prueba.
+Un caso chico del dominio (un relato como `CRI PIS REV`, o una de las gramáticas del proyecto), resuelto paso a paso sin el programa, con la entrada, cada paso intermedio y el resultado. Es el mismo caso que después se muestra por consola y que verifica la prueba.
 
 ## 3. Dónde está en el código
 
@@ -26,4 +26,5 @@ Un caso chico, resuelto paso a paso sin el programa, con la entrada, cada paso i
 
 ## 5. Referencia bibliográfica
 
-Autor, _título_, sección y página.
+- Hopcroft, Motwani y Ullman, _Introducción a la teoría de autómatas, lenguajes y computación_, sección 5.1 (tema).
+- Augusto, sección 2.4.

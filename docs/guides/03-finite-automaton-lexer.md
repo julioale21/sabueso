@@ -1,9 +1,9 @@
 # Guía de estudio: el lexer del formato `.grammar` como AFD
 
-> **Paso 3 del SPEC 02.** Archivos: `packages/core/src/automata/deterministic-finite-automaton.ts`, `packages/core/src/grammar-format/lexer.ts`, `packages/core/src/command-line/grammars.ts`, `packages/core/src/command-line/commands/lex.ts` y `packages/core/grammars/test/arithmetic.grammar`.
+> **Paso 3 del SPEC 02.** Archivos: `packages/core/src/automata/deterministic-finite-automaton.ts`, `packages/core/src/grammar-format/lexer.ts`, `packages/core/src/command-line/commands/lex.ts`, `packages/core/src/command-line/arguments.ts` y los ejemplos `examples/grammars/story.grammar` y `lexical-error.grammar`.
 > Ficha teórica relacionada: [`docs/concepts/03-finite-automaton-lexer.md`](../concepts/03-finite-automaton-lexer.md).
 >
-> El autómata se diseñó primero (secciones 3 a 6) y el código reproduce exactamente ese grafo y esa tabla. Una prueba verifica que la tabla del código coincide con la de esta guía.
+> El autómata se diseñó primero (secciones 3 a 6) y el código reproduce exactamente ese grafo y esa tabla. Una prueba verifica que el código tiene los mismos estados, el mismo estado inicial, los mismos estados de aceptación y la misma fila de q₀ que esta guía. Las demás filas se verifican con los casos de tokens y de errores (sección 9.2).
 
 ---
 
@@ -32,8 +32,10 @@ Los espacios y los comentarios no producen tokens. Después, el parser (paso 4) 
 | #   | Etapa           | Entrada                  | Salida          | Paso  | Estado        |
 | --- | --------------- | ------------------------ | --------------- | ----- | ------------- |
 | 1   | **Lexer (AFD)** | **texto del `.grammar`** | **tokens**      | **3** | **este paso** |
-| 2   | Parser (LL(1))  | tokens                   | `GrammarRule[]` | 4     | pendiente     |
+| 2   | Parser (LL(1))  | tokens                   | `GrammarRule[]` | 4     | ✅ hecho      |
 | 3   | `buildGrammar`  | `GrammarRule[]`          | `Grammar`       | 2     | ✅ hecho      |
+
+`tokenizeGrammar(text)` es la única función pública del lexer. La llaman `parseGrammarText` (el parser del paso 4, antes de leer las reglas) y el comando `lex`, que solo muestra los tokens.
 
 ---
 
@@ -48,7 +50,7 @@ Los espacios y los comentarios no producen tokens. Después, el parser (paso 4) 
 | Q, estados    | los 13 estados de la sección 4, un conjunto finito                                    |
 | Σ, alfabeto   | las **clases de caracteres** de la sección 3, también finito                          |
 | δ: Q × Σ → Q  | la tabla de transiciones: para cada estado y clase, **a lo sumo un** estado siguiente |
-| q₀            | `start`                                                                               |
+| q₀            | `q0Start`: cada token se empieza a leer desde acá                                     |
 | F, aceptación | los estados donde termina un token completo, cada uno con el tipo de token que emite  |
 
 Es **determinista** porque para cada par (estado, clase) hay a lo sumo una transición, y no hay transiciones ε. Si falta una transición, el autómata se detiene. Detenerse en un estado de aceptación significa que el token terminó; detenerse en un estado que no es de aceptación es un error léxico.
@@ -105,41 +107,41 @@ Cómo leerlo:
 - **Flecha con etiqueta:** la transición δ para esa clase de carácter (sección 3). Una flecha que vuelve al mismo estado es un bucle: el estado sigue consumiendo caracteres de esa clase.
 - **Sin flecha** para un carácter: el autómata se detiene (ver la sección 4.3).
 
-| Estado | Nombre en el código        | Acepta                              |
-| ------ | -------------------------- | ----------------------------------- |
-| q₀     | `q0Start`                  | no (inicial)                        |
-| q₁     | `q1ReadingIdentifier`      | `IDENTIFIER`                        |
-| q₂     | `q2ExpectingArrowHead`     | no                                  |
-| q₃     | `q3ArrowRead`              | `ARROW`                             |
-| q₄     | `q4BarRead`                | `BAR`                               |
-| q₅     | `q5EpsilonRead`            | `EPSILON`                           |
-| q₆     | `q6ReadingLiteral`         | no                                  |
-| q₇     | `q7LiteralRead`            | `LITERAL`                           |
-| q₈     | `q8ExpectingDirectiveName` | no                                  |
-| q₉     | `q9ReadingDirective`       | `START` o `TERMINALS` (sección 4.4) |
-| q₁₀    | `q10ReadingComment`        | descartado                          |
-| q₁₁    | `q11ReadingSpaces`         | descartado                          |
-| q₁₂    | `q12NewlineRead`           | `NEWLINE`                           |
+| Estado | Nombre en el código        | Acepta                                                                 |
+| ------ | -------------------------- | ---------------------------------------------------------------------- |
+| q₀     | `q0Start`                  | no (inicial)                                                           |
+| q₁     | `q1ReadingIdentifier`      | `IDENTIFIER`                                                           |
+| q₂     | `q2ExpectingArrowHead`     | no                                                                     |
+| q₃     | `q3ArrowRead`              | `ARROW`                                                                |
+| q₄     | `q4BarRead`                | `BAR`                                                                  |
+| q₅     | `q5EpsilonRead`            | `EPSILON`                                                              |
+| q₆     | `q6ReadingLiteral`         | no                                                                     |
+| q₇     | `q7LiteralRead`            | `LITERAL`                                                              |
+| q₈     | `q8ExpectingDirectiveName` | no                                                                     |
+| q₉     | `q9ReadingDirective`       | `DIRECTIVE` (después se resuelve a `START` o `TERMINALS`, sección 4.4) |
+| q₁₀    | `q10ReadingComment`        | descartado                                                             |
+| q₁₁    | `q11ReadingSpaces`         | descartado                                                             |
+| q₁₂    | `q12NewlineRead`           | `NEWLINE`                                                              |
 
 ### 4.2 Tabla de transiciones δ
 
 Una celda vacía significa "no hay transición": el autómata se detiene ahí.
 
-| Estado                            | Acepta                | letter | digit | whitespace | lineBreak | hyphen | greaterThan | unicodeArrow | verticalBar | epsilonSign | singleQuote | hash | percentSign | otherCharacter |
-| --------------------------------- | --------------------- | ------ | ----- | ---------- | --------- | ------ | ----------- | ------------ | ----------- | ----------- | ----------- | ---- | ----------- | -------------- |
-| **q₀** `q0Start`                  | no                    | q₁     |       | q₁₁        | q₁₂       | q₂     |             | q₃           | q₄          | q₅          | q₆          | q₁₀  | q₈          |                |
-| **q₁** `q1ReadingIdentifier`      | `IDENTIFIER`          | q₁     | q₁    |            |           |        |             |              |             |             |             |      |             |                |
-| **q₂** `q2ExpectingArrowHead`     | no                    |        |       |            |           |        | q₃          |              |             |             |             |      |             |                |
-| **q₃** `q3ArrowRead`              | `ARROW`               |        |       |            |           |        |             |              |             |             |             |      |             |                |
-| **q₄** `q4BarRead`                | `BAR`                 |        |       |            |           |        |             |              |             |             |             |      |             |                |
-| **q₅** `q5EpsilonRead`            | `EPSILON`             |        |       |            |           |        |             |              |             |             |             |      |             |                |
-| **q₆** `q6ReadingLiteral`         | no                    | q₆     | q₆    | q₆         |           | q₆     | q₆          | q₆           | q₆          | q₆          | q₇          | q₆   | q₆          | q₆             |
-| **q₇** `q7LiteralRead`            | `LITERAL`             |        |       |            |           |        |             |              |             |             |             |      |             |                |
-| **q₈** `q8ExpectingDirectiveName` | no                    | q₉     |       |            |           |        |             |              |             |             |             |      |             |                |
-| **q₉** `q9ReadingDirective`       | `START` o `TERMINALS` | q₉     |       |            |           |        |             |              |             |             |             |      |             |                |
-| **q₁₀** `q10ReadingComment`       | descartado            | q₁₀    | q₁₀   | q₁₀        |           | q₁₀    | q₁₀         | q₁₀          | q₁₀         | q₁₀         | q₁₀         | q₁₀  | q₁₀         | q₁₀            |
-| **q₁₁** `q11ReadingSpaces`        | descartado            |        |       | q₁₁        |           |        |             |              |             |             |             |      |             |                |
-| **q₁₂** `q12NewlineRead`          | `NEWLINE`             |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| Estado                            | Acepta       | letter | digit | whitespace | lineBreak | hyphen | greaterThan | unicodeArrow | verticalBar | epsilonSign | singleQuote | hash | percentSign | otherCharacter |
+| --------------------------------- | ------------ | ------ | ----- | ---------- | --------- | ------ | ----------- | ------------ | ----------- | ----------- | ----------- | ---- | ----------- | -------------- |
+| **q₀** `q0Start`                  | no           | q₁     |       | q₁₁        | q₁₂       | q₂     |             | q₃           | q₄          | q₅          | q₆          | q₁₀  | q₈          |                |
+| **q₁** `q1ReadingIdentifier`      | `IDENTIFIER` | q₁     | q₁    |            |           |        |             |              |             |             |             |      |             |                |
+| **q₂** `q2ExpectingArrowHead`     | no           |        |       |            |           |        | q₃          |              |             |             |             |      |             |                |
+| **q₃** `q3ArrowRead`              | `ARROW`      |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₄** `q4BarRead`                | `BAR`        |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₅** `q5EpsilonRead`            | `EPSILON`    |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₆** `q6ReadingLiteral`         | no           | q₆     | q₆    | q₆         |           | q₆     | q₆          | q₆           | q₆          | q₆          | q₇          | q₆   | q₆          | q₆             |
+| **q₇** `q7LiteralRead`            | `LITERAL`    |        |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₈** `q8ExpectingDirectiveName` | no           | q₉     |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₉** `q9ReadingDirective`       | `DIRECTIVE`  | q₉     |       |            |           |        |             |              |             |             |             |      |             |                |
+| **q₁₀** `q10ReadingComment`       | descartado   | q₁₀    | q₁₀   | q₁₀        |           | q₁₀    | q₁₀         | q₁₀          | q₁₀         | q₁₀         | q₁₀         | q₁₀  | q₁₀         | q₁₀            |
+| **q₁₁** `q11ReadingSpaces`        | descartado   |        |       | q₁₁        |           |        |             |              |             |             |             |      |             |                |
+| **q₁₂** `q12NewlineRead`          | `NEWLINE`    |        |       |            |           |        |             |              |             |             |             |      |             |                |
 
 ### 4.3 Cómo se lee un token: _maximal munch_
 
@@ -166,11 +168,13 @@ Se llama _maximal munch_ ("el mordisco más grande") porque el autómata **no se
 | `%terminals`                       | `TERMINALS`                  |
 | cualquier otro (`%inicio`, `%foo`) | error: directiva desconocida |
 
-Es la técnica habitual de los compiladores para las palabras clave: el AFD reconoce la **forma** (`%` + letras) y una tabla decide **cuál** es. Codificar `%start` y `%terminals` letra por letra en δ agregaría 14 estados sin enseñar nada nuevo.
+Es la técnica habitual de los compiladores para las palabras clave: el AFD reconoce la **forma** (`%` + letras) y una tabla decide **cuál** es. Codificar `%start` y `%terminals` letra por letra en δ agregaría 14 estados sin enseñar nada nuevo. Por eso el autómata emite un tipo interno, `DIRECTIVE`, y `resolveDirective` lo cambia por `START` o `TERMINALS`. La traza de `lex --states` muestra el resultado del autómata, así que ahí vas a ver `DIRECTIVE`. La tabla de tokens muestra `START`.
 
 ### 4.5 El `NEWLINE` final
 
-Al terminar el texto, el lexer agrega un `NEWLINE` si la última línea no terminaba con un salto, y después `END_OF_FILE`. Así el parser puede exigir que toda regla termine en `NEWLINE`, aunque el archivo no tenga un salto de línea al final.
+Al terminar el texto, `closingTokens` agrega un `NEWLINE` si el último token no es un `NEWLINE` (por ejemplo, si el archivo no termina en salto de línea), y después siempre `END_OF_FILE`. Así el parser puede exigir que toda regla termine en `NEWLINE`.
+
+Los dos van en la posición que sigue al último carácter (`endPosition`). Si el archivo termina en salto de línea, esa posición es el comienzo de una línea nueva y vacía. Por eso en `arithmetic.grammar`, que tiene 5 líneas, `END_OF_FILE` está en 6:1.
 
 ---
 
@@ -178,22 +182,24 @@ Al terminar el texto, el lexer agrega un `NEWLINE` si la última línea no termi
 
 ### 5.1 Una línea, carácter por carácter
 
-La línea `E -> E '+' T # suma`:
+La línea 3 de `arithmetic.grammar`, `E -> E '+' T | T`, la misma de la sección 1. Es la misma línea que muestra `lex arithmetic --states` (sección 8) y que verifica la prueba `lex arithmetic --states` (sección 9.3).
 
-| Caracteres | Recorrido de estados | Por qué se detiene                      | Resultado                         |
-| ---------- | -------------------- | --------------------------------------- | --------------------------------- |
-| `E`        | q₀ → q₁              | el espacio no tiene transición desde q₁ | `IDENTIFIER` "E"                  |
-| ` `        | q₀ → q₁₁             | `-` no tiene transición desde q₁₁       | descartado                        |
-| `->`       | q₀ → q₂ → q₃         | q₃ no tiene transiciones                | `ARROW`                           |
-| ` `        | q₀ → q₁₁             |                                         | descartado                        |
-| `E`        | q₀ → q₁              |                                         | `IDENTIFIER` "E"                  |
-| ` `        | q₀ → q₁₁             |                                         | descartado                        |
-| `'+'`      | q₀ → q₆ → q₆ → q₇    | q₇ no tiene transiciones                | `LITERAL` "+" (sin comillas)      |
-| ` `        | q₀ → q₁₁             |                                         | descartado                        |
-| `T`        | q₀ → q₁              |                                         | `IDENTIFIER` "T"                  |
-| ` `        | q₀ → q₁₁             | `#` no tiene transición desde q₁₁       | descartado                        |
-| `# suma`   | q₀ → q₁₀ → … → q₁₀   | se acaba el texto                       | descartado                        |
-| (fin)      |                      |                                         | `NEWLINE` agregado, `END_OF_FILE` |
+| Caracteres | Recorrido de estados | Por qué se detiene                      | Resultado                    |
+| ---------- | -------------------- | --------------------------------------- | ---------------------------- |
+| `E`        | q₀ → q₁              | el espacio no tiene transición desde q₁ | `IDENTIFIER` "E"             |
+| ` `        | q₀ → q₁₁             | `-` no tiene transición desde q₁₁       | descartado                   |
+| `->`       | q₀ → q₂ → q₃         | q₃ no tiene transiciones                | `ARROW`                      |
+| ` `        | q₀ → q₁₁             |                                         | descartado                   |
+| `E`        | q₀ → q₁              |                                         | `IDENTIFIER` "E"             |
+| ` `        | q₀ → q₁₁             |                                         | descartado                   |
+| `'+'`      | q₀ → q₆ → q₆ → q₇    | q₇ no tiene transiciones                | `LITERAL` "+" (sin comillas) |
+| ` `        | q₀ → q₁₁             |                                         | descartado                   |
+| `T`        | q₀ → q₁              |                                         | `IDENTIFIER` "T"             |
+| ` `        | q₀ → q₁₁             |                                         | descartado                   |
+| `\|`       | q₀ → q₄              | q₄ no tiene transiciones                | `BAR`                        |
+| ` `        | q₀ → q₁₁             |                                         | descartado                   |
+| `T`        | q₀ → q₁              |                                         | `IDENTIFIER` "T"             |
+| `⏎`        | q₀ → q₁₂             | q₁₂ no tiene transiciones               | `NEWLINE`                    |
 
 ### 5.2 Un archivo completo, en forma simple: `examples/grammars/story.grammar`
 
@@ -209,14 +215,7 @@ Pistas  → PIS Pistas | PIS
 Cierre  -> 'fin' | ε
 ```
 
-El autómata es como alguien que lee el texto **letra por letra**, siempre con la misma regla:
-
-> Empiezo en **q₀**. Leo un carácter y miro en la tabla a qué estado paso. **Sigo mientras haya flecha.** Cuando no hay flecha para el carácter siguiente, me detengo y miro dónde quedé:
->
-> - si es un estado de aceptación (doble círculo), **corto ahí una palabra**: la guardo como token o, si es espacio o comentario, la tiro;
-> - si no es de aceptación, es un **error**.
->
-> Vuelvo a q₀ y sigo con el carácter que no pude consumir.
+Cada token se lee con el ciclo de la sección 4.3: desde q₀, seguir δ mientras haya flecha y mirar dónde quedó.
 
 #### Líneas 1 a 3: los comentarios
 
@@ -246,16 +245,6 @@ Resultado: `START  IDENTIFIER(Relato)  NEWLINE`.
 
 **Aquí actúa el _maximal munch_:** cuando leyó `R`, q₁ ya aceptaba, y podría haber cortado `R` como identificador. Pero **siguió mientras hubo flecha**, y por eso `Relato` es una sola palabra y no seis.
 
-#### Línea 5: `%terminals CRI PIS REV`
-
-Funciona igual que la línea 4: `%terminals` se resuelve a **`TERMINALS`**, y después vienen tres identificadores separados por espacios descartados.
-
-Resultado: `TERMINALS  IDENTIFIER(CRI)  IDENTIFIER(PIS)  IDENTIFIER(REV)  NEWLINE`.
-
-#### Línea 6: la línea en blanco
-
-Solo tiene el salto de línea: q₀ → q₁₂, **`NEWLINE`**.
-
 #### Línea 7: `Relato  -> CRI Pistas REV`
 
 1. `Relato`: q₁, **`IDENTIFIER`**.
@@ -267,15 +256,6 @@ Solo tiene el salto de línea: q₀ → q₁₂, **`NEWLINE`**.
 6. Salto: **`NEWLINE`**.
 
 **Importante:** el lexer **no sabe** que `Pistas` es no terminal y `CRI` es terminal. Para él los dos son simplemente `IDENTIFIER`. Esa diferencia la decide `buildGrammar` (paso 2), después de que el parser (paso 4) arme las reglas.
-
-#### Línea 8: `Pistas  → PIS Pistas | PIS`
-
-Es casi igual a la línea 7, con dos diferencias:
-
-- **`→`** es un solo carácter: q₀ → **q₃** directo, sin pasar por q₂. Da el mismo token, **`ARROW`**.
-- **`|`**: q₀ → **q₄**, que emite **`BAR`**. q₄ no tiene flechas, así que corta en el acto.
-
-Resultado: `IDENTIFIER ARROW IDENTIFIER IDENTIFIER BAR IDENTIFIER NEWLINE`.
 
 #### Línea 9: `Cierre  -> 'fin' | ε`
 
@@ -306,27 +286,40 @@ Se terminaron los caracteres. Como el último token ya es un `NEWLINE`, no hace 
 | 9                 | `IDENTIFIER ARROW LITERAL BAR EPSILON NEWLINE`                  |
 | fin               | `END_OF_FILE`                                                   |
 
+Las líneas 5, 6 y 8 no traen nada nuevo, salvo dos detalles de la línea 8: `→` va de q₀ a q₃ en un solo paso, sin pasar por q₂, y `|` va de q₀ a q₄, que no tiene salidas, así que el token termina enseguida.
+
 En una frase: **el lexer convierte una tira de caracteres en una tira de palabras con tipo, tirando lo que no importa (espacios y comentarios)**. Qué significan esas palabras juntas, es decir que una línea es una regla y que `|` separa alternativas, lo decide el parser del paso 4.
 
-Para verlo en vivo:
+Para verlo en vivo, ejecuta `npm run sabueso -- lex --grammar-file examples/grammars/story.grammar --states`. La traza muestra la primera línea que no es comentario ni está en blanco, que acá es la línea 4:
 
-```sh
-npm run sabueso -- lex --grammar-file examples/grammars/story.grammar --states
+```text
+DFA states for line 4: %start Relato
+
+Lexeme  States                                        Result
+------  --------------------------------------------  ----------
+%start  q0 ─%→ q8 ─s→ q9 ─t→ q9 ─a→ q9 ─r→ q9 ─t→ q9  DIRECTIVE
+␣       q0 ─␣→ q11                                    discarded
+Relato  q0 ─R→ q1 ─e→ q1 ─l→ q1 ─a→ q1 ─t→ q1 ─o→ q1  IDENTIFIER
+⏎       q0 ─⏎→ q12                                    NEWLINE
 ```
+
+`DIRECTIVE` es lo que emite el autómata. En la tabla de tokens de arriba ya aparece como `START` (sección 4.4).
 
 ---
 
 ## 6. Errores léxicos
 
-| Error                 | Dónde se detiene el autómata                                                            | Ejemplo                       |
-| --------------------- | --------------------------------------------------------------------------------------- | ----------------------------- |
-| Literal sin cerrar    | en `q6ReadingLiteral`, al llegar a un salto de línea o al final del texto               | `E -> '+`                     |
-| Carácter inválido     | en `q0Start`, sin transición para la clase del carácter                                 | `E -> @`, `E -> >`, `E -> 1a` |
-| Guion suelto          | en `q2ExpectingArrowHead`, sin `>` a continuación                                       | `E - T`                       |
-| `%` sin palabra       | en `q8ExpectingDirectiveName`, sin una letra a continuación                             | `% start`                     |
-| Directiva desconocida | en `q9ReadingDirective` (acepta), pero la palabra no está en la tabla de la sección 4.4 | `%inicio S`                   |
+Todos lanzan `GrammarSyntaxError`. El mensaje empieza con la posición, por ejemplo `Line 1, column 6: Invalid character '@'`.
 
-Todos lanzan `GrammarSyntaxError`, con la **línea y la columna** del problema: el comienzo del token sin terminar (literal, `-`, `%`, directiva) o el carácter inválido. El mensaje empieza con la posición, por ejemplo `Line 1, column 6: Invalid character '@'`.
+| Mensaje                                                      | Dónde se detiene el autómata                               | Posición informada     | Ejemplo                      |
+| ------------------------------------------------------------ | ---------------------------------------------------------- | ---------------------- | ---------------------------- |
+| `Unterminated literal: missing the closing quote`            | q₆, ante un salto de línea o el final del texto            | la comilla de apertura | `E -> '+`                    |
+| `Invalid character 'x'`                                      | q₀, sin transición para el carácter                        | el carácter            | `E -> @`, `E > T`, `E -> 1a` |
+| `Expected '>' after '-'`                                     | q₂, sin `>`                                                | el guion               | `E - T`                      |
+| `Expected a directive name after '%'`                        | q₈, sin letra                                              | el `%`                 | `% start`                    |
+| `Unknown directive "%inicio": expected %start or %terminals` | q₉ acepta, pero `resolveDirective` no encuentra la palabra | el `%`                 | `%inicio S`                  |
+
+Los cuatro primeros los arma `toSyntaxError` a partir del estado donde se detuvo el autómata. El último lo lanza `resolveDirective`.
 
 ---
 
@@ -371,19 +364,6 @@ Es M = (Q, Σ, δ, q₀, F) **como datos**:
 | `acceptingStates`                    | F      | los estados de aceptación, con el token que emiten; `null` = acepta y se descarta                                   |
 
 Los tres parámetros de tipo (`State`, `CharacterClass`, `TokenKind`) hacen que TypeScript verifique la tabla: una transición a un estado que no existe, o una clase mal escrita, no compila.
-
-#### `AutomatonToken<TokenKind>`
-
-```ts
-interface AutomatonToken<TokenKind> {
-  kind: TokenKind;
-  text: string;
-  line: number;
-  column: number;
-}
-```
-
-Un token reconocido: su tipo, el texto exacto que consumió y dónde empieza (línea y columna desde 1).
 
 #### `AutomatonEvent<State, TokenKind>`
 
@@ -453,14 +433,6 @@ for (;;) {
 
 Sigue δ **mientras haya transición**, sin detenerse en el primer estado de aceptación. Se detiene cuando se acaba el texto o cuando δ no tiene transición para el carácter, y devuelve el estado alcanzado y la posición del primer carácter que **no** consumió. Ese carácter queda para el próximo token.
 
-#### `nextState` (interna)
-
-```ts
-return automaton.transitions[state][automaton.classifyCharacter(character)];
-```
-
-Es literalmente δ(q, clase(c)): busca la fila del estado y, en ella, la columna de la clase. Si la celda no existe, devuelve `undefined` ("no hay transición").
-
 #### `tokenKindOfFinalState` (interna)
 
 Devuelve el tipo de token del estado donde terminó el token. Lanza `AutomatonStoppedError` en dos casos:
@@ -470,19 +442,25 @@ Devuelve el tipo de token del estado donde terminó el token. Lanza `AutomatonSt
 
 Distingue `undefined` (no acepta) de `null` (acepta y se descarta).
 
-#### `moveCursorPast` (interna)
+El segundo caso no hace falta en este lexer, porque q₀ no está en F. Está porque el ejecutor sirve para cualquier tabla: si el estado inicial de otra tabla aceptara, un carácter sin transición daría un token vacío, el cursor no avanzaría y el ciclo no terminaría nunca.
 
-Avanza una posición: después de `\n` pasa a la línea siguiente y a la columna 1; si no, suma una columna. Así cada token sabe su línea y columna sin recorrer el texto otra vez.
+#### Piezas cortas
+
+| Pieza                      | Qué es                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AutomatonToken`           | un token reconocido: `kind`, `text` (el lexema exacto), `line` y `column` donde empieza (desde 1)                                                                  |
+| `nextState` (interna)      | literalmente δ(q, clase(c)): `transitions[state][classifyCharacter(character)]`. Si la celda no existe, devuelve `undefined` ("no hay transición")                 |
+| `moveCursorPast` (interna) | avanza una posición: después de `\n` pasa a la línea siguiente, columna 1; si no, suma una columna. Así cada token sabe su posición sin volver a recorrer el texto |
 
 ### 7.2 `lexer.ts`: la tabla del formato `.grammar`
 
 #### `TokenKind` y `Token`
 
-Los tipos de token del formato, que son los **terminales de `meta.grammar`** (la gramática que va a usar el parser del paso 4): `IDENTIFIER`, `LITERAL`, `ARROW`, `BAR`, `EPSILON`, `NEWLINE`, `START`, `TERMINALS` y `END_OF_FILE`. Un `Token` tiene el tipo, el texto y la posición.
+Los tipos de token del formato, que son los **terminales de `meta.grammar`** (la gramática que usa el parser del paso 4): `IDENTIFIER`, `LITERAL`, `ARROW`, `BAR`, `EPSILON`, `NEWLINE`, `START`, `TERMINALS` y `END_OF_FILE`. Un `Token` tiene el tipo, el texto y la posición.
 
 #### `GrammarSyntaxError`
 
-El error de un archivo `.grammar` mal escrito, con `line` y `column`. El mensaje empieza con la posición (`Line 3, column 6: …`). El parser del paso 4 va a usar el mismo error.
+El error de un archivo `.grammar` mal escrito, con `line` y `column`. El mensaje empieza con la posición (`Line 3, column 6: …`). El parser del paso 4 usa el mismo error.
 
 #### `lexerStates` y `LexerState`
 
@@ -538,9 +516,7 @@ transitions: {
 acceptingStates: { q1ReadingIdentifier: 'IDENTIFIER', q3ArrowRead: 'ARROW', …, q11ReadingSpaces: null },
 ```
 
-Un estado sin transiciones (`q3ArrowRead: {}`) es un estado donde el token ya terminó. La prueba `the automaton of the guide` compara esta tabla con la de esta guía.
-
-`q9ReadingDirective` emite `DIRECTIVE`, un tipo interno que todavía no es `START` ni `TERMINALS` (ver la sección 4.4).
+Un estado sin transiciones (`q3ArrowRead: {}`) es un estado donde el token ya terminó. La prueba `the automaton of the guide` compara con esta guía los estados, F y la fila de q₀.
 
 #### `tokenizeGrammar(text, onEvent?)`
 
@@ -587,14 +563,7 @@ Busca el texto en la tabla de palabras reservadas (`%start` → `START`, `%termi
 
 #### `toSyntaxError` (interna)
 
-Traduce "el autómata se detuvo en el estado q" al error que eso significa (sección 6):
-
-| Estado donde se detuvo        | Mensaje                                           | Posición               |
-| ----------------------------- | ------------------------------------------------- | ---------------------- |
-| q₆ `q6ReadingLiteral`         | `Unterminated literal: missing the closing quote` | la comilla de apertura |
-| q₂ `q2ExpectingArrowHead`     | `Expected '>' after '-'`                          | el guion               |
-| q₈ `q8ExpectingDirectiveName` | `Expected a directive name after '%'`             | el `%`                 |
-| q₀ `q0Start`                  | `Invalid character 'x'`                           | el carácter inválido   |
+Traduce "el autómata se detuvo en el estado q" al mensaje de la tabla de la sección 6. Para un token sin terminar informa dónde **empezaba** (`tokenLine`, `tokenColumn`); para un carácter inválido, dónde está ese carácter.
 
 ### 7.3 La consola: `arguments.ts`, `grammars.ts` y `commands/lex.ts`
 
@@ -602,7 +571,7 @@ Un comando puede tomar la gramática de dos lugares:
 
 | Forma                                  | Ejemplo                             | Para qué                                                                            |
 | -------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------- |
-| un **nombre** de gramática incorporada | `lex arithmetic`                    | las gramáticas del programa (hoy solo `arithmetic`; el paso 5 agrega las demás)     |
+| un **nombre** de gramática incorporada | `lex arithmetic`, `lex g1`          | las gramáticas del programa (lista completa en la guía 05)                          |
 | un **archivo** con `--grammar-file`    | `lex --grammar-file prueba.grammar` | probar a mano cualquier gramática, y mostrar en la defensa que el motor es genérico |
 
 Hay que usar exactamente una de las dos. La opción `--grammar-file` es una decisión del 2026-11-19: el spec original solo aceptaba nombres (ver la sección de Decisiones del SPEC 02).
@@ -617,29 +586,26 @@ Hay que usar exactamente una de las dos. La opción `--grammar-file` es una deci
 
 Devuelve un mensaje de error de uso si aparece una opción que el comando no declara (`Unknown option: --verbose`) o si a una opción le falta el valor (`Missing value for --grammar-file`).
 
-**`command-line/grammars.ts`**: de dónde sale la gramática.
+**`command-line/grammars.ts`**: de dónde sale la gramática. El registro completo (nombres, alias, grupos) está en la guía 05. `lex` usa dos funciones:
 
-| Función                                  | Qué hace                                                                                                                                                                                                                                          |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `builtInGrammarIds()`                    | los nombres disponibles, para los mensajes de error                                                                                                                                                                                               |
-| `findBuiltInGrammar(id)`                 | la gramática con ese nombre, o `undefined`                                                                                                                                                                                                        |
-| `builtInGrammarPath(grammar)`            | la ruta del archivo de una gramática incorporada. Se calcula relativa al módulo (`import.meta.url`), así funciona igual desde `src/` (pruebas) y desde `dist/` (programa compilado)                                                               |
-| `resolveGrammarSource(parsed, usage)`    | elige la fuente: un nombre **o** `--grammar-file`. Devuelve un `GrammarSource` (`{ kind: 'built-in', grammar }` o `{ kind: 'file', path }`), o un mensaje de error de uso si no hay ninguna, hay las dos, sobran argumentos o el nombre no existe |
-| `readGrammarSource(source, environment)` | lee el texto con `environment.readFile` y le pone una etiqueta para la salida (el nombre o la ruta). Si el archivo no se puede leer, lanza `Cannot read the grammar file "…"`                                                                     |
+| Función                                  | Qué hace                                                                                                                                                                   |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveGrammarSource(parsed, usage)`    | elige la fuente: un nombre **o** `--grammar-file`, nunca los dos. Devuelve `{ kind: 'built-in', grammar }` o `{ kind: 'file', path }`, o un mensaje de error de uso        |
+| `readGrammarSource(source, environment)` | lee el texto con `environment.readFile` y le pone la etiqueta de la salida (el nombre o la ruta). Si el archivo no se puede leer, lanza `Cannot read the grammar file "…"` |
 
 La ruta relativa de `--grammar-file` se resuelve en `command-line.ts`, el único archivo que toca Node, desde el directorio donde se ejecutó el comando. `npm run` se mueve a la raíz del proyecto antes de ejecutar el script, pero guarda el directorio original en la variable `INIT_CWD`.
 
 **`command-line/commands/lex.ts`**: el comando `lex`.
 
-| Función                 | Qué hace                                                                                                                                                   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lexCommand.run`        | interpreta los argumentos, resuelve la fuente, lee el texto e imprime. Un error de uso termina con código 2                                                |
-| `printLex`              | imprime la tabla de tokens y, con `--states`, la traza de estados                                                                                          |
-| `formatTokens`          | la tabla Token / Text / Line:column                                                                                                                        |
-| `formatFirstRuleStates` | busca la primera regla del archivo (la primera línea que no está en blanco ni es un comentario) y muestra su traza. Si el archivo no tiene reglas, lo dice |
-| `traceLine`             | corre el lexer sobre esa línea con un observador: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                         |
-| `stateName`             | `q3` para `q3ArrowRead`: la posición en `lexerStates`                                                                                                      |
-| `visible`               | muestra el espacio como `␣`, el salto como `⏎` y el tabulador como `⇥`                                                                                     |
+| Función                 | Qué hace                                                                                                                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lexCommand.run`        | interpreta los argumentos, resuelve la fuente, lee el texto e imprime. Un error de uso termina con código 2                                                                                                    |
+| `printLex`              | imprime la tabla de tokens y, con `--states`, la traza de estados                                                                                                                                              |
+| `formatTokens`          | la tabla Token / Text / Line:column                                                                                                                                                                            |
+| `formatFirstRuleStates` | traza la primera línea que no está en blanco ni es un comentario. Suele ser una regla, pero puede ser una directiva, como en `story.grammar`. Si el archivo solo tiene comentarios y líneas en blanco, lo dice |
+| `traceLine`             | corre el lexer sobre esa línea con un observador: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                                                                             |
+| `stateName`             | `q3` para `q3ArrowRead`: toma el número con que empieza el nombre (`/^q\d+/`)                                                                                                                                  |
+| `visible`               | muestra el espacio como `␣`, el salto como `⏎` y el tabulador como `⇥`                                                                                                                                         |
 
 **Códigos de salida:**
 
@@ -658,8 +624,6 @@ La ruta relativa de `--grammar-file` se resuelve en `command-line.ts`, el único
 npm run sabueso -- lex arithmetic
 npm run sabueso -- lex arithmetic --states
 ```
-
-Con `--states`, para la primera regla de `arithmetic.grammar`:
 
 ```text
 DFA states for line 3: E -> E '+' T | T
@@ -682,7 +646,7 @@ T       q0 ─T→ q1                IDENTIFIER
 ⏎       q0 ─⏎→ q12               NEWLINE
 ```
 
-Cada fila se puede seguir sobre el grafo de la sección 4.1.
+Es la tabla de la sección 5.1: cada fila se puede seguir sobre el grafo de la sección 4.1.
 
 Con un archivo propio. En `examples/grammars/` hay dos listos para probar:
 
@@ -703,11 +667,13 @@ npm run sabueso -- lex --grammar-file prueba.grammar
 npm run sabueso -- lex --grammar-file prueba.grammar --states
 ```
 
-Si el archivo tiene un error léxico, se ve por consola con su posición y el código de salida es 1:
+Con `lexical-error.grammar`, el error se ve por consola con su posición, y el código de salida es 1:
 
 ```text
-Error: Line 1, column 6: Unterminated literal: missing the closing quote
+Error: Line 4, column 6: Unterminated literal: missing the closing quote
 ```
+
+La columna 6 es la comilla de apertura de `'b`: el error apunta al comienzo del literal sin cerrar, no al final de la línea.
 
 ---
 
@@ -771,6 +737,8 @@ Guiada por datos, como la del paso 2: los casos están en `test/fixtures/lexer-c
 | fila de q₀           | la fila completa de `q0Start` de la tabla δ                                   |
 | clases de caracteres | 18 caracteres de ejemplo y su clase (letras con acento, `_`, `ε`, `\r`, `$`…) |
 
+Las demás filas de δ no se comparan una por una: se verifican con los casos de tokens y de errores de arriba (por ejemplo, la fila de q₆ con `literal contents` y `unterminated literal`).
+
 ### 9.3 La consola: `test/command-line/lex.test.ts` y `arguments.test.ts`
 
 | Prueba                    | Qué verifica                                                                                                                                                                    |
@@ -783,11 +751,6 @@ Guiada por datos, como la del paso 2: los casos están en `test/fixtures/lexer-c
 | archivo inexistente       | código 1 y `Cannot read the grammar file "missing.grammar"`                                                                                                                     |
 | errores de uso            | sin gramática, con nombre y archivo a la vez, con un argumento de más, `--grammar-file` sin valor, una opción desconocida o un nombre desconocido: código 2 y el mensaje exacto |
 | `parseArguments`          | separa posicionales, _flags_ y opciones con valor en cualquier orden; rechaza opciones desconocidas y opciones sin valor                                                        |
-
-------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `lex arithmetic` | código 0, la tabla de tokens con posiciones reales del archivo (`IDENTIFIER E 3:1`, `LITERAL id 5:18`, `END_OF_FILE 6:1`) |
-| `lex arithmetic --states` | la traza de la primera regla, fila por fila (`->` = `q0 ─-→ q2 ─>→ q3`, el literal pasa por q₆) |
-| errores de uso | sin gramática, con un argumento de más, con una opción desconocida o con un nombre desconocido: código 2 y el mensaje exacto |
 
 ---
 
@@ -810,3 +773,12 @@ El AFD reconoce la forma (`%` seguido de letras) y una tabla de palabras reserva
 
 **¿Al leer un `|` el autómata ya acepta?**
 Sí. δ(q₀, `|`) = q₄, que es de aceptación (emite `BAR`) y no tiene transiciones de salida. Con el carácter siguiente, sea cual sea, no hay transición: el token termina ahí y mide un carácter. Pasa lo mismo con `ε` (q₅), con `→` (q₃) y con el salto de línea (q₁₂). Esos estados no tienen bucles, así que nunca se acumulan dos `|` en un mismo token: `||` son dos tokens `BAR`.
+
+**¿Qué diferencia hay entre `null` y `undefined` en `acceptingStates`?**
+`null` significa que el estado acepta pero el token se descarta (espacios y comentarios). `undefined`, es decir que el estado no figura, significa que no acepta: detenerse ahí es un error léxico.
+
+**¿El lexer sabe qué identificadores son terminales?**
+No. Para el lexer, `CRI` y `Pistas` son los dos `IDENTIFIER`. La diferencia la decide `buildGrammar` (paso 2), según qué identificadores aparecen como lado izquierdo de una regla.
+
+**¿Por qué `'->'` dentro de comillas no es una flecha?**
+Porque después de la comilla el autómata está en q₆, y q₆ consume cualquier carácter salvo la comilla y el salto de línea. La flecha solo se reconoce desde q₀. Lo verifica el caso `literal contents`.

@@ -25,7 +25,7 @@ S = {
  'q2':  (COL1, row(0), 'intermediate', False, None, None, None, None),
  'q3':  (COL2, row(0), 'token', True, 'ARROW', 'right', None, None),
  'q8':  (COL1, row(1), 'intermediate', False, None, None, None, None),
- 'q9':  (COL2, row(1), 'token', True, 'START / TERMINALS', 'right', 'top', 'letra'),
+ 'q9':  (COL2, row(1), 'token', True, 'DIRECTIVE', 'right', 'top', 'letra'),
  'q10': (COL1, row(2), 'discarded', True, 'descartado', 'below', 'right', 'todo salvo salto'),
  'q11': (COL1, row(3), 'discarded', True, 'descartado', 'below', 'right', 'espacio'),
  'q12': (COL1, row(4), 'token', True, 'NEWLINE', 'right', None, None),

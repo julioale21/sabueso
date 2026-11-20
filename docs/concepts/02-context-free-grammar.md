@@ -23,7 +23,7 @@ Pistas -> PIS Pistas | ε
 ```
 
 1. **N** son los lados izquierdos: N = {Relato, Pistas}.
-2. **Σ** son los demás símbolos: Σ = {CRI, PIS, REV}.
+2. **Σ** son los demás símbolos: Σ = {CRI, PIS, REV}. ε no está, porque no es un símbolo sino la cadena vacía.
 3. **S** es el lado izquierdo de la primera regla: S = Relato.
 4. **P**, numeradas en orden: 0 `Relato → CRI Pistas REV`, 1 `Pistas → PIS Pistas`, 2 `Pistas → ε`.
 
@@ -33,23 +33,25 @@ Relato ⇒₀ CRI Pistas REV ⇒₁ CRI PIS Pistas REV ⇒₂ CRI PIS REV
 
 Por lo tanto, `CRI PIS REV` ∈ L(G). En general, L(G) = { CRI PISⁿ REV | n ≥ 0 }.
 
-**Por qué existe `%terminals`:** si en la primera regla se escribe `Pistaz` por error, sin `%terminals` la gramática se construye igual, con `Pistaz` como terminal, y L(G) = {CRI Pistaz REV}: un error silencioso. Con `%terminals CRI PIS REV`, la construcción falla y nombra `Pistaz`.
+**Por qué existe `%terminals`:** si en la primera regla se escribe `Pistass` por error, sin `%terminals` la gramática se construye igual, con `Pistass` como terminal, y L(G) = {CRI Pistass REV}: un error silencioso. Con `%terminals CRI PIS REV`, la construcción falla con `Undeclared symbol "Pistass"`.
 
 ## 3. Dónde está en el código
 
-| Qué                                 | Dónde                                                                                           |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Tipos `Grammar` y `Production`      | `packages/core/src/grammar/types.ts`                                                            |
-| Construcción y validación de G      | `buildGrammar` en `packages/core/src/grammar/build.ts`                                          |
-| Producción en notación de la teoría | `formatProduction` en `grammar/build.ts`                                                        |
-| Comando de consola                  | `npm run sabueso -- demo-grammar` arma `E → E + T \| T`, `T → id` en código e imprime la 4-upla |
+| Qué                                 | Dónde                                                                                                                                                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tipos `Grammar` y `Production`      | `packages/core/src/grammar/types.ts`                                                                                                                                                                 |
+| Construcción y validación de G      | `buildGrammar` en `packages/core/src/grammar/build.ts`                                                                                                                                               |
+| Producción en notación de la teoría | `formatProduction` en `grammar/build.ts`                                                                                                                                                             |
+| Producción ε                        | `rightSide: []` (lado derecho vacío) en `Production`, `grammar/types.ts`                                                                                                                             |
+| Comando de consola                  | `npm run sabueso -- demo-grammar` arma `E → E + T \| T`, `T → id` en código e imprime la 4-upla. `npm run sabueso -- grammar g1` imprime la de G1: 21 no terminales, 14 terminales y 40 producciones |
 
 ## 4. Qué prueba lo verifica
 
-| Prueba                                        | Qué verifica                                                                                                                                                                                                                        |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core/test/grammar-build.test.ts`    | Clasificación de N y Σ, numeración, símbolo inicial, producciones ε, literales, y cada error de construcción (inicio inexistente, terminal no declarado, producción duplicada, literal que choca con un no terminal, `$` reservado) |
-| `packages/core/test/cli/demo-grammar.test.ts` | La salida exacta del comando                                                                                                                                                                                                        |
+| Prueba                                                 | Qué verifica                                                                                                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/test/grammar-build.test.ts`             | Clasificación de N y Σ, numeración, índice, símbolo inicial, producciones ε, literales y un caso por cada mensaje de error                      |
+| `packages/core/test/grammar-build-cases.test.ts`       | 15 gramáticas válidas (compara la 4-upla completa) y 14 rechazadas (compara el mensaje exacto). Casos en `test/fixtures/grammar-build-cases.ts` |
+| `packages/core/test/command-line/demo-grammar.test.ts` | La salida exacta del comando                                                                                                                    |
 
 ## 5. Referencia bibliográfica
 
