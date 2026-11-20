@@ -1029,6 +1029,9 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `trees/derivation.ts`.
     - Prueba: la derivación de A1 con G1 coincide paso a paso con la sección 9.2. Ficha 20.
     - **Consola:** `npm run sabueso -- derive --grammar g1 "CRI SOS PIS INT REV"` imprime las 19 formas sentenciales numeradas (pasos 0 a 18), con la producción aplicada en cada una.
+    - **Decisiones (2026-11-20):**
+      - `leftmostDerivation(tree)` recorre el árbol en preorden y reemplaza la primera aparición del lado izquierdo de cada producción (que es el no terminal de más a la izquierda, porque N ∩ Σ = ∅). La derivación de A1 con G1 coincide con la sección 9.2.
+      - El comando agrega `--tree k` (por defecto 1), para mostrar otra derivación del mismo relato en una gramática ambigua, y acepta `--file`.
 
 22. **API pública.**
     - `src/index.ts`: `parseGrammarText`, `buildGrammar`, `analyzeGrammar`, `parse`, `renderTree`, `renderDerivation`, `runDeterministicAutomaton`, `createCommandLineProgram` y el catálogo de géneros (`genres`), más los tipos públicos, y los módulos de FNC, CYK, AP y búsquedas acotadas a medida que se agregan. `buildGrammar` y `runDeterministicAutomaton` se exportan porque el SPEC 04 los reutiliza.
@@ -1349,7 +1352,7 @@ Las decisiones generales de tecnología (TypeScript estricto, `tsc` + `node`, si
 - **No:** LR(k) en cualquier forma. Ningún componente lo necesita, y el autor pidió incluirlo solo si se usa en el fondo.
 - **No:** código de Máquina de Turing. Ningún algoritmo lo requiere. Su lugar teórico (decisores, Church-Turing, indecidibilidad) queda cubierto en la ficha 27, de nuevo por la regla "solo si se usa".
 - **Sí:** G1 factorizada a izquierda y LL(1). Su no ambigüedad queda certificada por el propio motor de análisis, en vez de depender solo de una demostración a mano o de una búsqueda acotada que no prueba nada.
-- **Costo asumido de la factorización:** G1 suma 10 no terminales `…Opc` o anulables, y la derivación de A1 tiene 18 pasos, 5 de ellos ε. Esto contradice en parte el argumento del anteproyecto ("los árboles deben corresponder al diseño"). Respuesta para la defensa: la factorización es parte de la gramática que **diseña el autor**, mientras que los `T_a` y `Xn` de la FNC los introduce la máquina. El SPEC 03 podrá colapsar visualmente los subárboles ε.
+- **Costo asumido de la factorización:** G1 suma 10 no terminales `…Opc` o anulables, y la derivación de A1 tiene 18 pasos, 6 de ellos ε (corregido el 2026-11-20: decía 5). Esto contradice en parte el argumento del anteproyecto ("los árboles deben corresponder al diseño"). Respuesta para la defensa: la factorización es parte de la gramática que **diseña el autor**, mientras que los `T_a` y `Xn` de la FNC los introduce la máquina. El SPEC 03 podrá colapsar visualmente los subárboles ε.
 - **No:** una G1 "más legible" no LL(1) (con `Lineas → LineaAbierta Lineas | LineaCerrada Pasos`). Era no ambigua, pero solo podía argumentarse a mano. La versión LL(1) se autoverifica.
 - **Sí:** G1 cambia el lenguaje (L(G1) ⊊ L(G0)). El género no admite descartar una sospecha inexistente, el anteproyecto pide comparar "qué relatos acepta una y no la otra", y `compareLanguages` lo exhibe.
 - **Sí:** el formato `.grammar` propio, con lexer AFD y parser LL(1). El anteproyecto pide gramáticas como archivos de texto, y el lector aplica dos conceptos de la materia en vez de ser código ad hoc.

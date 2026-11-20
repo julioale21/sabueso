@@ -186,3 +186,12 @@ npm run sabueso -- count --grammar g0 "CTX HAL ENC INT SOS PIS DSC REV CNF CAP"
 npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt
 npm run sabueso -- count --grammar g1 --file packages/core/test/fixtures/l1.txt
 ```
+
+## La derivación más a la izquierda
+
+Paso 21. El árbol escrito como sucesión de reemplazos, desde el símbolo inicial hasta el relato. Con G0, `--tree` muestra otra derivación del mismo relato: la ambigüedad con su definición formal.
+
+```sh
+npm run sabueso -- derive --grammar g1 "CRI SOS PIS INT REV"
+npm run sabueso -- derive --grammar g0 --tree 2 "CRI SOS PIS INT REV"
+```
