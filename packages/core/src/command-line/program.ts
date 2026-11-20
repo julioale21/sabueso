@@ -15,6 +15,7 @@ import { nullableCommand } from './commands/nullable.js';
 import { predictiveTableCommand } from './commands/predictive-table.js';
 import { tokensCommand } from './commands/tokens.js';
 import { traceCommand } from './commands/trace.js';
+import { treesCommand } from './commands/trees.js';
 import { usefulCommand } from './commands/useful.js';
 import { formatGrammarGroups } from './built-in-grammars.js';
 import { createCommandLineProgram } from './run.js';
@@ -37,6 +38,7 @@ export const runCommandLine = createCommandLineProgram({
     earleyCommand,
     traceCommand,
     epsilonTreesCommand,
+    treesCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

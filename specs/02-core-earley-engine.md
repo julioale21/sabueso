@@ -1007,6 +1007,11 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `trees/tree.ts`, `trees/enumerate.ts` (`function*` con límite) y `trees/render.ts` (árbol ASCII con `├─` y `└─`).
     - Pruebas: A1 con G0 da 4 árboles distintos. Con límite 2 da 2. El render de un árbol chico coincide con un texto esperado. Fichas 18 y 21 (borrador).
     - **Consola:** `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV" [--max 50]` imprime cada árbol numerado.
+    - **Decisiones (2026-11-20):**
+      - `enumerateTrees(grammar, recognition)` es un generador que sigue los enlaces desde ($S → S •, 0); `parseTrees(grammar, recognition, limit = 50)` junta hasta el límite. El árbol que se entrega es el de S (sin la raíz $S).
+      - Ciclos: se lleva el conjunto de ítems del camino y se saltea la rama que vuelve a uno; así la enumeración siempre termina (el conteo del paso 20 dirá `'infinite'`).
+      - El comando avisa si `--max` cortó la lista (pide un árbol más que el límite para saberlo) y, si hay más de uno, que la gramática es ambigua para esa entrada.
+      - La ficha 21 queda en borrador; se completa en el paso 27.
 
 20. **Conteo.**
     - `trees/count.ts`, con `bigint`, memoización y detección de ciclos.

@@ -166,3 +166,13 @@ npm run sabueso -- epsilon-trees --grammar g1 CuerpoLinea
 npm run sabueso -- epsilon-trees --grammar g1
 npm run sabueso -- epsilon-trees --grammar-file examples/grammars/epsilon-choices.grammar S
 ```
+
+## Los árboles de un relato
+
+Paso 19. Los árboles de derivación, reconstruidos desde los enlaces del chart y dibujados. A1 tiene 4 árboles en G0 (es ambigua) y 1 en G1.
+
+```sh
+npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV"
+npm run sabueso -- trees --grammar g1 "CRI SOS PIS INT REV"
+npm run sabueso -- trees --grammar g1 "CRI PIS REV"
+```
