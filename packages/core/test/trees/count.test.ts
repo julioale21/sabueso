@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { recognize } from '../../src/earley/recognizer.js';
 import { tokenizeSequence } from '../../src/input/sequence.js';
-import { catalan, countTrees } from '../../src/trees/count.js';
+import { countTrees } from '../../src/trees/count.js';
+import { catalan } from '../helpers/catalan.js';
 import { parseTrees } from '../../src/trees/enumerate.js';
 import { loadBuiltInGrammar, readL1 } from '../helpers/load.js';
 

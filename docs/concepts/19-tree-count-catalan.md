@@ -1,4 +1,4 @@
-# 19 — Conteo de árboles y números de Catalan
+# 19 — Conteo de árboles
 
 ## 1. Definición formal
 
@@ -8,7 +8,7 @@
   - se recuerda la cuenta de cada ítem (memoización): cada ítem se cuenta una sola vez.
 - Se usa **`bigint`**: los números crecen muy rápido y `number` pierde precisión después de 2⁵³.
 - Si el recorrido encuentra un ítem que todavía se está contando, hay un ciclo: la cuenta es **`'infinite'`**.
-- **Números de Catalan:** C(n) = (2n)! / ((n + 1)! n!) = 1, 1, 2, 5, 14, 42, 132… C(n) es la cantidad de formas de agrupar n + 1 elementos con paréntesis binarios. En G0, `Pasos → Pasos Pasos` agrupa los pasos de a dos: **n pasos sin sospechas dan C(n − 1) árboles**.
+- **Crecimiento en G0:** `Pasos → Pasos Pasos` agrupa los pasos de a dos de todas las formas posibles, y cada agrupación es un árbol: la cantidad crece **exponencialmente** con los pasos. _Nota fuera de la materia:_ esa sucesión (1, 1, 2, 5, 14, 42…) son los números de Catalan, C(n − 1) para n pasos; las pruebas la usan para comprobar L1.
 
 ## 2. Ejemplo resuelto a mano
 
@@ -19,21 +19,21 @@ G0, `CRI PIS PIS PIS REV` (3 pasos): `Pasos` tiene que agrupar `PIS PIS PIS` de 
 | (PIS PIS) PIS |
 | PIS (PIS PIS) |
 
-C(3 − 1) = C(2) = **2 árboles**. Con 4 pasos, C(3) = 5; con 198 pasos (L1), C(197): un número de 115 dígitos.
+**2 árboles**. Con 4 pasos, 5; con 198 pasos (L1), un número de 115 dígitos.
 
-| Relato (tabla 9.1)                           | G0     | G1  |
-| -------------------------------------------- | ------ | --- |
-| V1 `CTX HAL ENC INT SOS PIS DSC REV CNF CAP` | 8      | 1   |
-| V3 `CRI ENC SOS INT DSC PIS SOS ATQ REV CAP` | 112    | 1   |
-| A1 `CRI SOS PIS INT REV`                     | 4      | 1   |
-| L1 `CRI` + 198 × `PIS` + `REV`               | C(197) | 1   |
+| Relato (tabla 9.1)                           | G0          | G1  |
+| -------------------------------------------- | ----------- | --- |
+| V1 `CTX HAL ENC INT SOS PIS DSC REV CNF CAP` | 8           | 1   |
+| V3 `CRI ENC SOS INT DSC PIS SOS ATQ REV CAP` | 112         | 1   |
+| A1 `CRI SOS PIS INT REV`                     | 4           | 1   |
+| L1 `CRI` + 198 × `PIS` + `REV`               | 115 dígitos | 1   |
 
 ## 3. Dónde está en el código
 
 | Qué                | Dónde                                                                             |
 | ------------------ | --------------------------------------------------------------------------------- |
 | Archivo            | `packages/core/src/trees/count.ts`                                                |
-| Funciones          | `countTrees(grammar, recognition)` y `catalan(n)`                                 |
+| Función            | `countTrees(grammar, recognition)`                                                |
 | Comando de consola | `npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt` |
 
 ## 4. Qué prueba lo verifica
@@ -46,4 +46,4 @@ C(3 − 1) = C(2) = **2 árboles**. Con 4 pasos, C(3) = 5; con 198 pasos (L1), C
 ## 5. Referencia bibliográfica
 
 - SPEC 02, sección 3.20.
-- Graham, Knuth y Patashnik, _Matemáticas concretas_, sección 7.5 (los números de Catalan).
+- Para la nota sobre la sucesión: Graham, Knuth y Patashnik, _Matemáticas concretas_, sección 7.5 (los números de Catalan).

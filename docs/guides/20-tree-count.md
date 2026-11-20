@@ -1,6 +1,6 @@
 # Guía de estudio: 20 — Contar los árboles
 
-> **Paso 20 del SPEC 02.** Archivos: `packages/core/src/trees/count.ts`, `packages/core/src/command-line/story-source.ts` (la opción `--file`) y el comando `count`.
+> **Paso 20 del SPEC 02.** Archivos: `packages/core/src/trees/count.ts`, `packages/core/test/helpers/catalan.ts` (solo para las pruebas), `packages/core/src/command-line/story-source.ts` (la opción `--file`) y el comando `count`.
 > Ficha teórica relacionada: [`docs/concepts/19-tree-count-catalan.md`](../concepts/19-tree-count-catalan.md).
 
 ---
@@ -20,7 +20,7 @@ Este paso **cuenta los árboles sin armarlos**. Da el número exacto de L1 en un
 **Para qué sirve:**
 
 - comprobar los números de la tabla 9.1 del spec;
-- mostrar el **crecimiento de Catalan** de G0 frente al **1 constante** de G1: el argumento cuantitativo de la defensa;
+- mostrar que en G0 la cantidad de árboles **crece exponencialmente** con los pasos, frente al **1 constante** de G1: el argumento cuantitativo de la defensa;
 - la web muestra el total de árboles de cada relato;
 - con una gramática cíclica, decir `infinite` en lugar de no terminar.
 
@@ -46,19 +46,21 @@ La enumeración (paso 19) recorre los enlaces y, por cada combinación, **arma**
 
 El mismo ítem aparece como hijo de muchos otros. Sin memoria, se contaría una y otra vez, y el tiempo crecería como la cantidad de árboles (exponencial). **Recordando la cuenta de cada ítem**, cada uno se cuenta una sola vez: el tiempo es proporcional a la cantidad de ítems y enlaces del chart (decenas de miles para L1), no a la de árboles (10¹¹⁴).
 
-### 2.3 Catalan
+### 2.3 Por qué G0 crece tan rápido
 
-En G0, `Pasos → Pasos Pasos` permite agrupar los pasos de a dos de cualquier forma. Con n pasos, las formas de agruparlos con paréntesis binarios son el número de Catalan **C(n − 1)**:
+En G0, `Pasos → Pasos Pasos` permite agrupar los pasos de a dos de cualquier forma, como poner paréntesis en una suma sin reglas de asociatividad. Cada agrupación distinta es un árbol distinto:
 
-| Pasos | Agrupaciones                  | Árboles en G0       |
-| ----- | ----------------------------- | ------------------- |
-| 1     | PIS                           | C(0) = 1            |
-| 2     | (PIS PIS)                     | C(1) = 1            |
-| 3     | (PIS PIS) PIS · PIS (PIS PIS) | C(2) = 2            |
-| 4     | …                             | C(3) = 5            |
-| 198   | …                             | C(197): 115 dígitos |
+| Pasos | Agrupaciones                  | Árboles en G0            |
+| ----- | ----------------------------- | ------------------------ |
+| 1     | PIS                           | 1                        |
+| 2     | (PIS PIS)                     | 1                        |
+| 3     | (PIS PIS) PIS · PIS (PIS PIS) | 2                        |
+| 4     | …                             | 5                        |
+| 198   | …                             | un número de 115 dígitos |
 
-Crece aproximadamente como 4ⁿ: **exponencial**. En G1, siempre 1.
+Cada paso más multiplica los árboles casi por 4: el crecimiento es **exponencial**. En G1, siempre 1.
+
+**Nota (no es teoría de la materia):** la sucesión 1, 1, 2, 5, 14, 42… tiene nombre: son los **números de Catalan**, C(n) = (2n)! / ((n + 1)! n!). Con n pasos, G0 tiene C(n − 1) árboles. El programa no los usa para contar; solo las pruebas, para comprobar que el número de L1 es el correcto.
 
 ### 2.4 Ciclos: infinito
 
@@ -71,7 +73,7 @@ Si el recorrido llega a un ítem que **todavía se está contando**, ese ítem d
 - **`bigint`:** C(197) tiene 115 dígitos. `number` (un decimal de 64 bits) solo es exacto hasta 2⁵³ ≈ 9 × 10¹⁵; después redondea. `bigint` es exacto para cualquier tamaño.
 - **Memoización por ítem:** dos ítems iguales en conjuntos distintos son objetos distintos, así que la memoria usa el objeto mismo como clave (`Map<EarleyItem, …>`).
 - **Mismos enlaces que la enumeración:** el conteo y la enumeración tienen que dar lo mismo; una prueba lo verifica en cuatro gramáticas.
-- **`catalan(n)` en el código:** para comparar L1 con la fórmula, como pide el spec, y para que la defensa pueda mostrar que el número no es casualidad.
+- **La fórmula de Catalan solo en las pruebas** (`test/helpers/catalan.ts`): sirve para comprobar que L1 da el número correcto, como pide el spec. El motor no la necesita para contar.
 - **`--file`:** L1 tiene 200 eventos; se lee de `test/fixtures/l1.txt`. La lectura vive en `command-line/story-source.ts`, para que la usen otros comandos (`parse`, `bench`).
 
 ---
@@ -157,27 +159,13 @@ return countEpsilonTrees(context.grammar, context.nullable, link.symbol, context
 - Un ítem hijo: su propia cuenta (recursiva, con la misma memoria).
 - Un anulable salteado: la cantidad de árboles ε del símbolo (paso 18). En G1 siempre es 1.
 
-### 5.4 `catalan(n)`
-
-```ts
-let value = 1n;
-for (let k = 0; k < n; k++) {
-  value = (value * 2n * BigInt(2 * k + 1)) / BigInt(k + 2);
-}
-return value;
-```
-
-- Usa la recurrencia **C(k + 1) = C(k) × 2(2k + 1) / (k + 2)**, que sale de la fórmula C(n) = (2n)! / ((n + 1)! n!) sin calcular factoriales enormes.
-- **Se multiplica antes de dividir:** cada resultado intermedio es un entero, así que la división de `bigint` (que trunca) es exacta.
-- La prueba la compara con la fórmula de factoriales para n = 30.
-
-### 5.5 `readStory(parsed, environment)` (`command-line/story-source.ts`)
+### 5.4 `readStory(parsed, environment)` (`command-line/story-source.ts`)
 
 - Si hay `--file`, lee el archivo y lo separa en eventos (como el paso 6). El título dice `200 events from l1.txt`.
 - Si no, usa las palabras de la línea de comandos.
 - Las dos cosas a la vez es un error de uso; un archivo que no existe da `Cannot read the story file`.
 
-### 5.6 El comando `count`
+### 5.5 El comando `count`
 
 - Imprime el número con su interpretación: `0 trees` (rechazado), `1 tree: unambiguous`, `8 trees: the grammar is ambiguous`, el número completo con su cantidad de dígitos si es enorme, o `Infinitely many trees`.
 - Mide el tiempo del reconocimiento y el conteo con `performance.now()`.
@@ -224,8 +212,7 @@ npm run sabueso -- count --grammar g1 --file packages/core/test/fixtures/l1.txt 
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | tabla 9.1              | V1, V2, V3, A1, M1, I5, I7 e I1 con G0 y G1 (lo pide el spec)                                                       |
 | L1                     | C(197) en G0, comparado con la fórmula, 115 dígitos; 1 en G1 (lo pide el spec)                                      |
-| Catalan                | con n pistas, C(n − 1) para n = 1 a 12                                                                              |
-| `catalan`              | 1, 1, 2, 5, 14, 42 y la fórmula de factoriales                                                                      |
+| crecimiento            | con n pistas, C(n − 1) (Catalan) para n = 1 a 12                                                                    |
 | igual a la enumeración | en G0, `arithmetic-ambiguous` y `parentheses`                                                                       |
 | casos especiales       | `test-cyclic` da `infinite` (lo pide el spec); rechazo da 0; entrada vacía; aritmética ambigua (2) y no ambigua (1) |
 
@@ -241,8 +228,8 @@ Recorriendo los mismos enlaces que la enumeración, pero sumando sobre los enlac
 **¿Por qué es rápido aunque haya 10¹¹⁴ árboles?**
 Porque el trabajo depende de la cantidad de ítems y enlaces del chart (decenas de miles para L1), no de la cantidad de árboles. Es programación dinámica: los subproblemas compartidos se resuelven una vez.
 
-**¿De dónde sale Catalan?**
-De `Pasos → Pasos Pasos`: n pasos se pueden agrupar de a dos de C(n − 1) formas, como poner paréntesis binarios en una expresión. Crece aproximadamente como 4ⁿ.
+**¿Por qué G0 tiene tantos árboles?**
+Por `Pasos → Pasos Pasos`: los pasos se pueden agrupar de a dos de muchas formas, como paréntesis en una suma sin asociatividad, y cada agrupación es un árbol. La cantidad crece exponencialmente (cada paso más la multiplica casi por 4). Si preguntan por la sucesión: son los números de Catalan.
 
 **¿Por qué `bigint`?**
 Porque `number` es exacto solo hasta 2⁵³ ≈ 9 × 10¹⁵. C(197) tiene 115 dígitos.

@@ -3,6 +3,7 @@
 import { analyzeCommand } from './commands/analyze.js';
 import { countCommand } from './commands/count.js';
 import { cyclesCommand } from './commands/cycles.js';
+import { deriveCommand } from './commands/derive.js';
 import { earleyCommand } from './commands/earley.js';
 import { epsilonTreesCommand } from './commands/epsilon-trees.js';
 import { firstFollowCommand } from './commands/first-follow.js';
@@ -41,6 +42,7 @@ export const runCommandLine = createCommandLineProgram({
     epsilonTreesCommand,
     treesCommand,
     countCommand,
+    deriveCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

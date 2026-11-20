@@ -1,7 +1,7 @@
 /**
  * Concept: counting the parse trees of an input without building them, by dynamic
- * programming over the links of the Earley items. With Pasos → Pasos Pasos, G0 grows like
- * the Catalan numbers: n steps give C(n−1) trees.
+ * programming over the links of the Earley items. With Pasos → Pasos Pasos, the count of G0
+ * grows exponentially with the number of steps.
  * Reference: SPEC 02, section 3.20.
  * Card: docs/concepts/19-tree-count-catalan.md
  */
@@ -83,15 +83,4 @@ function countCause(context: CountContext, link: Link): TreeCount {
     return countItem(context, link.child);
   }
   return countEpsilonTrees(context.grammar, context.nullable, link.symbol, context.epsilonCounts);
-}
-
-/** The Catalan number C(n) = (2n)! / ((n + 1)! n!), exact: the trees of n + 1 steps in G0. */
-export function catalan(n: number): bigint {
-  // C(0) = 1 and C(k + 1) = C(k) × 2(2k + 1) / (k + 2); every intermediate result is a
-  // whole number, so bigint division is exact.
-  let value = 1n;
-  for (let k = 0; k < n; k++) {
-    value = (value * 2n * BigInt(2 * k + 1)) / BigInt(k + 2);
-  }
-  return value;
 }
