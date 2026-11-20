@@ -74,12 +74,12 @@ Este paso implementa **solo** la construcción de la gramática a partir de regl
 
 Dependencias entre archivos (cada fila: el archivo de la izquierda importa al de la derecha):
 
-| Archivo                                 | Importa a                | Para qué                                        |
-| --------------------------------------- | ------------------------ | ----------------------------------------------- |
-| `command-line/commands/grammar.ts`      | `grammar-format/parser.ts` | leer el archivo (`parseGrammarText`, que termina en `buildGrammar`) |
-| `command-line/commands/grammar.ts`      | `command-line/format.ts` | convertirla en texto (`formatGrammar`)          |
-| `command-line/format.ts`                | `grammar/build.ts`       | escribir cada producción (`formatProduction`)   |
-| `grammar/build.ts`                      | `grammar/types.ts`       | los tipos `Grammar`, `Production`, `SymbolName` |
+| Archivo                            | Importa a                  | Para qué                                                            |
+| ---------------------------------- | -------------------------- | ------------------------------------------------------------------- |
+| `command-line/commands/grammar.ts` | `grammar-format/parser.ts` | leer el archivo (`parseGrammarText`, que termina en `buildGrammar`) |
+| `command-line/commands/grammar.ts` | `command-line/format.ts`   | convertirla en texto (`formatGrammar`)                              |
+| `command-line/format.ts`           | `grammar/build.ts`         | escribir cada producción (`formatProduction`)                       |
+| `grammar/build.ts`                 | `grammar/types.ts`         | los tipos `Grammar`, `Production`, `SymbolName`                     |
 
 **Regla de arquitectura:** `grammar/` (el motor) **no importa nada** de `command-line/` (la consola). La consola usa al motor, nunca al revés. Por eso el mismo motor sirve para la consola, la web (SPEC 03) y la entrada en español controlado (SPEC 04), que convierte frases en etiquetas.
 

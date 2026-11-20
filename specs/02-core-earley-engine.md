@@ -819,6 +819,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - Clasifica terminales y no terminales, indexa `productionsByLeftSide`, numera producciones, y valida el inicio inexistente, los terminales no declarados y las producciones duplicadas.
    - Prueba unitaria. Fichas 01 y 02.
    - **Consola:** `npm run sabueso -- demo-grammar` construye en código la gramática de expresiones `E → E + T | T`, `T → id`, e imprime la 4-upla G = (N, Σ, P, S) con las producciones numeradas.
+   - **Decisión (2026-11-20):** el comando `demo-grammar` se eliminó. Era necesario en el paso 2, cuando todavía no se leían archivos; desde el paso 4, `npm run sabueso -- grammar arithmetic` muestra la misma 4-upla pasando por el lexer, el parser y `buildGrammar`.
 
 3. **Lexer AFD.**
    - `automata/deterministic-finite-automaton.ts`: el ejecutor genérico con _maximal munch_, probado con un AFD de juguete (números enteros y espacios).

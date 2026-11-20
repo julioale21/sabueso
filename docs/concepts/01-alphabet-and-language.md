@@ -28,12 +28,12 @@ En Sabueso, cada evento narrativo es un símbolo, y un relato es una cadena:
 
 ## 4. Qué prueba lo verifica
 
-| Prueba                                                 | Qué verifica                                                                                       |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `packages/core/test/grammar-build.test.ts`             | Σ contiene exactamente los símbolos que no son lado izquierdo, más los declarados con `%terminals` |
-| `packages/core/test/built-in-grammars.test.ts`         | G0 y G1 tienen \|Σ\| = 14 (los tamaños de cada gramática incorporada)                              |
-| `packages/core/test/input/sequence.test.ts`            | El caso I6: `XYZ` en la posición 1 es un símbolo desconocido; ε y L1 están sobre Σ                 |
-| `packages/core/test/command-line/tokens.test.ts`       | El comando lista los tokens, informa `XYZ` y termina con código 1                                  |
+| Prueba                                           | Qué verifica                                                                                       |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `packages/core/test/grammar-build.test.ts`       | Σ contiene exactamente los símbolos que no son lado izquierdo, más los declarados con `%terminals` |
+| `packages/core/test/built-in-grammars.test.ts`   | G0 y G1 tienen \|Σ\| = 14 (los tamaños de cada gramática incorporada)                              |
+| `packages/core/test/input/sequence.test.ts`      | El caso I6: `XYZ` en la posición 1 es un símbolo desconocido; ε y L1 están sobre Σ                 |
+| `packages/core/test/command-line/tokens.test.ts` | El comando lista los tokens, informa `XYZ` y termina con código 1                                  |
 
 ## 5. Referencia bibliográfica
 
