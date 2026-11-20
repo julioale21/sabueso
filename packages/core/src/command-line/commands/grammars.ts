@@ -43,6 +43,7 @@ interface GrammarRow {
   grammar: Grammar;
 }
 
+/** Reads and builds one built-in grammar, to show its sizes. */
 async function describeGrammar(
   builtIn: BuiltInGrammar,
   environment: CommandLineEnvironment,
@@ -51,6 +52,7 @@ async function describeGrammar(
   return { builtIn, grammar: parseGrammarText(text, builtIn.id) };
 }
 
+/** The table of one group of grammars: id, aliases, |N|, |Σ|, |P| and description. */
 function formatGroup(group: GrammarGroup, rows: readonly GrammarRow[]): string {
   const groupRows = rows.filter((row) => row.builtIn.group === group);
   return [

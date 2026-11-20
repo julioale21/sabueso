@@ -1,6 +1,6 @@
 # Guía de estudio: 07 — Símbolos anulables
 
-> **Paso 7 del SPEC 02.** Archivos: `packages/core/src/analysis/nullable.ts`, `packages/core/src/command-line/commands/nullable.ts` y `readGrammar` en `packages/core/src/command-line/grammar-source.ts`.
+> **Paso 7 del SPEC 02.** Archivos: `packages/core/src/analysis/nullable.ts`, `packages/core/src/analysis/fixed-point.ts`, `packages/core/src/command-line/commands/nullable.ts` y `readGrammar` en `packages/core/src/command-line/grammar-source.ts`.
 > Ficha teórica relacionada: [`docs/concepts/07-nullable-symbols.md`](../concepts/07-nullable-symbols.md).
 
 ---
@@ -58,42 +58,57 @@ Costo: cada ronda recorre P una vez (O(|P|·k), con k el largo máximo de un lad
 
 ## 5. El código, función por función
 
-### 5.1 `computeNullable(grammar, onIteration?)`
+### 5.1 `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` (`src/analysis/fixed-point.ts`)
+
+El esquema de punto fijo se escribe **una sola vez**, con nombre propio. Lo usan los anulables y, en el paso 9, los productivos y los alcanzables. Cada análisis solo aporta su regla.
+
+```ts
+export function leastFixedPoint(
+  start: Iterable<SymbolName>,
+  newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>,
+  onIteration?: FixedPointObserver,
+): Set<SymbolName> {
+  let knownBefore = new Set(start);
+  for (let round = 1; ; round++) {
+    const knownAfter = new Set([...knownBefore, ...newSymbolsOfRound(knownBefore)]);
+    onIteration?.(round, knownAfter);
+    if (knownAfter.size === knownBefore.size) {
+      return knownAfter; // nothing new: fixed point
+    }
+    knownBefore = knownAfter;
+  }
+}
+```
+
+| Parámetro           | Qué es                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `start`             | el conjunto inicial: ∅ para anulables y productivos, {S} para alcanzables                                           |
+| `newSymbolsOfRound` | **la regla**: dado lo que se sabía antes de la ronda, qué símbolos encuentra                                        |
+| `onIteration`       | opcional: recibe el número de ronda (desde 1) y el conjunto. Lo usa `--steps`; si no se pasa, no cuesta nada (`?.`) |
+
+- **Dos conjuntos por ronda:** la regla lee `knownBefore` (lo que se sabía al terminar la ronda anterior) y lo nuevo va a `knownAfter`. Así, un símbolo descubierto en esta ronda recién cuenta en la siguiente, y la ronda i tiene significado: los símbolos que necesitan i aplicaciones de la regla.
+- **`new Set([...knownBefore, ...nuevos])`** arma un conjunto con los elementos de los dos: no es un conjunto de conjuntos. Los repetidos se descartan solos.
+- **Comparar tamaños alcanza:** `knownAfter` contiene a `knownBefore` y nunca pierde elementos. Si el tamaño no cambió, la ronda no agregó nada: es el punto fijo.
+- **Por qué termina:** el conjunto solo crece y no puede tener más símbolos que N. Hay a lo sumo |N| + 1 rondas.
+
+### 5.2 `computeNullable(grammar, onIteration?)`
 
 ```ts
 export function computeNullable(
   grammar: Grammar,
-  onIteration?: NullableIterationObserver,
+  onIteration?: FixedPointObserver,
 ): Set<SymbolName> {
-  let nullable = new Set<SymbolName>();
-  for (let iteration = 1; ; iteration++) {
-    const next = nullableRound(grammar.productions, nullable);
-    onIteration?.(iteration, next);
-    if (next.size === nullable.size) {
-      return next;
-    }
-    nullable = next;
-  }
+  return leastFixedPoint(
+    [],
+    (nullable) =>
+      leftSidesWhere(grammar.productions, (production) => derivesEmptyString(production, nullable)),
+    onIteration,
+  );
 }
 ```
 
-- El ciclo no tiene condición de salida en el `for`: sale por el `return`, cuando una ronda no agrega nada. Comparar tamaños alcanza, porque una ronda nunca quita símbolos.
-- `onIteration` recibe el número de ronda (desde 1) y el conjunto. Es opcional: si no se pasa, no cuesta nada (`?.`). Lo usa `--steps`.
-- Cada ronda crea un `Set` nuevo, así que lo que recibe `onIteration` no cambia después.
-
-### 5.2 `nullableRound(productions, known)`
-
-```ts
-const next = new Set(known);
-for (const production of productions) {
-  if (derivesEmptyString(production, known)) {
-    next.add(production.leftSide);
-  }
-}
-return next;
-```
-
-- Pregunta siempre contra `known`, el conjunto de la ronda **anterior**, y agrega en `next`. Por eso un símbolo descubierto en esta ronda no dispara otro en la misma ronda.
+- Se lee como la definición: "parto de ∅; en cada ronda entran los lados izquierdos de las producciones que derivan ε con los anulables conocidos".
+- `leftSidesWhere(productions, condition)` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda.
 
 ### 5.3 `derivesEmptyString(production, nullable)`
 
@@ -169,6 +184,8 @@ Nullable = {CapOpc, Cierre, CtxOpc, CuerpoLinea, EpiOpc, HallazgoOpc, Libres, Li
 ```
 
 En G1 todo entra en la ronda 1, porque cada parte opcional tiene su propia producción ε y ningún anulable depende de otro. Con `--grammar g0` imprime `Nullable = ∅ (0 of 10 nonterminals)`.
+
+**`test/analysis/fixed-point.test.ts`:** el esquema general: termina, un símbolo descubierto cuenta recién en la ronda siguiente, numera las rondas desde 1 y los conjuntos recibidos no cambian después.
 
 **`test/analysis/nullable.test.ts`:**
 

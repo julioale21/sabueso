@@ -76,3 +76,13 @@ Paso 8. Cuántos eventos tiene, como mínimo, lo que deriva cada no terminal. mi
 npm run sabueso -- min-yield --grammar g1
 npm run sabueso -- min-yield --grammar test-useless
 ```
+
+## Símbolos inútiles y vacuidad
+
+Paso 9. Los dos puntos fijos de Hopcroft 7.1: productivos y, después, alcanzables. Muestra los inútiles y la gramática sin ellos; con `test-empty`, que L(G) = ∅. El archivo de ejemplo muestra por qué importa el orden.
+
+```sh
+npm run sabueso -- useful --grammar test-useless --steps
+npm run sabueso -- useful --grammar test-empty
+npm run sabueso -- useful --grammar-file examples/grammars/useless-order.grammar --steps
+```

@@ -109,8 +109,8 @@ const singleCharacterClasses: Partial<Record<string, CharacterClass>> = {
 };
 
 /** ε is a Greek letter, but it has its own class, so it is checked before the letters. */
-// ES: El alfabeto del AFD no son los caracteres sino 13 clases. Así δ tiene 13 columnas en
-// ES: lugar de miles (una por carácter Unicode), y la tabla se puede dibujar y defender.
+// The alphabet of the DFA is not the characters but 13 classes. So δ has 13 columns
+// instead of thousands (one per Unicode character), and the table can be drawn and defended.
 export function classifyCharacter(character: string): CharacterClass {
   const special = singleCharacterClasses[character];
   if (special !== undefined) {
@@ -142,9 +142,9 @@ export const grammarLexerAutomaton: DeterministicAutomatonDefinition<
   CharacterClass,
   LexemeKind
 > = {
-  // ES: Esto es M = (Q, Σ, δ, q0, F) escrito como dato: cada fila de `transitions` es una
-  // ES: fila de la tabla δ de la guía 03. Un estado sin entrada para una clase = no hay
-  // ES: transición (δ parcial), y ahí termina el token.
+  // This is M = (Q, Σ, δ, q0, F) written as data: each row of `transitions` is a
+  // row of the δ table of guide 03. A state with no entry for a class = no
+  // transition (δ is partial), and the token ends there.
   initialState: 'q0Start',
   classifyCharacter,
   transitions: {
@@ -209,14 +209,15 @@ export function tokenizeGrammar(
   text: string,
   onEvent?: (event: AutomatonEvent<LexerState, LexemeKind>) => void,
 ): Token[] {
-  // ES: Dos etapas: el AFD reconoce lexemas (nivel regular) y después cada lexema se
-  // ES: convierte en token (quitar comillas, %start/%terminals). El NEWLINE y END_OF_FILE
-  // ES: finales le garantizan al parser que toda línea termina igual y que siempre hay un
-  // ES: token para mirar (END_OF_FILE hace de $, el fin de la entrada).
+  // Two stages: the DFA recognizes lexemes (regular level), then each lexeme becomes
+  // a token (quotes removed, %start/%terminals resolved). The final NEWLINE and END_OF_FILE
+  // guarantee the parser that every line ends the same way and that there is always a
+  // token to look at (END_OF_FILE plays the role of $, the end of the input).
   const tokens = readLexemes(text, onEvent).map(toToken);
   return [...tokens, ...closingTokens(text, tokens)];
 }
 
+/** Runs the DFA over the text and turns a stop of the automaton into a GrammarSyntaxError. */
 function readLexemes(
   text: string,
   onEvent: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined,
@@ -231,6 +232,7 @@ function readLexemes(
   }
 }
 
+/** Turns a lexeme into a token: a literal loses its quotes, a directive becomes START or TERMINALS. */
 function toToken(lexeme: AutomatonToken<LexemeKind>): Token {
   const position = { line: lexeme.line, column: lexeme.column };
   switch (lexeme.kind) {
@@ -245,6 +247,7 @@ function toToken(lexeme: AutomatonToken<LexemeKind>): Token {
   }
 }
 
+/** Looks up '%start' or '%terminals' in the table of reserved words; anything else is an error. */
 function resolveDirective(lexeme: AutomatonToken<LexemeKind>): TokenKind {
   const kind = directives[lexeme.text];
   if (kind === undefined) {

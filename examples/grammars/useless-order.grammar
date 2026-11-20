@@ -1,0 +1,9 @@
+# Why the order of Hopcroft 7.1.1 matters (his example 7.2, adapted):
+#   B never ends (B -> B 'c'), so B is not productive.
+#   Removing it also removes S -> A B, the only production that reaches A.
+#   So A is productive but, after that, unreachable: A is useless too.
+# In the other order (reachable first) A would look reachable and stay.
+# Try it with: npm run sabueso -- useful --grammar-file examples/grammars/useless-order.grammar --steps
+S -> A B | 'a'
+A -> 'b'
+B -> B 'c'

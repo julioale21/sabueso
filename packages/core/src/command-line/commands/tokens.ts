@@ -44,6 +44,7 @@ export const tokensCommand: Command = {
   },
 };
 
+/** The table of the tokens of the story (position, token, in Σ) and the closing line. */
 function formatTokens(
   grammar: Grammar,
   tokens: readonly SymbolName[],

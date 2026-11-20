@@ -63,6 +63,7 @@ const builtInGrammars: readonly BuiltInGrammar[] = [
   ...developmentGrammars,
 ];
 
+/** An internal grammar of the Desarrollo group, stored at grammars/<file>. */
 function developmentGrammar(id: string, file: string, description: string): BuiltInGrammar {
   return {
     id,
@@ -83,6 +84,7 @@ function genreGrammars(genre: Genre): BuiltInGrammar[] {
   return [official, ...alternative];
 }
 
+/** A grammar of a genre, stored at grammars/genres/<id>.grammar, with its aliases if it has any. */
 function genreGrammar(id: string, description: string): BuiltInGrammar {
   return {
     id,

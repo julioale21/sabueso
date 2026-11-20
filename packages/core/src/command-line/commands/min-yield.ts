@@ -59,6 +59,7 @@ function formatMinYieldTable(grammar: Grammar, minYield: ReadonlyMap<SymbolName,
   return formatTable(['Nonterminal', 'minYield'], rows);
 }
 
+/** The closing line: the length of the shortest sentence, or that L(G) = ∅. */
 function formatShortestSentence(
   grammar: Grammar,
   minYield: ReadonlyMap<SymbolName, number>,

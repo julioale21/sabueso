@@ -84,9 +84,9 @@ export function runDeterministicAutomaton<
   text: string,
   onEvent?: (event: AutomatonEvent<State, TokenKind>) => void,
 ): AutomatonToken<TokenKind>[] {
-  // ES: Un AFD solo acepta o rechaza una cadena. Para usarlo como lexer se lo corre muchas
-  // ES: veces: cada token es una corrida desde q0. Cuando δ no tiene transición, la corrida
-  // ES: termina; si el estado ∈ F, lo leído es un token y se vuelve a q0 con el resto del texto.
+  // A DFA only accepts or rejects a string. To use it as a lexer, it runs many
+  // times: each token is one run from q0. When δ has no transition, the run ends;
+  // if the state ∈ F, what was read is a token, and it goes back to q0 with the rest.
   const tokens: AutomatonToken<TokenKind>[] = [];
   let cursor: Cursor = { index: 0, line: 1, column: 1 };
   while (cursor.index < text.length) {
@@ -116,9 +116,9 @@ function readLongestToken<
   tokenStart: Cursor,
   onEvent: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined,
 ): Cursor & { state: State } {
-  // ES: Es δ̂ (la función de transición extendida) aplicada al prefijo más largo posible:
-  // ES: se avanza mientras exista δ(q, clase(c)). Nunca retrocede: en este formato ningún
-  // ES: token necesita volver atrás, así que "el más largo" (maximal munch) es seguro.
+  // This is δ̂ (the extended transition function) on the longest possible prefix:
+  // it advances while δ(q, class(c)) exists. It never backtracks: no token of this
+  // format needs to, so taking the longest one (maximal munch) is safe.
   let state = automaton.initialState;
   let cursor = tokenStart;
   for (;;) {
@@ -150,8 +150,8 @@ function tokenKindOfFinalState<
   end: Cursor & { state: State },
   blockingCharacter: string | undefined,
 ): TokenKind | null {
-  // ES: Aceptar = terminar en un estado de F. Si el estado no está en F (por ejemplo q6,
-  // ES: un literal sin cerrar), la cadena leída no es un token y es un error léxico.
+  // Accepting = ending in a state of F. If the state is not in F (for example q6,
+  // an unclosed literal), the string read is not a token: it is a lexical error.
   const kind = automaton.acceptingStates[end.state];
   const consumedSomething = end.index > tokenStart.index;
   if (kind === undefined || !consumedSomething) {

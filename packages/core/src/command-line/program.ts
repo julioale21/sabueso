@@ -8,6 +8,7 @@ import { lexCommand } from './commands/lex.js';
 import { minYieldCommand } from './commands/min-yield.js';
 import { nullableCommand } from './commands/nullable.js';
 import { tokensCommand } from './commands/tokens.js';
+import { usefulCommand } from './commands/useful.js';
 import { formatGrammarGroups } from './built-in-grammars.js';
 import { createCommandLineProgram } from './run.js';
 
@@ -20,6 +21,7 @@ export const runCommandLine = createCommandLineProgram({
     tokensCommand,
     nullableCommand,
     minYieldCommand,
+    usefulCommand,
     lexCommand,
     demoGrammarCommand,
   ],

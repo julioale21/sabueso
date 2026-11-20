@@ -50,8 +50,8 @@ export function parseGrammarText(
   name: string,
   onTrace?: (step: ParserTraceStep) => void,
 ): Grammar {
-  // ES: La cadena completa de lectura: texto → (AFD, lenguaje regular) → tokens →
-  // ES: (LL(1), libre de contexto) → reglas → (buildGrammar) → G = (N, Σ, P, S).
+  // The whole reading pipeline: text → (DFA, regular language) → tokens →
+  // (LL(1), context-free) → rules → (buildGrammar) → G = (N, Σ, P, S).
   const file = parseGrammarFile(tokenizeGrammar(text), onTrace);
   return buildGrammar(name, file.rules, file.start, file.declaredTerminals);
 }
@@ -85,11 +85,11 @@ const tokenDescriptions: Record<TokenKind, string> = {
  * looks at the current token (the lookahead), picks the only alternative that can start
  * with it, and calls the methods of the symbols of that alternative, in order.
  */
-// ES: Análisis descendente predictivo: la derivación más a la izquierda se arma de arriba
-// ES: (File) hacia abajo, y en cada no terminal se elige la producción mirando UN token.
-// ES: Funciona sin retroceso porque meta.grammar es LL(1): para cada no terminal, los
-// ES: conjuntos de predicción de sus alternativas (FIRST, o FOLLOW si derivan ε) son disjuntos.
-// ES: La pila del autómata de pila equivalente es la pila de llamadas de estos métodos.
+// Predictive top-down parsing: the leftmost derivation is built from the top
+// (File) down, and at each nonterminal the production is chosen by looking at ONE token.
+// It works without backtracking because meta.grammar is LL(1): for each nonterminal, the
+// predict sets of its alternatives (FIRST, or FOLLOW if they derive ε) are disjoint.
+// The stack of the equivalent pushdown automaton is the call stack of these methods.
 class GrammarFileParser {
   private position = 0;
   private depth = 0;
@@ -210,9 +210,9 @@ class GrammarFileParser {
 
   /** Symbols -> Symbol Symbols | ε */
   private parseSymbols(): RightSideSymbol[] {
-    // ES: El caso clave de LL(1) con ε: se elige "Symbols → ε" solo si el token siguiente
-    // ES: puede venir DESPUÉS de Symbols (FOLLOW = {BAR, NEWLINE}). Si no está ni en FIRST ni
-    // ES: en FOLLOW, el error se detecta acá mismo y el mensaje lista ambos conjuntos.
+    // The key LL(1) case with ε: "Symbols → ε" is chosen only if the next token can
+    // come AFTER Symbols (FOLLOW = {BAR, NEWLINE}). If it is in neither FIRST nor
+    // FOLLOW, the error is caught right here and the message lists both sets.
     const kind = this.lookahead().kind;
     if (kind === 'BAR' || kind === 'NEWLINE') {
       // ε is chosen when the lookahead is in FOLLOW(Symbols) = {BAR, NEWLINE}.
@@ -251,8 +251,8 @@ class GrammarFileParser {
 
   /** Consumes the lookahead if it has the given kind; otherwise it is a syntax error. */
   private expect(kind: TokenKind): Token {
-    // ES: Equivale a "emparejar" un terminal: en el autómata de pila, sacar el terminal del
-    // ES: tope y avanzar en la entrada. Si no coincide, la cadena no está en L(meta.grammar).
+    // This is "matching" a terminal: in the pushdown automaton, pop the terminal from the
+    // top and advance the input. If it does not match, the string is not in L(meta.grammar).
     const token = this.lookahead();
     if (token.kind !== kind) {
       throw this.unexpected([kind]);
@@ -261,6 +261,7 @@ class GrammarFileParser {
     return token;
   }
 
+  /** The syntax error at the lookahead: 'Expected X or Y, but found Z', with its position. */
   private unexpected(expected: readonly TokenKind[]): GrammarSyntaxError {
     const found = this.lookahead();
     const options = listWithOr(expected.map((kind) => tokenDescriptions[kind]));
@@ -293,6 +294,7 @@ class GrammarFileParser {
     }
   }
 
+  /** Reports one decision of the parser to the trace observer, if there is one. */
   private trace(nonterminal: string, alternative: string): void {
     this.onTrace?.({ depth: this.depth, nonterminal, lookahead: this.lookahead(), alternative });
   }
@@ -305,6 +307,7 @@ function listWithOr(items: readonly string[]): string {
     : `${items.slice(0, -1).join(', ')} or ${items.at(-1) ?? ''}`;
 }
 
+/** How a token is named in an error: 'a name ("Pistas")', 'the end of the line'… */
 function describeToken(token: Token): string {
   const description = tokenDescriptions[token.kind];
   return token.kind === 'IDENTIFIER' || token.kind === 'LITERAL'

@@ -79,6 +79,7 @@ function chooseGrammarSource(
   return grammar === undefined ? unknownGrammarMessage(name ?? '') : { kind: 'built-in', grammar };
 }
 
+/** The usage error for a name that is not a built-in grammar, with the valid names. */
 function unknownGrammarMessage(id: string): string {
   return `Unknown grammar: ${id}. Available grammars: ${builtInGrammarIds().join(', ')}`;
 }
@@ -104,6 +105,7 @@ export async function readGrammar(
   return parseGrammarText(text, label);
 }
 
+/** Reads a --grammar-file, turning a missing file into a clear message. */
 async function readUserFile(path: string, environment: CommandLineEnvironment): Promise<string> {
   try {
     return await environment.readFile(path);

@@ -48,12 +48,12 @@ export function buildGrammar(
   start?: SymbolName,
   declaredTerminals?: Iterable<SymbolName>,
 ): Grammar {
-  // ES: Arma la 4-upla G = (N, Σ, P, S) en un orden que importa:
-  // ES: 1. N primero: son los lados izquierdos. Sin N no se puede clasificar nada.
-  // ES: 2. P: con N conocido, cada símbolo de un lado derecho es no terminal (∈ N) o
-  // ES:    terminal (∉ N). Acá se valida cada símbolo, pero no se modifica nada.
-  // ES: 3. Σ: los terminales que aparecieron en P, más los de %terminals. N ∩ Σ = ∅ por construcción.
-  // ES: 4. S: debe ser un no terminal; si no, L(G) no tendría de dónde derivarse.
+  // Builds the 4-tuple G = (N, Σ, P, S) in an order that matters:
+  // 1. N first: the left-hand sides. Without N nothing can be classified.
+  // 2. P: with N known, each right-side symbol is a nonterminal (∈ N) or a
+  //    terminal (∉ N). Each symbol is checked here, but nothing is changed.
+  // 3. Σ: the terminals in P, plus those of %terminals. N ∩ Σ = ∅ by construction.
+  // 4. S: must be a nonterminal; otherwise L(G) would have nothing to derive from.
   const firstRule = requireAtLeastOneRule(name, rules);
   const symbols = createSymbolTable(rules, declaredTerminals);
   const productions = createProductions(rules, symbols);
@@ -75,6 +75,7 @@ export function formatProduction(production: Production): string {
   return `${production.leftSide} → ${rightSide}`;
 }
 
+/** Returns the first rule, or throws: a grammar needs at least one production. */
 function requireAtLeastOneRule(name: string, rules: readonly GrammarRule[]): GrammarRule {
   const firstRule = rules[0];
   if (firstRule === undefined) {
@@ -83,6 +84,7 @@ function requireAtLeastOneRule(name: string, rules: readonly GrammarRule[]): Gra
   return firstRule;
 }
 
+/** N and the %terminals declaration, checked against each other, before reading right sides. */
 function createSymbolTable(
   rules: readonly GrammarRule[],
   declaredTerminals: Iterable<SymbolName> | undefined,
@@ -103,6 +105,7 @@ function collectNonterminals(rules: readonly GrammarRule[]): Set<SymbolName> {
   return nonterminals;
 }
 
+/** A declared terminal cannot be reserved or be the left side of a rule (N ∩ Σ = ∅). */
 function checkDeclaredTerminal(terminal: SymbolName, nonterminals: ReadonlySet<SymbolName>): void {
   rejectReservedName(terminal);
   if (nonterminals.has(terminal)) {
@@ -112,6 +115,7 @@ function checkDeclaredTerminal(terminal: SymbolName, nonterminals: ReadonlySet<S
   }
 }
 
+/** P: one production per rule, numbered from 0, with every right-side symbol checked. */
 function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable): Production[] {
   return rules.map((rule, index) => ({
     id: index,
@@ -167,6 +171,7 @@ function checkLiteral(literal: string, symbols: SymbolTable): SymbolName {
   return literal;
 }
 
+/** Throws if the same production appears twice: P is a set. */
 function rejectDuplicateProductions(productions: readonly Production[]): void {
   const seen = new Set<string>();
   for (const production of productions) {
@@ -189,8 +194,9 @@ function requireNonterminalStart(
   return start;
 }
 
-// ES: Índice A → [sus producciones]. Earley lo usa en el Predictor: al ver "• A" necesita
-// ES: todas las A → α sin recorrer P entera.
+// Index A → [its productions]. Earley's Predictor uses it: on "• A" it needs
+// every A → α without scanning all of P.
+/** The productions of each nonterminal, in order, so an algorithm can expand A quickly. */
 function groupByLeftSide(
   nonterminals: ReadonlySet<SymbolName>,
   productions: readonly Production[],

@@ -14,12 +14,12 @@ import type { Grammar, Production, SymbolName } from '../grammar/types.js';
  * - minYield(A) = min over A → X1…Xk of minYield(X1) + … + minYield(Xk); 0 for A → ε.
  */
 export function computeMinYield(grammar: Grammar): Map<SymbolName, number> {
-  // ES: Mismo esquema de punto fijo que los anulables, pero con números en lugar de sí/no:
-  // ES: se parte de "∞" (todavía no se conoce ninguna cadena) y cada ronda mejora el valor
-  // ES: de A con la suma de sus lados derechos según la ronda anterior. Los valores solo
-  // ES: bajan y son naturales, así que en algún momento dejan de cambiar.
-  // ES: Ronda i = el mejor valor usando árboles de derivación de altura ≤ i. Los anulables
-  // ES: (paso 7) son exactamente los A con minYield(A) = 0.
+  // Same fixed-point scheme as nullable, but with numbers instead of yes/no:
+  // start from "∞" (no string known yet) and each round improves the value
+  // of A with the sum of its right sides from the previous round. The values only
+  // go down and are natural numbers, so at some point they stop changing.
+  // Round i = the best value using derivation trees of height ≤ i. The nullable
+  // symbols (step 7) are exactly the A with minYield(A) = 0.
   let current = new Map<SymbolName, number>();
   for (const nonterminal of grammar.nonterminals) {
     current.set(nonterminal, Infinity);
@@ -60,6 +60,7 @@ function minYieldRound(
   return next;
 }
 
+/** True when both maps give every symbol the same value: the fixed point was reached. */
 function sameValues(
   first: ReadonlyMap<SymbolName, number>,
   second: ReadonlyMap<SymbolName, number>,

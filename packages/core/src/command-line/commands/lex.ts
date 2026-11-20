@@ -58,6 +58,7 @@ function printLex(
   }
 }
 
+/** One row per token: its kind, its text and where it starts. */
 function formatTokens(tokens: readonly Token[]): string {
   return formatTable(
     ['Token', 'Text', 'Line:column'],

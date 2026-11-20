@@ -867,7 +867,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - Los comandos que leen un relato eligen la gramática con la opción `--grammar <nombre>` (o `--grammar-file`), porque sus argumentos posicionales son el relato. El relato puede ir entre comillas o como palabras sueltas.
      - Un relato vacío no es un error del tokenizador: ε ∈ Σ\*. Rechazarlo es tarea de Earley (caso I2).
      - Refactor (2026-11-20, sin cambio de comportamiento): Σ se calcula en su propio paso (`collectTerminals`); `command-line/grammars.ts` se divide en `built-in-grammars.ts` y `grammar-source.ts`; `reportUsageError` compartido; `formatTable`/`formatSet`; convención de nombres: MAYÚSCULAS para valores simples y camelCase para tablas y listas.
-     - Comentarios de estudio temporales en español, con el prefijo `// ES:`, en los flujos clave del código (y en los pasos siguientes). Relacionan el código con la teoría. Se eliminan todos (`grep -rn '// ES:'`) cuando el núcleo esté terminado; el código final queda en inglés.
+     - Todo el código queda en inglés, comentarios incluidos; solo la documentación (`docs/`, specs, README) va en español. Cada función tiene un comentario corto que dice qué hace, y las funciones clave explican también la teoría que implementan. (Hubo, por un rato, comentarios de estudio en español con el prefijo `// ES:`; se tradujeron al inglés el 2026-11-20.)
 
 7. **Anulables.**
    - `analysis/nullable.ts`, por punto fijo, con `onIteration`.
@@ -879,6 +879,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - Con `--steps` la tabla muestra, por ronda, cuántos anulables hay y cuáles se agregaron (el conjunto completo solo al final, para que la tabla no sea demasiado ancha). El conjunto vacío se imprime ∅.
      - `readGrammar(source, environment)` en `grammar-source.ts` lee y construye la gramática elegida; la comparten `tokens`, `nullable` y los análisis siguientes.
      - Ejemplo nuevo `examples/grammars/nullable-chain.grammar`, con un anulable por ronda, para mostrar cómo crece el punto fijo.
+     - Refactor (2026-11-20): el esquema de punto fijo por rondas se escribe una sola vez, `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` en `analysis/fixed-point.ts`, junto con `leftSidesWhere`. Lo usan los anulables, los productivos y los alcanzables; cada análisis solo aporta su regla. minYield (números, no conjuntos) mantiene su propio ciclo.
 
 8. **Longitud mínima.**
    - `analysis/min-yield.ts`.
@@ -895,6 +896,12 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - **Consola:**
      - `npm run sabueso -- useful --grammar test-useless --steps` imprime las iteraciones de productivos y de alcanzables, los inútiles y la gramática limpia.
      - Con `test-empty`, imprime `L(G) = ∅`.
+   - **Decisiones (2026-11-20):**
+     - `analyzeUsefulSymbols(grammar, onIteration?)` devuelve `{ productive, reachable, useless, isEmpty, usefulGrammar }`. `reachable` se calcula **después** de quitar los no productivos (orden de Hopcroft 7.1.1). `usefulGrammar` es G sin inútiles, construida de nuevo con `buildGrammar` (ids nuevos, Σ solo con los terminales usados), o `null` si L(G) = ∅.
+     - Los conjuntos son de **no terminales**. Los terminales que dejan de usarse desaparecen solos de Σ en `usefulGrammar`.
+     - `onIteration(phase, iteration, symbols)` agrega la fase (`'productive'` o `'reachable'`) a la forma general de la sección 8.2, porque este paso tiene dos puntos fijos. Si L(G) = ∅ no se corre la fase de alcanzables.
+     - Con `--steps`, la tabla de alcanzables muestra S como ronda 0, porque ese punto fijo no parte de ∅.
+     - Ejemplo nuevo `examples/grammars/useless-order.grammar` (ejemplo 7.2 de Hopcroft adaptado: B → B c hace de símbolo sin producciones) para mostrar por qué importa el orden.
 
 10. **Ciclos.**
     - `analysis/cycles.ts`.

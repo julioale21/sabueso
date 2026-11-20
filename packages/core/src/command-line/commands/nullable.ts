@@ -65,6 +65,7 @@ function formatRounds(rounds: readonly ReadonlySet<SymbolName>[]): string {
   return formatTable(['Round', 'Nullable so far', 'Added in this round'], rows);
 }
 
+/** The closing line: the nullable set and how many of the nonterminals it covers. */
 function formatResult(grammar: Grammar, nullable: ReadonlySet<SymbolName>): string {
   return `Nullable = ${formatNullableSet(nullable)} (${nullable.size} of ${grammar.nonterminals.size} nonterminals)`;
 }

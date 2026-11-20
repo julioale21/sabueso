@@ -22,6 +22,7 @@ export const genresCommand: Command = {
   },
 };
 
+/** One genre: its name, description, grammars and the table of its tags. */
 function formatGenre(genre: Genre): string {
   const grammars = [`Official grammar:    ${grammarName(genre.officialGrammar)}`];
   if (genre.alternativeGrammar !== undefined) {

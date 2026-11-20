@@ -34,6 +34,7 @@ export function createCommandLineProgram(
 
   const commands = [...options.commands, help];
 
+  /** The table of commands shown by help and after an unknown command. */
   function commandList(): string {
     return formatTable(
       ['Command', 'Description', 'Usage'],
@@ -41,8 +42,8 @@ export function createCommandLineProgram(
     );
   }
 
-  // ES: El programa es una función pura de (argumentos, entorno) → código de salida.
-  // ES: El entorno (escribir, leer archivos) se inyecta: por eso las pruebas corren en memoria.
+  // The program is a pure function of (arguments, environment) → exit code.
+  // The environment (writing, reading files) is injected, so tests run in memory.
   return async (commandLineArguments, environment) => {
     const [name, ...commandArguments] = commandLineArguments;
     if (name === undefined) {
