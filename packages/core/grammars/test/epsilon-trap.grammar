@@ -1,0 +1,3 @@
+# The case that breaks the classic Earley algorithm: A is nullable and appears twice.
+S -> A A 'x'
+A -> ε

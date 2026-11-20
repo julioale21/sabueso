@@ -1,22 +1,13 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { builtInGrammarPath, findBuiltInGrammar } from '../../src/command-line/grammars.js';
 import { runCommandLine } from '../../src/command-line/program.js';
-import { createMemoryEnvironment } from './memory-environment.js';
-
-/** A memory environment holding the real arithmetic.grammar at its real path. */
-function environmentWithArithmetic() {
-  const grammar = findBuiltInGrammar('arithmetic');
-  if (grammar === undefined) {
-    throw new Error('arithmetic is not a built-in grammar');
-  }
-  const path = builtInGrammarPath(grammar);
-  return createMemoryEnvironment({ [path]: readFileSync(path, 'utf8') });
-}
+import {
+  createEnvironmentWithBuiltInGrammars,
+  createMemoryEnvironment,
+} from './memory-environment.js';
 
 describe('sabueso lex', () => {
   it('prints the token table of arithmetic and exits with 0', async () => {
-    const { environment, output } = environmentWithArithmetic();
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(['lex', 'arithmetic'], environment)).toBe(0);
     expect(output()).toContain('arithmetic: tokens');
     expect(output()).toMatch(/^IDENTIFIER\s+E\s+3:1$/m);
@@ -27,7 +18,7 @@ describe('sabueso lex', () => {
   });
 
   it('with --states, prints the path through δ of each lexeme of the first rule', async () => {
-    const { environment, output } = environmentWithArithmetic();
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(['lex', 'arithmetic', '--states'], environment)).toBe(0);
     expect(output()).toContain("DFA states for line 3: E -> E '+' T | T");
     expect(output()).toMatch(/^E\s+q0 ─E→ q1\s+IDENTIFIER$/m);
@@ -88,9 +79,12 @@ describe('sabueso lex', () => {
     ],
     [['lex', '--grammar-file'], 'Missing value for --grammar-file'],
     [['lex', 'arithmetic', '--verbose'], 'Unknown option: --verbose'],
-    [['lex', 'nope'], 'Unknown grammar: nope. Available grammars: arithmetic'],
+    [
+      ['lex', 'nope'],
+      'Unknown grammar: nope. Available grammars: detective/g1, detective/g0, meta, arithmetic-ambiguous, arithmetic, parentheses, epsilon-trap, test-useless, test-empty, test-cyclic',
+    ],
   ])('%j is a usage error: exit code 2', async (commandArguments, message) => {
-    const { environment, output, errors } = environmentWithArithmetic();
+    const { environment, output, errors } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(commandArguments, environment)).toBe(2);
     expect(errors()).toBe(`${message}\n`);
     expect(output()).toBe('');

@@ -5,6 +5,8 @@ export interface CommandLineProgramOptions {
   /** Executable name, used in the usage line, e.g. 'sabueso'. */
   program: string;
   commands: Command[];
+  /** Extra text shown by help after the list of commands, e.g. the available grammars. */
+  helpFooter?: string;
 }
 
 /**
@@ -23,6 +25,9 @@ export function createCommandLineProgram(
     run(_commandArguments, environment) {
       environment.writeOutput(`Usage: ${program} <command> [arguments]\n\n`);
       environment.writeOutput(`${commandList()}\n`);
+      if (options.helpFooter !== undefined) {
+        environment.writeOutput(`\n${options.helpFooter}\n`);
+      }
       return Promise.resolve(EXIT_CODES.ok);
     },
   };

@@ -1,24 +1,12 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { builtInGrammarPath, findBuiltInGrammar } from '../../src/command-line/grammars.js';
 import { runCommandLine } from '../../src/command-line/program.js';
-import { createMemoryEnvironment } from './memory-environment.js';
-
-/** A memory environment holding the real arithmetic.grammar, plus extra files. */
-function environmentWith(files: Record<string, string> = {}) {
-  const grammar = findBuiltInGrammar('arithmetic');
-  if (grammar === undefined) {
-    throw new Error('arithmetic is not a built-in grammar');
-  }
-  const path = builtInGrammarPath(grammar);
-  return createMemoryEnvironment({ [path]: readFileSync(path, 'utf8'), ...files });
-}
+import { createEnvironmentWithBuiltInGrammars } from './memory-environment.js';
 
 const GRAMMAR_USAGE = 'Usage: sabueso grammar <grammar> | --grammar-file <path> [--parser-trace]';
 
 describe('sabueso grammar', () => {
   it('reads arithmetic.grammar and prints its 4-tuple', async () => {
-    const { environment, output } = environmentWith();
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(['grammar', 'arithmetic'], environment)).toBe(0);
     expect(output()).toBe(
       [
@@ -39,7 +27,7 @@ describe('sabueso grammar', () => {
   });
 
   it('with --parser-trace, prints each decision of the parser before the grammar', async () => {
-    const { environment, output } = environmentWith();
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(['grammar', 'arithmetic', '--parser-trace'], environment)).toBe(0);
     expect(output()).toContain('Parser trace (nonterminal [lookahead] → alternative):');
     expect(output()).toMatch(/^File \[IDENTIFIER\] → Element File$/m);
@@ -49,8 +37,18 @@ describe('sabueso grammar', () => {
     expect(output()).toContain('arithmetic: G = (N, Σ, P, S)');
   });
 
+  it('reads the grammars of the genre by id or by alias', async () => {
+    const byId = createEnvironmentWithBuiltInGrammars();
+    const byAlias = createEnvironmentWithBuiltInGrammars();
+    expect(await runCommandLine(['grammar', 'detective/g0'], byId.environment)).toBe(0);
+    expect(await runCommandLine(['grammar', 'g0'], byAlias.environment)).toBe(0);
+    expect(byId.output()).toContain('  27  Resolucion → REV CNF CAP');
+    expect(byAlias.output()).toContain('S = Relato');
+    expect(byAlias.output().match(/^ +\d+ {2}\S/gm)).toHaveLength(28);
+  });
+
   it('with --grammar-file, reads any .grammar file', async () => {
-    const { environment, output } = environmentWith({
+    const { environment, output } = createEnvironmentWithBuiltInGrammars({
       'story.grammar': '%start Relato\nRelato -> CRI Pistas REV\nPistas → PIS Pistas | ε\n',
     });
     expect(await runCommandLine(['grammar', '--grammar-file', 'story.grammar'], environment)).toBe(
@@ -61,13 +59,17 @@ describe('sabueso grammar', () => {
   });
 
   it('reports a syntax error with its position and exits with 1', async () => {
-    const { environment, errors } = environmentWith({ 'bad.grammar': 'S -> a\nT b\n' });
+    const { environment, errors } = createEnvironmentWithBuiltInGrammars({
+      'bad.grammar': 'S -> a\nT b\n',
+    });
     expect(await runCommandLine(['grammar', '--grammar-file', 'bad.grammar'], environment)).toBe(1);
     expect(errors()).toBe('Error: Line 2, column 3: Expected \'->\', but found a name ("b")\n');
   });
 
   it('reports an invalid grammar and exits with 1', async () => {
-    const { environment, errors } = environmentWith({ 'bad.grammar': '%terminals a\nS -> b\n' });
+    const { environment, errors } = createEnvironmentWithBuiltInGrammars({
+      'bad.grammar': '%terminals a\nS -> b\n',
+    });
     expect(await runCommandLine(['grammar', '--grammar-file', 'bad.grammar'], environment)).toBe(1);
     expect(errors()).toContain('Error: Undeclared symbol "b"');
   });
@@ -76,9 +78,12 @@ describe('sabueso grammar', () => {
     [['grammar'], GRAMMAR_USAGE],
     [['grammar', 'arithmetic', '--grammar-file', 'x.grammar'], GRAMMAR_USAGE],
     [['grammar', 'arithmetic', '--states'], 'Unknown option: --states'],
-    [['grammar', 'nope'], 'Unknown grammar: nope. Available grammars: arithmetic'],
+    [
+      ['grammar', 'nope'],
+      'Unknown grammar: nope. Available grammars: detective/g1, detective/g0, meta, arithmetic-ambiguous, arithmetic, parentheses, epsilon-trap, test-useless, test-empty, test-cyclic',
+    ],
   ])('%j is a usage error: exit code 2', async (commandArguments, message) => {
-    const { environment, output, errors } = environmentWith();
+    const { environment, output, errors } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(commandArguments, environment)).toBe(2);
     expect(errors()).toBe(`${message}\n`);
     expect(output()).toBe('');

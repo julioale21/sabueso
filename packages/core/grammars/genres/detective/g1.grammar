@@ -1,0 +1,26 @@
+# G1: the official grammar of the detective story. Unambiguous and LL(1).
+# A line of suspicion starts at SOS and covers the following steps up to the next SOS
+# or the resolution. DSC can only appear inside an open line, and closes it.
+%start Relato
+%terminals CTX PER CRI HAL ENC PIS INT SOS DSC ATQ REV CNF CAP EPI
+Relato        -> Planteo Investigacion Desenlace
+Planteo       -> Hecho MarcoOpc | Marco Hecho
+MarcoOpc      -> Marco | ε
+Marco         -> CTX PerOpc | PER CtxOpc
+PerOpc        -> PER | ε
+CtxOpc        -> CTX | ε
+Hecho         -> CRI HallazgoOpc | HAL
+HallazgoOpc   -> HAL | ε
+Investigacion -> Pasos | ENC Pasos
+Pasos         -> Evidencia Libres Lineas | Linea Lineas
+Libres        -> Evidencia Libres | ε
+Lineas        -> Linea Lineas | ε
+Linea         -> SOS CuerpoLinea
+CuerpoLinea   -> Evidencia CuerpoLinea | Descarte | ε
+Descarte      -> DSC Libres
+Evidencia     -> PIS | INT | ATQ
+Desenlace     -> Resolucion EpiOpc
+EpiOpc        -> EPI | ε
+Resolucion    -> REV Cierre
+Cierre        -> CNF CapOpc | CAP | ε
+CapOpc        -> CAP | ε

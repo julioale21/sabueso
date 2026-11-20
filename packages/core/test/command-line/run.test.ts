@@ -48,6 +48,15 @@ describe('createCommandLineProgram', () => {
   });
 });
 
+describe('help', () => {
+  it('ends with the built-in grammars, in their two groups', async () => {
+    const { environment, output } = createMemoryEnvironment();
+    await runCommandLine(['help'], environment);
+    expect(output()).toContain('Grammars:\n  Géneros: detective/g1 (g1), detective/g0 (g0)\n');
+    expect(output()).toMatch(/^ {2}Desarrollo: meta, arithmetic-ambiguous, /m);
+  });
+});
+
 describe('format', () => {
   it('table aligns the columns', () => {
     expect(

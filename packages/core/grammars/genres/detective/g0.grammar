@@ -1,0 +1,15 @@
+# G0: the grammar of the project proposal, unchanged. Natural but ambiguous:
+# - Pasos -> Pasos Pasos (how the steps are grouped);
+# - Linea -> SOS Pasos (how far a suspicion reaches).
+%start Relato
+%terminals CTX PER CRI HAL ENC PIS INT SOS DSC ATQ REV CNF CAP EPI
+Relato        -> Planteo Investigacion Desenlace
+Planteo       -> Hecho | Marco Hecho | Hecho Marco
+Marco         -> CTX | PER | CTX PER | PER CTX
+Hecho         -> CRI | HAL | CRI HAL
+Investigacion -> Pasos | ENC Pasos
+Pasos         -> Paso | Pasos Pasos
+Paso          -> PIS | INT | DSC | ATQ | Linea
+Linea         -> SOS | SOS Pasos
+Desenlace     -> Resolucion | Resolucion EPI
+Resolucion    -> REV | REV CNF | REV CAP | REV CNF CAP

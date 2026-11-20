@@ -412,7 +412,7 @@ Las de análisis prueban el análisis de gramáticas. En la CLI se nombran `test
 // src/genres/types.ts
 interface TagInfo {
   tag: string;
-  function: string;
+  narrativeFunction: string;
   example: string;
 } // narrative function and example (table from the project proposal)
 interface Genre {
@@ -850,6 +850,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - `npm run sabueso -- genres` lista los géneros del catálogo (hoy, policial) con su gramática oficial, su alternativa y sus etiquetas.
      - `npm run sabueso -- grammars` lista todas las gramáticas incorporadas con sus tamaños, en dos grupos: "Géneros" y "Desarrollo".
      - `npm run sabueso -- grammar g0` imprime las 28 producciones.
+   - **Decisiones (2026-11-19):**
+     - El campo `function` de `TagInfo` se llama `narrativeFunction`, más descriptivo.
+     - Las gramáticas de género se registran leyendo el catálogo (`grammars/genres/<id de gramática>.grammar`); los alias `g1` y `g0` son una tabla propia del registro.
+     - `help` muestra los grupos mediante una opción nueva y compatible de `createCommandLineProgram`: `helpFooter`.
 
 6. **Tokenizador de secuencias.**
    - `input/sequence.ts`: `tokenizeSequence(text)` separa por espacios. `checkAlphabet(tokens, grammar)` devuelve un `ParseError` `unknown-symbol` o `null`.

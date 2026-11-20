@@ -1,0 +1,4 @@
+# Useless symbols: A is not productive (it never ends) and C is not reachable from S.
+S -> A 'a' | 'b'
+A -> A 'a'
+C -> 'c'

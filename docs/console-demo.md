@@ -29,3 +29,12 @@ npm run sabueso -- lex arithmetic --states
 npm run sabueso -- grammar arithmetic
 npm run sabueso -- grammar arithmetic --parser-trace
 ```
+
+## Las gramáticas del proyecto
+
+```sh
+npm run sabueso -- genres
+npm run sabueso -- grammars
+npm run sabueso -- grammar g0
+npm run sabueso -- grammar g1
+```

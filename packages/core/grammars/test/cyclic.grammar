@@ -1,0 +1,3 @@
+# A cycle S ⇒ A ⇒ S: a string can have infinitely many derivation trees.
+S -> A | 'a'
+A -> S

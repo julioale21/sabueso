@@ -1,0 +1,2 @@
+# Ambiguous arithmetic: no precedence and no associativity, so id + id * id has two trees.
+E -> E '+' E | E '*' E | '(' E ')' | 'id'

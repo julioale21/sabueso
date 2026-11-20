@@ -1,0 +1,14 @@
+# The grammar of the .grammar format, written in the format itself.
+# Its terminals are the token kinds of the lexer (the DFA of step 3).
+# It is LL(1): the parser of step 4 has one function per nonterminal of this file.
+%start File
+%terminals IDENTIFIER LITERAL ARROW BAR EPSILON NEWLINE START TERMINALS END_OF_FILE
+File             -> Element File | END_OF_FILE
+Element          -> NEWLINE | Directive | Rule
+Directive        -> START IDENTIFIER NEWLINE | TERMINALS Symbols NEWLINE
+Rule             -> IDENTIFIER ARROW Alternatives NEWLINE
+Alternatives     -> Sequence MoreAlternatives
+MoreAlternatives -> BAR Sequence MoreAlternatives | ε
+Sequence         -> EPSILON | Symbols
+Symbols          -> Symbol Symbols | ε
+Symbol           -> IDENTIFIER | LITERAL

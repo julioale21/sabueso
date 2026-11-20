@@ -1,0 +1,2 @@
+# Balanced parentheses. Has an ε-production, and its language contains the empty string.
+S -> '(' S ')' S | ε

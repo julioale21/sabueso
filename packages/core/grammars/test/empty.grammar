@@ -1,0 +1,2 @@
+# An empty language: S never derives a string of terminals, so L(G) = ∅.
+S -> S 'a'
