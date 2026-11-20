@@ -1,0 +1,5 @@
+# Arithmetic expressions with three levels of precedence.
+# Unambiguous and left-recursive, so it is not LL(1); Earley accepts it all the same.
+E -> E '+' T | T
+T -> T '*' F | F
+F -> '(' E ')' | 'id'

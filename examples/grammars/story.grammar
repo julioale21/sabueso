@@ -1,0 +1,9 @@
+# A minimal detective story: a crime, one or more clues, the reveal.
+# Uses everything the lexer knows: comments, blank lines, both directives,
+# both arrows, alternatives, literals and ε.
+%start Relato
+%terminals CRI PIS REV
+
+Relato  -> CRI Pistas REV
+Pistas  → PIS Pistas | PIS
+Cierre  -> 'fin' | ε

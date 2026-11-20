@@ -176,6 +176,8 @@ Al terminar el texto, el lexer agrega un `NEWLINE` si la última línea no termi
 
 ## 5. Ejemplo recorrido a mano
 
+### 5.1 Una línea, carácter por carácter
+
 La línea `E -> E '+' T # suma`:
 
 | Caracteres | Recorrido de estados | Por qué se detiene                      | Resultado                         |
@@ -192,6 +194,125 @@ La línea `E -> E '+' T # suma`:
 | ` `        | q₀ → q₁₁             | `#` no tiene transición desde q₁₁       | descartado                        |
 | `# suma`   | q₀ → q₁₀ → … → q₁₀   | se acaba el texto                       | descartado                        |
 | (fin)      |                      |                                         | `NEWLINE` agregado, `END_OF_FILE` |
+
+### 5.2 Un archivo completo, en forma simple: `examples/grammars/story.grammar`
+
+```text
+# A minimal detective story: a crime, one or more clues, the reveal.
+# Uses everything the lexer knows: comments, blank lines, both directives,
+# both arrows, alternatives, literals and ε.
+%start Relato
+%terminals CRI PIS REV
+
+Relato  -> CRI Pistas REV
+Pistas  → PIS Pistas | PIS
+Cierre  -> 'fin' | ε
+```
+
+El autómata es como alguien que lee el texto **letra por letra**, siempre con la misma regla:
+
+> Empiezo en **q₀**. Leo un carácter y miro en la tabla a qué estado paso. **Sigo mientras haya flecha.** Cuando no hay flecha para el carácter siguiente, me detengo y miro dónde quedé:
+>
+> - si es un estado de aceptación (doble círculo), **corto ahí una palabra**: la guardo como token o, si es espacio o comentario, la tiro;
+> - si no es de aceptación, es un **error**.
+>
+> Vuelvo a q₀ y sigo con el carácter que no pude consumir.
+
+#### Líneas 1 a 3: los comentarios
+
+```text
+# A minimal detective story: a crime, one or more clues, the reveal.
+```
+
+1. Lee `#`: de q₀ pasa a **q₁₀** (comentario).
+2. En q₁₀ hay flecha para **todo salvo el salto de línea**, así que se come `A`, ` `, `m`, `i`… hasta el final de la línea, quedándose en q₁₀.
+3. Llega el salto de línea: q₁₀ no tiene flecha para él. Se detiene en q₁₀, que acepta pero **se descarta**. El comentario no genera ningún token.
+4. Vuelve a q₀ con el salto de línea: q₀ → **q₁₂**, que emite **`NEWLINE`**. q₁₂ no tiene flechas, así que corta enseguida.
+
+Resultado de la línea: un solo token, `NEWLINE`. Las líneas 2 y 3 son iguales.
+
+#### Línea 4: `%start Relato`
+
+1. `%`: q₀ → **q₈**. q₈ no acepta; espera una letra.
+2. `s`, `t`, `a`, `r`, `t`: q₈ → **q₉** y después q₉ → q₉ → q₉… (q₉ tiene bucle con letras).
+3. Espacio: q₉ no tiene flecha con espacio. Se detiene en q₉, que acepta. Corta la palabra `%start`.
+4. **Paso extra:** la palabra se busca en la tabla de directivas (sección 4.4). `%start` está, así que el token es **`START`**. Si hubiera sido `%inicio`, sería un error de "directiva desconocida".
+5. Espacio: q₀ → **q₁₁** (espacios). La `R` no tiene flecha desde q₁₁, así que se detiene y **descarta** el espacio.
+6. `R`: q₀ → **q₁**. `e`, `l`, `a`, `t`, `o` siguen en q₁, por el bucle de letras y dígitos.
+7. Salto de línea: q₁ no tiene flecha, así que corta y emite **`IDENTIFIER` "Relato"**.
+8. Salto de línea: q₀ → q₁₂, **`NEWLINE`**.
+
+Resultado: `START  IDENTIFIER(Relato)  NEWLINE`.
+
+**Aquí actúa el _maximal munch_:** cuando leyó `R`, q₁ ya aceptaba, y podría haber cortado `R` como identificador. Pero **siguió mientras hubo flecha**, y por eso `Relato` es una sola palabra y no seis.
+
+#### Línea 5: `%terminals CRI PIS REV`
+
+Funciona igual que la línea 4: `%terminals` se resuelve a **`TERMINALS`**, y después vienen tres identificadores separados por espacios descartados.
+
+Resultado: `TERMINALS  IDENTIFIER(CRI)  IDENTIFIER(PIS)  IDENTIFIER(REV)  NEWLINE`.
+
+#### Línea 6: la línea en blanco
+
+Solo tiene el salto de línea: q₀ → q₁₂, **`NEWLINE`**.
+
+#### Línea 7: `Relato  -> CRI Pistas REV`
+
+1. `Relato`: q₁, **`IDENTIFIER`**.
+2. Dos espacios: q₀ → q₁₁ → q₁₁ (el bucle se come los dos juntos), y se descartan.
+3. `-`: q₀ → **q₂**. q₂ **no acepta**: un guion solo no es nada, y espera un `>`.
+4. `>`: q₂ → **q₃**, que acepta. Corta y emite **`ARROW`** "->".
+   - Si después del `-` hubiera venido otra cosa, se habría detenido en q₂, que no acepta, y daría el error `Expected '>' after '-'`.
+5. `CRI`, `Pistas`, `REV`: tres **`IDENTIFIER`**, con los espacios descartados entre ellos.
+6. Salto: **`NEWLINE`**.
+
+**Importante:** el lexer **no sabe** que `Pistas` es no terminal y `CRI` es terminal. Para él los dos son simplemente `IDENTIFIER`. Esa diferencia la decide `buildGrammar` (paso 2), después de que el parser (paso 4) arme las reglas.
+
+#### Línea 8: `Pistas  → PIS Pistas | PIS`
+
+Es casi igual a la línea 7, con dos diferencias:
+
+- **`→`** es un solo carácter: q₀ → **q₃** directo, sin pasar por q₂. Da el mismo token, **`ARROW`**.
+- **`|`**: q₀ → **q₄**, que emite **`BAR`**. q₄ no tiene flechas, así que corta en el acto.
+
+Resultado: `IDENTIFIER ARROW IDENTIFIER IDENTIFIER BAR IDENTIFIER NEWLINE`.
+
+#### Línea 9: `Cierre  -> 'fin' | ε`
+
+1. `Cierre`, los espacios y `->`: igual que antes.
+2. `'`: q₀ → **q₆** (dentro de un literal). q₆ **no acepta**: el literal todavía no está cerrado.
+3. `f`, `i`, `n`: q₆ → q₆ → q₆, porque q₆ acepta **cualquier carácter salvo la comilla y el salto de línea**.
+4. `'`: q₆ → **q₇**, que acepta. Corta `'fin'`.
+5. **Paso extra:** se quitan las comillas, y el token es **`LITERAL` "fin"**.
+   - Si la línea hubiera terminado sin la comilla de cierre, el autómata se habría detenido en q₆, que no acepta. Ese es el error de `examples/grammars/lexical-error.grammar`: `Unterminated literal`.
+6. `|`: **`BAR`**.
+7. `ε`: q₀ → **q₅**, **`EPSILON`**. Aunque ε sea una letra griega tiene su propia flecha, así que no se confunde con un identificador.
+8. Salto: **`NEWLINE`**.
+
+#### Al final del texto
+
+Se terminaron los caracteres. Como el último token ya es un `NEWLINE`, no hace falta agregar otro. Solo se agrega **`END_OF_FILE`**, que le avisa al parser (paso 4) que no hay nada más.
+
+#### Resumen
+
+| Línea             | Tokens                                                          |
+| ----------------- | --------------------------------------------------------------- |
+| 1–3 (comentarios) | `NEWLINE` (uno por línea)                                       |
+| 4                 | `START IDENTIFIER NEWLINE`                                      |
+| 5                 | `TERMINALS IDENTIFIER IDENTIFIER IDENTIFIER NEWLINE`            |
+| 6 (vacía)         | `NEWLINE`                                                       |
+| 7                 | `IDENTIFIER ARROW IDENTIFIER IDENTIFIER IDENTIFIER NEWLINE`     |
+| 8                 | `IDENTIFIER ARROW IDENTIFIER IDENTIFIER BAR IDENTIFIER NEWLINE` |
+| 9                 | `IDENTIFIER ARROW LITERAL BAR EPSILON NEWLINE`                  |
+| fin               | `END_OF_FILE`                                                   |
+
+En una frase: **el lexer convierte una tira de caracteres en una tira de palabras con tipo, tirando lo que no importa (espacios y comentarios)**. Qué significan esas palabras juntas, es decir que una línea es una regla y que `|` separa alternativas, lo decide el parser del paso 4.
+
+Para verlo en vivo:
+
+```sh
+npm run sabueso -- lex --grammar-file examples/grammars/story.grammar --states
+```
 
 ---
 

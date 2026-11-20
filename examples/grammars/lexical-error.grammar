@@ -1,0 +1,4 @@
+# The literal on line 4 is never closed: the DFA stops in q6.
+S -> A 'x'
+A -> 'a' A
+A -> 'b
