@@ -67,3 +67,12 @@ npm run sabueso -- nullable --grammar g1 --steps
 npm run sabueso -- nullable --grammar g0
 npm run sabueso -- nullable --grammar-file examples/grammars/nullable-chain.grammar --steps
 ```
+
+## Longitud mínima derivable
+
+Paso 8. Cuántos eventos tiene, como mínimo, lo que deriva cada no terminal. minYield(Relato) = 3: el relato más corto es `CRI PIS REV`.
+
+```sh
+npm run sabueso -- min-yield --grammar g1
+npm run sabueso -- min-yield --grammar test-useless
+```

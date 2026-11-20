@@ -884,6 +884,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - `analysis/min-yield.ts`.
    - Prueba: minYield(Relato) es 3 en G0 y en G1. minYield(S) en `parentheses` es 0. Ficha 10.
    - **Consola:** `npm run sabueso -- min-yield --grammar g1` imprime la tabla de no terminales con su longitud mínima.
+   - **Decisiones (2026-11-20):**
+     - Funciones: `computeMinYield(grammar)` devuelve `Map<SymbolName, number>` con todos los no terminales, y `minYieldOfSequence(symbols, minYield)` suma los de una secuencia (un terminal vale 1). La segunda queda exportada para la poda del AP (paso 26) y la generación acotada (paso 27).
+     - Un no terminal que no deriva ninguna cadena de terminales vale `Infinity` (∞). La consola lo muestra como `∞ (derives no string)` y, si es el inicial, informa L(G) = ∅.
+     - Mismo punto fijo por rondas que los anulables. El spec no pide `--steps` para este paso, así que no se agregó `onIteration`.
 
 9. **Productivos, alcanzables, inútiles y vacuidad.**
    - `analysis/useful.ts`, con `onIteration`.
