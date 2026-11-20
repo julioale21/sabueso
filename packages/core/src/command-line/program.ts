@@ -6,6 +6,7 @@ import { firstFollowCommand } from './commands/first-follow.js';
 import { genresCommand } from './commands/genres.js';
 import { grammarCommand } from './commands/grammar.js';
 import { grammarsCommand } from './commands/grammars.js';
+import { itemsCommand } from './commands/items.js';
 import { lexCommand } from './commands/lex.js';
 import { minYieldCommand } from './commands/min-yield.js';
 import { nullableCommand } from './commands/nullable.js';
@@ -29,6 +30,7 @@ export const runCommandLine = createCommandLineProgram({
     firstFollowCommand,
     predictiveTableCommand,
     analyzeCommand,
+    itemsCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

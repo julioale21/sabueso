@@ -107,3 +107,11 @@ npm run sabueso -- predictive-table --grammar g0
 npm run sabueso -- predictive-table --grammar g1
 npm run sabueso -- analyze --grammar g1
 ```
+
+## Earley: ítems
+
+Paso 13. Todas las reglas punteadas de la gramática y qué hace Earley con cada una (Predictor, Scanner o Completer). Son finitas: por eso Earley siempre termina.
+
+```sh
+npm run sabueso -- items --grammar parentheses
+```

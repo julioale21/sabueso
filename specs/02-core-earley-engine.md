@@ -940,6 +940,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `earley/item.ts` (crear ítem, clave, avanzar, `nextSymbol`, `isComplete` y `label` legible) y `earley/chart.ts` (agregar con deduplicación de ítems por clave; los enlaces se agregan sin buscar duplicados, según la sección 3.18).
     - Pruebas unitarias. Fichas 11 y 12.
     - **Consola:** `npm run sabueso -- items --grammar parentheses` lista todas las reglas punteadas posibles de la gramática (por ejemplo, `S → ( • S ) S`). Es el universo finito de ítems, y explica por qué Earley siempre termina.
+    - **Decisiones (2026-11-20):**
+      - `item.ts`: `createItem`, `itemKey`, `nextSymbol`, `isComplete`, `dottedRule` (la regla con el punto, `A → •` para ε), `label` (`E → E + • T, 0`) y `dottedRulesOf` (el universo de reglas punteadas, para el comando). "Avanzar" no es una función aparte: el reconocedor del paso 14 agrega el ítem con `dot + 1` mediante `addItem`, que ya deduplica.
+      - `chart.ts`: `createChart(tokenCount)` y `addItem(set, production, dot, origin, link?)`, que devuelve `{ item, isNew }`. El enlace se agrega también cuando el ítem ya estaba (es otro camino: ambigüedad); `isNew` dice si hay que procesarlo.
+      - El comando `items` muestra, además, qué operación dispara cada regla punteada (Predictor, Scanner o Completer).
 
 14. **Reconocedor sin ε.**
     - `earley/recognizer.ts` con `predict`, `scan`, `complete` y el bucle principal (sección 3.12) que devuelve `accepted`.
