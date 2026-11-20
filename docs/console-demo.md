@@ -126,3 +126,14 @@ npm run sabueso -- earley --grammar arithmetic --chart "id + id"
 npm run sabueso -- earley --grammar g0 "CRI SOS PIS INT REV"
 npm run sabueso -- earley --grammar g0 "CRI REV"
 ```
+
+## El arreglo de ε
+
+Paso 15. Con el arreglo de Aycock y Horspool, Earley funciona con G1 y su chart de `CRI PIS REV` es exactamente el calculado a mano en el spec (8, 19, 16 y 11 ítems). Con `--no-epsilon-fix` se ve el error del algoritmo clásico: `epsilon-trap` rechaza `x` y falta `S → A A • x`.
+
+```sh
+npm run sabueso -- earley --grammar epsilon-trap "x"
+npm run sabueso -- earley --grammar epsilon-trap --chart --no-epsilon-fix "x"
+npm run sabueso -- earley --grammar g1 --chart "CRI PIS REV"
+npm run sabueso -- earley --grammar g1 "CRI DSC REV"
+```

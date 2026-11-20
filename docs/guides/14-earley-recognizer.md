@@ -11,7 +11,7 @@ Es el corazón del proyecto: decidir si una cadena pertenece a L(G), **para cual
 
 La idea del algoritmo está explicada en forma simple en la guía 13, sección 2: seguir todas las posibilidades a la vez, con un conjunto de ítems por cada posición de la entrada, y tres operaciones (Predictor, Scanner, Completer). Este paso las escribe en código.
 
-**Lo que todavía falta:** el algoritmo clásico tiene un problema con las producciones ε (sección 7). G0 no tiene ε, así que funciona perfecto; G1 sí tiene, y el arreglo llega en el paso 15. Los mensajes de error detallados ("se esperaba…") llegan en el paso 16.
+**Lo que se completa después:** el algoritmo clásico de este paso tiene un problema con las producciones ε (sección 7). G0 no tiene ε, así que funciona perfecto; G1 sí, y el arreglo está en el paso 15 ([guía 15](15-epsilon-fix.md)). Los mensajes de error detallados ("se esperaba…") llegan en el paso 16.
 
 ---
 
@@ -235,7 +235,7 @@ Con `epsilon-trap` (`S → A A x`, `A → ε`) y la entrada `x`, el algoritmo **
 3. Ese ítem nuevo espera **otro** A. El Predictor intenta agregar `A → •, 0`, pero **ya está**: no se agrega ni se procesa otra vez.
 4. Nadie completa el segundo A: `S → A A • x` no aparece nunca, y `x` no se puede leer.
 
-El problema: un ítem que espera un símbolo anulable aparece **después** de que ese símbolo ya se completó en el mismo conjunto. G0 no tiene ε, así que no le afecta. G1 sí, y por eso el paso 15 agrega el arreglo de Aycock y Horspool. Hay una prueba que hoy verifica este rechazo; en el paso 15 se invierte.
+El problema: un ítem que espera un símbolo anulable aparece **después** de que ese símbolo ya se completó en el mismo conjunto. G0 no tiene ε, así que no le afecta. G1 sí, y por eso el paso 15 agrega el arreglo de Aycock y Horspool. Desde el paso 15, el arreglo está activo y `epsilon-trap` acepta `x`; el algoritmo clásico se puede ver con `--no-epsilon-fix` (guía 15).
 
 ---
 
@@ -260,7 +260,7 @@ Un símbolo fuera de Σ se rechaza antes de correr Earley: `REJECTED: XYZ at pos
 | el chart de `id + id` | S0, S1 y S2 ítem por ítem                                                    |
 | enlaces               | `scan` guarda el token; `complete` guarda el hijo                            |
 | rechazo               | queda un conjunto vacío                                                      |
-| ε                     | `epsilon-trap` todavía rechaza `x` (se arregla en el paso 15)                |
+| ε                     | (paso 15) `epsilon-trap` acepta `x`; en modo clásico la rechaza (guía 15)    |
 
 **`test/command-line/earley.test.ts`:** acepta y rechaza con sus códigos, el chart con `--chart`, el símbolo fuera de Σ, la entrada vacía y los errores de uso.
 

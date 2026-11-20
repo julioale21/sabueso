@@ -7,7 +7,7 @@
 - Es la parte **ascendente** (_bottom-up_) de Earley: sube desde lo reconocido hacia quien lo necesitaba.
 - El **origen** i es lo que dice a qué conjunto volver.
 - Relación con el autómata de pila: Earley simula todas las pilas posibles del AP a la vez y las comparte. Un ítem es un pedazo de pila; su origen apunta a lo que estaba debajo (ficha 24).
-- **Limitación del algoritmo clásico con ε:** si B → ε se completa en Sk **antes** de que otro ítem de Sk empiece a esperar un B, ese ítem no avanza nunca. Lo arregla el paso 15 (ficha 16).
+- **Limitación del algoritmo clásico con ε:** si B → ε se completa en Sk **antes** de que otro ítem de Sk empiece a esperar un B, ese ítem no avanza nunca. Lo arregla el paso 15 (ficha 16): con el arreglo, el Completer además **ignora** los ítems completos con origen igual al conjunto actual, porque el Predictor ya avanzó sobre ellos.
 
 ## 2. Ejemplo resuelto a mano
 

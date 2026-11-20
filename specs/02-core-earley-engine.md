@@ -969,6 +969,11 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - `npm run sabueso -- earley --grammar g1 "CRI PIS REV" --chart` imprime exactamente el chart de la sección 9.6 (8, 19, 16 y 11 ítems). Una prueba compara la salida ítem por ítem.
       - `npm run sabueso -- earley --grammar epsilon-trap "x" --chart` imprime `ACEPTA`.
       - Con `--no-epsilon-fix` imprime `RECHAZA` y el chart donde falta el ítem `S → A A • x, 0`.
+    - **Decisiones (2026-11-20):**
+      - Las tres operaciones reciben un `RecognizerContext` (gramática, chart, tokens, anulables y modo) en lugar de parámetros sueltos. En modo clásico, el conjunto de anulables queda vacío: el mismo código del Predictor no avanza sobre nada.
+      - `isEmptySpan(item)` (origen = conjunto actual) queda exportada: la usa el Completer y el comando para marcar `P (ignored)`.
+      - En `--chart`, la columna "How" usa `ε` para el avance del Predictor y `P (ignored)` para los ítems ε que el Completer ignora, igual que la sección 9.6. Una prueba compara las 54 filas con `test/fixtures/g1-chart-cri-pis-rev.ts`, tomado de esa sección: coinciden todas.
+      - Una prueba recorre seis corridas y verifica que ningún ítem tenga dos veces el mismo par (predecesor, causa), en lugar de una aserción dentro del código (sección 3.18).
 
 16. **Diagnóstico.**
     - `earley/diagnostics.ts`: aceptación y `ParseError`, según la sección 3.17.
