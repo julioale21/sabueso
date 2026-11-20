@@ -20,11 +20,11 @@ En Sabueso, cada evento narrativo es un símbolo, y un relato es una cadena:
 
 ## 3. Dónde está en el código
 
-| Qué                                                      | Dónde                                                                                                                                                                                                                                       |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Σ de una gramática                                       | `Grammar.terminals` en `packages/core/src/grammar/types.ts`, calculado por `buildGrammar` en `grammar/build.ts`                                                                                                                             |
-| Separar un relato en símbolos y verificar que estén en Σ | Pendiente (paso 6): `tokenizeSequence` y `checkAlphabet` en `packages/core/src/input/sequence.ts`                                                                                                                                           |
-| Comando de consola                                       | `npm run sabueso -- grammar g1` muestra Σ = {ATQ, CAP, CNF, CRI, CTX, DSC, ENC, EPI, HAL, INT, PER, PIS, REV, SOS}, las 14 etiquetas. Desde el paso 6, `npm run sabueso -- tokens --grammar g1 "CRI XYZ REV"` informa el símbolo fuera de Σ |
+| Qué                                                      | Dónde                                                                                                                                                                                                                                          |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Σ de una gramática                                       | `Grammar.terminals` en `packages/core/src/grammar/types.ts`, calculado por `buildGrammar` en `grammar/build.ts`                                                                                                                                |
+| Separar un relato en símbolos y verificar que estén en Σ | `tokenizeSequence` y `checkAlphabet` en `packages/core/src/input/sequence.ts` (paso 6)                                                                                                                                                         |
+| Comando de consola                                       | `npm run sabueso -- grammar g1` muestra Σ = {ATQ, CAP, CNF, CRI, CTX, DSC, ENC, EPI, HAL, INT, PER, PIS, REV, SOS}, las 14 etiquetas. `npm run sabueso -- tokens --grammar g1 "CRI XYZ REV"` informa que `XYZ`, en la posición 1, no está en Σ |
 
 ## 4. Qué prueba lo verifica
 
@@ -33,7 +33,8 @@ En Sabueso, cada evento narrativo es un símbolo, y un relato es una cadena:
 | `packages/core/test/grammar-build.test.ts`             | Σ contiene exactamente los símbolos que no son lado izquierdo, más los declarados con `%terminals` |
 | `packages/core/test/command-line/demo-grammar.test.ts` | El comando imprime Σ = {+, id}                                                                     |
 | `packages/core/test/built-in-grammars.test.ts`         | G0 y G1 tienen \|Σ\| = 14 (los tamaños de cada gramática incorporada)                              |
-| Pendiente (paso 6): prueba del tokenizador             | El caso I6: `XYZ` en la posición 1 es un símbolo desconocido                                       |
+| `packages/core/test/input/sequence.test.ts`            | El caso I6: `XYZ` en la posición 1 es un símbolo desconocido; ε y L1 están sobre Σ                 |
+| `packages/core/test/command-line/tokens.test.ts`       | El comando lista los tokens, informa `XYZ` y termina con código 1                                  |
 
 ## 5. Referencia bibliográfica
 

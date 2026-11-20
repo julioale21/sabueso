@@ -48,3 +48,12 @@ npm run sabueso -- grammars
 npm run sabueso -- grammar g0
 npm run sabueso -- grammar g1
 ```
+
+## Un relato como cadena sobre Σ
+
+Paso 6. Separa el relato en tokens y verifica que cada uno esté en Σ. `XYZ` no es una etiqueta: termina con código 1.
+
+```sh
+npm run sabueso -- tokens --grammar g1 "CRI PIS REV"
+npm run sabueso -- tokens --grammar g1 "CRI XYZ REV"
+```

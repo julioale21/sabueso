@@ -859,6 +859,12 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - `input/sequence.ts`: `tokenizeSequence(text)` separa por espacios. `checkAlphabet(tokens, grammar)` devuelve un `ParseError` `unknown-symbol` o `null`.
    - Prueba: el caso I6.
    - **Consola:** `npm run sabueso -- tokens --grammar g1 "CRI XYZ REV"` lista los tokens con su posición y termina con código 1, informando `XYZ` en la posición 1.
+   - **Decisiones (2026-11-20):**
+     - El tipo `ParseError` se crea ahora en `earley/diagnostics.ts`, donde lo ubica la sección 5. Las funciones de diagnóstico se agregan en el paso 16.
+     - En un error `unknown-symbol`, `expected` es la lista vacía: el problema no es la posición sino el símbolo, que no está en Σ. La consola muestra Σ completo como ayuda.
+     - `checkAlphabet` informa solo el **primer** símbolo desconocido, como los demás errores.
+     - Los comandos que leen un relato eligen la gramática con la opción `--grammar <nombre>` (o `--grammar-file`), porque sus argumentos posicionales son el relato. El relato puede ir entre comillas o como palabras sueltas.
+     - Un relato vacío no es un error del tokenizador: ε ∈ Σ\*. Rechazarlo es tarea de Earley (caso I2).
 
 7. **Anulables.**
    - `analysis/nullable.ts`, por punto fijo, con `onIteration`.

@@ -39,6 +39,12 @@ export interface GrammarText {
 /** The option that reads a grammar from a file instead of a built-in name. */
 export const GRAMMAR_FILE_OPTION = '--grammar-file';
 
+/**
+ * The option that names a built-in grammar, for commands whose positional arguments are a
+ * story: `tokens --grammar g1 "CRI PIS REV"`.
+ */
+export const GRAMMAR_OPTION = '--grammar';
+
 /** Short names for the grammars of the detective story, to shorten the commands. */
 const aliases: Readonly<Record<string, readonly string[]>> = {
   'detective/g1': ['g1'],
@@ -145,23 +151,49 @@ export function builtInGrammarPath(grammar: BuiltInGrammar): string {
 }
 
 /**
- * Chooses the grammar from the parsed arguments: exactly one built-in name or one
+ * Chooses the grammar from the parsed arguments: exactly one built-in name (positional) or one
  * --grammar-file. Returns the message of a usage error otherwise.
  */
 export function resolveGrammarSource(
   parsed: ParsedArguments,
   usage: string,
 ): GrammarSource | string {
-  const path = parsed.values.get(GRAMMAR_FILE_OPTION);
-  const [id, ...extra] = parsed.positionals;
-  if (extra.length > 0 || (path === undefined) === (id === undefined)) {
+  const [name, ...extra] = parsed.positionals;
+  if (extra.length > 0) {
+    return `Usage: ${usage}`;
+  }
+  return chooseGrammarSource(name, parsed.values.get(GRAMMAR_FILE_OPTION), usage);
+}
+
+/**
+ * Like resolveGrammarSource, for the commands that read a story: the name comes with --grammar,
+ * because the positional arguments are the story.
+ */
+export function resolveGrammarOption(
+  parsed: ParsedArguments,
+  usage: string,
+): GrammarSource | string {
+  return chooseGrammarSource(
+    parsed.values.get(GRAMMAR_OPTION),
+    parsed.values.get(GRAMMAR_FILE_OPTION),
+    usage,
+  );
+}
+
+/** Exactly one of the two: a built-in name or the path of a file. */
+function chooseGrammarSource(
+  name: string | undefined,
+  path: string | undefined,
+  usage: string,
+): GrammarSource | string {
+  if ((path === undefined) === (name === undefined)) {
     return `Usage: ${usage}`;
   }
   if (path !== undefined) {
     return { kind: 'file', path };
   }
-  const grammar = findBuiltInGrammar(id ?? '');
-  return grammar === undefined ? unknownGrammarMessage(id ?? '') : { kind: 'built-in', grammar };
+  const grammar = findBuiltInGrammar(name ?? '');
+  return grammar === undefined ? unknownGrammarMessage(name ?? '') : { kind: 'built-in', grammar };
 }
 
 function unknownGrammarMessage(id: string): string {
