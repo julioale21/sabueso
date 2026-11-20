@@ -13,6 +13,7 @@ import { minYieldCommand } from './commands/min-yield.js';
 import { nullableCommand } from './commands/nullable.js';
 import { predictiveTableCommand } from './commands/predictive-table.js';
 import { tokensCommand } from './commands/tokens.js';
+import { traceCommand } from './commands/trace.js';
 import { usefulCommand } from './commands/useful.js';
 import { formatGrammarGroups } from './built-in-grammars.js';
 import { createCommandLineProgram } from './run.js';
@@ -33,6 +34,7 @@ export const runCommandLine = createCommandLineProgram({
     analyzeCommand,
     itemsCommand,
     earleyCommand,
+    traceCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

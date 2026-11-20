@@ -147,3 +147,12 @@ npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"
 npm run sabueso -- earley --grammar g1 "CRI PIS"
 npm run sabueso -- earley --grammar g1 "CRI SOS DSC DSC REV"
 ```
+
+## La traza de Earley
+
+Paso 17. Cada ítem que agrega Earley, numerado y en orden, con la operación y la causa. Es lo que va a animar el reproductor de la web. Con G0 aparecen eventos "again": la ambigüedad mientras ocurre.
+
+```sh
+npm run sabueso -- trace --grammar g1 "CRI PIS REV"
+npm run sabueso -- trace --grammar g0 "CRI SOS PIS INT REV"
+```

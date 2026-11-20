@@ -988,6 +988,11 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `earley/trace.ts`, activable con `{ trace: true }`. Sin la opción, no hay costo extra.
     - Prueba: en G1 con `CRI PIS REV`, el primer evento es `predict` en el conjunto 0 y el último conjunto contiene `$S → Relato •, 0`.
     - **Consola:** `npm run sabueso -- trace --grammar g1 "CRI PIS REV"` imprime los eventos numerados (`#12 S1 SCANNER  Hecho → CRI • HallazgoOpc, 0  ← token 0 CRI`). Es la misma información que el reproductor de la UI, pero en texto.
+    - **Decisiones (2026-11-20):**
+      - Un evento por cada `addItem` que cambia el chart: un ítem nuevo, o uno que ya estaba y recibe otro enlace (`isNew: false`, la ambigüedad). Una predicción repetida sin enlace no es evento. El ítem inicial no es evento.
+      - `TraceEvent` agrega el campo `isNew` a la forma de la sección 5, y la operación del avance ε se llama `nullable` (en consola, `NULLABLE`). La causa es texto: el ítem que predijo, `token k X`, el ítem completado o `B ⇒* ε`.
+      - Sin la opción `trace` no se crea el `TraceRecorder`, y la causa se pasa como función, así que su texto no se construye.
+      - El número del evento del ejemplo de este punto (`#12`) era ilustrativo: con esta definición, el Scanner de `CRI` es el evento `#8`.
 
 18. **Árboles ε.**
     - `trees/epsilon.ts`: genera y cuenta los árboles ε de un símbolo anulable.

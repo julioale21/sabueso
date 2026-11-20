@@ -13,8 +13,9 @@ import {
   type Production,
   type SymbolName,
 } from '../grammar/types.js';
-import { addItem, createChart, type Chart } from './chart.js';
-import { itemKey, nextSymbol, type EarleyItem } from './item.js';
+import { addItem, createChart, type Chart, type EarleySet } from './chart.js';
+import { itemKey, label, nextSymbol, type EarleyItem, type Link } from './item.js';
+import { TraceRecorder, type TraceEvent, type TraceOperation } from './trace.js';
 
 export interface RecognitionOptions {
   /**
@@ -22,6 +23,8 @@ export interface RecognitionOptions {
    * (epsilon-trap rejects x). False by default.
    */
   classicEpsilon?: boolean;
+  /** Records every item the algorithm adds, in order (step 17). False by default. */
+  trace?: boolean;
 }
 
 /** What the three operations need besides the item: the grammar, the chart and how to treat ε. */
@@ -32,6 +35,8 @@ export interface RecognizerContext {
   /** The nullable nonterminals (step 7); empty in classic mode, so no advance over ε is made. */
   nullable: ReadonlySet<SymbolName>;
   classicEpsilon: boolean;
+  /** Present only when the trace was asked for. */
+  recorder: TraceRecorder | undefined;
 }
 
 export interface Recognition {
@@ -41,6 +46,8 @@ export interface Recognition {
   chart: Chart;
   /** $S → S, the production added on top of the grammar to know when S is complete. */
   startProduction: Production;
+  /** Every item added, in order, when the trace option is on; empty otherwise. */
+  trace: TraceEvent[];
 }
 
 /**
@@ -66,6 +73,7 @@ export function recognize(
     tokens,
     nullable: classicEpsilon ? new Set() : computeNullable(grammar),
     classicEpsilon,
+    recorder: options.trace === true ? new TraceRecorder() : undefined,
   };
   const startProduction = augmentedStartProduction(grammar);
   const firstSet = chart[0];
@@ -82,7 +90,7 @@ export function recognize(
   }
   const lastSet = chart[tokens.length];
   const accepted = lastSet?.byKey.has(itemKey(startProduction, 1, 0)) ?? false;
-  return { accepted, chart, startProduction };
+  return { accepted, chart, startProduction, trace: context.recorder?.events ?? [] };
 }
 
 /**
@@ -118,17 +126,25 @@ export function predict(context: RecognizerContext, item: EarleyItem, symbol: Sy
     return;
   }
   for (const production of context.grammar.productionsByLeftSide.get(symbol) ?? []) {
-    addItem(set, production, 0, item.setIndex);
+    addAndTrace(context, set, production, 0, item.setIndex, undefined, 'predict', () =>
+      label(item),
+    );
   }
   // The classic algorithm relies on the Completer to advance over an empty B, but the
   // Completer of B → • may have run before this item started to wait for B: then it never
   // advances. Since B is nullable, the advance can be made here, now, without waiting.
   if (context.nullable.has(symbol)) {
-    addItem(set, item.production, item.dot + 1, item.origin, {
-      kind: 'nullable',
-      predecessor: item,
-      symbol,
-    });
+    const link: Link = { kind: 'nullable', predecessor: item, symbol };
+    addAndTrace(
+      context,
+      set,
+      item.production,
+      item.dot + 1,
+      item.origin,
+      link,
+      'nullable',
+      () => `${symbol} ⇒* ε`,
+    );
   }
 }
 
@@ -142,11 +158,17 @@ export function scan(context: RecognizerContext, item: EarleyItem, terminal: Sym
   if (context.tokens[tokenIndex] !== terminal || nextSet === undefined) {
     return; // the input does not continue with this terminal: this possibility dies here
   }
-  addItem(nextSet, item.production, item.dot + 1, item.origin, {
-    kind: 'scan',
-    predecessor: item,
-    tokenIndex,
-  });
+  const link: Link = { kind: 'scan', predecessor: item, tokenIndex };
+  addAndTrace(
+    context,
+    nextSet,
+    item.production,
+    item.dot + 1,
+    item.origin,
+    link,
+    'scan',
+    () => `token ${tokenIndex} ${terminal}`,
+  );
 }
 
 /**
@@ -169,11 +191,17 @@ export function complete(context: RecognizerContext, item: EarleyItem): void {
   // The list is copied: these are the items that were waiting when B was completed.
   for (const waiting of [...originSet.items]) {
     if (nextSymbol(waiting) === item.production.leftSide) {
-      addItem(set, waiting.production, waiting.dot + 1, waiting.origin, {
-        kind: 'complete',
-        predecessor: waiting,
-        child: item,
-      });
+      const link: Link = { kind: 'complete', predecessor: waiting, child: item };
+      addAndTrace(
+        context,
+        set,
+        waiting.production,
+        waiting.dot + 1,
+        waiting.origin,
+        link,
+        'complete',
+        () => label(item),
+      );
     }
   }
 }
@@ -181,4 +209,27 @@ export function complete(context: RecognizerContext, item: EarleyItem): void {
 /** True for a complete item that started and ended in the same set: it recognized ε. */
 export function isEmptySpan(item: EarleyItem): boolean {
   return item.origin === item.setIndex;
+}
+
+/**
+ * Adds the item through addItem and, only if the trace is on, records the event. The cause
+ * is passed as a function so that, without the trace, its text is never even built.
+ * (Without the trace option, `context.recorder` is undefined and nothing else happens.)
+ */
+function addAndTrace(
+  context: RecognizerContext,
+  set: EarleySet,
+  production: Production,
+  dot: number,
+  origin: number,
+  link: Link | undefined,
+  op: TraceOperation,
+  cause: () => string,
+): void {
+  const { item, isNew } = addItem(set, production, dot, origin, link);
+  // A prediction of an item that was already there changes nothing: it is not an event.
+  // A repeated item with a link is: it is one more way to reach the item.
+  if (context.recorder !== undefined && (isNew || link !== undefined)) {
+    context.recorder.record({ set: set.index, op, item: label(item), cause: cause(), isNew });
+  }
 }
