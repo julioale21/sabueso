@@ -15,3 +15,10 @@ npm run sabueso -- help
 ```sh
 npm run sabueso -- demo-grammar
 ```
+
+## Lexer AFD
+
+```sh
+npm run sabueso -- lex arithmetic
+npm run sabueso -- lex arithmetic --states
+```
