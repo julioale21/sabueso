@@ -5,8 +5,9 @@
  * Cards: docs/concepts/13-predictor.md, 14-scanner.md, 15-completer.md
  */
 import type { Chart, EarleySet } from '../../earley/chart.js';
+import { diagnose, type ParseError } from '../../earley/diagnostics.js';
 import { dottedRule, isComplete, type EarleyItem, type Link } from '../../earley/item.js';
-import { isEmptySpan, recognize } from '../../earley/recognizer.js';
+import { recognize } from '../../earley/recognizer.js';
 import type { SymbolName } from '../../grammar/types.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
 import { parseArguments } from '../arguments.js';
@@ -45,9 +46,7 @@ export const earleyCommand: Command = {
     const title = `${grammar.name}: ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;
     const unknown = checkAlphabet(tokens, grammar);
     if (unknown !== null) {
-      environment.writeOutput(
-        `${title}\n\nREJECTED: ${unknown.found ?? ''} at position ${unknown.position} is not in Σ\n`,
-      );
+      environment.writeOutput(`${title}\n\n${formatRejection(unknown)}\n`);
       return EXIT_CODES.rejected;
     }
     const classicEpsilon = parsed.flags.has(NO_EPSILON_FIX_FLAG);
@@ -59,15 +58,31 @@ export const earleyCommand: Command = {
     if (parsed.flags.has(CHART_FLAG)) {
       sections.push(formatChart(chart, tokens, classicEpsilon));
     }
+    const error = diagnose(grammar, chart, tokens, accepted);
     sections.push(
-      accepted
-        ? 'ACCEPTED: the input is a sentence of L(G)'
-        : 'REJECTED: the input is not a sentence of L(G)',
+      error === null ? 'ACCEPTED: the input is a sentence of L(G)' : formatRejection(error),
     );
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return accepted ? EXIT_CODES.ok : EXIT_CODES.rejected;
   },
 };
+
+/**
+ * 'REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL'. The position counts
+ * from 0, as in the spec; the event counts from 1, as a person does.
+ */
+function formatRejection(error: ParseError): string {
+  if (error.kind === 'unknown-symbol') {
+    return `REJECTED · position ${error.position} (event ${error.position + 1}) · ${error.found ?? ''} is not in Σ`;
+  }
+  const place =
+    error.kind === 'unexpected-end'
+      ? `position ${error.position} (end of input)`
+      : `position ${error.position} (event ${error.position + 1}) · found ${error.found ?? ''}`;
+  const expected =
+    error.expected.length === 0 ? 'incomplete input' : `expected: ${error.expected.join(', ')}`;
+  return `REJECTED · ${place} · ${expected}`;
+}
 
 /** Every set, in order: 'S1 (after CRI)' and a table of its items. */
 function formatChart(chart: Chart, tokens: readonly SymbolName[], classicEpsilon: boolean): string {
@@ -102,7 +117,9 @@ function describeOrigin(chart: Chart, item: EarleyItem, classicEpsilon: boolean)
     if (item.production.id === -1) {
       return 'initial';
     }
-    return !classicEpsilon && isComplete(item) && isEmptySpan(item) ? 'P (ignored)' : 'P';
+    return !classicEpsilon && isComplete(item) && item.origin === item.setIndex
+      ? 'P (ignored)'
+      : 'P';
   }
   return item.links.map((link) => describeLink(chart, link)).join('; ');
 }

@@ -979,6 +979,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `earley/diagnostics.ts`: aceptación y `ParseError`, según la sección 3.17.
     - Pruebas: I1 a I7 y P2, con posición, `found` y `expected` exactos. Ficha 17.
     - **Consola:** `npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"` imprime `RECHAZA · posición 2 (evento 3) · se encontró PIS · se esperaba: CRI, HAL` y termina con código 1.
+    - **Decisiones (2026-11-20):**
+      - `diagnose(grammar, chart, tokens, accepted)` devuelve `ParseError | null`, y `expectedTerminals(grammar, set)` los terminales después del punto de un conjunto, sin repetir y ordenados.
+      - El mensaje sigue en inglés, como el resto de la salida: `REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL`. Para el fin de entrada: `position n (end of input) · expected: …` o `incomplete input`; para un símbolo fuera de Σ: `XYZ is not in Σ`.
+      - Todos los casos de error de la tabla 9.1 (I1 a I7, con G0 y G1) y P2 coinciden exactamente con el spec.
 
 17. **Traza.**
     - `earley/trace.ts`, activable con `{ trace: true }`. Sin la opción, no hay costo extra.

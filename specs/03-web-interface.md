@@ -411,3 +411,12 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio.
 - Diseño para móviles.
 
 Cada uno de esos puntos, si se hace, va en su propio spec.
+
+## Mejoras posibles (v3, no planificadas)
+
+Ideas registradas para después de terminar los SPEC 02, 03 y 04. No forman parte de este spec.
+
+- **Panel de comparación de motores** (propuesto el 2026-11-20). En la vista de Análisis, una tabla con los tres reconocedores sobre la misma entrada: Earley, CYK y el autómata de pila, cada uno con su resultado, su tiempo y qué puede mostrar (Earley: diagnóstico y árboles del relato; CYK: árbol en FNC; autómata de pila: camino de aceptación y configuraciones exploradas), con un enlace a la pestaña de cada uno.
+  - **Earley sigue siendo el motor que decide.** No es un selector de motor: los tres dan siempre la misma respuesta (lo garantizan las pruebas diferenciales del SPEC 02, paso 28), y cambiar a CYK o al autómata de pila solo haría perder el diagnóstico y los árboles del relato.
+  - **Para qué sirve:** muestra en vivo que tres métodos distintos llegan a la misma respuesta, y deja a la vista, con tiempos reales, por qué el proyecto eligió Earley.
+  - **Qué haría falta:** una función del cliente que corra los tres y mida sus tiempos; el núcleo ya tendría todo lo necesario.

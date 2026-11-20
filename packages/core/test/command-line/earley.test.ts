@@ -18,7 +18,9 @@ describe('sabueso earley', () => {
   it('rejects I3 with G0 and exits with 1', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(['earley', '--grammar', 'g0', 'CRI REV'], environment)).toBe(1);
-    expect(output()).toContain('REJECTED: the input is not a sentence of L(G)');
+    expect(output()).toContain(
+      'REJECTED · position 1 (event 2) · found REV · expected: ATQ, CTX, DSC, ENC, HAL, INT, PER, PIS, SOS',
+    );
   });
 
   it('with --chart, prints every set with its items, origins and operations', async () => {
@@ -36,7 +38,7 @@ describe('sabueso earley', () => {
   it('a symbol outside Σ is rejected before running Earley', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(await runCommandLine(['earley', '--grammar', 'g0', 'CRI XYZ'], environment)).toBe(1);
-    expect(output()).toContain('REJECTED: XYZ at position 1 is not in Σ');
+    expect(output()).toContain('REJECTED · position 1 (event 2) · XYZ is not in Σ');
   });
 
   it('the empty input is shown as such', async () => {
@@ -85,5 +87,29 @@ describe('sabueso earley and the ε fix (step 15)', () => {
     expect(output()).toContain('S → A • A x');
     expect(output()).not.toContain('S → A A • x');
     expect(output()).toContain('REJECTED');
+  });
+});
+
+describe('sabueso earley: the diagnosis (step 16)', () => {
+  it('G1 with CTX PER PIS REV: position 2 (event 3), found PIS, expected CRI or HAL; exit 1', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    expect(
+      await runCommandLine(['earley', '--grammar', 'g1', 'CTX PER PIS REV'], environment),
+    ).toBe(1);
+    expect(output()).toContain('REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL');
+  });
+
+  it('an input that ends too soon says "end of input"', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    await runCommandLine(['earley', '--grammar', 'g1', 'CRI PIS'], environment);
+    expect(output()).toContain(
+      'REJECTED · position 2 (end of input) · expected: ATQ, INT, PIS, REV, SOS',
+    );
+  });
+
+  it('when nothing could come next, it says "incomplete input"', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    await runCommandLine(['earley', '--grammar', 'test-empty', ''], environment);
+    expect(output()).toContain('REJECTED · position 0 (end of input) · incomplete input');
   });
 });

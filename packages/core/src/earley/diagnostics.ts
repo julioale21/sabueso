@@ -1,16 +1,17 @@
 /**
- * Concept: why a story is rejected, as data: where it fails, what was found and what was expected.
+ * Concept: why a story is rejected, as data: where it fails, what was found and what was
+ * expected. Read straight from the Earley chart.
  * Reference: SPEC 02, section 3.17.
- *
- * Step 6 only needs the type, for the unknown-symbol error of the alphabet check. Step 16 adds
- * the functions that build the other two kinds from the Earley chart.
+ * Card: docs/concepts/17-acceptance-and-errors.md
  */
-import type { SymbolName } from '../grammar/types.js';
+import type { Grammar, SymbolName } from '../grammar/types.js';
+import type { Chart, EarleySet } from './chart.js';
+import { nextSymbol } from './item.js';
 
 export interface ParseError {
   /**
    * - 'unknown-symbol': the token is not in Σ (checked before Earley runs).
-   * - 'unexpected-token': the token is in Σ, but no item of the chart can read it.
+   * - 'unexpected-token': the token is in Σ, but no item of the chart could read it.
    * - 'unexpected-end': the story ends before it is complete.
    */
   kind: 'unexpected-token' | 'unexpected-end' | 'unknown-symbol';
@@ -20,4 +21,57 @@ export interface ParseError {
   found: SymbolName | null;
   /** The terminals that would have been valid there, sorted alphabetically. */
   expected: SymbolName[];
+}
+
+/**
+ * The error of a rejected input, or null if it was accepted.
+ *
+ * - If some set S(k+1) is empty, no item of Sk could read token k: the error is at k,
+ *   found is token k, and expected are the terminals right after the dot in Sk.
+ * - If no set is empty but the input was not accepted, it ended too soon: the error is
+ *   at n (the end), found is null, and expected are the terminals after the dot in Sn.
+ */
+export function diagnose(
+  grammar: Grammar,
+  chart: Chart,
+  tokens: readonly SymbolName[],
+  accepted: boolean,
+): ParseError | null {
+  // The chart already holds the answer. Each set Sk lists every possibility still alive
+  // at position k, and the terminals right after their dots are exactly the tokens that
+  // could come next. The first empty set marks the token that nothing could read.
+  if (accepted) {
+    return null;
+  }
+  const firstEmpty = chart.findIndex((set, index) => index > 0 && set.items.length === 0);
+  if (firstEmpty !== -1) {
+    const position = firstEmpty - 1;
+    return {
+      kind: 'unexpected-token',
+      position,
+      found: tokens[position] ?? null,
+      expected: expectedTerminals(grammar, chart[position]),
+    };
+  }
+  return {
+    kind: 'unexpected-end',
+    position: tokens.length,
+    found: null,
+    expected: expectedTerminals(grammar, chart[tokens.length]),
+  };
+}
+
+/**
+ * The terminals right after the dot in the items of a set, without repeats and sorted:
+ * the tokens that would have kept some possibility alive at that position.
+ */
+export function expectedTerminals(grammar: Grammar, set: EarleySet | undefined): SymbolName[] {
+  const terminals = new Set<SymbolName>();
+  for (const item of set?.items ?? []) {
+    const next = nextSymbol(item);
+    if (next !== undefined && grammar.terminals.has(next)) {
+      terminals.add(next);
+    }
+  }
+  return [...terminals].sort();
 }

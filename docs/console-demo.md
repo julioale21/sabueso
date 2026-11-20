@@ -137,3 +137,13 @@ npm run sabueso -- earley --grammar epsilon-trap --chart --no-epsilon-fix "x"
 npm run sabueso -- earley --grammar g1 --chart "CRI PIS REV"
 npm run sabueso -- earley --grammar g1 "CRI DSC REV"
 ```
+
+## Diagnóstico de errores
+
+Paso 16. Cuando un relato se rechaza, dónde falla, qué se encontró y qué se esperaba. Sale del primer conjunto vacío del chart.
+
+```sh
+npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"
+npm run sabueso -- earley --grammar g1 "CRI PIS"
+npm run sabueso -- earley --grammar g1 "CRI SOS DSC DSC REV"
+```
