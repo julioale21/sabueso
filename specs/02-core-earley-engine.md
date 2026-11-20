@@ -951,6 +951,10 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:**
       - `npm run sabueso -- earley --grammar arithmetic "id + id * id"` imprime `ACEPTA` o `RECHAZA` y termina con código 0 o 1.
       - Con `--chart`, imprime los conjuntos S0…Sn con todos sus ítems: `S2: E → E + • T, 0`.
+    - **Decisiones (2026-11-20):**
+      - `recognize(grammar, tokens)` devuelve `{ accepted, chart, startProduction }`. La producción $S → S se arma en el reconocedor con `id: -1`, para que su clave no choque con ninguna producción real.
+      - `predict`, `scan` y `complete` quedan exportadas (una ficha cada una). El Completer recorre una copia de la lista del conjunto de origen: los ítems que esperaban cuando B se completó. Es el comportamiento clásico, y por eso `epsilon-trap` todavía rechaza `x` (una prueba lo fija; se invierte en el paso 15).
+      - Salida en inglés, como el resto: `ACCEPTED: the input is a sentence of L(G)` / `REJECTED: …` en lugar de `ACEPTA` / `RECHAZA`. Con `--chart`, cada conjunto es una tabla con #, ítem, origen y cómo llegó (`initial`, `P`, `S from Sk#i`, `C from Sk#i`; varios separados por `;` si el ítem tiene varios enlaces). Un símbolo fuera de Σ se informa antes de correr Earley.
 
 15. **Arreglo de ε.**
     - Predictor con avance sobre anulables. Completer que ignora los ítems con origen k.

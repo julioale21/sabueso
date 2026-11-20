@@ -20,6 +20,8 @@
 | S2       | Pistas → PIS • Pistas, 1 · Pistas → PIS •, 1 · Pistas → • PIS Pistas, 2 · Pistas → • PIS, 2 · Relato → CRI Pistas • REV, 0 |
 | S3       | Relato → CRI Pistas REV •, 0 · **$S → Relato •, 0** (acepta)                                                               |
 
+Versión gráfica, paso a paso: [`docs/interactive/earley-g0.html`](../interactive/earley-g0.html) (G0, `CRI PIS REV` y `CRI REV`), y sus 60 pasos explicados en [`docs/interactive/earley-g0-cri-pis-rev.md`](../interactive/earley-g0-cri-pis-rev.md).
+
 ## 3. Dónde está en el código
 
 | Qué       | Dónde                                                                                   |

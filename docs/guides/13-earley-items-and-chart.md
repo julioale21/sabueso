@@ -91,6 +91,8 @@ Acá se ve la diferencia con LL(1): **las dos reglas de Pistas quedan anotadas**
 
 Si en algún momento un conjunto queda **vacío**, ningún camino sigue vivo: el relato es inválido, y el error está en ese evento.
 
+Para verlo de forma gráfica, con el motor real y G0 (`CRI PIS REV` y `CRI REV`), abrir [`docs/interactive/earley-g0.html`](../interactive/earley-g0.html) en el navegador: las libretas se llenan ítem por ítem, con un color por operación. El mismo recorrido, explicado paso a paso en texto: [`docs/interactive/earley-g0-cri-pis-rev.md`](../interactive/earley-g0-cri-pis-rev.md).
+
 ### 2.5 Por qué siempre termina
 
 Un ítem es una regla con punto (hay finitas) más un origen (entre 0 y n). En cada conjunto, un mismo ítem se anota **una sola vez**. Entonces cada conjunto es finito, y hay n + 1 conjuntos: el algoritmo termina siempre, aunque la gramática tenga recursión a izquierda o sea ambigua. Es lo que muestra el comando `items`.

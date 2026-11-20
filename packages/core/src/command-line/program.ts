@@ -2,6 +2,7 @@
 // tests can run it in memory, without starting a Node process.
 import { analyzeCommand } from './commands/analyze.js';
 import { cyclesCommand } from './commands/cycles.js';
+import { earleyCommand } from './commands/earley.js';
 import { firstFollowCommand } from './commands/first-follow.js';
 import { genresCommand } from './commands/genres.js';
 import { grammarCommand } from './commands/grammar.js';
@@ -31,6 +32,7 @@ export const runCommandLine = createCommandLineProgram({
     predictiveTableCommand,
     analyzeCommand,
     itemsCommand,
+    earleyCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

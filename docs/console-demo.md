@@ -115,3 +115,14 @@ Paso 13. Todas las reglas punteadas de la gramática y qué hace Earley con cada
 ```sh
 npm run sabueso -- items --grammar parentheses
 ```
+
+## Earley: el reconocedor
+
+Paso 14. Earley decide si la entrada pertenece a L(G): `ACCEPTED` con código 0 o `REJECTED` con código 1. Con `--chart`, los conjuntos S0 … Sn con cada ítem y cómo llegó (P, S o C).
+
+```sh
+npm run sabueso -- earley --grammar arithmetic "id + id * id"
+npm run sabueso -- earley --grammar arithmetic --chart "id + id"
+npm run sabueso -- earley --grammar g0 "CRI SOS PIS INT REV"
+npm run sabueso -- earley --grammar g0 "CRI REV"
+```

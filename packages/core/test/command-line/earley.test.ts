@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest';
+import { runCommandLine } from '../../src/command-line/program.js';
+import { createEnvironmentWithBuiltInGrammars } from './memory-environment.js';
+
+describe('sabueso earley', () => {
+  it('accepts id + id * id with arithmetic and exits with 0', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    const code = await runCommandLine(
+      ['earley', '--grammar', 'arithmetic', 'id + id * id'],
+      environment,
+    );
+    expect(code).toBe(0);
+    expect(output()).toContain('arithmetic: id + id * id');
+    expect(output()).toContain('ACCEPTED: the input is a sentence of L(G)');
+    expect(output()).not.toContain('S0');
+  });
+
+  it('rejects I3 with G0 and exits with 1', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    expect(await runCommandLine(['earley', '--grammar', 'g0', 'CRI REV'], environment)).toBe(1);
+    expect(output()).toContain('REJECTED: the input is not a sentence of L(G)');
+  });
+
+  it('with --chart, prints every set with its items, origins and operations', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    await runCommandLine(['earley', '--grammar', 'arithmetic', '--chart', 'id + id'], environment);
+    expect(output()).toContain('S0: 7 items');
+    expect(output()).toMatch(/^1\s+\$S → • E\s+0\s+initial$/m);
+    expect(output()).toContain('S1 (after id): 6 items');
+    expect(output()).toMatch(/^1\s+F → id •\s+0\s+S from S0#7$/m);
+    expect(output()).toMatch(/^2\s+T → F •\s+0\s+C from S0#5$/m);
+    expect(output()).toContain('S2 (after +)');
+    expect(output()).toMatch(/^1\s+E → E \+ • T\s+0\s+S from S1#6$/m);
+  });
+
+  it('a symbol outside Σ is rejected before running Earley', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    expect(await runCommandLine(['earley', '--grammar', 'g0', 'CRI XYZ'], environment)).toBe(1);
+    expect(output()).toContain('REJECTED: XYZ at position 1 is not in Σ');
+  });
+
+  it('the empty input is shown as such', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    expect(await runCommandLine(['earley', '--grammar', 'parentheses', ''], environment)).toBe(0);
+    expect(output()).toContain('parentheses: (empty input)');
+  });
+
+  it('wrong usage exits with 2', async () => {
+    const { environment } = createEnvironmentWithBuiltInGrammars();
+    expect(await runCommandLine(['earley', 'id'], environment)).toBe(2);
+  });
+});

@@ -1,0 +1,1257 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Earley paso a paso</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
+    />
+    <style>
+      /* Layout: controls, the input tape, the explanation of the current step, then the four notebooks S0…S3 side by side. */
+      :root {
+        --bg: #f7f7fb;
+        --surface: #ffffff;
+        --fg: #1d1c2b;
+        --muted: #5d5b73;
+        --line: #dddbe9;
+        --predict: #3f63c9;
+        --predict-soft: #e7edfb;
+        --scan: #2f7a5b;
+        --scan-soft: #e2f3eb;
+        --complete: #b4580f;
+        --complete-soft: #fbeedd;
+        --accent: #5b55c9;
+        --accent-soft: #ecebfb;
+        --reject: #b3261e;
+        --reject-soft: #fbe4e2;
+        --display: 'Space Grotesk', system-ui, sans-serif;
+        --body: 'IBM Plex Sans', system-ui, sans-serif;
+        --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #14131c;
+          --surface: #1d1c28;
+          --fg: #ecebf5;
+          --muted: #a6a3bd;
+          --line: #34324a;
+          --predict: #8fa9f2;
+          --predict-soft: #1f2a4a;
+          --scan: #7fd0ae;
+          --scan-soft: #183a2d;
+          --complete: #f0a861;
+          --complete-soft: #3d2a16;
+          --accent: #a29cf2;
+          --accent-soft: #2a2750;
+          --reject: #f29b94;
+          --reject-soft: #45201d;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #14131c;
+        --surface: #1d1c28;
+        --fg: #ecebf5;
+        --muted: #a6a3bd;
+        --line: #34324a;
+        --predict: #8fa9f2;
+        --predict-soft: #1f2a4a;
+        --scan: #7fd0ae;
+        --scan-soft: #183a2d;
+        --complete: #f0a861;
+        --complete-soft: #3d2a16;
+        --accent: #a29cf2;
+        --accent-soft: #2a2750;
+        --reject: #f29b94;
+        --reject-soft: #45201d;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--body);
+        font-size: 15px;
+        line-height: 1.5;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 24px 48px;
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-size: clamp(24px, 4vw, 34px);
+        margin: 0;
+        text-wrap: balance;
+      }
+      h2 {
+        font-family: var(--display);
+        font-size: 17px;
+        margin: 0 0 10px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 6px 0 0;
+        max-width: 80ch;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.92em;
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        min-width: 0;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      button,
+      select {
+        font: inherit;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--fg);
+        border-radius: 8px;
+        padding: 7px 14px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--accent);
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--surface);
+        font-weight: 600;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .counter {
+        font-family: var(--mono);
+        color: var(--muted);
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+      }
+      .tape {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+      .pos {
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px dashed var(--line);
+        color: var(--muted);
+      }
+      .pos.current {
+        border-style: solid;
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .tok {
+        font-family: var(--mono);
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-weight: 600;
+      }
+      .tok.read {
+        color: var(--muted);
+        opacity: 0.6;
+      }
+      .explain {
+        display: grid;
+        gap: 8px;
+      }
+      .op {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-right: 8px;
+        vertical-align: 2px;
+      }
+      .op-predict {
+        background: var(--predict-soft);
+        color: var(--predict);
+      }
+      .op-scan {
+        background: var(--scan-soft);
+        color: var(--scan);
+      }
+      .op-complete {
+        background: var(--complete-soft);
+        color: var(--complete);
+      }
+      .op-start {
+        background: var(--line);
+        color: var(--muted);
+      }
+      .op-accept {
+        background: var(--scan-soft);
+        color: var(--scan);
+      }
+      .op-reject {
+        background: var(--reject-soft);
+        color: var(--reject);
+      }
+      .step-title {
+        font-family: var(--display);
+        font-size: 18px;
+        margin: 0;
+      }
+      .explain p {
+        margin: 0;
+      }
+      .notebooks {
+        display: grid;
+        grid-template-columns: repeat(var(--sets), minmax(240px, 1fr));
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+      .book {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        min-width: 0;
+      }
+      .book.current {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft);
+      }
+      .book h3 {
+        font-family: var(--display);
+        font-size: 16px;
+        margin: 0 0 2px;
+      }
+      .book .sub {
+        color: var(--muted);
+        font-size: 12.5px;
+        margin: 0 0 10px;
+      }
+      .items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 5px;
+      }
+      .item {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        padding: 5px 8px 5px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        border-left-width: 4px;
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .item .rule {
+        overflow-wrap: anywhere;
+      }
+      .item .org {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .item.k-initial {
+        border-left-color: var(--muted);
+      }
+      .item.k-P {
+        border-left-color: var(--predict);
+      }
+      .item.k-S {
+        border-left-color: var(--scan);
+      }
+      .item.k-C {
+        border-left-color: var(--complete);
+      }
+      .item.new.k-P {
+        background: var(--predict-soft);
+      }
+      .item.new.k-S {
+        background: var(--scan-soft);
+      }
+      .item.new.k-C {
+        background: var(--complete-soft);
+      }
+      .item.source {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .item.waiting {
+        outline: 2px dashed var(--complete);
+        outline-offset: 1px;
+      }
+      .item.done {
+        opacity: 0.55;
+      }
+      .empty {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--reject);
+        padding: 6px 0;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 8px 0 0;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .item {
+          transition:
+            background 0.25s,
+            opacity 0.25s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Earley paso a paso, con G0</h1>
+        <p class="lead">
+          Una libreta S<sub>k</sub> por cada posición del relato (después de leer k eventos). En
+          cada paso se toma el próximo ítem de la libreta actual y se le aplica la única operación
+          que corresponde: <strong>baja</strong> el Predictor, <strong>llega</strong> el Scanner,
+          <strong>sube</strong> el Completer. Generado con el motor real de Sabueso.
+        </p>
+      </header>
+
+      <div class="panel controls" role="group" aria-label="Controles">
+        <label for="run" class="hint" style="margin: 0">Relato</label>
+        <select id="run">
+          <option value="ok">CRI PIS REV (válido)</option>
+          <option value="bad">CRI REV (sin investigación)</option>
+        </select>
+        <button id="reset" type="button">Inicio</button>
+        <button id="prev" type="button">← Anterior</button>
+        <button id="next" type="button" class="primary">Siguiente →</button>
+        <button id="play" type="button">Reproducir</button>
+        <span class="counter" id="counter"></span>
+      </div>
+
+      <div class="legend">
+        <span
+          ><i class="dot" style="background: var(--predict)"></i>P · Predictor: baja (anota lo que
+          se va a necesitar)</span
+        >
+        <span
+          ><i class="dot" style="background: var(--scan)"></i>S · Scanner: llega (leyó un
+          evento)</span
+        >
+        <span
+          ><i class="dot" style="background: var(--complete)"></i>C · Completer: sube (terminó
+          algo)</span
+        >
+        <span
+          ><i class="dot" style="border: 2px solid var(--accent)"></i>ítem que se procesa
+          ahora</span
+        >
+        <span
+          ><i class="dot" style="border: 2px dashed var(--complete)"></i>ítems que esperaban lo que
+          se completó</span
+        >
+      </div>
+
+      <section class="panel">
+        <h2>Entrada</h2>
+        <div class="tape" id="tape"></div>
+        <p class="hint">
+          Las libretas S0, S1… están <strong>entre</strong> los eventos: S0 es antes de leer nada,
+          S1 después del primero. El evento se lee al pasar de una libreta a la siguiente.
+        </p>
+      </section>
+
+      <section class="panel explain" aria-live="polite">
+        <p class="step-title" id="title"></p>
+        <p id="text"></p>
+      </section>
+
+      <section>
+        <div class="notebooks" id="books"></div>
+        <p class="hint">
+          Cada ítem: la regla con el punto (• = cuánto ya se reconoció) y su origen (dónde empezó).
+          Los ítems ya procesados se ven más claros. Teclado: ← y →.
+        </p>
+      </section>
+    </div>
+
+    <script>
+      const DATA = {
+        ok: {
+          tokens: ['CRI', 'PIS', 'REV'],
+          sets: [
+            [
+              { rule: '$S → • Relato', origin: 0, complete: false, how: 'initial' },
+              {
+                rule: 'Relato → • Planteo Investigacion Desenlace',
+                origin: 0,
+                complete: false,
+                how: 'P',
+              },
+              { rule: 'Planteo → • Hecho', origin: 0, complete: false, how: 'P' },
+              { rule: 'Planteo → • Marco Hecho', origin: 0, complete: false, how: 'P' },
+              { rule: 'Planteo → • Hecho Marco', origin: 0, complete: false, how: 'P' },
+              { rule: 'Hecho → • CRI', origin: 0, complete: false, how: 'P' },
+              { rule: 'Hecho → • HAL', origin: 0, complete: false, how: 'P' },
+              { rule: 'Hecho → • CRI HAL', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • CTX', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • PER', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • CTX PER', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • PER CTX', origin: 0, complete: false, how: 'P' },
+            ],
+            [
+              {
+                rule: 'Hecho → CRI •',
+                origin: 0,
+                complete: true,
+                how: [{ kind: 'scan', from: [0, 5], child: null }],
+              },
+              {
+                rule: 'Hecho → CRI • HAL',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'scan', from: [0, 7], child: null }],
+              },
+              {
+                rule: 'Planteo → Hecho •',
+                origin: 0,
+                complete: true,
+                how: [{ kind: 'complete', from: [0, 2], child: [1, 0] }],
+              },
+              {
+                rule: 'Planteo → Hecho • Marco',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'complete', from: [0, 4], child: [1, 0] }],
+              },
+              {
+                rule: 'Relato → Planteo • Investigacion Desenlace',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'complete', from: [0, 1], child: [1, 2] }],
+              },
+              { rule: 'Marco → • CTX', origin: 1, complete: false, how: 'P' },
+              { rule: 'Marco → • PER', origin: 1, complete: false, how: 'P' },
+              { rule: 'Marco → • CTX PER', origin: 1, complete: false, how: 'P' },
+              { rule: 'Marco → • PER CTX', origin: 1, complete: false, how: 'P' },
+              { rule: 'Investigacion → • Pasos', origin: 1, complete: false, how: 'P' },
+              { rule: 'Investigacion → • ENC Pasos', origin: 1, complete: false, how: 'P' },
+              { rule: 'Pasos → • Paso', origin: 1, complete: false, how: 'P' },
+              { rule: 'Pasos → • Pasos Pasos', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • PIS', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • INT', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • DSC', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • ATQ', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • Linea', origin: 1, complete: false, how: 'P' },
+              { rule: 'Linea → • SOS', origin: 1, complete: false, how: 'P' },
+              { rule: 'Linea → • SOS Pasos', origin: 1, complete: false, how: 'P' },
+            ],
+            [
+              {
+                rule: 'Paso → PIS •',
+                origin: 1,
+                complete: true,
+                how: [{ kind: 'scan', from: [1, 13], child: null }],
+              },
+              {
+                rule: 'Pasos → Paso •',
+                origin: 1,
+                complete: true,
+                how: [{ kind: 'complete', from: [1, 11], child: [2, 0] }],
+              },
+              {
+                rule: 'Investigacion → Pasos •',
+                origin: 1,
+                complete: true,
+                how: [{ kind: 'complete', from: [1, 9], child: [2, 1] }],
+              },
+              {
+                rule: 'Pasos → Pasos • Pasos',
+                origin: 1,
+                complete: false,
+                how: [{ kind: 'complete', from: [1, 12], child: [2, 1] }],
+              },
+              {
+                rule: 'Relato → Planteo Investigacion • Desenlace',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'complete', from: [1, 4], child: [2, 2] }],
+              },
+              { rule: 'Pasos → • Paso', origin: 2, complete: false, how: 'P' },
+              { rule: 'Pasos → • Pasos Pasos', origin: 2, complete: false, how: 'P' },
+              { rule: 'Desenlace → • Resolucion', origin: 2, complete: false, how: 'P' },
+              { rule: 'Desenlace → • Resolucion EPI', origin: 2, complete: false, how: 'P' },
+              { rule: 'Paso → • PIS', origin: 2, complete: false, how: 'P' },
+              { rule: 'Paso → • INT', origin: 2, complete: false, how: 'P' },
+              { rule: 'Paso → • DSC', origin: 2, complete: false, how: 'P' },
+              { rule: 'Paso → • ATQ', origin: 2, complete: false, how: 'P' },
+              { rule: 'Paso → • Linea', origin: 2, complete: false, how: 'P' },
+              { rule: 'Resolucion → • REV', origin: 2, complete: false, how: 'P' },
+              { rule: 'Resolucion → • REV CNF', origin: 2, complete: false, how: 'P' },
+              { rule: 'Resolucion → • REV CAP', origin: 2, complete: false, how: 'P' },
+              { rule: 'Resolucion → • REV CNF CAP', origin: 2, complete: false, how: 'P' },
+              { rule: 'Linea → • SOS', origin: 2, complete: false, how: 'P' },
+              { rule: 'Linea → • SOS Pasos', origin: 2, complete: false, how: 'P' },
+            ],
+            [
+              {
+                rule: 'Resolucion → REV •',
+                origin: 2,
+                complete: true,
+                how: [{ kind: 'scan', from: [2, 14], child: null }],
+              },
+              {
+                rule: 'Resolucion → REV • CNF',
+                origin: 2,
+                complete: false,
+                how: [{ kind: 'scan', from: [2, 15], child: null }],
+              },
+              {
+                rule: 'Resolucion → REV • CAP',
+                origin: 2,
+                complete: false,
+                how: [{ kind: 'scan', from: [2, 16], child: null }],
+              },
+              {
+                rule: 'Resolucion → REV • CNF CAP',
+                origin: 2,
+                complete: false,
+                how: [{ kind: 'scan', from: [2, 17], child: null }],
+              },
+              {
+                rule: 'Desenlace → Resolucion •',
+                origin: 2,
+                complete: true,
+                how: [{ kind: 'complete', from: [2, 7], child: [3, 0] }],
+              },
+              {
+                rule: 'Desenlace → Resolucion • EPI',
+                origin: 2,
+                complete: false,
+                how: [{ kind: 'complete', from: [2, 8], child: [3, 0] }],
+              },
+              {
+                rule: 'Relato → Planteo Investigacion Desenlace •',
+                origin: 0,
+                complete: true,
+                how: [{ kind: 'complete', from: [2, 4], child: [3, 4] }],
+              },
+              {
+                rule: '$S → Relato •',
+                origin: 0,
+                complete: true,
+                how: [{ kind: 'complete', from: [0, 0], child: [3, 6] }],
+              },
+            ],
+          ],
+          steps: [
+            { set: 0, index: 0, op: 'predict', next: 'Relato', added: [[0, 1]] },
+            {
+              set: 0,
+              index: 1,
+              op: 'predict',
+              next: 'Planteo',
+              added: [
+                [0, 2],
+                [0, 3],
+                [0, 4],
+              ],
+            },
+            {
+              set: 0,
+              index: 2,
+              op: 'predict',
+              next: 'Hecho',
+              added: [
+                [0, 5],
+                [0, 6],
+                [0, 7],
+              ],
+            },
+            {
+              set: 0,
+              index: 3,
+              op: 'predict',
+              next: 'Marco',
+              added: [
+                [0, 8],
+                [0, 9],
+                [0, 10],
+                [0, 11],
+              ],
+            },
+            { set: 0, index: 4, op: 'predict', next: 'Hecho', added: [] },
+            { set: 0, index: 5, op: 'scan', next: 'CRI', added: [[1, 0]] },
+            { set: 0, index: 6, op: 'scan', next: 'HAL', added: [] },
+            { set: 0, index: 7, op: 'scan', next: 'CRI', added: [[1, 1]] },
+            { set: 0, index: 8, op: 'scan', next: 'CTX', added: [] },
+            { set: 0, index: 9, op: 'scan', next: 'PER', added: [] },
+            { set: 0, index: 10, op: 'scan', next: 'CTX', added: [] },
+            { set: 0, index: 11, op: 'scan', next: 'PER', added: [] },
+            {
+              set: 1,
+              index: 0,
+              op: 'complete',
+              next: null,
+              added: [
+                [1, 2],
+                [1, 3],
+              ],
+            },
+            { set: 1, index: 1, op: 'scan', next: 'HAL', added: [] },
+            { set: 1, index: 2, op: 'complete', next: null, added: [[1, 4]] },
+            {
+              set: 1,
+              index: 3,
+              op: 'predict',
+              next: 'Marco',
+              added: [
+                [1, 5],
+                [1, 6],
+                [1, 7],
+                [1, 8],
+              ],
+            },
+            {
+              set: 1,
+              index: 4,
+              op: 'predict',
+              next: 'Investigacion',
+              added: [
+                [1, 9],
+                [1, 10],
+              ],
+            },
+            { set: 1, index: 5, op: 'scan', next: 'CTX', added: [] },
+            { set: 1, index: 6, op: 'scan', next: 'PER', added: [] },
+            { set: 1, index: 7, op: 'scan', next: 'CTX', added: [] },
+            { set: 1, index: 8, op: 'scan', next: 'PER', added: [] },
+            {
+              set: 1,
+              index: 9,
+              op: 'predict',
+              next: 'Pasos',
+              added: [
+                [1, 11],
+                [1, 12],
+              ],
+            },
+            { set: 1, index: 10, op: 'scan', next: 'ENC', added: [] },
+            {
+              set: 1,
+              index: 11,
+              op: 'predict',
+              next: 'Paso',
+              added: [
+                [1, 13],
+                [1, 14],
+                [1, 15],
+                [1, 16],
+                [1, 17],
+              ],
+            },
+            { set: 1, index: 12, op: 'predict', next: 'Pasos', added: [] },
+            { set: 1, index: 13, op: 'scan', next: 'PIS', added: [[2, 0]] },
+            { set: 1, index: 14, op: 'scan', next: 'INT', added: [] },
+            { set: 1, index: 15, op: 'scan', next: 'DSC', added: [] },
+            { set: 1, index: 16, op: 'scan', next: 'ATQ', added: [] },
+            {
+              set: 1,
+              index: 17,
+              op: 'predict',
+              next: 'Linea',
+              added: [
+                [1, 18],
+                [1, 19],
+              ],
+            },
+            { set: 1, index: 18, op: 'scan', next: 'SOS', added: [] },
+            { set: 1, index: 19, op: 'scan', next: 'SOS', added: [] },
+            { set: 2, index: 0, op: 'complete', next: null, added: [[2, 1]] },
+            {
+              set: 2,
+              index: 1,
+              op: 'complete',
+              next: null,
+              added: [
+                [2, 2],
+                [2, 3],
+              ],
+            },
+            { set: 2, index: 2, op: 'complete', next: null, added: [[2, 4]] },
+            {
+              set: 2,
+              index: 3,
+              op: 'predict',
+              next: 'Pasos',
+              added: [
+                [2, 5],
+                [2, 6],
+              ],
+            },
+            {
+              set: 2,
+              index: 4,
+              op: 'predict',
+              next: 'Desenlace',
+              added: [
+                [2, 7],
+                [2, 8],
+              ],
+            },
+            {
+              set: 2,
+              index: 5,
+              op: 'predict',
+              next: 'Paso',
+              added: [
+                [2, 9],
+                [2, 10],
+                [2, 11],
+                [2, 12],
+                [2, 13],
+              ],
+            },
+            { set: 2, index: 6, op: 'predict', next: 'Pasos', added: [] },
+            {
+              set: 2,
+              index: 7,
+              op: 'predict',
+              next: 'Resolucion',
+              added: [
+                [2, 14],
+                [2, 15],
+                [2, 16],
+                [2, 17],
+              ],
+            },
+            { set: 2, index: 8, op: 'predict', next: 'Resolucion', added: [] },
+            { set: 2, index: 9, op: 'scan', next: 'PIS', added: [] },
+            { set: 2, index: 10, op: 'scan', next: 'INT', added: [] },
+            { set: 2, index: 11, op: 'scan', next: 'DSC', added: [] },
+            { set: 2, index: 12, op: 'scan', next: 'ATQ', added: [] },
+            {
+              set: 2,
+              index: 13,
+              op: 'predict',
+              next: 'Linea',
+              added: [
+                [2, 18],
+                [2, 19],
+              ],
+            },
+            { set: 2, index: 14, op: 'scan', next: 'REV', added: [[3, 0]] },
+            { set: 2, index: 15, op: 'scan', next: 'REV', added: [[3, 1]] },
+            { set: 2, index: 16, op: 'scan', next: 'REV', added: [[3, 2]] },
+            { set: 2, index: 17, op: 'scan', next: 'REV', added: [[3, 3]] },
+            { set: 2, index: 18, op: 'scan', next: 'SOS', added: [] },
+            { set: 2, index: 19, op: 'scan', next: 'SOS', added: [] },
+            {
+              set: 3,
+              index: 0,
+              op: 'complete',
+              next: null,
+              added: [
+                [3, 4],
+                [3, 5],
+              ],
+            },
+            { set: 3, index: 1, op: 'scan', next: 'CNF', added: [] },
+            { set: 3, index: 2, op: 'scan', next: 'CAP', added: [] },
+            { set: 3, index: 3, op: 'scan', next: 'CNF', added: [] },
+            { set: 3, index: 4, op: 'complete', next: null, added: [[3, 6]] },
+            { set: 3, index: 5, op: 'scan', next: 'EPI', added: [] },
+            { set: 3, index: 6, op: 'complete', next: null, added: [[3, 7]] },
+            { set: 3, index: 7, op: 'complete', next: null, added: [] },
+          ],
+          accepted: true,
+        },
+        bad: {
+          tokens: ['CRI', 'REV'],
+          sets: [
+            [
+              { rule: '$S → • Relato', origin: 0, complete: false, how: 'initial' },
+              {
+                rule: 'Relato → • Planteo Investigacion Desenlace',
+                origin: 0,
+                complete: false,
+                how: 'P',
+              },
+              { rule: 'Planteo → • Hecho', origin: 0, complete: false, how: 'P' },
+              { rule: 'Planteo → • Marco Hecho', origin: 0, complete: false, how: 'P' },
+              { rule: 'Planteo → • Hecho Marco', origin: 0, complete: false, how: 'P' },
+              { rule: 'Hecho → • CRI', origin: 0, complete: false, how: 'P' },
+              { rule: 'Hecho → • HAL', origin: 0, complete: false, how: 'P' },
+              { rule: 'Hecho → • CRI HAL', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • CTX', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • PER', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • CTX PER', origin: 0, complete: false, how: 'P' },
+              { rule: 'Marco → • PER CTX', origin: 0, complete: false, how: 'P' },
+            ],
+            [
+              {
+                rule: 'Hecho → CRI •',
+                origin: 0,
+                complete: true,
+                how: [{ kind: 'scan', from: [0, 5], child: null }],
+              },
+              {
+                rule: 'Hecho → CRI • HAL',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'scan', from: [0, 7], child: null }],
+              },
+              {
+                rule: 'Planteo → Hecho •',
+                origin: 0,
+                complete: true,
+                how: [{ kind: 'complete', from: [0, 2], child: [1, 0] }],
+              },
+              {
+                rule: 'Planteo → Hecho • Marco',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'complete', from: [0, 4], child: [1, 0] }],
+              },
+              {
+                rule: 'Relato → Planteo • Investigacion Desenlace',
+                origin: 0,
+                complete: false,
+                how: [{ kind: 'complete', from: [0, 1], child: [1, 2] }],
+              },
+              { rule: 'Marco → • CTX', origin: 1, complete: false, how: 'P' },
+              { rule: 'Marco → • PER', origin: 1, complete: false, how: 'P' },
+              { rule: 'Marco → • CTX PER', origin: 1, complete: false, how: 'P' },
+              { rule: 'Marco → • PER CTX', origin: 1, complete: false, how: 'P' },
+              { rule: 'Investigacion → • Pasos', origin: 1, complete: false, how: 'P' },
+              { rule: 'Investigacion → • ENC Pasos', origin: 1, complete: false, how: 'P' },
+              { rule: 'Pasos → • Paso', origin: 1, complete: false, how: 'P' },
+              { rule: 'Pasos → • Pasos Pasos', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • PIS', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • INT', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • DSC', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • ATQ', origin: 1, complete: false, how: 'P' },
+              { rule: 'Paso → • Linea', origin: 1, complete: false, how: 'P' },
+              { rule: 'Linea → • SOS', origin: 1, complete: false, how: 'P' },
+              { rule: 'Linea → • SOS Pasos', origin: 1, complete: false, how: 'P' },
+            ],
+            [],
+          ],
+          steps: [
+            { set: 0, index: 0, op: 'predict', next: 'Relato', added: [[0, 1]] },
+            {
+              set: 0,
+              index: 1,
+              op: 'predict',
+              next: 'Planteo',
+              added: [
+                [0, 2],
+                [0, 3],
+                [0, 4],
+              ],
+            },
+            {
+              set: 0,
+              index: 2,
+              op: 'predict',
+              next: 'Hecho',
+              added: [
+                [0, 5],
+                [0, 6],
+                [0, 7],
+              ],
+            },
+            {
+              set: 0,
+              index: 3,
+              op: 'predict',
+              next: 'Marco',
+              added: [
+                [0, 8],
+                [0, 9],
+                [0, 10],
+                [0, 11],
+              ],
+            },
+            { set: 0, index: 4, op: 'predict', next: 'Hecho', added: [] },
+            { set: 0, index: 5, op: 'scan', next: 'CRI', added: [[1, 0]] },
+            { set: 0, index: 6, op: 'scan', next: 'HAL', added: [] },
+            { set: 0, index: 7, op: 'scan', next: 'CRI', added: [[1, 1]] },
+            { set: 0, index: 8, op: 'scan', next: 'CTX', added: [] },
+            { set: 0, index: 9, op: 'scan', next: 'PER', added: [] },
+            { set: 0, index: 10, op: 'scan', next: 'CTX', added: [] },
+            { set: 0, index: 11, op: 'scan', next: 'PER', added: [] },
+            {
+              set: 1,
+              index: 0,
+              op: 'complete',
+              next: null,
+              added: [
+                [1, 2],
+                [1, 3],
+              ],
+            },
+            { set: 1, index: 1, op: 'scan', next: 'HAL', added: [] },
+            { set: 1, index: 2, op: 'complete', next: null, added: [[1, 4]] },
+            {
+              set: 1,
+              index: 3,
+              op: 'predict',
+              next: 'Marco',
+              added: [
+                [1, 5],
+                [1, 6],
+                [1, 7],
+                [1, 8],
+              ],
+            },
+            {
+              set: 1,
+              index: 4,
+              op: 'predict',
+              next: 'Investigacion',
+              added: [
+                [1, 9],
+                [1, 10],
+              ],
+            },
+            { set: 1, index: 5, op: 'scan', next: 'CTX', added: [] },
+            { set: 1, index: 6, op: 'scan', next: 'PER', added: [] },
+            { set: 1, index: 7, op: 'scan', next: 'CTX', added: [] },
+            { set: 1, index: 8, op: 'scan', next: 'PER', added: [] },
+            {
+              set: 1,
+              index: 9,
+              op: 'predict',
+              next: 'Pasos',
+              added: [
+                [1, 11],
+                [1, 12],
+              ],
+            },
+            { set: 1, index: 10, op: 'scan', next: 'ENC', added: [] },
+            {
+              set: 1,
+              index: 11,
+              op: 'predict',
+              next: 'Paso',
+              added: [
+                [1, 13],
+                [1, 14],
+                [1, 15],
+                [1, 16],
+                [1, 17],
+              ],
+            },
+            { set: 1, index: 12, op: 'predict', next: 'Pasos', added: [] },
+            { set: 1, index: 13, op: 'scan', next: 'PIS', added: [] },
+            { set: 1, index: 14, op: 'scan', next: 'INT', added: [] },
+            { set: 1, index: 15, op: 'scan', next: 'DSC', added: [] },
+            { set: 1, index: 16, op: 'scan', next: 'ATQ', added: [] },
+            {
+              set: 1,
+              index: 17,
+              op: 'predict',
+              next: 'Linea',
+              added: [
+                [1, 18],
+                [1, 19],
+              ],
+            },
+            { set: 1, index: 18, op: 'scan', next: 'SOS', added: [] },
+            { set: 1, index: 19, op: 'scan', next: 'SOS', added: [] },
+          ],
+          accepted: false,
+        },
+      };
+      const $ = (id) => document.getElementById(id);
+      let runKey = 'ok',
+        step = 0,
+        timer = null;
+
+      function run() {
+        return DATA[runKey];
+      }
+      function item(k, j) {
+        return run().sets[k][j];
+      }
+      function kind(it) {
+        return it.how === 'initial'
+          ? 'initial'
+          : it.how === 'P'
+            ? 'P'
+            : it.how[0].kind === 'scan'
+              ? 'S'
+              : 'C';
+      }
+      function code(s) {
+        return `<code>${s}</code>`;
+      }
+      function afterDot(rule) {
+        const r = rule.split('• ')[1];
+        return r ? r.split(' ')[0] : null;
+      }
+
+      /** Which items exist after `n` steps: the initial one plus everything added by the first n steps. */
+      function visibleAfter(n) {
+        const seen = new Set(['0:0']);
+        for (const s of run().steps.slice(0, n))
+          for (const [k, j] of s.added) seen.add(`${k}:${j}`);
+        return seen;
+      }
+      /** How many items of set k were already processed after `n` steps. */
+      function processedAfter(n) {
+        const done = new Set();
+        for (const s of run().steps.slice(0, n)) done.add(`${s.set}:${s.index}`);
+        return done;
+      }
+
+      function describe(n) {
+        const r = run();
+        if (n === 0)
+          return {
+            badge: '<span class="op op-start">arranque</span>',
+            title: 'S0: "quiero un Relato"',
+            text: `S0 es la posición <strong>antes</strong> de ${code(r.tokens[0] ?? 'el primer evento')}: todavía no se leyó nada. Relato no es algo leído sino el <strong>objetivo</strong>, lo que se quiere armar. Earley empieza por la meta (${code('$S → • Relato')}) y en los próximos pasos baja con el Predictor hasta llegar a los eventos que pueden venir primero. Recién entonces el Scanner mira el evento real y pasa a S1.`,
+          };
+        const s = r.steps[n - 1];
+        const src = item(s.set, s.index);
+        const where = `S${s.set} #${s.index + 1}`;
+        const addedRules = s.added.map(([k, j]) => code(item(k, j).rule));
+        if (s.op === 'predict') {
+          return {
+            badge: '<span class="op op-predict">P · baja</span>',
+            title: `${where}: ${src.rule} (origen ${src.origin})`,
+            text:
+              `Después del punto hay ${code(s.next)}, un no terminal: <strong>voy a necesitar un ${s.next} acá</strong>. El Predictor anota en S${s.set} todas sus reglas, con origen ${s.set}. ` +
+              (addedRules.length
+                ? `Nuevas: ${addedRules.join(', ')}.`
+                : `Ya estaban todas anotadas en esta libreta: no se agrega nada (así no hay bucles).`),
+          };
+        }
+        if (s.op === 'scan') {
+          const tok = r.tokens[s.set];
+          if (!addedRules.length)
+            return {
+              badge: '<span class="op op-scan">S · no coincide</span>',
+              title: `${where}: ${src.rule} (origen ${src.origin})`,
+              text: `Después del punto hay el evento ${code(s.next)}, pero ${tok === undefined ? 'no quedan eventos por leer' : `el evento que viene es ${code(tok)}`}. <strong>Esta posibilidad muere</strong>: no pasa a la libreta siguiente.`,
+            };
+          return {
+            badge: '<span class="op op-scan">S · llega</span>',
+            title: `${where}: ${src.rule} (origen ${src.origin})`,
+            text: `Después del punto hay ${code(s.next)} y el evento que viene es ${code(tok)}: <strong>coincide</strong>. El Scanner pasa el ítem a S${s.set + 1} con el punto adelantado: ${addedRules.join(', ')}.`,
+          };
+        }
+        const left = src.rule.split(' → ')[0];
+        const isStart = left === '$S';
+        return {
+          badge: '<span class="op op-complete">C · sube</span>',
+          title: `${where}: ${src.rule} (origen ${src.origin})`,
+          text: isStart
+            ? `El ítem de arranque está completo: se reconoció un Relato desde la posición 0 hasta acá.`
+            : `El punto está al final: <strong>terminé un ${left} que empezó en la posición ${src.origin}</strong>. El Completer vuelve a S${src.origin} (marcados con guiones), busca a quienes esperaban un ${left} y les avanza el punto en S${s.set}. ` +
+              (addedRules.length
+                ? `Nuevos: ${addedRules.join(', ')}.`
+                : `Esos ítems ya estaban: solo se anota otro camino.`),
+        };
+      }
+
+      function render() {
+        const r = run(),
+          total = r.steps.length;
+        const last = step === total;
+        $('counter').textContent = `paso ${step} de ${total}`;
+        $('prev').disabled = $('reset').disabled = step === 0;
+        $('next').disabled = last;
+
+        const s = step > 0 ? r.steps[step - 1] : null;
+        const currentSet = s ? s.set : 0;
+
+        // Tape
+        const tape = $('tape');
+        tape.innerHTML = '';
+        r.tokens.forEach((t, i) => {
+          const p = document.createElement('span');
+          p.className = 'pos' + (i === currentSet ? ' current' : '');
+          p.textContent = `S${i}`;
+          tape.appendChild(p);
+          const c = document.createElement('span');
+          c.className = 'tok' + (i < currentSet ? ' read' : '');
+          c.textContent = t;
+          tape.appendChild(c);
+        });
+        const lastPos = document.createElement('span');
+        lastPos.className = 'pos' + (r.tokens.length === currentSet ? ' current' : '');
+        lastPos.textContent = `S${r.tokens.length}`;
+        tape.appendChild(lastPos);
+
+        // Explanation
+        const d = describe(step);
+        let extra = '';
+        if (last)
+          extra = r.accepted
+            ? `<br><span class="op op-accept">aceptado</span><strong>${code('$S → Relato •, 0')} está en la última libreta: el relato es válido.</strong>`
+            : `<br><span class="op op-reject">rechazado</span><strong>La libreta S${r.sets.findIndex((x) => x.length === 0)} quedó vacía: después de ${code(r.tokens[r.sets.findIndex((x) => x.length === 0) - 1])} nadie esperaba ese evento. El relato no es válido.</strong>`;
+        $('title').innerHTML = d.badge + d.title;
+        $('text').innerHTML = d.text + extra;
+
+        // Notebooks
+        const visible = visibleAfter(step),
+          done = processedAfter(step);
+        const added = new Set((s ? s.added : [[0, 0]]).map(([k, j]) => `${k}:${j}`));
+        const waiting = new Set();
+        if (s && s.op === 'complete')
+          for (const [k, j] of s.added) {
+            const it = item(k, j);
+            if (Array.isArray(it.how))
+              for (const l of it.how)
+                if (l.kind === 'complete' && l.child[0] === s.set && l.child[1] === s.index)
+                  waiting.add(`${l.from[0]}:${l.from[1]}`);
+          }
+        const books = $('books');
+        books.innerHTML = '';
+        books.style.setProperty('--sets', r.sets.length);
+        r.sets.forEach((items, k) => {
+          const book = document.createElement('div');
+          book.className = 'book' + (k === currentSet ? ' current' : '');
+          const label = k === 0 ? 'antes de leer nada' : `después de ${r.tokens[k - 1]}`;
+          const shown = items.map((it, j) => [it, j]).filter(([, j]) => visible.has(`${k}:${j}`));
+          book.innerHTML = `<h3>S${k}</h3><p class="sub">${label} · ${shown.length} ítems</p>`;
+          const ul = document.createElement('ul');
+          ul.className = 'items';
+          if (!shown.length && k <= currentSet + 1) {
+            const e = document.createElement('div');
+            e.className = 'empty';
+            e.textContent =
+              k <= currentSet || last ? 'vacía: ninguna posibilidad sobrevivió' : 'todavía vacía';
+            if (k <= currentSet || last) book.appendChild(e);
+          }
+          for (const [it, j] of shown) {
+            const li = document.createElement('li');
+            const key = `${k}:${j}`;
+            li.className =
+              `item k-${kind(it)}` +
+              (added.has(key) ? ' new' : '') +
+              (s && s.set === k && s.index === j ? ' source' : '') +
+              (waiting.has(key) ? ' waiting' : '') +
+              (done.has(key) && !(s && s.set === k && s.index === j) ? ' done' : '');
+            li.innerHTML = `<span class="rule">${j + 1}. ${it.rule}</span><span class="org">, ${it.origin}</span>`;
+            ul.appendChild(li);
+          }
+          book.appendChild(ul);
+          books.appendChild(book);
+        });
+        const src = books.querySelector('.source') || books.querySelector('.new');
+        if (src && timer) src.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+
+      function go(d) {
+        step = Math.max(0, Math.min(run().steps.length, step + d));
+        render();
+      }
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+        $('play').textContent = 'Reproducir';
+      }
+      $('next').onclick = () => {
+        stop();
+        go(1);
+      };
+      $('prev').onclick = () => {
+        stop();
+        go(-1);
+      };
+      $('reset').onclick = () => {
+        stop();
+        step = 0;
+        render();
+      };
+      $('play').onclick = () => {
+        if (timer) return stop();
+        if (step === run().steps.length) step = 0;
+        $('play').textContent = 'Pausa';
+        timer = setInterval(() => {
+          if (step >= run().steps.length) return stop();
+          go(1);
+        }, 1300);
+      };
+      $('run').addEventListener('change', (e) => {
+        runKey = e.target.value;
+        step = 0;
+        stop();
+        render();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'SELECT') return;
+        if (e.key === 'ArrowRight') {
+          stop();
+          go(1);
+        }
+        if (e.key === 'ArrowLeft') {
+          stop();
+          go(-1);
+        }
+      });
+      render();
+    </script>
+  </body>
+</html>
