@@ -243,20 +243,45 @@ El recorrido completo de la demo está en [`docs/console-demo.md`](docs/console-
 
 ## Estructura del repositorio
 
-| Carpeta                   | Qué contiene                                                                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core/`          | `@sabueso/core`: el motor, sus pruebas y la consola `sabueso`                                                                                             |
-| `packages/core/src/`      | Una carpeta por pieza: `grammar-format` (lexer y parser), `analysis`, `earley`, `trees`, `chomsky-normal-form`, `cocke-younger-kasami`, `command-line`, … |
-| `packages/core/grammars/` | Las gramáticas: `genres/detective/` (G0 y G1), `meta.grammar` (el formato) y las de prueba                                                                |
-| `apps/web/`               | `@sabueso/web`: la interfaz web (Vite + React)                                                                                                            |
-| `docs/documentation/`     | La documentación del núcleo: arquitectura, piezas y cómo se conectan (también en PDF)                                                                     |
-| `docs/guides/`            | Una guía de estudio por paso del SPEC 02, con el código explicado                                                                                         |
-| `docs/concepts/`          | Fichas teóricas, una por concepto de la materia                                                                                                           |
-| `docs/interactive/`       | Páginas interactivas: Earley paso a paso y el autómata de pila                                                                                            |
-| `examples/grammars/`      | Gramáticas chicas para mostrar casos puntuales por consola                                                                                                |
-| `specs/`                  | Los specs del proyecto, uno por etapa                                                                                                                     |
-
----
+```plaintext
+sabueso/
+├── packages/
+│   └── core/                          # @sabueso/core: el motor, sus pruebas y la consola
+│       ├── grammars/
+│       │   ├── genres/detective/      # G0 (ambigua) y G1 (oficial) del policial
+│       │   ├── test/                  # gramáticas de libro y casos borde
+│       │   └── meta.grammar           # la gramática del propio formato .grammar
+│       ├── src/
+│       │   ├── grammar/               # el modelo G = (N, Σ, P, S) y buildGrammar
+│       │   ├── automata/              # el ejecutor genérico de AFD
+│       │   ├── grammar-format/        # lexer (AFD) y parser LL(1) del formato .grammar
+│       │   ├── input/                 # el relato: separar etiquetas y verificar Σ
+│       │   ├── analysis/              # anulables, minYield, inútiles, ciclos, FIRST/FOLLOW, LL(1)
+│       │   ├── earley/                # ítems, chart, reconocedor, diagnóstico y traza
+│       │   ├── trees/                 # árboles, árboles ε, conteo, derivación y dibujo
+│       │   ├── chomsky-normal-form/   # los 6 pasos de la FNC
+│       │   ├── cocke-younger-kasami/  # CYK sobre la FNC
+│       │   ├── pushdown-automaton/    # GLC → autómata de pila y su simulación
+│       │   ├── genres/                # catálogo de géneros y sus etiquetas
+│       │   ├── command-line/          # la consola sabueso: un archivo por comando
+│       │   ├── parse.ts               # parse(): la API que usa la web
+│       │   ├── index.ts               # la API pública del paquete
+│       │   └── command-line.ts        # punto de entrada de la consola
+│       └── test/                      # las pruebas, organizadas como src (más integración)
+├── apps/
+│   └── web/                           # @sabueso/web: la interfaz web (Vite + React)
+├── docs/
+│   ├── documentation/                 # documentación del núcleo (sabueso-es.md y su PDF)
+│   ├── guides/                        # una guía de estudio por paso del SPEC 02
+│   ├── concepts/                      # fichas teóricas, una por concepto
+│   ├── interactive/                   # páginas paso a paso: Earley y el autómata de pila
+│   └── console-demo.md                # los comandos de la demo, en orden
+├── examples/grammars/                 # gramáticas chicas para mostrar casos por consola
+├── specs/                             # los specs del proyecto, uno por etapa
+├── .github/workflows/ci.yml           # integración continua
+├── .githooks/                         # pre-commit y pre-push
+└── Romero Julio - Ante proyecto …pdf  # el anteproyecto
+```
 
 ## Comandos npm
 
