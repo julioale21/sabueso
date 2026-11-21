@@ -6,15 +6,14 @@
 import type { ParseError } from '../../earley/diagnostics.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
-import { parseArguments } from '../arguments.js';
 import { formatSet, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const TOKENS_USAGE = `sabueso tokens ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> "<story>"`;
 
@@ -23,20 +22,19 @@ export const tokensCommand: Command = {
   description: 'Split a story into tokens and check that every one is in Σ of the grammar',
   usage: TOKENS_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: TOKENS_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: TOKENS_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     // The story can come as one quoted argument or as several words: both mean the same.
     const tokens = tokenizeSequence(parsed.positionals.join(' '));

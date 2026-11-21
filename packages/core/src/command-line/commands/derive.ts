@@ -9,13 +9,12 @@ import { formatProduction } from '../../grammar/build.js';
 import { checkAlphabet } from '../../input/sequence.js';
 import { leftmostDerivation, type DerivationStep } from '../../trees/derivation.js';
 import { parseTrees } from '../../trees/enumerate.js';
-import { parseArguments } from '../arguments.js';
 import { formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { readStory } from '../story-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -28,20 +27,19 @@ export const deriveCommand: Command = {
   description: 'Write the leftmost derivation of a story, step by step (--tree: of tree number k)',
   usage: DERIVE_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, TREE_OPTION],
       },
+      usage: DERIVE_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: DERIVE_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const treeNumber = Number(parsed.values.get(TREE_OPTION) ?? '1');
     if (!Number.isInteger(treeNumber) || treeNumber < 1) {
       return reportUsageError({

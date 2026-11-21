@@ -15,15 +15,14 @@ import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
 import { parseTrees } from '../../trees/enumerate.js';
 import { renderTree } from '../../trees/render.js';
 import type { ParseTree } from '../../trees/tree.js';
-import { parseArguments } from '../arguments.js';
 import { formatRejection, formatSet, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const COMPARE_FLAG = '--compare';
 const CYK_USAGE = `sabueso cocke-younger-kasami ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${COMPARE_FLAG}] "<story>"`;
@@ -34,17 +33,16 @@ export const cockeYoungerKasamiCommand: Command = {
     'Decide with CYK on the grammar in Chomsky normal form: table, verdict and tree (--compare: next to the Earley tree)',
   usage: CYK_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: { flags: [COMPARE_FLAG], valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION] },
+      usage: CYK_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: CYK_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: CYK on ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;

@@ -7,13 +7,12 @@ import { parse, type ParseResult } from '../../parse.js';
 import { renderDerivation } from '../../trees/derivation.js';
 import { renderTree } from '../../trees/render.js';
 import type { TreeCount } from '../../trees/tree.js';
-import { parseArguments } from '../arguments.js';
 import { formatOpenItems, formatRejection } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { FILE_OPTION, readStory } from '../story-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -27,20 +26,19 @@ export const parseCommand: Command = {
   description: 'Analyze a story in full: verdict, diagnosis, tree count, trees and derivation',
   usage: PARSE_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [TRACE_FLAG],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, TREES_OPTION, FILE_OPTION],
       },
+      usage: PARSE_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: PARSE_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const treesToShow = Number(parsed.values.get(TREES_OPTION) ?? '1');
     if (!Number.isInteger(treesToShow) || treesToShow < 1) {
       return reportUsageError({

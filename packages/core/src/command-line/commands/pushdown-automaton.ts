@@ -17,15 +17,14 @@ import {
   type PathStep,
   type PushdownRun,
 } from '../../pushdown-automaton/simulate.js';
-import { parseArguments } from '../arguments.js';
 import { formatRejection, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const TRANSITIONS_FLAG = '--transitions';
 const PUSHDOWN_USAGE = `sabueso pushdown-automaton ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${TRANSITIONS_FLAG}] "<story>"`;
@@ -36,17 +35,16 @@ export const pushdownAutomatonCommand: Command = {
     'Run the pushdown automaton of the grammar on a story: result and accepting path (--transitions: δ)',
   usage: PUSHDOWN_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: { flags: [TRANSITIONS_FLAG], valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION] },
+      usage: PUSHDOWN_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: PUSHDOWN_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: pushdown automaton on ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;

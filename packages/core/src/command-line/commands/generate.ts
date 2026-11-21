@@ -3,12 +3,11 @@
  * Card: docs/concepts/25-bounded-searches.md
  */
 import { generateSentences } from '../../bounded/generate.js';
-import { parseArguments } from '../arguments.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { MAX_LENGTH_MESSAGE, MAX_LENGTH_OPTION, parseMaxLength } from '../max-length.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -20,17 +19,16 @@ export const generateCommand: Command = {
   description: 'List every sentence of L(G) with at most k tokens, shortest first',
   usage: GENERATE_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: { flags: [], valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, MAX_LENGTH_OPTION] },
+      usage: GENERATE_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: GENERATE_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const maxLength = parseMaxLength(parsed.values.get(MAX_LENGTH_OPTION));
     if (maxLength === undefined || parsed.positionals.length > 0) {
       return reportUsageError({ message: MAX_LENGTH_MESSAGE, environment });

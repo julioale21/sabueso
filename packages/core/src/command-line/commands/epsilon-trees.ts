@@ -8,13 +8,12 @@ import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { countEpsilonTrees, epsilonTrees } from '../../trees/epsilon.js';
 import { renderTree } from '../../trees/render.js';
 import type { TreeCount } from '../../trees/tree.js';
-import { parseArguments } from '../arguments.js';
 import { formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
 
@@ -25,20 +24,19 @@ export const epsilonTreesCommand: Command = {
   description: 'Count and draw the ε-trees of a nullable symbol (none given: every nullable)',
   usage: EPSILON_TREES_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: EPSILON_TREES_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: EPSILON_TREES_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const [symbol, ...extra] = parsed.positionals;
     if (extra.length > 0) {
       return reportUsageError({ message: `Usage: ${EPSILON_TREES_USAGE}`, environment });

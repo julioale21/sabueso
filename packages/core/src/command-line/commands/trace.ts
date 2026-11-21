@@ -7,15 +7,14 @@ import { diagnose } from '../../earley/diagnostics.js';
 import { recognize } from '../../earley/recognizer.js';
 import type { TraceEvent, TraceOperation } from '../../earley/trace.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
-import { parseArguments } from '../arguments.js';
 import { formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const TRACE_USAGE = `sabueso trace ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> "<story>"`;
 
@@ -32,20 +31,19 @@ export const traceCommand: Command = {
   description: 'Show every step of Earley in order: what was added, by which operation and why',
   usage: TRACE_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: TRACE_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: TRACE_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: trace of ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;

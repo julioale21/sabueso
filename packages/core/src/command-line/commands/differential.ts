@@ -4,12 +4,11 @@
  * Card: docs/concepts/23-cocke-younger-kasami.md
  */
 import { runDifferential, type Discrepancy } from '../../differential/differential.js';
-import { parseArguments } from '../arguments.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { MAX_LENGTH_OPTION, parseMaxLength } from '../max-length.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -24,17 +23,16 @@ export const differentialCommand: Command = {
     'Run Earley, CYK and the pushdown automaton on every string up to length k: they must agree',
   usage: DIFFERENTIAL_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: { flags: [], valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, MAX_LENGTH_OPTION] },
+      usage: DIFFERENTIAL_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: DIFFERENTIAL_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const maxLength = parseMaxLength(parsed.values.get(MAX_LENGTH_OPTION));
     if (
       maxLength === undefined ||

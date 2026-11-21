@@ -7,12 +7,11 @@ import { recognize } from '../../earley/recognizer.js';
 import { checkAlphabet } from '../../input/sequence.js';
 import { countTrees } from '../../trees/count.js';
 import type { TreeCount } from '../../trees/tree.js';
-import { parseArguments } from '../arguments.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { FILE_OPTION, readStory } from '../story-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -25,20 +24,19 @@ export const countCommand: Command = {
     'Count the parse trees of a story without building them (--file: read it from a file)',
   usage: COUNT_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, FILE_OPTION],
       },
+      usage: COUNT_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: COUNT_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const story = await readStory({ parsed, environment });
     if (typeof story === 'string') {
       return reportUsageError({ message: story, environment });

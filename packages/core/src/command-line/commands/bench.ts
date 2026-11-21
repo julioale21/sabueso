@@ -5,13 +5,12 @@
  */
 import { checkAlphabet } from '../../input/sequence.js';
 import { benchmark } from '../../performance/benchmark.js';
-import { parseArguments } from '../arguments.js';
 import { formatRejection, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { FILE_OPTION, readStory } from '../story-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -24,17 +23,16 @@ export const benchCommand: Command = {
     'Time each stage of the analysis of a story: recognition, tree, derivation and count',
   usage: BENCH_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: { flags: [], valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, FILE_OPTION] },
+      usage: BENCH_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: BENCH_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const story = await readStory({ parsed, environment });
     if (typeof story === 'string') {
       return reportUsageError({ message: story, environment });

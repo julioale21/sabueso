@@ -8,12 +8,11 @@ import { findAmbiguityWitness } from '../../bounded/ambiguity.js';
 import { recognize } from '../../earley/recognizer.js';
 import { parseTrees } from '../../trees/enumerate.js';
 import { renderTree } from '../../trees/render.js';
-import { parseArguments } from '../arguments.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { MAX_LENGTH_MESSAGE, MAX_LENGTH_OPTION, parseMaxLength } from '../max-length.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
@@ -26,17 +25,16 @@ export const ambiguityCommand: Command = {
     'Search the shortest sentence with more than one tree, up to length k (a semidecision)',
   usage: AMBIGUITY_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: { flags: [], valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, MAX_LENGTH_OPTION] },
+      usage: AMBIGUITY_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: AMBIGUITY_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const maxLength = parseMaxLength(parsed.values.get(MAX_LENGTH_OPTION));
     if (maxLength === undefined || parsed.positionals.length > 0) {
       return reportUsageError({ message: MAX_LENGTH_MESSAGE, environment });

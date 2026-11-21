@@ -9,15 +9,14 @@ import { dottedRule, isComplete, type EarleyItem, type Link } from '../../earley
 import { recognize } from '../../earley/recognizer.js';
 import type { SymbolName } from '../../grammar/types.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
-import { parseArguments } from '../arguments.js';
 import { formatRejection, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const CHART_FLAG = '--chart';
 const NO_EPSILON_FIX_FLAG = '--no-epsilon-fix';
@@ -29,20 +28,19 @@ export const earleyCommand: Command = {
     'Decide with Earley whether a story is in L(G) (--chart: the sets S0 … Sn; --no-epsilon-fix: the classic bug)',
   usage: EARLEY_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [CHART_FLAG, NO_EPSILON_FIX_FLAG],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: EARLEY_USAGE,
+      environment,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: EARLEY_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;
