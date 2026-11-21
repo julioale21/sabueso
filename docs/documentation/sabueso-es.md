@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo hasta el paso 25 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo hasta el paso 26 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -37,18 +37,19 @@ Este documento describe el núcleo hasta el paso 25 del SPEC 02. Cada sección e
 
 Cada etapa transforma la salida de la anterior, y cada una corresponde a un concepto de la materia:
 
-| Etapa                  | Entrada                | Salida                               | Concepto                          | Módulo                                 | Sección |
-| ---------------------- | ---------------------- | ------------------------------------ | --------------------------------- | -------------------------------------- | ------- |
-| Lexer                  | texto de un `.grammar` | tokens                               | AFD, lenguaje regular             | `automata/`, `grammar-format/lexer.ts` | 4       |
-| Parser                 | tokens                 | reglas y directivas                  | análisis descendente LL(1)        | `grammar-format/parser.ts`             | 4       |
-| Construcción           | reglas                 | G = (N, Σ, P, S)                     | gramática libre de contexto       | `grammar/`                             | 3       |
-| Análisis               | G                      | anulables, inútiles, FIRST, FOLLOW…  | menor punto fijo, LL(1)           | `analysis/`                            | 6       |
-| Tokenizador de relatos | texto del relato       | etiquetas, o "símbolo fuera de Σ"    | alfabeto y cadena                 | `input/`                               | 5       |
-| Earley                 | G y las etiquetas      | chart, veredicto, error ubicado      | pertenencia a una GLC             | `earley/`                              | 7       |
-| Árboles                | el chart               | árboles, su cantidad, la derivación  | árboles de derivación, ambigüedad | `trees/`                               | 8       |
-| API pública            | G y el relato          | un resultado completo                | (encadena las etapas)             | `parse.ts`, `index.ts`                 | 9       |
-| FNC                    | G                      | una gramática equivalente, por pasos | formas normales                   | `chomsky-normal-form/`                 | 10      |
-| CYK                    | FNC(G) y el relato     | sí o no, la tabla y un árbol FNC     | programación dinámica             | `cocke-younger-kasami/`                | 10      |
+| Etapa                  | Entrada                | Salida                                  | Concepto                          | Módulo                                 | Sección |
+| ---------------------- | ---------------------- | --------------------------------------- | --------------------------------- | -------------------------------------- | ------- |
+| Lexer                  | texto de un `.grammar` | tokens                                  | AFD, lenguaje regular             | `automata/`, `grammar-format/lexer.ts` | 4       |
+| Parser                 | tokens                 | reglas y directivas                     | análisis descendente LL(1)        | `grammar-format/parser.ts`             | 4       |
+| Construcción           | reglas                 | G = (N, Σ, P, S)                        | gramática libre de contexto       | `grammar/`                             | 3       |
+| Análisis               | G                      | anulables, inútiles, FIRST, FOLLOW…     | menor punto fijo, LL(1)           | `analysis/`                            | 6       |
+| Tokenizador de relatos | texto del relato       | etiquetas, o "símbolo fuera de Σ"       | alfabeto y cadena                 | `input/`                               | 5       |
+| Earley                 | G y las etiquetas      | chart, veredicto, error ubicado         | pertenencia a una GLC             | `earley/`                              | 7       |
+| Árboles                | el chart               | árboles, su cantidad, la derivación     | árboles de derivación, ambigüedad | `trees/`                               | 8       |
+| API pública            | G y el relato          | un resultado completo                   | (encadena las etapas)             | `parse.ts`, `index.ts`                 | 9       |
+| FNC                    | G                      | una gramática equivalente, por pasos    | formas normales                   | `chomsky-normal-form/`                 | 10      |
+| CYK                    | FNC(G) y el relato     | sí o no, la tabla y un árbol FNC        | programación dinámica             | `cocke-younger-kasami/`                | 10      |
+| Autómata de pila       | G y el relato          | sí, no o no se sabe, y el camino de IDs | GLC ↔ AP (Hopcroft 6.3.1)         | `pushdown-automaton/`                  | 10      |
 
 Los módulos están en `packages/core/src/`. Además están `genres/` (el catálogo de géneros) y `command-line/` (la consola, sección 11).
 
@@ -336,12 +337,13 @@ Las demás exportaciones, por área:
 | Mostrar resultados | `label`, `dottedRule`, `renderTree`, `renderDerivation`                                              |
 | FNC                | `toChomskyNormalForm`, `isChomskyNormalForm` y cada paso por separado (`addNewStart`, …, `binarize`) |
 | CYK                | `recognizeCockeYoungerKasami` y `CockeYoungerKasamiResult`                                           |
+| Autómata de pila   | `buildPushdownAutomaton`, `simulatePushdownAutomaton` y sus tipos                                    |
 | Catálogo           | `genres`                                                                                             |
 | Consola            | `createCommandLineProgram`, `formatTable`, `formatSet` (para sumar los comandos del SPEC 04)         |
 
 **Detalle:** guía 22.
 
-# 10. Forma Normal de Chomsky y CYK
+# 10. Forma Normal de Chomsky, CYK y autómata de pila
 
 **Qué hace:** convierte una gramática a FNC (cada producción es A → BC o A → a, y S → ε solo si ε ∈ L(G) y S no aparece a la derecha; Hopcroft 7.1), sin cambiar su lenguaje.
 
@@ -369,33 +371,42 @@ La conversión tiene seis transformaciones. Cada una es una función que recibe 
 
 **Se conecta con:** recibe la salida de `toChomskyNormalForm` y devuelve un `ParseTree`, el mismo tipo que Earley, reconstruido desde la tabla. Así el comando `cocke-younger-kasami --compare` dibuja los dos árboles lado a lado: con `CRI PIS REV` y G1, el de CYK tiene `X1` y pierde diez categorías del género (`Hecho`, `MarcoOpc`, `Pasos`…). Es la comparación que justifica usar Earley. Las pruebas verifican que CYK sobre FNC(G) y Earley sobre G aceptan exactamente las mismas cadenas cortas.
 
-**Pendiente:** el autómata de pila y las búsquedas acotadas (pasos 26 y 27 del SPEC 02).
-
 **Detalle:** guías 23, 24 y 25 · fichas 22 y 23.
+
+## 10.2 Autómata de pila
+
+**Qué hace:** `buildPushdownAutomaton(grammar)` arma el autómata de pila de la gramática (Hopcroft 6.3.1): un solo estado, la pila empieza con S, una transición **expandir** por producción (con A en el tope, lo reemplaza por su lado derecho) y una **emparejar** por terminal; acepta por pila vacía. `simulatePushdownAutomaton({ grammar, tokens, maxSteps })` lo ejecuta con una búsqueda en anchura sobre las descripciones instantáneas (posición, pila): no repite configuraciones, poda las pilas que necesitan más etiquetas que las que quedan (minYield) y responde `'undetermined'` si llega al límite de pasos. Devuelve el resultado, las configuraciones exploradas y el camino de aceptación.
+
+**Se conecta con:** usa minYield (sección 6) para podar. Su camino de aceptación verifica en código un teorema: las expansiones, en orden, son la derivación más a la izquierda (sección 8); con A1 y G1, 18 contra 18. Es un tercer reconocedor, independiente de Earley y de CYK: las pruebas verifican que acepta las mismas cadenas cortas que Earley. Y explica a Earley: un ítem A → α • β, j es un pedazo de pila compartido.
+
+**Pendiente:** las búsquedas acotadas (paso 27 del SPEC 02).
+
+**Detalle:** guía 26 · ficha 24.
 
 # 11. La consola
 
 La consola `sabueso` muestra cada pieza del motor por separado: cada comando llama al motor y formatea el resultado, sin lógica propia. Se ejecuta con `npm run sabueso -- <comando>`, y la gramática se elige con `--grammar <nombre>` o `--grammar-file <ruta>`.
 
-| Comando                                                                                    | Qué muestra                                                                | Sección |
-| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- | ------- |
-| `genres`, `grammars`                                                                       | el catálogo y las gramáticas incluidas                                     | 3       |
-| `lex`, `grammar`                                                                           | los tokens y las transiciones del AFD; la gramática y la traza del parser  | 4       |
-| `tokens`                                                                                   | un relato separado en etiquetas y verificado contra Σ                      | 5       |
-| `nullable`, `min-yield`, `useful`, `cycles`, `first-follow`, `predictive-table`, `analyze` | cada análisis; con `--steps`, las rondas del punto fijo                    | 6       |
-| `items`, `earley`, `trace`                                                                 | las reglas punteadas, el chart y cada paso de Earley                       | 7       |
-| `epsilon-trees`, `trees`, `count`, `derive`                                                | los árboles, su cantidad y la derivación                                   | 8       |
-| `parse`                                                                                    | el análisis completo de un relato                                          | 9       |
-| `chomsky-normal-form`                                                                      | la gramática después de cada paso de la FNC                                | 10      |
-| `cocke-younger-kasami`                                                                     | la tabla CYK, el veredicto y el árbol FNC; con `--compare`, junto a Earley | 10.1    |
+| Comando                                                                                    | Qué muestra                                                                  | Sección |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | ------- |
+| `genres`, `grammars`                                                                       | el catálogo y las gramáticas incluidas                                       | 3       |
+| `lex`, `grammar`                                                                           | los tokens y las transiciones del AFD; la gramática y la traza del parser    | 4       |
+| `tokens`                                                                                   | un relato separado en etiquetas y verificado contra Σ                        | 5       |
+| `nullable`, `min-yield`, `useful`, `cycles`, `first-follow`, `predictive-table`, `analyze` | cada análisis; con `--steps`, las rondas del punto fijo                      | 6       |
+| `items`, `earley`, `trace`                                                                 | las reglas punteadas, el chart y cada paso de Earley                         | 7       |
+| `epsilon-trees`, `trees`, `count`, `derive`                                                | los árboles, su cantidad y la derivación                                     | 8       |
+| `parse`                                                                                    | el análisis completo de un relato                                            | 9       |
+| `chomsky-normal-form`                                                                      | la gramática después de cada paso de la FNC                                  | 10      |
+| `cocke-younger-kasami`                                                                     | la tabla CYK, el veredicto y el árbol FNC; con `--compare`, junto a Earley   | 10.1    |
+| `pushdown-automaton`                                                                       | el autómata de pila, el resultado y el camino de IDs; con `--transitions`, δ | 10.2    |
 
 El recorrido completo, con la salida de cada comando, está en `docs/console-demo.md`. Una prueba verifica que cada comando de ese documento siga siendo válido.
 
 # 12. Pruebas y calidad
 
-- **831 pruebas** (Vitest), organizadas como el código, más una prueba de integración de la API pública.
+- **859 pruebas** (Vitest), organizadas como el código, más una prueba de integración de la API pública.
 - **Contra cálculos hechos a mano:** el chart de `CRI PIS REV` con G1 coincide ítem por ítem con el del spec, y la derivación de A1 tiene sus mismos 18 pasos.
-- **Propiedades del lenguaje:** después de cada paso de la FNC, las oraciones cortas de G1 se siguen aceptando, y G0 y G1 aceptan y rechazan lo mismo hasta largo 3. CYK sobre FNC(G) y Earley sobre G aceptan las mismas cadenas.
+- **Propiedades del lenguaje:** después de cada paso de la FNC, las oraciones cortas de G1 se siguen aceptando, y G0 y G1 aceptan y rechazan lo mismo hasta largo 3. CYK sobre FNC(G), el autómata de pila y Earley aceptan las mismas cadenas.
 - **Casos borde:** gramáticas con ε, con símbolos inútiles, con lenguaje vacío y con ciclos.
 - **Calidad del código:** TypeScript estricto, ESLint y Prettier. Los hooks de git verifican formato y lint antes de cada commit y corren las pruebas antes de cada push. La integración continua repite todo en cada push.
 

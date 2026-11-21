@@ -225,3 +225,14 @@ npm run sabueso -- cocke-younger-kasami --grammar parentheses "( ) ( )"
 npm run sabueso -- cocke-younger-kasami --grammar g1 --compare "CRI PIS REV"
 npm run sabueso -- cocke-younger-kasami --grammar g0 "CRI REV"
 ```
+
+## Autómata de pila
+
+Paso 26. El autómata de pila de la gramática (un estado; expandir un no terminal o emparejar un terminal), simulado con una búsqueda en anchura. El camino de aceptación se muestra como tabla de descripciones instantáneas: sus expansiones, en orden, son la derivación más a la izquierda. Con `CRI REV`, la poda por minYield rechaza sin explorar nada.
+
+```sh
+npm run sabueso -- pushdown-automaton --grammar g1 "CRI PIS REV"
+npm run sabueso -- pushdown-automaton --grammar g1 "CRI SOS PIS INT REV"
+npm run sabueso -- pushdown-automaton --grammar parentheses --transitions "( ( ) ) ( )"
+npm run sabueso -- pushdown-automaton --grammar g1 "CRI REV"
+```

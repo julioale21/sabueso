@@ -18,6 +18,7 @@ import { minYieldCommand } from './commands/min-yield.js';
 import { nullableCommand } from './commands/nullable.js';
 import { parseCommand } from './commands/parse.js';
 import { predictiveTableCommand } from './commands/predictive-table.js';
+import { pushdownAutomatonCommand } from './commands/pushdown-automaton.js';
 import { tokensCommand } from './commands/tokens.js';
 import { traceCommand } from './commands/trace.js';
 import { treesCommand } from './commands/trees.js';
@@ -49,6 +50,7 @@ export const runCommandLine = createCommandLineProgram({
     parseCommand,
     chomskyNormalFormCommand,
     cockeYoungerKasamiCommand,
+    pushdownAutomatonCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

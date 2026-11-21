@@ -1,7 +1,5 @@
 # 24 — Autómata de pila (GLC → AP)
 
-> **Borrador adelantado.** El código llega en el paso 26 (`packages/core/src/pushdown-automaton/`). Esta ficha ya muestra el autómata de G1 y una corrida completa, calculadas a partir de `g1.grammar`.
-
 ## 1. Definición formal
 
 - Un **autómata de pila** (AP) es P = (Q, Σ, Γ, δ, q₀, Z₀, F): un autómata finito con una pila. Cada transición lee un símbolo de la entrada **o ninguno** (ε), mira el **tope** de la pila, lo reemplaza por una cadena de Γ\* y cambia de estado. Es **no determinista**: puede haber varias transiciones posibles.
@@ -19,6 +17,8 @@
 ![Autómata de pila de G1](../guides/images/24-pushdown-automaton.svg)
 
 La pila guarda **lo que falta derivar**. El autómata adivina (no determinismo) qué producción usar en cada expansión; si adivina mal, esa rama no llega a pila vacía.
+
+**Simularlo** sin adivinar: una búsqueda en anchura sobre las IDs, que no repite configuraciones (corta los ciclos), descarta las pilas que necesitan más etiquetas que las que quedan (minYield, ficha 10; corta la recursión a izquierda) y se detiene en un límite de pasos (`undetermined`).
 
 ## 2. Ejemplo resuelto a mano: `CRI PIS REV` con G1
 
@@ -48,7 +48,7 @@ Cada fila es una ID. El tope de la pila está a la izquierda. Los números entre
 **Qué mirar:**
 
 - Hay 14 expansiones y 3 emparejamientos, uno por evento del relato.
-- Las expansiones, leídas en orden, son exactamente la **derivación más a la izquierda** de `CRI PIS REV`: siempre se expande el no terminal de más a la izquierda, que es el tope de la pila. Es el teorema que el paso 26 verifica en código.
+- Las expansiones, leídas en orden, son exactamente la **derivación más a la izquierda** de `CRI PIS REV`: siempre se expande el no terminal de más a la izquierda, que es el tope de la pila. El paso 26 lo verifica en código.
 - En cada ID, "lo ya leído" seguido de "la pila" es una **forma sentencial** de esa derivación. Por ejemplo, en el paso 10: `CRI PIS` + `Libres Lineas Desenlace`.
 - Las producciones ε (pasos 5, 6, 11, 12, 16 y 17) solo sacan el tope: son los anulables del paso 7.
 - **Dónde está el no determinismo:** en el paso 1 la pila tiene `Planteo`, que tiene dos producciones (`Hecho MarcoOpc` y `Marco Hecho`). El autómata elige `Hecho MarcoOpc`; la otra rama muere, porque `Marco` no puede empezar con `CRI`. Como G1 es LL(1), mirar el próximo evento alcanza para elegir siempre bien, y el camino de aceptación es único.
@@ -59,17 +59,17 @@ Para recorrerlo paso a paso, con la pila dibujada, las transiciones posibles en 
 
 | Qué                 | Dónde                                                                                                                                     |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Construcción        | Pendiente (paso 26): `packages/core/src/pushdown-automaton/build.ts`                                                                      |
-| Simulación          | Pendiente (paso 26): `pushdown-automaton/simulate.ts`, búsqueda en anchura sobre IDs, con poda por minYield (paso 8)                      |
-| Comando de consola  | Pendiente (paso 26): `npm run sabueso -- pushdown-automaton --grammar g1 "CRI PIS REV"` imprime esta tabla de IDs                         |
+| Construcción        | `packages/core/src/pushdown-automaton/build.ts`: `buildPushdownAutomaton`                                                                 |
+| Simulación          | `packages/core/src/pushdown-automaton/simulate.ts`: `simulatePushdownAutomaton`, búsqueda en anchura sobre IDs, con poda por minYield     |
+| Comando de consola  | `npm run sabueso -- pushdown-automaton --grammar g1 "CRI PIS REV"` imprime esta tabla de IDs (con `--transitions`, δ)                     |
 | Relación con Earley | Un ítem de Earley A → α • β, j es un pedazo de pila compartido: Earley simula **todas** las pilas del AP a la vez (sección 3.15 del spec) |
 
 ## 4. Qué prueba lo verifica
 
-| Prueba                        | Qué verifica                                                                                               |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Pendiente (paso 26), caso P1  | `( ( ) ) ( )` con `parentheses` se acepta                                                                  |
-| Pendiente (paso 26), caso AP1 | A1 con G1 se acepta y las expansiones del camino coinciden, en orden, con su derivación más a la izquierda |
+| Prueba                                                             | Qué verifica                                                                                                                                                |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/test/pushdown-automaton/pushdown-automaton.test.ts` | P1 (`( ( ) ) ( )` con `parentheses`); la tabla de la sección 2 ID por ID; AP1 (las 18 expansiones de A1 son su derivación); el AP y Earley aceptan lo mismo |
+| `packages/core/test/command-line/pushdown-automaton.test.ts`       | La tabla de la sección 2 en la consola, `--transitions` y el rechazo de `CRI REV`                                                                           |
 
 ## 5. Referencia bibliográfica
 

@@ -68,6 +68,16 @@ export type {
 export { recognizeCockeYoungerKasami } from './cocke-younger-kasami/recognizer.js';
 export type { CockeYoungerKasamiResult } from './cocke-younger-kasami/recognizer.js';
 
+// The pushdown automaton of a grammar, and its simulation (step 26).
+export { buildPushdownAutomaton } from './pushdown-automaton/build.js';
+export type { PushdownAutomaton, PushdownTransition } from './pushdown-automaton/build.js';
+export { DEFAULT_MAX_STEPS, simulatePushdownAutomaton } from './pushdown-automaton/simulate.js';
+export type {
+  InstantaneousDescription,
+  PathStep,
+  PushdownRun,
+} from './pushdown-automaton/simulate.js';
+
 // The catalog of genres.
 export { genres } from './genres/catalog.js';
 export type { Genre, TagInfo } from './genres/types.js';

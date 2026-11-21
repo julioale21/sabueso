@@ -1091,6 +1091,12 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - Pruebas: P1 y la correspondencia entre el camino de aceptación y la derivación de A1 con G1. Ficha 24.
     - **Consola:** `npm run sabueso -- pushdown-automaton --grammar g1 "CRI SOS PIS INT REV"` imprime las transiciones (con `--transitions`), el resultado, la cantidad de configuraciones exploradas y el camino de aceptación como tabla de descripciones instantáneas (posición, entrada restante, pila).
     - **Adelanto (2026-11-20):** la ficha 24 se escribió en borrador antes del código, con el grafo (`docs/guides/images/24-pushdown-automaton.svg`), la corrida de `CRI PIS REV` con G1 como tabla de descripciones instantáneas y una página interactiva paso a paso (`docs/interactive/pushdown-automaton-g1.html`, también con A1). En este paso, la prueba del comando debe reproducir esa misma tabla.
+    - **Decisiones (2026-11-21):**
+      - `buildPushdownAutomaton(grammar)` devuelve el `PushdownAutomaton` del spec (expandir por producción, emparejar por terminal). `simulatePushdownAutomaton({ grammar, tokens, maxSteps })` construye el autómata y calcula minYield adentro, y devuelve el `PushdownRun` del spec.
+      - La cola del BFS es un array con un índice; cada nodo guarda su padre para reconstruir el camino. `steps` cuenta las configuraciones sacadas de la cola. La configuración inicial no se poda (con `CRI REV` en G1 se explora solo ella: `steps` = 1).
+      - La prueba del comando reproduce la tabla de la ficha 24 (`CRI PIS REV` con G1, 18 IDs, 23 configuraciones exploradas). La consola está en inglés (`ACCEPTED: the stack is empty after the whole input`, `expand (11) Hecho → CRI HallazgoOpc`, `match CRI`).
+      - Además de lo pedido: una prueba verifica que lo leído más la pila es una forma de la derivación en cada ID; otra, que S → S B, B → ε da `undetermined` con `maxSteps`; y otra, que el AP y Earley aceptan las mismas cadenas cortas sin `undetermined` (G0 y G1 hasta largo 3).
+      - `index.ts` exporta `buildPushdownAutomaton`, `simulatePushdownAutomaton`, `DEFAULT_MAX_STEPS` y sus tipos.
 
 27. **Búsquedas acotadas.**
     - `bounded/generate.ts`, `bounded/ambiguity.ts` y `bounded/compare.ts`.
