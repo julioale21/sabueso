@@ -1,6 +1,6 @@
 # Guion de la demo por consola
 
-Los comandos de la demo de la exposición, en el orden en que se muestran. Cada paso del spec agrega los suyos, y el paso 29 del SPEC 02 completa el recorrido.
+Los comandos de la demo, un bloque por concepto, en el orden en que se construyó el núcleo: de la lectura de la gramática a los límites del modelo. Cada concepto tiene su ficha en `docs/concepts/` (el índice está en el README).
 
 La prueba `packages/core/test/command-line/demo-doc.test.ts` ejecuta todas las líneas `npm run sabueso -- …` de los bloques de código de este archivo, y falla si alguna termina con código 2 (uso incorrecto). Así el guion siempre corresponde a comandos que existen.
 
@@ -248,12 +248,21 @@ npm run sabueso -- ambiguity --grammar g1 --max-length 7
 npm run sabueso -- compare g0 g1 --max-length 3
 ```
 
-## Pruebas diferenciales y rendimiento
+## Rendimiento
 
-Paso 28. Los tres reconocedores (Earley sobre G, CYK sobre la FNC y el autómata de pila) sobre todas las cadenas hasta un largo: con G1 hasta largo 4 son 41 371 cadenas, 110 oraciones y 0 discrepancias. Y el tiempo de cada etapa con L1 (200 eventos): G1 lo analiza en unos 24 ms, muy por debajo del segundo que pide el anteproyecto; G0 tarda unas diez veces más por la ambigüedad.
+Paso 28. El anteproyecto pide analizar un relato de 200 eventos en menos de un segundo: con G1 tarda unos 24 ms. (La prueba diferencial, `differential --grammar g1 --max-length 4`, verifica que Earley, CYK y el autómata de pila aceptan lo mismo; queda para las preguntas.)
 
 ```sh
-npm run sabueso -- differential --grammar g1 --max-length 4
 npm run sabueso -- bench --grammar g1 --file packages/core/test/fixtures/l1.txt
-npm run sabueso -- bench --grammar g0 --file packages/core/test/fixtures/l1.txt
+```
+
+## Límites del modelo y decidibilidad
+
+Fichas 26 y 27, sin código propio. La jerarquía de Chomsky ubica cada pieza: el lexer reconoce un lenguaje regular (tipo 3) y las gramáticas son libres de contexto (tipo 2), con su autómata de pila. Algunas reglas del género (contar sospechas, recordar al culpable) no se pueden expresar con una GLC. Y sobre las gramáticas, la pertenencia, la vacuidad y "es LL(1)" son decidibles; la ambigüedad y la equivalencia, no: solo se semidecide buscando un testigo.
+
+```sh
+npm run sabueso -- useful --grammar test-empty
+npm run sabueso -- predictive-table --grammar g1
+npm run sabueso -- ambiguity --grammar g0 --max-length 4
+npm run sabueso -- compare g0 g1 --max-length 3
 ```

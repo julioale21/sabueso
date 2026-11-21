@@ -1130,10 +1130,17 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
 29. **Guion de consola completo.**
     - Completar `docs/console-demo.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.
     - La prueba `demo-doc.test.ts` del SPEC 01 ya ejecuta cada comando del documento con `runCommandLine` y verifica que ninguno termine con código 2. Este paso no la modifica: solo agrega comandos al guion.
+    - **Decisión (2026-11-21):** el paso quedó cubierto de forma incremental: cada paso agregó su sección a `docs/console-demo.md`, con su explicación y sus comandos, siguiendo el orden de construcción (que acompaña al de las fichas). No se reordenó: el orden de la exposición, con lo que se dice en cada momento, vive en el guion privado del autor. Se cerró en el paso 30 con dos ajustes: la introducción ya no depende del número de paso, y el rendimiento quedó en una línea (criterio: la materia evalúa conceptos; la prueba diferencial queda para las preguntas). Se sumó un bloque final para las fichas 26 y 27.
 
 30. **Fichas teóricas y README.**
     - Fichas 26 y 27.
     - `README.md` con requisitos, instalación, comandos, el índice concepto → archivo → ficha → comando (la tabla 7.1 con una columna "Comando"), y una declaración del uso de IA (lo exige el anteproyecto).
+    - **Decisiones (2026-11-21):**
+      - Ficha 26: la jerarquía con una columna "En el proyecto"; aclara que G0 y G1 son gramáticas de tipo 2 aunque sus lenguajes resulten regulares. Demuestra a mano que #SOS = #DSC = #INT no es GLC (intersección con `CRI SOS* DSC* INT* REV` y lema de bombeo), y analiza la regla del culpable (regular con elenco fijo, no GLC con nombres no acotados; el SPEC 04 la verifica aparte).
+      - Ficha 27: tabla de problemas sobre GLC (decidible o no, y dónde está en el código) y otra con qué responde el programa para G0 y G1 y cómo: decisor, condición suficiente, testigo, refutación o demostración a mano.
+      - Las citas de Hopcroft se verificaron contra el índice de la edición en español (7.2, 7.3.4, 7.4.3, 7.4.4, 7.4.5, 8.2, 9.2, 9.5.2 y 9.5.3).
+      - README: sección "Conceptos de la materia en el código" con las 27 fichas (concepto, código, ficha y comando; los 27 comandos se verificaron), sección "Uso de inteligencia artificial" (borrador para que el autor revise), estado "núcleo terminado" y el badge correspondiente.
+      - La documentación oficial se tradujo al inglés (`docs/documentation/sabueso-en.md` y su PDF), como se había acordado para este paso.
 
 > Algunos pasos (14, 23 y 24) pueden superar las 50 líneas. Si pasa, se dividen en subcommits por función (por ejemplo, 14a `predict`, 14b `scan`, 14c `complete`, 14d bucle). Cada subcommit lleva su prueba, y el comando `earley` se extiende en cada uno.
 

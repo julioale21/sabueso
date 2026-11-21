@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo hasta el paso 28 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo completo (SPEC 02). Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -124,7 +124,7 @@ El lexer del formato (`grammarLexerAutomaton`) reconoce la forma de una directiv
 
 - tiene **un método por no terminal** (`parseFile`, `parseRule`, `parseSymbols`…);
 - cada método mira **un solo token** y elige la única alternativa que puede empezar con él. Para elegir ε, mira FOLLOW: `Symbols → ε` se elige solo si el próximo token es `BAR` o `NEWLINE`;
-- funciona sin retroceso porque `meta.grammar` es LL(1). El propio Sabueso lo verifica: `predictive-table --grammar meta` no tiene conflictos (sección 6.7).
+- funciona sin retroceso porque `meta.grammar` es LL(1). El propio Sabueso lo verifica: `predictive-table --grammar meta` no tiene conflictos (sección 6.2).
 
 Devuelve las reglas, las directivas y `trace`, la lista de las decisiones del parser con su profundidad (`ParserTraceStep`), que muestra `grammar --parser-trace`. El parser no clasifica símbolos: eso lo hace `buildGrammar`.
 
@@ -425,11 +425,20 @@ El recorrido completo, con la salida de cada comando, está en `docs/console-dem
 - **Casos borde:** gramáticas con ε, con símbolos inútiles, con lenguaje vacío y con ciclos.
 - **Calidad del código:** TypeScript estricto, ESLint y Prettier. Los hooks de git verifican formato y lint antes de cada commit y corren las pruebas antes de cada push. La integración continua repite todo en cada push.
 
-# 13. Referencias
+# 13. Límites del modelo y decidibilidad
+
+**Qué es:** dos temas de la materia sin código propio, que ubican en la teoría lo que el núcleo hace.
+
+- **Jerarquía de Chomsky:** el lexer reconoce un lenguaje regular (tipo 3) con un AFD; las gramáticas del proyecto son libres de contexto (tipo 2) y su máquina es el autómata de pila (sección 10.2). Algunas reglas del género quedan fuera de toda GLC: "hay tantas sospechas como descartes y como interrogatorios" (se demuestra con el lema de bombeo, intersecando con un regular) y "el culpable apareció antes", si los nombres no están acotados.
+- **Decidibilidad:** sobre una GLC, la pertenencia (Earley), la vacuidad (`isEmpty`) y "es LL(1)" (`buildPredictiveTable`) son decidibles, y cada uno tiene un decisor en el núcleo. La ambigüedad y la equivalencia son indecidibles: el núcleo solo las semidecide con búsquedas acotadas (sección 10.3). Por la tesis de Church-Turing, cada función del núcleo es una máquina de Turing que siempre se detiene.
+
+**Detalle:** fichas 26 y 27.
+
+# 14. Referencias
 
 - Aho, A., Lam, M., Sethi, R. y Ullman, J., _Compiladores: principios, técnicas y herramientas_ (2.ª ed.). Capítulos 3 y 4.
 - Augusto, material de la cátedra de Fundamentos Teóricos de Informática, UNPSJB. Capítulos 1 a 3.
 - Aycock, J. y Horspool, R. N., "Practical Earley Parsing", _The Computer Journal_ 45(6), 2002.
 - Earley, J., "An efficient context-free parsing algorithm", _Communications of the ACM_ 13(2), 1970.
-- Hopcroft, J., Motwani, R. y Ullman, J., _Introducción a la teoría de autómatas, lenguajes y computación_. Capítulos 2, 5, 6 y 7.
+- Hopcroft, J., Motwani, R. y Ullman, J., _Introducción a la teoría de autómatas, lenguajes y computación_. Capítulos 2 y 5 a 9.
 - Sipser, M., _Introducción a la teoría de la computación_. Capítulo 2.
