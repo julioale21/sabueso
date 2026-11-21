@@ -349,9 +349,9 @@ Y devuelve G':
 
 **Por qué no usar `buildGrammar`:** `buildGrammar` deduce N de los lados izquierdos. Después de DEL, en `epsilon-trap`, A se queda sin producciones pero sigue apareciendo en `S → A A x`. `buildGrammar` lo tomaría por un **terminal** llamado "A", y el lenguaje cambiaría: aceptaría la cadena `A A x`.
 
-También exporta dos ayudas:
+Usa una ayuda de `grammar/productions.ts` y exporta otra:
 
-- **`productionKey(production)`:** convierte una producción en un texto que la identifica por sus símbolos (`["S","(","S",")"]`), sin importar su número. Sirve para detectar repetidas y para que el comando compare dos gramáticas.
+- **`productionKey(production)`** (de `grammar/productions.ts`, la misma que usa `buildGrammar`): convierte una producción en un texto que la identifica por sus símbolos (`["S","(","S",")"]`), sin importar su número. Sirve para detectar repetidas y para que el comando compare dos gramáticas. `rewriteGrammar` también arma el índice por lado izquierdo con `groupByLeftSide`, de ese mismo archivo.
 - **`freshSymbol({ grammar, name })`:** devuelve `name` si no está en N ni en Σ; si no, le agrega primas hasta que quede libre.
 
 ### 5.7 El comando `chomsky-normal-form`

@@ -633,7 +633,7 @@ function checkLiteral({ literal, symbols }: { literal: string; symbols: SymbolTa
 function rejectDuplicateProductions(productions: readonly Production[]): void {
   const seen = new Set<string>();
   for (const production of productions) {
-    const key = JSON.stringify([production.leftSide, ...production.rightSide]);
+    const key = productionKey(production);
     if (seen.has(key)) {
       throw new GrammarBuildError(`Duplicate production: ${formatProduction(production)}`);
     }
@@ -645,6 +645,7 @@ function rejectDuplicateProductions(productions: readonly Production[]): void {
 - **Qué hace:** verifica que no haya dos producciones iguales.
 - **Por qué:** en la teoría P es un **conjunto**, y una producción repetida casi siempre es un error de edición. Además, una producción duplicada haría que Earley encuentre **dos árboles idénticos** para la misma entrada, y la gramática parecería ambigua sin serlo.
 - **Cómo compara:** convierte cada producción en una **clave de texto** y la guarda en un `Set` de claves vistas. Si una clave ya estaba, la producción es repetida.
+- **`productionKey`** (en `grammar/productions.ts`, compartida con la FNC) arma la clave con `JSON.stringify([leftSide, ...rightSide])`.
 - **¿Por qué `JSON.stringify` y no unir con espacios?** Para que dos producciones distintas nunca den la misma clave. Con espacios, `A → 'b c'` (un literal con un espacio adentro, un solo símbolo) y `A → b c` (dos símbolos) darían las dos `"A b c"`. Con JSON dan `["A","b c"]` y `["A","b","c"]`, que son distintas. JSON marca con comillas dónde empieza y termina cada símbolo.
 - **Por qué compara después de validar:** compara `Production` y no `GrammarRule`, así que `S → 'a'` y `S → a` (un literal y un identificador terminal con el mismo nombre) se detectan como la misma producción. En la gramática resultante lo son.
 - **Error:** `Duplicate production: T → id`.
@@ -672,6 +673,8 @@ function requireNonterminalStart({
 - **Error:** `Start symbol "X" is not the left-hand side of any rule`.
 
 #### 5.4.13 `groupByLeftSide({ nonterminals, productions })`
+
+Vive en `grammar/productions.ts`, junto a `productionKey`, porque la usan `buildGrammar` y la FNC (`rewriteGrammar`).
 
 ```ts
 function groupByLeftSide({
