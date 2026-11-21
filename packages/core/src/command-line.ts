@@ -17,6 +17,13 @@ const environment: CommandLineEnvironment = {
   readFile: (path) => readFile(resolve(invocationDirectory(), path), 'utf8'),
 };
 
+// When the output goes to a pipe that closes early (`sabueso … | head`), stop quietly
+// instead of crashing with EPIPE: the reader already has everything it wanted.
+process.stdout.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code !== 'EPIPE') throw error;
+  process.exit(0);
+});
+
 /**
  * The directory the user ran the command from. `npm run` moves to the project root before
  * running the script, but keeps the original directory in INIT_CWD, so a relative
