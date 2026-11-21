@@ -21,6 +21,8 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 
 **Criterio de alcance** (el mismo del SPEC 02 al cerrarse): la materia evalúa conceptos. Entra lo que muestra un concepto o lo que pide el anteproyecto; lo demás se mantiene mínimo.
 
+**Primera versión: conectar todo, con un diseño simple.** El objetivo es que cada vista muestre bien su concepto, con datos reales del núcleo. El diseño es sobrio (tipografía clara, tablas legibles, colores solo donde comunican algo: aceptado, rechazado, conflicto, evento actual). El pulido visual queda para después, sin cambiar la estructura.
+
 ---
 
 ## 2. Alcance
@@ -40,9 +42,9 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
   - "FNC y CYK": los 6 pasos y la tabla triangular;
   - "Autómata de pila": transiciones y camino de aceptación;
   - "G0 vs G1": testigo de ambigüedad y comparación acotada de lenguajes.
-- Un módulo `core` dentro de la web que carga las gramáticas incorporadas una vez y llama al núcleo **en el mismo hilo** (sección 3.2).
+- Un servicio de análisis (`AnalysisService`, sección 3.2): una interfaz asíncrona por la que pasa toda llamada al núcleo. La primera implementación corre el núcleo en el navegador, en el mismo hilo; la interfaz deja lista una futura API web o un Worker sin cambiar las vistas.
 - Persistencia mínima en `localStorage` (clave `sabueso:v1`): la gramática elegida y la última entrada.
-- Estilos con CSS plano: tokens en custom properties, CSS Modules por componente y tema claro/oscuro por `prefers-color-scheme`.
+- Estilos con **Tailwind CSS v4** (solo como dependencia de desarrollo, con `@tailwindcss/vite`), tema claro/oscuro con la variante `dark:` (sigue a `prefers-color-scheme`).
 - Pruebas de componentes con Vitest, Testing Library y jsdom, y pruebas unitarias del posicionamiento del árbol.
 - Build estático (`apps/web/dist`) y workflow de GitHub Actions para publicar en GitHub Pages, para que la cátedra pueda probar la herramienta sin instalar nada.
 - Una lista corta de verificación manual en el navegador (`docs/web-manual-check.md`).
@@ -51,7 +53,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 
 - Español controlado (SPEC 04, que agregará un modo a esta misma pantalla).
 - Cualquier cambio en `@sabueso/core`. Si la UI necesita algo nuevo del núcleo, va en un spec propio.
-- Web Worker (sección 9: hoy no hace falta).
+- Una API web (un servidor que analice) y un Web Worker: hoy no hacen falta (sección 9), pero la interfaz `AnalysisService` los deja listos.
 - Router, internacionalización (la UI está solo en español), autenticación y backend.
 - Cargar, editar o importar gramáticas. El programa trabaja solo con las gramáticas incorporadas (sección 3.5).
 - Exportar e importar secuencias.
@@ -87,9 +89,16 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 - **Las pestañas comparten estado:** gramática activa y secuencia actual. Cambiar de pestaña no pierde la entrada.
 - **Navegación:** las pestañas se implementan con `role="tablist"` y se navegan con las flechas del teclado.
 
-### 3.2 Llamadas al núcleo, en el mismo hilo
+### 3.2 El servicio de análisis
 
-La web llama a `@sabueso/core` directamente, sin Web Worker. Con el núcleo terminado, las operaciones más pesadas que pide la UI tardan (medido el 2026-11-21):
+Toda llamada al núcleo pasa por una interfaz, `AnalysisService` (sección 4). Las vistas solo conocen esa interfaz y pasan el identificador de la gramática, nunca una gramática.
+
+- **Es asíncrona** (cada operación devuelve una `Promise`) aunque hoy el cálculo sea síncrono. Así una implementación futura que tarde, como una API web o un Worker, entra sin cambiar ninguna vista.
+- **Primera implementación: `createLocalAnalysisService()`** (`src/analysis/local-service.ts`). Corre el núcleo en el navegador, en el mismo hilo: importa con `?raw` los `.grammar` de los géneros del catálogo, los parsea **una vez** y llama a la API pública (`parse`, `analyzeGrammar`, `toChomskyNormalForm`, `recognizeCockeYoungerKasami`, `buildPushdownAutomaton`, `simulatePushdownAutomaton`, `findAmbiguityWitness`, `compareLanguages`).
+- **Las pruebas usan la misma implementación** que producción.
+- **Futuras implementaciones** (no en este spec): `createHttpAnalysisService(baseUrl)`, contra una API que exponga las mismas operaciones, o `createWorkerAnalysisService()`. La app elige la implementación en un solo lugar (`App.tsx`) y se la pasa a las vistas por un contexto de React.
+
+**Por qué alcanza con correr en el mismo hilo.** Con el núcleo terminado, las operaciones más pesadas que pide la UI tardan (medido el 2026-11-21):
 
 | Operación                                     | Tiempo   |
 | --------------------------------------------- | -------- |
@@ -101,12 +110,7 @@ La web llama a `@sabueso/core` directamente, sin Web Worker. Con el núcleo term
 
 El peor caso congela la pantalla un cuarto de segundo, aceptable para una demo. La traza (lo único más caro: ~850 ms con L1) solo la pide el reproductor de Earley, que acepta hasta 15 etiquetas.
 
-El módulo `src/core/` es la única puerta de la web hacia el núcleo:
-
-- **`grammars.ts`:** importa con `?raw` los `.grammar` de los géneros del catálogo, los parsea **una vez** al cargar y los guarda por identificador (`detective/g1`, `detective/g0`), junto con su texto y su `analyzeGrammar`.
-- **`operations.ts`:** funciones chicas que reciben un identificador de gramática y la entrada, y llaman a la API pública (`parse`, `toChomskyNormalForm`, `recognizeCockeYoungerKasami`, `buildPushdownAutomaton`, `simulatePushdownAutomaton`, `findAmbiguityWitness`, `compareLanguages`). Los componentes no importan `@sabueso/core` directamente, salvo tipos.
-
-Así no existe un camino para analizar una gramática que no sea de las incorporadas, y las pruebas usan el mismo código que producción.
+**Datos que viajan.** Los resultados del núcleo usan `Map`, `Set` y `bigint`. En la implementación local no importa. Una API web tendría que serializarlos (por ejemplo, `bigint` como texto); por eso los tipos de la interfaz son los del núcleo, y la conversión queda dentro de la implementación HTTP, nunca en las vistas.
 
 ### 3.3 Posicionamiento del árbol (SVG propio)
 
@@ -158,22 +162,29 @@ Las etiquetas, su función narrativa y su ejemplo (tabla del anteproyecto) viene
 ## 4. Modelo de datos
 
 ```ts
-// src/core/grammars.ts
+// src/analysis/service.ts: la única puerta hacia el núcleo (sección 3.2)
 type GrammarId = string; // 'detective/g1' | 'detective/g0': solo gramáticas de género
 interface LoadedGrammar {
   id: GrammarId;
   text: string; // el .grammar tal cual, para el panel en solo lectura
-  grammar: Grammar;
   analysis: GrammarAnalysis;
 }
-
-// src/core/operations.ts (cada una recibe el id; nunca una gramática arbitraria)
-// analyze(id, input) → ParseResult              (maxTrees 3, sin traza)
-// trace(id, input) → ParseResult                (con traza; hasta 15 etiquetas)
-// normalFormAndCyk(id, input) → { normalForm: ChomskyNormalFormResult; cyk: CockeYoungerKasamiResult }
-// pushdown(id, input) → { automaton: PushdownAutomaton; run: PushdownRun }
-// ambiguity(id, maxLength) → AmbiguityWitness | null
-// compare(firstId, secondId, maxLength) → LanguageComparison
+interface AnalysisService {
+  grammars(): Promise<{ genres: Genre[]; grammars: LoadedGrammar[] }>;
+  analyze(id: GrammarId, input: string): Promise<ParseResult>; // maxTrees 3, sin traza
+  trace(id: GrammarId, input: string): Promise<ParseResult>; // con traza; hasta 15 etiquetas
+  normalFormAndCyk(
+    id: GrammarId,
+    input: string,
+  ): Promise<{ normalForm: ChomskyNormalFormResult; cyk: CockeYoungerKasamiResult }>;
+  pushdown(
+    id: GrammarId,
+    input: string,
+  ): Promise<{ automaton: PushdownAutomaton; run: PushdownRun }>;
+  ambiguity(id: GrammarId, maxLength: number): Promise<AmbiguityWitness | null>;
+  compare(firstId: GrammarId, secondId: GrammarId, maxLength: number): Promise<LanguageComparison>;
+}
+// src/analysis/local-service.ts: createLocalAnalysisService(): AnalysisService
 
 // src/state/app-state.ts
 type TabId = 'analysis' | 'earley' | 'll1' | 'cnf-cyk' | 'pda' | 'compare';
@@ -225,16 +236,17 @@ interface TreeLayout {
 
 ```text
 apps/web/
-  package.json            # @sabueso/web; dependencies: react, react-dom, @sabueso/core (workspace)
+  package.json            # @sabueso/web; dependencies: react, react-dom, @sabueso/core; devDependencies: tailwindcss, @tailwindcss/vite, …
   tsconfig.json           # moduleResolution bundler (Vite)
-  vite.config.ts          # base: process.env.VITE_BASE ?? '/'
+  vite.config.ts          # plugins: react, tailwindcss; base: process.env.VITE_BASE ?? '/'
   vitest.config.ts        # environment jsdom
   index.html
   src/
     main.tsx
     App.tsx
-    core/grammars.ts
-    core/operations.ts
+    analysis/service.ts          # la interfaz AnalysisService
+    analysis/local-service.ts    # la implementación que corre el núcleo en el navegador
+    analysis/context.tsx         # el contexto de React que la entrega a las vistas
     state/app-state.ts
     state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
@@ -252,13 +264,11 @@ apps/web/
     views/CnfCykView.tsx
     views/PdaView.tsx
     views/CompareView.tsx
-    styles/tokens.css
-    styles/global.css
-    (cada componente y vista con su .module.css)
+    styles/index.css             # @import "tailwindcss" y unos pocos estilos base
   test/
     layout.test.ts
     persistence.test.ts
-    operations.test.ts
+    local-service.test.ts
     SequenceInput.test.tsx
     DiagnosticPanel.test.tsx
     App.test.tsx               # integración
@@ -284,13 +294,13 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 1. **Punto de partida (cubierto por el SPEC 01).**
    - El esqueleto de `apps/web` (Vite, React 19, TS, Vitest con jsdom y Testing Library, prueba de humo) lo crea el SPEC 01. Este paso no agrega código.
    - Verificación antes de empezar: `npm run dev -w @sabueso/web` muestra "Sabueso", y `npm test` pasa.
-2. **Tokens y estilos base.**
-   - `tokens.css` (colores, tipografía, espaciado y tema claro/oscuro) y `global.css`.
+2. **Tailwind y estructura de la pantalla.**
+   - Tailwind v4 con `@tailwindcss/vite` (dependencias de desarrollo) y `styles/index.css`. Diseño simple: tipografía del sistema, tablas legibles, tema oscuro con `dark:`.
    - Componente `Tabs` accesible, con las 6 pestañas vacías.
    - Prueba: la navegación con las flechas del teclado cambia de pestaña.
-3. **Acceso al núcleo.**
-   - `core/grammars.ts` (las gramáticas del catálogo, parseadas una vez) y `core/operations.ts`.
-   - Prueba: `analyze('detective/g0', A1)` da 4 árboles en total y 3 construidos; `analyze('detective/g1', I1)` da el error en la posición 2.
+3. **El servicio de análisis.**
+   - `analysis/service.ts` (la interfaz), `analysis/local-service.ts` (las gramáticas del catálogo, parseadas una vez, y las operaciones) y `analysis/context.tsx`.
+   - Prueba: `analyze('detective/g0', A1)` resuelve con 4 árboles en total y 3 construidos; `analyze('detective/g1', I1)` resuelve con el error en la posición 2.
 4. **Estado y persistencia.**
    - `app-state.ts` (un `useReducer`) y `persistence.ts`.
    - Pruebas: guardar y recuperar; un `localStorage` que lanza no rompe nada; una versión distinta o una gramática que no existe se ignoran.
@@ -337,8 +347,8 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 ## 7. Criterios de aceptación
 
 - [ ] `npm install`, `npm test`, `npm run build` y `npm run lint` terminan sin errores en la raíz con Node 24, incluyendo `apps/web`.
-- [ ] `@sabueso/web` solo tiene como `dependencies` `react`, `react-dom` y `@sabueso/core`. No hay librerías de UI, de gráficos ni de árboles.
-- [ ] Ningún archivo de `apps/web/src` implementa algoritmos de lenguajes formales. Todo resultado teórico viene de `src/core/operations.ts`, que solo llama a la API pública del núcleo. Se verifica por revisión.
+- [ ] `@sabueso/web` solo tiene como `dependencies` `react`, `react-dom` y `@sabueso/core`. Tailwind está solo en `devDependencies`. No hay librerías de componentes, de gráficos ni de árboles.
+- [ ] Ningún archivo de `apps/web/src` implementa algoritmos de lenguajes formales. Todo resultado teórico viene del `AnalysisService`, cuya implementación local solo llama a la API pública del núcleo. Ninguna vista importa funciones de `@sabueso/core` (solo tipos). Se verifica por revisión.
 - [ ] `apps/web/dist/index.html` servido con `npx vite preview` carga sin errores en la consola del navegador.
 - [ ] Con G0 y la entrada A1, la vista Análisis muestra "4 árboles" y permite recorrer los primeros 3.
 - [ ] Con G1 y la entrada A1, se ve un único árbol. La derivación tiene 18 pasos, y al seleccionar el paso 7 (`Pasos → Linea Lineas`) se resalta el nodo `Pasos` en el árbol.
@@ -368,10 +378,12 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 ## 9. Decisiones tomadas y descartadas
 
 - **Sí:** cada paso visible en `npm run dev` y con su prueba, más un comando de consola equivalente para cada vista. Es el requisito del autor (cada etapa ejecutable y testeable), adaptado a una UI. La consola sirve además de oráculo para depurar una vista.
-- **Sí:** Vite + React 19 + TS. Es una SPA estática sin servidor, como pide el anteproyecto, y Vite soporta `?raw` y CSS Modules sin configuración.
+- **Sí:** Vite + React 19 + TS. Es una SPA estática sin servidor, como pide el anteproyecto, y Vite soporta `?raw` sin configuración.
 - **No:** Next.js. Su routing, SSR y servidor no se usan, y suma complejidad.
 - **Sí:** llamar al núcleo en el mismo hilo (revisión 2026-11-21). El borrador pedía un Web Worker porque G0 con 200 eventos tardaba hasta 3 s; con el núcleo terminado tarda ~240 ms, y el resto de las operaciones de la UI, menos de 120 ms (sección 3.2).
-- **No:** Web Worker. Agregaba un protocolo de mensajes, cancelación, dos implementaciones del cliente y un respaldo, para evitar congelamientos de un cuarto de segundo. No es materia. Si una operación futura tardara más, se agrega en un spec propio sin cambiar las vistas: todas pasan por `src/core/operations.ts`.
+- **No:** Web Worker. Agregaba un protocolo de mensajes, cancelación, dos implementaciones del cliente y un respaldo, para evitar congelamientos de un cuarto de segundo. No es materia.
+- **No, por ahora:** una API web (revisión 2026-11-21). El núcleo corre en el navegador sin dependencias de Node, y ninguna operación necesita un servidor.
+- **Sí:** la interfaz asíncrona `AnalysisService` (revisión 2026-11-21). Es la única puerta hacia el núcleo, y deja lista una API web o un Worker: se escribe otra implementación y las vistas no cambian. Hacerla asíncrona desde el principio cuesta poco y evita reescribir las vistas después.
 - **Sí:** paleta de terminales más campo de texto editable. Es rápido para una demo en vivo y no pierde la edición libre.
 - **No:** drag & drop. Sin librería es mucho trabajo de UI que no suma a la materia.
 - **Sí:** SVG propio con posicionamiento por hojas. Son unas 60 líneas explicables, sin dependencias, y garantiza que no haya superposiciones.
@@ -382,11 +394,13 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 - **No:** editor de gramáticas en vivo. Esos cambios se hacen editando el `.grammar` del repositorio, que es lo que prevé el anteproyecto.
 - **Sí:** vista Análisis más pestañas de teoría, sin router. Sigue el boceto del anteproyecto para el flujo principal y separa las vistas didácticas sin sumar `react-router`.
 - **No:** todo en una página con scroll. Sería demasiado larga para navegarla durante la exposición.
-- **Sí:** CSS plano con custom properties y CSS Modules. Cero dependencias, los CSS Modules ya vienen en Vite, y el tema oscuro sale gratis con `prefers-color-scheme`.
-- **No:** Tailwind ni librerías de componentes. Suman dependencias y configuración para una UI chica.
+- **Sí:** Tailwind CSS v4 (revisión 2026-11-21). Lo pesado de esta UI son tablas, grillas y un SVG propio, y con Tailwind se maquetan rápido sin archivos de estilos aparte. Es solo de desarrollo: no agrega dependencias de producción. El tema oscuro sale con `dark:`.
+- **No:** CSS Modules con custom properties (lo que decía el borrador). Funciona, pero es más lento de escribir para una UI hecha de tablas.
+- **No:** Material UI ni otras librerías de componentes. Resuelven botones, pestañas e inputs, que es lo menos importante acá, y no ayudan con el árbol, el chart ni las tablas teóricas. Además son dependencias de producción pesadas.
+- **Sí:** diseño simple en la primera versión. Lo que se evalúa son los conceptos que cada vista muestra; el pulido visual puede venir después sin cambiar la estructura.
 - **Sí:** reproductor de traza para Earley. Es la mejor forma de explicar Predictor, Scanner y Completer, y el núcleo ya expone `trace`.
 - **No:** solo el chart final. Se pierde la dinámica del algoritmo, que es lo que se explica.
-- **Sí:** las vistas reciben el identificador de la gramática, nunca una gramática. Las gramáticas se cargan una vez en `src/core/grammars.ts`, y no existe un camino para analizar una gramática arbitraria.
+- **Sí:** las vistas pasan el identificador de la gramática, nunca una gramática. Las gramáticas se cargan una vez dentro del servicio, y no existe un camino para analizar una gramática arbitraria (tampoco en una futura API).
 - **Sí:** `localStorage` mínimo con clave versionada. Recordar la gramática y la entrada ayuda a preparar la demo, y la versión permite cambiar el esquema más adelante.
 - **No:** persistir resultados. Se recalculan en milisegundos, y guardarlos solo agrega estado inconsistente.
 - **Sí:** Testing Library + jsdom solo como `devDependencies`. Son herramientas de prueba sin lógica de dominio, igual que Vitest en el SPEC 02.
@@ -399,13 +413,13 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 
 ## 10. Riesgos identificados
 
-| Riesgo                                                         | Mitigación                                                                                                                                                  |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| G0 con L1 congela la pantalla unos 250 ms                      | Aceptable para una demo. La vista Análisis pide el resultado sin traza y con 3 árboles. Si molestara, se agrega un indicador "analizando…" antes de llamar. |
-| El árbol de 200 hojas es muy ancho                             | Scroll horizontal y colapso de ε. El total y la derivación siguen visibles.                                                                                 |
-| Las rutas de GitHub Pages rompen la carga de recursos          | `base` configurable por `VITE_BASE`. El criterio de aceptación verifica la URL publicada.                                                                   |
-| Importar los `.grammar` con `?raw` desde el paquete del núcleo | Se resuelve en el paso 3 (ruta del workspace o un campo `exports` en `@sabueso/core`, sin cambiar su código). La prueba del paso 3 lo cubre.                |
-| La UI consume tiempo del núcleo                                | Ya no aplica: el SPEC 02 está terminado.                                                                                                                    |
+| Riesgo                                                         | Mitigación                                                                                                                                                                                                                             |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G0 con L1 congela la pantalla unos 250 ms                      | Aceptable para una demo. La vista Análisis pide el resultado sin traza y con 3 árboles, y muestra "analizando…" mientras la promesa no resuelve. Si molestara, se cambia la implementación del servicio (Worker) sin tocar las vistas. |
+| El árbol de 200 hojas es muy ancho                             | Scroll horizontal y colapso de ε. El total y la derivación siguen visibles.                                                                                                                                                            |
+| Las rutas de GitHub Pages rompen la carga de recursos          | `base` configurable por `VITE_BASE`. El criterio de aceptación verifica la URL publicada.                                                                                                                                              |
+| Importar los `.grammar` con `?raw` desde el paquete del núcleo | Se resuelve en el paso 3 (ruta del workspace o un campo `exports` en `package.json` de `@sabueso/core`, sin cambiar su código). La prueba del paso 3 lo cubre.                                                                         |
+| La UI consume tiempo del núcleo                                | Ya no aplica: el SPEC 02 está terminado.                                                                                                                                                                                               |
 
 ---
 
@@ -413,7 +427,7 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 
 - Modo de español controlado (SPEC 04).
 - Cambios en `@sabueso/core`.
-- Web Worker.
+- API web y Web Worker (la interfaz `AnalysisService` los deja listos).
 - Router, i18n, backend y autenticación.
 - Exportar e importar archivos.
 - Drag & drop.
@@ -429,4 +443,4 @@ Ideas registradas para después de terminar los SPEC 02, 03 y 04. No forman part
 
 - **Panel de comparación de motores** (propuesto el 2026-11-20). En la vista de Análisis, una tabla con los tres reconocedores sobre la misma entrada: Earley, CYK y el autómata de pila, cada uno con su resultado, su tiempo y qué puede mostrar (Earley: diagnóstico y árboles del relato; CYK: árbol en FNC; autómata de pila: camino de aceptación y configuraciones exploradas), con un enlace a la pestaña de cada uno.
   - **Earley sigue siendo el motor que decide.** No es un selector de motor: los tres dan siempre la misma respuesta (lo garantizan las pruebas diferenciales del SPEC 02, paso 28), y cambiar a CYK o al autómata de pila solo haría perder el diagnóstico y los árboles del relato.
-  - **Qué haría falta:** una operación en `src/core/operations.ts` que corra los tres y mida sus tiempos; el núcleo ya tiene todo (`runDifferential` lo hace sobre muchas cadenas).
+  - **Qué haría falta:** una operación más en `AnalysisService` que corra los tres y mida sus tiempos; el núcleo ya tiene todo (`runDifferential` lo hace sobre muchas cadenas).
