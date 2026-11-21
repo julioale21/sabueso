@@ -56,7 +56,7 @@ export function createInitialState(): AppState {
     input: '',
     analyzedInput: null,
     selectedTree: 0,
-    collapseEpsilon: true,
+    collapseEpsilon: false,
   };
 }
 

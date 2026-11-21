@@ -1,7 +1,7 @@
 // FNC y CYK: the six steps, the triangular table and the two trees (SPEC 03, step 12).
 import { parseGrammarText } from '@sabueso/core';
-import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { AnalysisServiceProvider } from '../src/analysis/context';
 import { createLocalAnalysisService } from '../src/analysis/local-service';
 import { stepChanges } from '../src/domain/normal-form';
@@ -69,5 +69,37 @@ describe('stepChanges', () => {
     expect(
       stepChanges({ before: grammar("S -> A\nA -> 'a'"), after: grammar("S -> 'a'\nA -> 'a'") }),
     ).toEqual({ added: ['S → a'], removed: ['S → A'] });
+  });
+});
+
+describe('the CYK table filling by length (step 18)', () => {
+  const states = () =>
+    [...document.querySelectorAll('td[data-state]')].map((cell) => cell.getAttribute('data-state'));
+
+  it('step by step, row l fills after the shorter rows, up to the top cell', async () => {
+    renderView({ input: 'CRI PIS REV' });
+    await screen.findByRole('table', { name: 'Tabla CYK' });
+    fireEvent.click(screen.getByRole('button', { name: 'Al principio' }));
+    expect(screen.getByText('largo 0/3')).toBeInTheDocument();
+    expect(states().every((state) => state === 'pending')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Paso siguiente' }));
+    expect(screen.getByText(/Largo 1: cada etiqueta sola/)).toBeInTheDocument();
+    // Rows from the top: l = 3 (1 cell), l = 2 (2 cells), l = 1 (3 cells).
+    expect(states()).toEqual(['pending', 'pending', 'pending', 'current', 'current', 'current']);
+    fireEvent.click(screen.getByRole('button', { name: 'Al final' }));
+    expect(states().every((state) => state === 'done')).toBe(true);
+    expect(screen.getByText(/Es la celda de arriba: decide/)).toBeInTheDocument();
+  });
+
+  it('with motion allowed, it starts empty and fills by itself', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query }));
+    try {
+      renderView({ input: 'CRI PIS REV' });
+      await screen.findByRole('table', { name: 'Tabla CYK' });
+      expect(screen.getByText('largo 0/3')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Pausa/ })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -2,14 +2,25 @@
  * The triangular CYK table (card 23): row l has the cells T[0][l] … T[n−l][l], under the tag
  * where each substring starts. The top cell, T[0][n], decides: it must contain the start symbol.
  */
-import { CykCell } from './CykCell';
+import { CykCell, type CykCellState } from './CykCell';
+
+/** The state of the cells of a row, given how many lengths are filled. */
+function rowState({ length, filled }: { length: number; filled: number }): CykCellState {
+  if (length > filled) {
+    return 'pending';
+  }
+  return length === filled ? 'current' : 'done';
+}
 
 export function CykTable({
   table,
   tokens,
+  filled = tokens.length,
 }: {
   table: readonly (readonly ReadonlySet<string>[])[];
   tokens: readonly string[];
+  /** How many lengths are filled, from 1 up: rows above are still empty. All, by default. */
+  filled?: number;
 }) {
   const n = tokens.length;
   const lengths = Array.from({ length: n }, (_, index) => n - index);
@@ -37,6 +48,7 @@ export function CykTable({
                   key={start}
                   symbols={[...(table[start]?.[length] ?? [])].sort()}
                   isGoal={start === 0 && length === n}
+                  state={filled === n ? 'done' : rowState({ length, filled })}
                 />
               ))}
             </tr>

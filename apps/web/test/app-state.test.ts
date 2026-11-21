@@ -11,7 +11,7 @@ describe('createInitialState', () => {
       input: '',
       analyzedInput: null,
       selectedTree: 0,
-      collapseEpsilon: true,
+      collapseEpsilon: false,
     });
   });
 });
@@ -53,7 +53,7 @@ describe('appReducer', () => {
   });
 
   it('toggle-collapse-epsilon flips the option', () => {
-    expect(appReducer(state, { type: 'toggle-collapse-epsilon' }).collapseEpsilon).toBe(false);
+    expect(appReducer(state, { type: 'toggle-collapse-epsilon' }).collapseEpsilon).toBe(true);
   });
 
   it('reset goes back to the initial state, whatever changed', () => {

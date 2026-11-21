@@ -1,5 +1,6 @@
 // How counts and diagnoses are written on screen (SPEC 03, step 9).
 import { describe, expect, it } from 'vitest';
+import { stepInterval } from '../src/domain/tree-animation';
 import { diagnosticMessage } from '../src/domain/diagnostic-message';
 import { formatTreeCount, treesWord } from '../src/domain/tree-count';
 
@@ -39,5 +40,13 @@ describe('diagnosticMessage', () => {
     expect(
       diagnosticMessage({ kind: 'unexpected-end', position: 2, found: null, expected: ['REV'] }),
     ).toBe('El relato termina antes de completarse (posición 2); se esperaba: REV.');
+  });
+});
+
+describe('stepInterval', () => {
+  it('builds a short derivation in about 16 seconds, 0.7 to 1.5 s per step', () => {
+    expect(stepInterval(18)).toBe(889);
+    expect(stepInterval(5)).toBe(1500);
+    expect(stepInterval(40)).toBe(700);
   });
 });

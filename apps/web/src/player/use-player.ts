@@ -20,7 +20,7 @@ export interface Player {
 
 export function usePlayer({
   last,
-  initialInterval = 600,
+  initialInterval = 1200,
   initialStep = 0,
   autoplay = false,
 }: {

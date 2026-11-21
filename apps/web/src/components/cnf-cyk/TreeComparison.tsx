@@ -25,9 +25,12 @@ function OnlyIn({ title, symbols }: { title: string; symbols: readonly string[] 
 export function TreeComparison({
   cykTree,
   earleyTree,
+  collapseEpsilon,
 }: {
   cykTree: ParseTree;
   earleyTree: ParseTree;
+  /** The same choice as in Análisis: on by default. The CYK tree has no ε to collapse. */
+  collapseEpsilon: boolean;
 }) {
   const cykSymbols = nonterminalsOf(cykTree);
   const earleySymbols = nonterminalsOf(earleyTree);
@@ -42,7 +45,11 @@ export function TreeComparison({
           <h3 className="mb-1 text-xs font-semibold">
             Earley, sobre la gramática tal como está escrita
           </h3>
-          <TreeView tree={earleyTree} collapseEpsilon={false} highlightedExpansion={null} />
+          <TreeView
+            tree={earleyTree}
+            collapseEpsilon={collapseEpsilon}
+            highlightedExpansion={null}
+          />
         </section>
       </div>
       <OnlyIn

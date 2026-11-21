@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useAnalysisService } from '../analysis/context';
 import type { AnalysisService, StoryAnalysis } from '../analysis/service';
-import { CykTable } from '../components/cnf-cyk/CykTable';
+import { CykPlayer } from '../components/cnf-cyk/CykPlayer';
 import { CykVerdict } from '../components/cnf-cyk/CykVerdict';
 import { NormalFormSteps } from '../components/cnf-cyk/NormalFormSteps';
 import { TreeComparison } from '../components/cnf-cyk/TreeComparison';
@@ -65,13 +65,17 @@ export function CnfCykView({ state }: ViewProps) {
           {tokens.length === 0 ? (
             <MutedText>Con el relato vacío la tabla no tiene celdas: decide S → ε.</MutedText>
           ) : (
-            <CykTable table={cyk.table} tokens={tokens} />
+            <CykPlayer table={cyk.table} tokens={tokens} />
           )}
         </div>
       </Panel>
       {cyk.tree !== null && earleyTree !== undefined && (
         <Panel title="El mismo relato, dos árboles">
-          <TreeComparison cykTree={cyk.tree} earleyTree={earleyTree} />
+          <TreeComparison
+            cykTree={cyk.tree}
+            earleyTree={earleyTree}
+            collapseEpsilon={state.collapseEpsilon}
+          />
         </Panel>
       )}
     </div>
