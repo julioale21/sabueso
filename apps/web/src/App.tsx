@@ -3,7 +3,12 @@
  * The views arrive step by step; until then each tab says which step brings it.
  */
 import { useState } from 'react';
+import { AnalysisServiceProvider } from './analysis/context';
+import { createLocalAnalysisService } from './analysis/local-service';
 import { Tabs, type TabItem } from './components/ui/Tabs';
+
+/** The only place that chooses how the core runs: here, in the browser (SPEC 03, section 3.2). */
+const analysisService = createLocalAnalysisService();
 
 /** The views of the page (SPEC 03, section 4). */
 export type TabId = 'analysis' | 'earley' | 'll1' | 'cnf-cyk' | 'pda' | 'compare';
@@ -49,17 +54,19 @@ const TABS: readonly TabItem<TabId>[] = [
 export function App() {
   const [activeTab, setActiveTab] = useState<TabId>('analysis');
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
-      <header className="mb-4">
-        <h1 className="text-2xl font-semibold">Sabueso</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          ¿El relato respeta la estructura del policial de enigma? Una gramática libre de contexto y
-          el analizador de Earley lo deciden.
-        </p>
-      </header>
-      <main>
-        <Tabs label="Vistas" items={TABS} activeId={activeTab} onChange={setActiveTab} />
-      </main>
-    </div>
+    <AnalysisServiceProvider value={analysisService}>
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <header className="mb-4">
+          <h1 className="text-2xl font-semibold">Sabueso</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            ¿El relato respeta la estructura del policial de enigma? Una gramática libre de contexto
+            y el analizador de Earley lo deciden.
+          </p>
+        </header>
+        <main>
+          <Tabs label="Vistas" items={TABS} activeId={activeTab} onChange={setActiveTab} />
+        </main>
+      </div>
+    </AnalysisServiceProvider>
   );
 }

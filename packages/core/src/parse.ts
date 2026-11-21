@@ -17,7 +17,7 @@ import { DEFAULT_TREE_LIMIT, parseTrees } from './trees/enumerate.js';
 import type { ParseTree, TreeCount } from './trees/tree.js';
 
 export interface ParseOptions {
-  /** At most this many trees are built (default 50). */
+  /** At most this many trees are built (default 3, DEFAULT_TREE_LIMIT). */
   maxTrees?: number;
   /** Record every step of Earley (default false). */
   trace?: boolean;
