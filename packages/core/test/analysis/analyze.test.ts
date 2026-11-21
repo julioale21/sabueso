@@ -6,7 +6,7 @@ import { loadBuiltInGrammar } from '../helpers/load.js';
 describe('analyzeGrammar', () => {
   it('G1: 10 nullable, minYield 3, no useless symbols, no cycles, LL(1)', () => {
     const analysis = analyzeGrammar(loadBuiltInGrammar('g1'));
-    expect(analysis.nullable.size).toBe(10);
+    expect(analysis.nullableSymbols.size).toBe(10);
     expect(analysis.minYield.get('Relato')).toBe(3);
     expect(analysis.useless.size).toBe(0);
     expect(analysis.isEmpty).toBe(false);

@@ -60,7 +60,7 @@ Se registra un ciclo por cada arista de retroceso. Alcanza para decidir si la gr
 ### 5.1 `findCycles(grammar)`
 
 ```ts
-const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+const graph = buildUnitGraph({ grammar, nullableSymbols: computeNullable({ grammar }) });
 const search = new CycleSearch(graph);
 for (const symbol of grammar.nonterminals) {
   search.visit(symbol);
@@ -72,7 +72,7 @@ return search.cycles;
 - `new CycleSearch(graph)`: una sola búsqueda para todo el grafo. Así `finished` se comparte entre los arranques.
 - `for ... search.visit(symbol)`: arranca desde cada no terminal, porque el grafo puede tener partes no conectadas. Los que ya se exploraron se saltean solos dentro de `visit`.
 
-### 5.2 `buildUnitGraph({ grammar, nullable })`
+### 5.2 `buildUnitGraph({ grammar, nullableSymbols })`
 
 ```ts
 const graph: UnitGraph = new Map();
@@ -80,7 +80,7 @@ for (const nonterminal of grammar.nonterminals) {
   graph.set(nonterminal, []);
 }
 for (const production of grammar.productions) {
-  for (const target of unitTargets({ production, grammar, nullable })) {
+  for (const target of unitTargets({ production, grammar, nullableSymbols })) {
     const edges = graph.get(production.leftSide) ?? [];
     if (!edges.includes(target)) {
       edges.push(target);
@@ -94,19 +94,19 @@ return graph;
 - `graph.get(production.leftSide) ?? []`: el `?? []` solo está para el tipo, porque `get` puede devolver `undefined`. En la práctica la lista ya existe, y `push` la modifica dentro del mapa.
 - `if (!edges.includes(target))`: no repite aristas. Dos producciones A → B y A → B C (con C anulable) dan la misma arista A → B.
 
-### 5.3 `unitTargets({ production, grammar, nullable })`
+### 5.3 `unitTargets({ production, grammar, nullableSymbols })`
 
 ```ts
 return symbols.filter(
   (symbol, position) =>
     grammar.nonterminals.has(symbol) &&
-    symbols.every((other, index) => index === position || nullable.has(other)),
+    symbols.every((other, index) => index === position || nullableSymbols.has(other)),
 );
 ```
 
 - `filter((symbol, position) => ...)`: recorre el lado derecho con la posición de cada símbolo. Se usa la posición, no el nombre, porque un símbolo puede repetirse (A → B B).
 - `grammar.nonterminals.has(symbol)`: solo un no terminal puede ser destino de una arista.
-- `symbols.every((other, index) => index === position || nullable.has(other))`: se lee "todos los **otros** símbolos son anulables". `index === position` saltea al propio candidato; el resto tiene que estar en `nullable`.
+- `symbols.every((other, index) => index === position || nullableSymbols.has(other))`: se lee "todos los **otros** símbolos son anulables". `index === position` saltea al propio candidato; el resto tiene que estar en `nullable`.
 - Es la definición de A → α B β con α y β anulables: A puede convertirse solo en B.
 - Un terminal nunca es anulable. Así que cualquier terminal en el lado derecho corta todas las aristas de esa producción.
 

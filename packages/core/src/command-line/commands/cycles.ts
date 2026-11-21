@@ -46,7 +46,7 @@ export const cyclesCommand: Command = {
     const sections = [`${grammar.name}: cycles A ⇒+ A`];
     if (parsed.flags.has(GRAPH_FLAG)) {
       sections.push(
-        formatUnitGraph(buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) })),
+        formatUnitGraph(buildUnitGraph({ grammar, nullableSymbols: computeNullable({ grammar }) })),
       );
     }
     sections.push(formatCycles(findCycles(grammar)));

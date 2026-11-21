@@ -33,7 +33,7 @@ export function countTrees({
   }
   const context: CountContext = {
     grammar,
-    nullable: computeNullable({ grammar }),
+    nullableSymbols: computeNullable({ grammar }),
     known: new Map(),
     inProgress: new Set(),
     epsilonCounts: new Map(),
@@ -44,7 +44,7 @@ export function countTrees({
 /** What the count needs besides the item: the memory and the items being counted now. */
 interface CountContext {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   /** The count of every item already counted (memoization). */
   known: Map<EarleyItem, TreeCount>;
   /** The items whose count is being computed right now, to detect cycles. */
@@ -93,7 +93,7 @@ function countCause({ context, link }: { context: CountContext; link: Link }): T
   }
   return countEpsilonTrees({
     grammar: context.grammar,
-    nullable: context.nullable,
+    nullableSymbols: context.nullableSymbols,
     symbol: link.symbol,
     known: context.epsilonCounts,
   });

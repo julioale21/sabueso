@@ -22,12 +22,14 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
   // A → α B β | α β. With m nullable occurrences there are 2^m versions (with or without
   // each one). The versions keep every sentence except ε itself, which is why A → ε
   // itself is dropped.
-  const nullable = computeNullable({ grammar });
+  const nullableSymbols = computeNullable({ grammar });
   const productions = grammar.productions.flatMap((production) =>
-    withoutNullableSymbols({ rightSide: production.rightSide, nullable }).map((rightSide) => ({
-      leftSide: production.leftSide,
-      rightSide,
-    })),
+    withoutNullableSymbols({ rightSide: production.rightSide, nullableSymbols }).map(
+      (rightSide) => ({
+        leftSide: production.leftSide,
+        rightSide,
+      }),
+    ),
   );
   return rewriteGrammar({
     grammar,
@@ -41,17 +43,17 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
  */
 function withoutNullableSymbols({
   rightSide,
-  nullable,
+  nullableSymbols,
 }: {
   rightSide: readonly SymbolName[];
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
 }): SymbolName[][] {
   // Built symbol by symbol: each version so far is extended with Xi and, if Xi is
   // nullable, also without it. Order: keeping a symbol comes before erasing it.
   let versions: SymbolName[][] = [[]];
   for (const symbol of rightSide) {
     versions = versions.flatMap((version) =>
-      nullable.has(symbol) ? [[...version, symbol], version] : [[...version, symbol]],
+      nullableSymbols.has(symbol) ? [[...version, symbol], version] : [[...version, symbol]],
     );
   }
   return versions;

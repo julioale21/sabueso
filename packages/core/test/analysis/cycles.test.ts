@@ -50,7 +50,7 @@ describe('findCycles', () => {
 describe('buildUnitGraph', () => {
   it('G1: an edge only where the rest of the right side is nullable', () => {
     const grammar = loadBuiltInGrammar('g1');
-    const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+    const graph = buildUnitGraph({ grammar, nullableSymbols: computeNullable({ grammar }) });
     expect(graph.get('Pasos')).toEqual(['Evidencia', 'Linea']);
     expect(graph.get('Relato')).toEqual([]);
     expect(graph.get('CuerpoLinea')).toEqual(['Evidencia', 'Descarte']);
@@ -58,7 +58,7 @@ describe('buildUnitGraph', () => {
 
   it('G0: Pasos → Pasos Pasos gives no edge Pasos → Pasos, because Pasos is not nullable', () => {
     const grammar = loadBuiltInGrammar('g0');
-    const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+    const graph = buildUnitGraph({ grammar, nullableSymbols: computeNullable({ grammar }) });
     expect(graph.get('Pasos')).toEqual(['Paso']);
   });
 
@@ -67,7 +67,7 @@ describe('buildUnitGraph', () => {
       text: "S -> A | A 'x' | E A\nA -> 'a'\nE -> ε\n",
       name: 'repeated',
     });
-    const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+    const graph = buildUnitGraph({ grammar, nullableSymbols: computeNullable({ grammar }) });
     expect(graph.get('S')).toEqual(['A']);
   });
 });

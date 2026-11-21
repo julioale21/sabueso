@@ -62,7 +62,7 @@ function formatReport({
       `|N| = ${grammar.nonterminals.size}, |Σ| = ${grammar.terminals.size}, |P| = ${grammar.productions.length}`,
       'grammars',
     ],
-    ['Nullable (A ⇒* ε)', formatSymbols(analysis.nullable), 'nullable'],
+    ['Nullable (A ⇒* ε)', formatSymbols(analysis.nullableSymbols), 'nullable'],
     ['Shortest sentence', shortest === Infinity ? 'none' : `length ${shortest}`, 'min-yield'],
     ['Useless symbols', formatSymbols(analysis.useless), 'useful'],
     ['L(G) = ∅', analysis.isEmpty ? 'yes' : 'no', 'useful'],

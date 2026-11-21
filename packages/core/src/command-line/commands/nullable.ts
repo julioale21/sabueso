@@ -43,7 +43,7 @@ export const nullableCommand: Command = {
     }
     const grammar = await readGrammar({ source, environment });
     const rounds: ReadonlySet<SymbolName>[] = [];
-    const nullable = computeNullable({
+    const nullableSymbols = computeNullable({
       grammar,
       onRound: ({ symbolsSoFar }) => rounds.push(symbolsSoFar),
     });
@@ -51,7 +51,7 @@ export const nullableCommand: Command = {
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(formatRounds(rounds));
     }
-    sections.push(formatResult({ grammar, nullable }));
+    sections.push(formatResult({ grammar, nullableSymbols }));
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },
@@ -74,12 +74,12 @@ function formatRounds(rounds: readonly ReadonlySet<SymbolName>[]): string {
 /** The closing line: the nullable set and how many of the nonterminals it covers. */
 function formatResult({
   grammar,
-  nullable,
+  nullableSymbols,
 }: {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
 }): string {
-  return `Nullable = ${formatNullableSet(nullable)} (${nullable.size} of ${grammar.nonterminals.size} nonterminals)`;
+  return `Nullable = ${formatNullableSet(nullableSymbols)} (${nullableSymbols.size} of ${grammar.nonterminals.size} nonterminals)`;
 }
 
 /** '∅' for the empty set, as in the theory; '{A, B}' otherwise. */

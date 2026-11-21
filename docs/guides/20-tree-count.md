@@ -101,7 +101,7 @@ if (!recognition.accepted || accepting === undefined) {
 }
 const context: CountContext = {
   grammar,
-  nullable: computeNullable({ grammar }),
+  nullableSymbols: computeNullable({ grammar }),
   known: new Map(),
   inProgress: new Set(),
   epsilonCounts: new Map(),
@@ -157,7 +157,7 @@ if (link.kind === 'complete') {
 }
 return countEpsilonTrees({
   grammar: context.grammar,
-  nullable: context.nullable,
+  nullableSymbols: context.nullableSymbols,
   symbol: link.symbol,
   known: context.epsilonCounts,
 });

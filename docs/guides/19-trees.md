@@ -97,7 +97,11 @@ const accepting = recognition.chart
 if (!recognition.accepted || accepting === undefined) {
   return;
 }
-const context: TreeContext = { grammar, nullable: computeNullable({ grammar }), onPath: new Set() };
+const context: TreeContext = {
+  grammar,
+  nullableSymbols: computeNullable({ grammar }),
+  onPath: new Set(),
+};
 for (const root of treesOfItem({ context, item: accepting })) {
   const [story] = root.kind === 'nonterminal' ? root.children : [];
   if (story !== undefined) {
@@ -170,7 +174,7 @@ if (link.kind === 'scan') {
 } else if (link.kind === 'complete') {
   yield* treesOfItem({ context, item: link.child });
 } else {
-  yield* epsilonTrees({ grammar: context.grammar, nullable: context.nullable, symbol: link.symbol });
+  yield* epsilonTrees({ grammar: context.grammar, nullableSymbols: context.nullableSymbols, symbol: link.symbol });
 }
 ```
 

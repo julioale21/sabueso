@@ -23,12 +23,12 @@
 
 ## 3. Dónde está en el código
 
-| Qué          | Dónde                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------- |
-| Arreglo      | `predict` en `packages/core/src/earley/recognizer.ts` (el `if (context.nullable.has(symbol))`) |
-| Lapso vacío  | `complete` e `isEmptySpan` en el mismo archivo                                                 |
-| Modo clásico | opción `classicEpsilon` de `recognize`                                                         |
-| Consola      | `npm run sabueso -- earley --grammar epsilon-trap --chart [--no-epsilon-fix] "x"`              |
+| Qué          | Dónde                                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------------------- |
+| Arreglo      | `predict` en `packages/core/src/earley/recognizer.ts` (el `if (context.nullableSymbols.has(symbol))`) |
+| Lapso vacío  | `complete` e `isEmptySpan` en el mismo archivo                                                        |
+| Modo clásico | opción `classicEpsilon` de `recognize`                                                                |
+| Consola      | `npm run sabueso -- earley --grammar epsilon-trap --chart [--no-epsilon-fix] "x"`                     |
 
 ## 4. Qué prueba lo verifica
 

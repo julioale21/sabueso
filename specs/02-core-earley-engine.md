@@ -496,7 +496,7 @@ class GrammarSyntaxError extends Error {
 
 // src/analysis/*.ts
 interface GrammarAnalysis {
-  nullable: Set<SymbolName>;
+  nullableSymbols: Set<SymbolName>;
   minYield: Map<SymbolName, number>;
   productive: Set<SymbolName>;
   reachable: Set<SymbolName>;
@@ -910,7 +910,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:** `npm run sabueso -- cycles --grammar test-cyclic` imprime `S ⇒+ A ⇒+ S`.
     - **Decisiones (2026-11-20):**
       - `findCycles(grammar)` devuelve un ciclo por cada arista de retroceso de la DFS sobre el grafo unitario (en el orden de la gramática). Alcanza para decidir si G es cíclica y para mostrar los ciclos; no enumera todos los ciclos simples.
-      - `buildUnitGraph(grammar, nullable)` queda exportada: el comando la muestra con `--graph`. Desde el paso 23, `buildUnitGraph` recibe un objeto: `buildUnitGraph({ grammar, nullable })`.
+      - `buildUnitGraph(grammar, nullableSymbols)` queda exportada: el comando la muestra con `--graph`. Desde el paso 23, `buildUnitGraph` recibe un objeto: `buildUnitGraph({ grammar, nullableSymbols })`.
       - Ejemplo nuevo `examples/grammars/hidden-cycle.grammar`: un ciclo escondido detrás de símbolos anulables (`S → A S B` con A y B anulables).
 
 11. **FIRST y FOLLOW.**
@@ -1000,7 +1000,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:** `npm run sabueso -- epsilon-trees --grammar g1 CuerpoLinea` imprime la cantidad de árboles ε y los árboles en ASCII.
     - **Decisiones (2026-11-20):**
       - Se adelantan dos archivos del paso 19, porque este paso ya los necesita: `trees/tree.ts` (el tipo `ParseTree`, `TreeCount` y la aritmética `addCounts`/`multiplyCounts`, donde `'infinite'` absorbe salvo frente a 0) y `trees/render.ts` (`renderTree`, el dibujo con `├─` y `└─`).
-      - `countEpsilonTrees({ grammar, nullable, symbol })` cuenta con memoización y detecta ciclos con el conjunto de símbolos "en curso" (`'infinite'`). `epsilonTrees({ grammar, nullable, symbol })` genera los árboles saltando las producciones que repetirían un símbolo del camino: con un ciclo, lista solo los árboles sin símbolos repetidos.
+      - `countEpsilonTrees({ grammar, nullableSymbols, symbol })` cuenta con memoización y detecta ciclos con el conjunto de símbolos "en curso" (`'infinite'`). `epsilonTrees({ grammar, nullableSymbols, symbol })` genera los árboles saltando las producciones que repetirían un símbolo del camino: con un ciclo, lista solo los árboles sin símbolos repetidos.
       - Sin símbolo, el comando lista la cuenta de cada anulable. Ejemplo nuevo `examples/grammars/epsilon-choices.grammar` (un símbolo con 4 árboles ε).
 
 19. **Enumeración y render de árboles.**

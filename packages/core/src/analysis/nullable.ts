@@ -29,10 +29,10 @@ export function computeNullable({
   // A terminal is never nullable (it always contributes a symbol), so it never enters.
   return repeatRuleUntilNoChange({
     start: [],
-    newSymbolsOfRound: (nullable) =>
+    newSymbolsOfRound: (nullableSymbols) =>
       nonterminalsWithProductionMatching({
         productions: grammar.productions,
-        condition: (production) => derivesEmptyString({ production, nullable }),
+        condition: (production) => derivesEmptyString({ production, nullableSymbols }),
       }),
     onRound,
   });
@@ -41,11 +41,11 @@ export function computeNullable({
 /** A → X1…Xk derives ε when every Xi is nullable. `every` is true for k = 0, so A → ε counts. */
 function derivesEmptyString({
   production,
-  nullable,
+  nullableSymbols,
 }: {
   production: Production;
   /** The symbols already known to be nullable. */
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
 }): boolean {
-  return production.rightSide.every((symbol) => nullable.has(symbol));
+  return production.rightSide.every((symbol) => nullableSymbols.has(symbol));
 }

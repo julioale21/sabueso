@@ -103,7 +103,7 @@ export interface RecognizerContext {
   grammar: Grammar;
   chart: Chart;
   tokens: readonly SymbolName[];
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   classicEpsilon: boolean;
 }
 ```
@@ -119,7 +119,7 @@ const context: RecognizerContext = {
   grammar,
   chart,
   tokens,
-  nullable: classicEpsilon ? new Set() : computeNullable({ grammar }),
+  nullableSymbols: classicEpsilon ? new Set() : computeNullable({ grammar }),
   classicEpsilon,
 };
 ```
@@ -134,7 +134,7 @@ const context: RecognizerContext = {
 for (const production of context.grammar.productionsByLeftSide.get(symbol) ?? []) {
   addItem({ set, production, dot: 0, origin: item.setIndex });
 }
-if (context.nullable.has(symbol)) {
+if (context.nullableSymbols.has(symbol)) {
   addItem({
     set,
     production: item.production,

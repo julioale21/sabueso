@@ -12,7 +12,7 @@ import { buildPredictiveTable, type PredictiveTable } from './predictive-table.j
 import { analyzeUsefulSymbols } from './useful.js';
 
 export interface GrammarAnalysis extends FirstFollowSets {
-  nullable: Set<SymbolName>;
+  nullableSymbols: Set<SymbolName>;
   minYield: Map<SymbolName, number>;
   productive: Set<SymbolName>;
   reachable: Set<SymbolName>;
@@ -29,7 +29,7 @@ export function analyzeGrammar(grammar: Grammar): GrammarAnalysis {
   const useful = analyzeUsefulSymbols({ grammar });
   const sets = computeFirstFollow({ grammar });
   return {
-    nullable: computeNullable({ grammar }),
+    nullableSymbols: computeNullable({ grammar }),
     minYield: computeMinYield(grammar),
     productive: useful.productive,
     reachable: useful.reachable,

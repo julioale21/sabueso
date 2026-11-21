@@ -21,7 +21,7 @@ export function findCycles(grammar: Grammar): SymbolName[][] {
   // A cycle A ⇒+ A derives A again without producing anything else, so it can be repeated
   // as many times as wanted: some string then has infinitely many trees. The unit graph
   // keeps exactly the steps that produce nothing else, and a cycle in it is such a loop.
-  const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+  const graph = buildUnitGraph({ grammar, nullableSymbols: computeNullable({ grammar }) });
   const search = new CycleSearch(graph);
   for (const symbol of grammar.nonterminals) {
     search.visit(symbol);
@@ -32,18 +32,18 @@ export function findCycles(grammar: Grammar): SymbolName[][] {
 /** One edge A → B for each B in a right side whose other symbols are all nullable. */
 export function buildUnitGraph({
   grammar,
-  nullable,
+  nullableSymbols,
 }: {
   grammar: Grammar;
   /** The nullable symbols: the ones that can vanish around B in A → α B β. */
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
 }): UnitGraph {
   const graph: UnitGraph = new Map();
   for (const nonterminal of grammar.nonterminals) {
     graph.set(nonterminal, []);
   }
   for (const production of grammar.productions) {
-    for (const target of unitTargets({ production, grammar, nullable })) {
+    for (const target of unitTargets({ production, grammar, nullableSymbols })) {
       const edges = graph.get(production.leftSide) ?? [];
       if (!edges.includes(target)) {
         edges.push(target);
@@ -57,17 +57,17 @@ export function buildUnitGraph({
 function unitTargets({
   production,
   grammar,
-  nullable,
+  nullableSymbols,
 }: {
   production: Production;
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
 }): SymbolName[] {
   const symbols = production.rightSide;
   return symbols.filter(
     (symbol, position) =>
       grammar.nonterminals.has(symbol) &&
-      symbols.every((other, index) => index === position || nullable.has(other)),
+      symbols.every((other, index) => index === position || nullableSymbols.has(other)),
   );
 }
 

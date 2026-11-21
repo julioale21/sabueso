@@ -29,7 +29,7 @@ DFS desde S: S → A → S, y S está en el camino: ciclo **S ⇒⁺ A ⇒⁺ S*
 | Qué                | Dónde                                                                                                               |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | Archivo            | `packages/core/src/analysis/cycles.ts`                                                                              |
-| Funciones          | `findCycles(grammar)` y `buildUnitGraph({ grammar, nullable })`                                                     |
+| Funciones          | `findCycles(grammar)` y `buildUnitGraph({ grammar, nullableSymbols })`                                              |
 | Comando de consola | `npm run sabueso -- cycles --grammar test-cyclic` (con `--graph`, el grafo)                                         |
 | Quién lo usa       | el conteo de árboles (paso 20) devuelve `'infinite'` en lugar de entrar en un bucle; el informe `analyze` (paso 12) |
 

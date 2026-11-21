@@ -51,11 +51,11 @@ export const epsilonTreesCommand: Command = {
         environment,
       });
     }
-    const nullable = computeNullable({ grammar });
+    const nullableSymbols = computeNullable({ grammar });
     const text =
       symbol === undefined
-        ? formatAllNullable({ grammar, nullable })
-        : formatSymbolTrees({ grammar, nullable, symbol });
+        ? formatAllNullable({ grammar, nullableSymbols })
+        : formatSymbolTrees({ grammar, nullableSymbols, symbol });
     environment.writeOutput(`${text}\n`);
     return EXIT_CODES.ok;
   },
@@ -64,17 +64,17 @@ export const epsilonTreesCommand: Command = {
 /** One row per nullable symbol with how many ε-trees it has. */
 function formatAllNullable({
   grammar,
-  nullable,
+  nullableSymbols,
 }: {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
 }): string {
-  if (nullable.size === 0) {
+  if (nullableSymbols.size === 0) {
     return `${grammar.name}: no nullable symbols, so no ε-trees`;
   }
-  const rows = [...nullable].map((symbol) => [
+  const rows = [...nullableSymbols].map((symbol) => [
     symbol,
-    formatCount(countEpsilonTrees({ grammar, nullable, symbol })),
+    formatCount(countEpsilonTrees({ grammar, nullableSymbols, symbol })),
   ]);
   return `${grammar.name}: ε-trees of each nullable symbol\n\n${formatTable({ header: ['Nonterminal', 'ε-trees'], rows })}`;
 }
@@ -82,18 +82,18 @@ function formatAllNullable({
 /** The count of the symbol and each of its ε-trees, numbered. */
 function formatSymbolTrees({
   grammar,
-  nullable,
+  nullableSymbols,
   symbol,
 }: {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   symbol: SymbolName;
 }): string {
-  if (!nullable.has(symbol)) {
+  if (!nullableSymbols.has(symbol)) {
     return `${grammar.name}: ${symbol} does not derive ε, so it has no ε-trees`;
   }
-  const count = countEpsilonTrees({ grammar, nullable, symbol });
-  const trees = epsilonTrees({ grammar, nullable, symbol });
+  const count = countEpsilonTrees({ grammar, nullableSymbols, symbol });
+  const trees = epsilonTrees({ grammar, nullableSymbols, symbol });
   const header =
     count === 'infinite'
       ? `${grammar.name}: ${symbol} ⇒* ε in infinitely many ways (a cycle). The ${trees.length} without repeated symbols:`

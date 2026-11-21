@@ -198,12 +198,14 @@ Línea por línea:
 
 ```ts
 export function removeEpsilonProductions(grammar: Grammar): Grammar {
-  const nullable = computeNullable({ grammar });
+  const nullableSymbols = computeNullable({ grammar });
   const productions = grammar.productions.flatMap((production) =>
-    withoutNullableSymbols({ rightSide: production.rightSide, nullable }).map((rightSide) => ({
-      leftSide: production.leftSide,
-      rightSide,
-    })),
+    withoutNullableSymbols({ rightSide: production.rightSide, nullableSymbols }).map(
+      (rightSide) => ({
+        leftSide: production.leftSide,
+        rightSide,
+      }),
+    ),
   );
   return rewriteGrammar({
     grammar,
@@ -217,13 +219,13 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
 3. **`filter(keepsProduction)`:** saca las versiones vacías (`A → ε`), salvo la del símbolo inicial.
 4. **`rewriteGrammar`:** arma G'. Acá no cambia el inicial ni N; solo las producciones. Además quita las repetidas.
 
-**`withoutNullableSymbols({ rightSide, nullable })`**, la función que arma las versiones:
+**`withoutNullableSymbols({ rightSide, nullableSymbols })`**, la función que arma las versiones:
 
 ```ts
 let versions: SymbolName[][] = [[]];
 for (const symbol of rightSide) {
   versions = versions.flatMap((version) =>
-    nullable.has(symbol) ? [[...version, symbol], version] : [[...version, symbol]],
+    nullableSymbols.has(symbol) ? [[...version, symbol], version] : [[...version, symbol]],
   );
 }
 return versions;

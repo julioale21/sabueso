@@ -107,10 +107,10 @@ export function computeNullable({
 }): Set<SymbolName> {
   return repeatRuleUntilNoChange({
     start: [],
-    newSymbolsOfRound: (nullable) =>
+    newSymbolsOfRound: (nullableSymbols) =>
       nonterminalsWithProductionMatching({
         productions: grammar.productions,
-        condition: (production) => derivesEmptyString({ production, nullable }),
+        condition: (production) => derivesEmptyString({ production, nullableSymbols }),
       }),
     onRound,
   });
@@ -120,14 +120,14 @@ export function computeNullable({
 - Se lee como la definición: "parto de ∅; en cada ronda entran los lados izquierdos de las producciones que derivan ε con los anulables conocidos".
 - `nonterminalsWithProductionMatching({ productions, condition })` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda. La condición la decide quien llama: acá, `derivesEmptyString`; en los productivos (paso 9), `usesOnly`.
 
-### 5.3 `derivesEmptyString({ production, nullable })`
+### 5.3 `derivesEmptyString({ production, nullableSymbols })`
 
 ```ts
-return production.rightSide.every((symbol) => nullable.has(symbol));
+return production.rightSide.every((symbol) => nullableSymbols.has(symbol));
 ```
 
 - `every` sobre una lista vacía da `true`: así A → ε entra en la ronda 1 sin un caso especial.
-- Un terminal nunca está en `nullable`, así que con un terminal da `false`.
+- Un terminal nunca está en `nullableSymbols`, así que con un terminal da `false`.
 
 ### 5.4 El comando `nullable`
 

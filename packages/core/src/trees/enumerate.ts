@@ -59,7 +59,7 @@ export function* enumerateTrees({
   }
   const context: TreeContext = {
     grammar,
-    nullable: computeNullable({ grammar }),
+    nullableSymbols: computeNullable({ grammar }),
     onPath: new Set(),
   };
   for (const root of treesOfItem({ context, item: accepting })) {
@@ -74,7 +74,7 @@ export function* enumerateTrees({
 /** What the generators need besides the item. */
 interface TreeContext {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   /** The items being expanded on the current path, to skip cycles. */
   onPath: Set<EarleyItem>;
 }
@@ -146,7 +146,7 @@ function* causeTrees({
   } else {
     yield* epsilonTrees({
       grammar: context.grammar,
-      nullable: context.nullable,
+      nullableSymbols: context.nullableSymbols,
       symbol: link.symbol,
     });
   }

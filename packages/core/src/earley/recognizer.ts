@@ -33,7 +33,7 @@ export interface RecognizerContext {
   chart: Chart;
   tokens: readonly SymbolName[];
   /** The nullable nonterminals (step 7); empty in classic mode, so no advance over ε is made. */
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   classicEpsilon: boolean;
   /** Present only when the trace was asked for. */
   recorder: TraceRecorder | undefined;
@@ -75,7 +75,7 @@ export function recognize({
     grammar,
     chart,
     tokens,
-    nullable: classicEpsilon ? new Set() : computeNullable({ grammar }),
+    nullableSymbols: classicEpsilon ? new Set() : computeNullable({ grammar }),
     classicEpsilon,
     recorder: options.trace === true ? new TraceRecorder() : undefined,
   };
@@ -152,7 +152,7 @@ export function predict({
   // The classic algorithm relies on the Completer to advance over an empty B, but the
   // Completer of B → • may have run before this item started to wait for B: then it never
   // advances. Since B is nullable, the advance can be made here, now, without waiting.
-  if (context.nullable.has(symbol)) {
+  if (context.nullableSymbols.has(symbol)) {
     const link: Link = { kind: 'nullable', predecessor: item, symbol };
     addAndTrace({
       context,

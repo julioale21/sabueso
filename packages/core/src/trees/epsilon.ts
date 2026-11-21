@@ -15,13 +15,13 @@ import { addCounts, multiplyCounts, type ParseTree, type TreeCount } from './tre
  */
 export function countEpsilonTrees({
   grammar,
-  nullable,
+  nullableSymbols,
   symbol,
   known = new Map(),
   inProgress = new Set(),
 }: {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   symbol: SymbolName;
   known?: Map<SymbolName, TreeCount> | undefined;
   inProgress?: Set<SymbolName> | undefined;
@@ -39,12 +39,12 @@ export function countEpsilonTrees({
   }
   inProgress.add(symbol);
   let total: TreeCount = 0n;
-  for (const production of emptyProductionsOf({ grammar, nullable, symbol })) {
+  for (const production of emptyProductionsOf({ grammar, nullableSymbols, symbol })) {
     const ways = production.rightSide.reduce<TreeCount>(
       (product, child) =>
         multiplyCounts({
           first: product,
-          second: countEpsilonTrees({ grammar, nullable, symbol: child, known, inProgress }),
+          second: countEpsilonTrees({ grammar, nullableSymbols, symbol: child, known, inProgress }),
         }),
       1n,
     );
@@ -64,22 +64,22 @@ export function countEpsilonTrees({
  */
 export function epsilonTrees({
   grammar,
-  nullable,
+  nullableSymbols,
   symbol,
   path = new Set(),
 }: {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   symbol: SymbolName;
   path?: ReadonlySet<SymbolName> | undefined;
 }): ParseTree[] {
   const onPath = new Set([...path, symbol]);
-  return emptyProductionsOf({ grammar, nullable, symbol })
+  return emptyProductionsOf({ grammar, nullableSymbols, symbol })
     .filter((production) => production.rightSide.every((child) => !onPath.has(child)))
     .flatMap((production) =>
       combinations(
         production.rightSide.map((child) =>
-          epsilonTrees({ grammar, nullable, symbol: child, path: onPath }),
+          epsilonTrees({ grammar, nullableSymbols, symbol: child, path: onPath }),
         ),
       ).map((children): ParseTree => ({
         kind: 'nonterminal',
@@ -93,15 +93,15 @@ export function epsilonTrees({
 /** The productions B → X1…Xk of the symbol whose right side can vanish entirely. */
 function emptyProductionsOf({
   grammar,
-  nullable,
+  nullableSymbols,
   symbol,
 }: {
   grammar: Grammar;
-  nullable: ReadonlySet<SymbolName>;
+  nullableSymbols: ReadonlySet<SymbolName>;
   symbol: SymbolName;
 }): readonly Production[] {
   return (grammar.productionsByLeftSide.get(symbol) ?? []).filter((production) =>
-    production.rightSide.every((child) => nullable.has(child)),
+    production.rightSide.every((child) => nullableSymbols.has(child)),
   );
 }
 
