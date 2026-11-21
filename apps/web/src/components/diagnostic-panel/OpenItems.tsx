@@ -1,8 +1,9 @@
 /**
  * Where the structure broke: the Earley items still open in the set of the error. A rejected
  * story has no tree, so this shows which parts had started and what could have come next.
+ * The core computes them (openItemsAt); this only draws them.
  */
-import type { OpenItems as OpenItemsData } from '../../domain/open-items';
+import type { OpenItems as OpenItemsData } from '@sabueso/core';
 import { OpenItemList } from './OpenItemList';
 
 export function OpenItems({ open }: { open: OpenItemsData }) {

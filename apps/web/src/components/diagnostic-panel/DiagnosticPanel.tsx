@@ -3,9 +3,8 @@
  * position and the expected tags, as the core diagnoses them, and the Earley items left open
  * there. Concept: acceptance and errors (card 17).
  */
-import type { Chart, ParseError } from '@sabueso/core';
+import type { OpenItems as OpenItemsData, ParseError } from '@sabueso/core';
 import { diagnosticMessage } from '../../domain/diagnostic-message';
-import { openItemsAt } from '../../domain/open-items';
 import { OpenItems } from './OpenItems';
 import { cx } from '../../utils/cx';
 import { DiagnosticToken } from './DiagnosticToken';
@@ -13,15 +12,14 @@ import { DiagnosticToken } from './DiagnosticToken';
 export function DiagnosticPanel({
   tokens,
   error,
-  chart,
+  openItems,
 }: {
   tokens: readonly string[];
   error: ParseError;
-  /** The Earley chart up to the error; empty when a tag is not in Σ (Earley did not run). */
-  chart: Chart;
+  /** The Earley items left open at the error, from the core; null when a tag is not in Σ. */
+  openItems: OpenItemsData | null;
 }) {
   const atEnd = error.kind === 'unexpected-end';
-  const open = openItemsAt({ chart, error });
   return (
     <div className="space-y-2">
       <ol aria-label="Relato con el error marcado" className="flex flex-wrap gap-1">
@@ -38,7 +36,7 @@ export function DiagnosticPanel({
         )}
       </ol>
       <p className="text-sm text-red-700 dark:text-red-400">{diagnosticMessage(error)}</p>
-      {open !== null && <OpenItems open={open} />}
+      {openItems !== null && <OpenItems open={openItems} />}
     </div>
   );
 }
