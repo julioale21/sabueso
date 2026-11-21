@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   leastFixedPoint,
   leastFixedPointOfSets,
-  leftSidesWhere,
+  nonterminalsWithProductionThat,
 } from '../../src/analysis/fixed-point.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import type { SymbolName } from '../../src/grammar/types.js';
@@ -58,10 +58,13 @@ describe('leastFixedPoint', () => {
   });
 });
 
-describe('leftSidesWhere', () => {
+describe('nonterminalsWithProductionThat', () => {
   it('returns the left sides of the productions that satisfy the condition', () => {
     const grammar = parseGrammarText("S -> A 'x' | ε\nA -> 'a'\n", 'small');
-    const emptyRightSide = leftSidesWhere(grammar.productions, (p) => p.rightSide.length === 0);
+    const emptyRightSide = nonterminalsWithProductionThat(
+      grammar.productions,
+      (p) => p.rightSide.length === 0,
+    );
     expect(emptyRightSide).toEqual(['S']);
   });
 });

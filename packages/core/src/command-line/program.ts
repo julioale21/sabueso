@@ -1,6 +1,7 @@
 // The `sabueso` program: the list of its commands. Kept apart from command-line.ts so
 // tests can run it in memory, without starting a Node process.
 import { analyzeCommand } from './commands/analyze.js';
+import { chomskyNormalFormCommand } from './commands/chomsky-normal-form.js';
 import { countCommand } from './commands/count.js';
 import { cyclesCommand } from './commands/cycles.js';
 import { deriveCommand } from './commands/derive.js';
@@ -45,6 +46,7 @@ export const runCommandLine = createCommandLineProgram({
     countCommand,
     deriveCommand,
     parseCommand,
+    chomskyNormalFormCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

@@ -226,9 +226,9 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 
 ### 3.23 Forma Normal de Chomsky y CYK
 
-- **FNC:** toda producción es A → BC o A → a. Además se permite S0 → ε si ε ∈ L(G), con S0 fuera de todo lado derecho.
+- **FNC:** toda producción es A → BC o A → a. Además se permite S → ε para el símbolo inicial S si ε ∈ L(G), con S fuera de todo lado derecho.
 - La conversión tiene seis pasos, uno por función:
-  1. **START:** nuevo S0 → S.
+  1. **START:** nuevo S0 → S, solo si S aparece en algún lado derecho. Si no aparece, S ya cumple el papel de S0 y la gramática queda igual (decisión del 2026-11-20, paso 23).
   2. **DEL:** elimina las producciones ε.
   3. **UNIT:** elimina las producciones unitarias usando pares unitarios.
   4. **USELESS:** elimina los símbolos inútiles.
@@ -880,7 +880,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - Con `--steps` la tabla muestra, por ronda, cuántos anulables hay y cuáles se agregaron (el conjunto completo solo al final, para que la tabla no sea demasiado ancha). El conjunto vacío se imprime ∅.
      - `readGrammar(source, environment)` en `grammar-source.ts` lee y construye la gramática elegida; la comparten `tokens`, `nullable` y los análisis siguientes.
      - Ejemplo nuevo `examples/grammars/nullable-chain.grammar`, con un anulable por ronda, para mostrar cómo crece el punto fijo.
-     - Refactor (2026-11-20): el esquema de punto fijo por rondas se escribe una sola vez, `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` en `analysis/fixed-point.ts`, junto con `leftSidesWhere`. Lo usan los anulables, los productivos y los alcanzables; cada análisis solo aporta su regla. minYield (números, no conjuntos) mantiene su propio ciclo.
+     - Refactor (2026-11-20): el esquema de punto fijo por rondas se escribe una sola vez, `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` en `analysis/fixed-point.ts`, junto con `leftSidesWhere` (renombrada `nonterminalsWithProductionThat` en el paso 23). Lo usan los anulables, los productivos y los alcanzables; cada análisis solo aporta su regla. minYield (números, no conjuntos) mantiene su propio ciclo.
 
 8. **Longitud mínima.**
    - `analysis/min-yield.ts`.
@@ -1047,6 +1047,14 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `chomsky-normal-form/add-new-start.ts`, `chomsky-normal-form/remove-epsilon-productions.ts` y `chomsky-normal-form/remove-unit-productions.ts`.
     - Prueba: después de cada paso, el lenguaje se preserva (las oraciones ≤ 4 de G1 siguen aceptadas por Earley sobre la gramática transformada). Ficha 22 (primera parte).
     - **Consola:** `npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT` imprime la gramática después de START, de DEL y de UNIT, con las producciones agregadas y quitadas en cada paso.
+    - **Decisiones (2026-11-20):**
+      - **START es condicional** (cambia la sección 3.23, que decía "nuevo S0 → S" sin condición): S0 hace falta solo si el inicial aparece en algún lado derecho, como S en `S → ( S ) S`. Si no aparece, `addNewStart` devuelve la misma gramática. En G1 (y en G0 y `epsilon-trap`) el inicial sigue siendo el mismo (`Relato`, `S`), y el comando lo informa con `Nothing to do: …`. En `parentheses`, `arithmetic`, `arithmetic-ambiguous` y `test-cyclic` sí se agrega S0.
+      - DEL conserva S → ε para el símbolo inicial cuando es anulable (ε ∈ L(G)), en lugar de borrar todas las ε y agregarla al final. Después de START el inicial no aparece en ningún lado derecho, así que esa ε no borra nada más.
+      - Los pasos arman la gramática nueva con `chomsky-normal-form/rewrite.ts` (`rewriteGrammar`), no con `buildGrammar`: conserva N, renumera P y quita las repetidas. Con `buildGrammar`, un no terminal que DEL deja sin producciones (A en `epsilon-trap`) pasaría a ser terminal.
+      - El nuevo inicial se llama `S0`; si la gramática ya lo usa, se le agregan primas (`S0'`).
+      - Las versiones de DEL salen en orden binario (la original primero: `( S ) S`, `( S )`, `( ) S`, `( )`), y `--until` acepta el nombre en minúsculas. Sin `--until`, el comando corre todos los pasos implementados.
+      - Además de lo pedido, la prueba verifica que G0 y G1 aceptan y rechazan lo mismo hasta largo 3, y las gramáticas de libro (con ε incluida), después de cada paso.
+      - `index.ts` exporta `addNewStart`, `NEW_START`, `removeEpsilonProductions`, `computeUnitPairs` y `removeUnitProductions`.
 
 24. **FNC: USELESS, TERM y BIN.**
     - `chomsky-normal-form/remove-useless-symbols.ts`, `chomsky-normal-form/isolate-terminals.ts`, `chomsky-normal-form/binarize.ts` y `chomsky-normal-form/index.ts` (`toChomskyNormalForm` e `isChomskyNormalForm`).

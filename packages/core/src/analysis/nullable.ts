@@ -4,7 +4,11 @@
  * Card: docs/concepts/07-nullable-symbols.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
-import { leastFixedPoint, leftSidesWhere, type FixedPointObserver } from './fixed-point.js';
+import {
+  leastFixedPoint,
+  nonterminalsWithProductionThat,
+  type FixedPointObserver,
+} from './fixed-point.js';
 
 /**
  * The nonterminals that derive the empty string: A is nullable if some production
@@ -22,7 +26,9 @@ export function computeNullable(
   return leastFixedPoint(
     [],
     (nullable) =>
-      leftSidesWhere(grammar.productions, (production) => derivesEmptyString(production, nullable)),
+      nonterminalsWithProductionThat(grammar.productions, (production) =>
+        derivesEmptyString(production, nullable),
+      ),
     onIteration,
   );
 }

@@ -5,7 +5,11 @@
  */
 import { buildGrammar } from '../grammar/build.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
-import { leastFixedPoint, leftSidesWhere, type FixedPointObserver } from './fixed-point.js';
+import {
+  leastFixedPoint,
+  nonterminalsWithProductionThat,
+  type FixedPointObserver,
+} from './fixed-point.js';
 
 /** The two fixed points, in the order they run. */
 export type UsefulPhase = 'productive' | 'reachable';
@@ -81,7 +85,7 @@ export function computeProductive(
   return leastFixedPoint(
     [],
     (productive) =>
-      leftSidesWhere(grammar.productions, (production) =>
+      nonterminalsWithProductionThat(grammar.productions, (production) =>
         usesOnly(production, productive, grammar),
       ),
     onIteration,
