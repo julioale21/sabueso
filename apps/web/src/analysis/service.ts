@@ -6,6 +6,7 @@
 import type {
   AmbiguityWitness,
   ChomskyNormalFormResult,
+  DerivationStep,
   CockeYoungerKasamiResult,
   Genre,
   GrammarAnalysis,
@@ -17,6 +18,12 @@ import type {
 
 /** A built-in grammar of a genre: 'detective/g1', 'detective/g0'. */
 export type GrammarId = string;
+
+/** The analysis of a story, plus the leftmost derivation of each tree built (card 20). */
+export type StoryAnalysis = ParseResult & {
+  /** One derivation per tree in `trees`, in the same order; empty when rejected. */
+  derivations: DerivationStep[][];
+};
 
 /** What a view needs to show a grammar: its text, its alphabet and its analysis. */
 export interface LoadedGrammar {
@@ -31,8 +38,8 @@ export interface LoadedGrammar {
 export interface AnalysisService {
   /** The genres of the catalog and their grammars. */
   grammars(): Promise<{ genres: readonly Genre[]; grammars: LoadedGrammar[] }>;
-  /** Verdict, diagnosis, tree count, the first trees and the derivation; no trace. */
-  analyze(id: GrammarId, input: string): Promise<ParseResult>;
+  /** Verdict, diagnosis, tree count, the first trees and their derivations; no trace. */
+  analyze(id: GrammarId, input: string): Promise<StoryAnalysis>;
   /** The same, with every step of Earley, for the step-by-step player. */
   trace(id: GrammarId, input: string): Promise<ParseResult>;
   /** The grammar in Chomsky normal form, step by step, and CYK on the input. */

@@ -9,6 +9,7 @@ import {
   compareLanguages,
   findAmbiguityWitness,
   genres,
+  leftmostDerivation,
   parse,
   parseGrammarText,
   recognizeCockeYoungerKasami,
@@ -87,7 +88,17 @@ export function createLocalAnalysisService(): AnalysisService {
     grammars: () =>
       later(() => ({ genres, grammars: [...grammars.values()].map((entry) => entry.loaded) })),
     analyze: (id, input) =>
-      later(() => parse({ grammar: grammarOf(id), input, options: { maxTrees: TREES_TO_SHOW } })),
+      later(() => {
+        const result = parse({
+          grammar: grammarOf(id),
+          input,
+          options: { maxTrees: TREES_TO_SHOW },
+        });
+        return {
+          ...result,
+          derivations: result.accepted ? result.trees.map(leftmostDerivation) : [],
+        };
+      }),
     trace: (id, input) =>
       later(() => parse({ grammar: grammarOf(id), input, options: { maxTrees: 1, trace: true } })),
     normalFormAndCyk: (id, input) =>

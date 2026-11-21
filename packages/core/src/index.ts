@@ -39,7 +39,7 @@ export { dottedRule, label } from './earley/item.js';
 export type { TraceEvent, TraceOperation } from './earley/trace.js';
 export type { ParseTree, TreeCount } from './trees/tree.js';
 export type { DerivationStep } from './trees/derivation.js';
-export { renderDerivation } from './trees/derivation.js';
+export { leftmostDerivation, renderDerivation } from './trees/derivation.js';
 export { renderTree } from './trees/render.js';
 
 // The Chomsky normal form: the six steps one by one (steps 23 and 24) and the whole conversion.

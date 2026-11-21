@@ -187,7 +187,7 @@ interface LoadedGrammar {
 }
 interface AnalysisService {
   grammars(): Promise<{ genres: Genre[]; grammars: LoadedGrammar[] }>;
-  analyze(id: GrammarId, input: string): Promise<ParseResult>; // maxTrees 3, sin traza
+  analyze(id: GrammarId, input: string): Promise<StoryAnalysis>; // maxTrees 3, sin traza; ParseResult + una derivación por árbol
   trace(id: GrammarId, input: string): Promise<ParseResult>; // con traza; hasta 15 etiquetas
   normalFormAndCyk(
     id: GrammarId,
@@ -276,8 +276,10 @@ apps/web/
     components/tree-view/        # TreeView (SVG), TreeNode, TreeEdge
     components/derivation-view/  # DerivationView, DerivationStepItem, SententialForm, TreeAndDerivation
     tree-layout/geometry.ts      # de unidades de grilla a píxeles
-    components/ResultPanel.tsx
-    components/DiagnosticPanel.tsx
+    components/result-panel/     # ResultPanel, VerdictBanner, TreePager
+    components/diagnostic-panel/ # DiagnosticPanel, DiagnosticToken
+    domain/tree-count.ts         # el total de árboles, completo o aproximado
+    domain/diagnostic-message.ts # el diagnóstico en palabras
     components/AppHeader.tsx
     components/PendingView.tsx   # marcador de una vista que llega en un paso posterior
     views/view-tabs.tsx          # una pestaña por vista, en el orden del análisis
@@ -314,13 +316,14 @@ Toda la lógica teórica que la UI muestra ya es ejecutable por consola desde el
 
 Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Como en el SPEC 02, cada paso actualiza su guía de estudio.
 
-El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y se divide en **tres fases**. Cada una deja la web funcionando y se puede cerrar con su propio pull request a `main`:
+El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y se divide en **cuatro fases**. Cada una deja la web funcionando y se puede cerrar con su propio pull request a `main`:
 
 | Fase                     | Pasos | Resultado                                                                                                                                      |
 | ------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | **A. Lo esencial**       | 1–9   | la vista Análisis funciona de punta a punta: veredicto, árbol, derivación y diagnóstico. Con esto la web ya cumple lo que pide el anteproyecto |
 | **B. Vistas didácticas** | 10–14 | una pestaña por concepto. Son independientes entre sí: se pueden hacer en cualquier orden                                                      |
 | **C. Cierre**            | 15–17 | persistencia conectada, publicación en GitHub Pages y verificación manual                                                                      |
+| **D. Mejoras de la UI**  | 18    | versión 2: el árbol que se construye al ritmo de la derivación, animaciones de cada vista y pulido visual                                      |
 
 1. **Punto de partida (cubierto por el SPEC 01).**
    - El esqueleto de `apps/web` (Vite, React 19, TS, Vitest con jsdom y Testing Library, prueba de humo) lo crea el SPEC 01. Este paso no agrega código.
@@ -373,6 +376,13 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - En el README, los pasos manuales: hacer público el repo (si hace falta) y elegir "GitHub Actions" como fuente de Pages.
 17. **Verificación manual.**
     - `docs/web-manual-check.md` con los casos de la sección 8, marcados después de revisarlos en el navegador.
+18. **Mejoras de la UI (versión 2).**
+    - Se encara con las fases A a C terminadas, en su propia rama. No cambia la estructura: las vistas siguen pasando por el `AnalysisService` y las primitivas de `components/ui/`.
+    - **El árbol se construye paso a paso, al ritmo de la derivación.** Un reproductor (⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad) recorre la derivación más a la izquierda: en el paso k aparecen los hijos del nodo de la expansión k − 1, con una animación de entrada, y la forma sentencial k se resalta en la lista. Así se ve que la derivación más a la izquierda recorre el árbol en preorden. Usa el número de expansión que ya calcula `layoutTree` (paso 7): no hace falta nada nuevo del núcleo.
+    - **Otras animaciones:** el chart de Earley que se llena ítem por ítem en su pestaña, la tabla CYK que se completa por largo, y la pila del autómata que crece y se vacía.
+    - **Estilo del árbol:** un layout más compacto (por ejemplo, `d3-hierarchy`), zoom y arrastre para árboles grandes como L1, y el pulido general de colores, tipografía y espaciado.
+    - **Regla:** cada animación se puede pausar y avanzar a mano (sirve para explicar en la exposición), y respeta `prefers-reduced-motion`. Si alguna mejora necesita una dependencia de producción (por ejemplo, para el layout o el zoom), se propone y se anota como decisión antes de agregarla.
+    - Prueba: el reproductor del árbol, en el paso k de A1 con G1, muestra exactamente los nodos de las expansiones 0 a k − 1 y sus hijos.
 
 ---
 
@@ -423,6 +433,8 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 - **No:** d3-hierarchy ni Reingold-Tilford. Suma una dependencia, o un algoritmo largo, para algo que no es teoría de la materia.
 - **No:** el árbol como lista anidada. No se parece al árbol del pizarrón, que es lo que se defiende.
 - **Sí:** los primeros 3 árboles, con el total siempre visible (revisión 2026-11-21). Es el valor por defecto del núcleo: alcanza para mostrar la ambigüedad, y el total se cuenta sin armar árboles. Para ver más, la consola (`trees --max n`).
+- **Sí, como excepción mínima al "sin cambios en el núcleo":** exportar `leftmostDerivation` desde `@sabueso/core` (2026-11-21, paso 9). Es una línea en `index.ts`, sin cambiar lógica. `parse` devuelve la derivación solo del primer árbol; con la exportación, el servicio devuelve una por cada árbol construido (`StoryAnalysis.derivations`), y al recorrer los árboles de A1 en G0 se ven derivaciones más a la izquierda distintas: la definición de gramática ambigua.
+- **Sí:** al cambiar de gramática se rehace el último análisis (paso 9), para que el resultado nunca corresponda a otra gramática.
 - **Sí:** solo gramáticas incorporadas, en solo lectura. El propósito del programa es decidir si un relato respeta la gramática del policial, no ser un editor de gramáticas. Permitir gramáticas arbitrarias abre un frente enorme (gramáticas mal escritas, cíclicas o gigantes) sin aportar al objetivo.
 - **No:** editor de gramáticas en vivo. Esos cambios se hacen editando el `.grammar` del repositorio, que es lo que prevé el anteproyecto.
 - **Sí:** vista Análisis más pestañas de teoría, sin router. Sigue el boceto del anteproyecto para el flujo principal y separa las vistas didácticas sin sumar `react-router`.

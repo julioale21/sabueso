@@ -5,7 +5,8 @@
  */
 import { useAnalyze } from '../analysis/use-analyze';
 import { useGrammars } from '../analysis/use-grammars';
-import { ResultPreview } from '../components/ResultPreview';
+import { useEffect } from 'react';
+import { ResultPanel } from '../components/result-panel/ResultPanel';
 import { GrammarPanel } from '../components/grammar-panel/GrammarPanel';
 import { SequenceInput } from '../components/sequence-input/SequenceInput';
 import { MutedText } from '../components/ui/MutedText';
@@ -17,7 +18,16 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
   const catalog = useGrammars();
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
   const grammar = catalog?.grammars.find((each) => each.id === state.grammarId);
-  const { result, analyze } = useAnalyze();
+  const { result, isAnalyzing, analyze, analyzedInput } = useAnalyze();
+
+  // Another grammar gives another analysis: redo the last one with the new grammar.
+  useEffect(() => {
+    if (analyzedInput !== null) {
+      analyze(state.grammarId, analyzedInput);
+    }
+    // Only when the grammar changes; the input changes are analyzed on demand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.grammarId]);
 
   return (
     <div className="space-y-4">
@@ -55,10 +65,18 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
         </Panel>
       </div>
       <Panel title="Resultado">
-        <ResultPreview
+        <ResultPanel
           result={result}
+          isAnalyzing={isAnalyzing}
           alphabet={new Set(grammar?.alphabet)}
+          selectedTree={state.selectedTree}
           collapseEpsilon={state.collapseEpsilon}
+          onSelectTree={(index) => {
+            dispatch({ type: 'select-tree', index });
+          }}
+          onToggleCollapseEpsilon={() => {
+            dispatch({ type: 'toggle-collapse-epsilon' });
+          }}
         />
       </Panel>
     </div>
