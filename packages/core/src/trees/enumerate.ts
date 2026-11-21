@@ -46,7 +46,7 @@ export function* enumerateTrees(grammar: Grammar, recognition: Recognition): Gen
   if (!recognition.accepted || accepting === undefined) {
     return;
   }
-  const context: TreeContext = { grammar, nullable: computeNullable(grammar), onPath: new Set() };
+  const context: TreeContext = { grammar, nullable: computeNullable({ grammar }), onPath: new Set() };
   for (const root of treesOfItem(context, accepting)) {
     // The root is $S → S; the tree of the story is its only child, S.
     const [story] = root.kind === 'nonterminal' ? root.children : [];

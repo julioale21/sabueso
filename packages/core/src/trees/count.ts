@@ -27,7 +27,7 @@ export function countTrees(grammar: Grammar, recognition: Recognition): TreeCoun
   }
   const context: CountContext = {
     grammar,
-    nullable: computeNullable(grammar),
+    nullable: computeNullable({ grammar }),
     known: new Map(),
     inProgress: new Set(),
     epsilonCounts: new Map(),

@@ -191,7 +191,7 @@ Línea por línea:
 
 ```ts
 export function removeEpsilonProductions(grammar: Grammar): Grammar {
-  const nullable = computeNullable(grammar);
+  const nullable = computeNullable({ grammar });
   const productions = grammar.productions.flatMap((production) =>
     withoutNullableSymbols(production.rightSide, nullable).map((rightSide) => ({
       leftSide: production.leftSide,
@@ -204,7 +204,7 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
 }
 ```
 
-1. **`computeNullable(grammar)`:** los anulables, con la función del paso 7. En G1 son los 10 `…Opc` y compañía.
+1. **`computeNullable({ grammar })`:** los anulables, con la función del paso 7. En G1 son los 10 `…Opc` y compañía.
 2. **`flatMap` sobre las producciones:** cada producción se convierte en **una lista** de producciones (sus versiones), y `flatMap` las junta todas en una sola lista. Para cada lado derecho, `withoutNullableSymbols` da las versiones, y `.map` les vuelve a poner el mismo lado izquierdo.
 3. **`filter(keepsProduction)`:** saca las versiones vacías (`A → ε`), salvo la del símbolo inicial.
 4. **`rewriteGrammar`:** arma G'. Acá no cambia el inicial ni N; solo las producciones. Además quita las repetidas.

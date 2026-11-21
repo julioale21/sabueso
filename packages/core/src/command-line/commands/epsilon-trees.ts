@@ -45,7 +45,7 @@ export const epsilonTreesCommand: Command = {
     if (symbol !== undefined && !grammar.nonterminals.has(symbol)) {
       return reportUsageError(`"${symbol}" is not a nonterminal of ${grammar.name}`, environment);
     }
-    const nullable = computeNullable(grammar);
+    const nullable = computeNullable({ grammar });
     const text =
       symbol === undefined
         ? formatAllNullable(grammar, nullable)

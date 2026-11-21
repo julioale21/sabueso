@@ -21,7 +21,7 @@ export function findCycles(grammar: Grammar): SymbolName[][] {
   // A cycle A ⇒+ A derives A again without producing anything else, so it can be repeated
   // as many times as wanted: some string then has infinitely many trees. The unit graph
   // keeps exactly the steps that produce nothing else, and a cycle in it is such a loop.
-  const graph = buildUnitGraph(grammar, computeNullable(grammar));
+  const graph = buildUnitGraph(grammar, computeNullable({ grammar }));
   const search = new CycleSearch(graph);
   for (const symbol of grammar.nonterminals) {
     search.visit(symbol);

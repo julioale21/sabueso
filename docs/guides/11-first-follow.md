@@ -100,14 +100,14 @@ Los conjuntos son `Map<SymbolName, Set<SymbolName>>`. ε y `$` se guardan como l
 La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo: repite la regla hasta que ningún conjunto cambia. Recibe un objeto con tres campos: `start` (el conjunto de cada símbolo antes de la primera ronda), `newMembersOfRound` (la regla) y `onRound` (opcional).
 
 ```ts
-let knownBefore = copySets(start);
+let knownBefore = copySets({ sets: start });
 for (let round = 1; ; round++) {
-  const knownAfter = copySets(knownBefore);
+  const knownAfter = copySets({ sets: knownBefore });
   for (const [symbol, member] of newMembersOfRound(knownBefore)) {
     knownAfter.get(symbol)?.add(member);
   }
   onRound?.({ round, setsSoFar: knownAfter });
-  if (totalSize(knownAfter) === totalSize(knownBefore)) {
+  if (totalSize({ sets: knownAfter }) === totalSize({ sets: knownBefore })) {
     return knownAfter;
   }
   knownBefore = knownAfter;
@@ -117,7 +117,7 @@ for (let round = 1; ; round++) {
 - La regla devuelve pares `[symbol, member]`: "este elemento entra en el conjunto de este símbolo".
 - `newMembersOfRound(knownBefore)`: la regla lee solo los conjuntos de la ronda anterior. Lo nuevo va a `knownAfter`, así que un elemento hallado en esta ronda recién cuenta en la siguiente. Es la misma disciplina de rondas que en `repeatRuleUntilNoChange`.
 - `knownAfter.get(symbol)?.add(member)`: el `?.` ignora un par cuyo símbolo no tiene conjunto. Como `Set`, un elemento repetido no cuenta dos veces.
-- `totalSize(knownAfter) === totalSize(knownBefore)`: si ninguna ronda agregó nada, es el punto fijo.
+- `totalSize({ sets: knownAfter }) === totalSize({ sets: knownBefore })`: si ninguna ronda agregó nada, es el punto fijo.
 - Siempre termina: los conjuntos solo crecen y sus elementos salen de un conjunto finito (terminales, ε y $).
 
 `copySets` hace una copia **profunda**:

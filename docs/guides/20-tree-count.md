@@ -101,7 +101,7 @@ if (!recognition.accepted || accepting === undefined) {
 }
 const context: CountContext = {
   grammar,
-  nullable: computeNullable(grammar),
+  nullable: computeNullable({ grammar }),
   known: new Map(),
   inProgress: new Set(),
   epsilonCounts: new Map(),

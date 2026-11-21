@@ -30,7 +30,7 @@ describe('computeMinYield', () => {
     for (const name of ['g0', 'g1', 'parentheses', 'epsilon-trap', 'arithmetic']) {
       const grammar = loadBuiltInGrammar(name);
       const zero = [...computeMinYield(grammar)].filter(([, value]) => value === 0);
-      expect(new Set(zero.map(([symbol]) => symbol))).toEqual(computeNullable(grammar));
+      expect(new Set(zero.map(([symbol]) => symbol))).toEqual(computeNullable({ grammar }));
     }
   });
 

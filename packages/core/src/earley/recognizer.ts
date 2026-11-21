@@ -71,7 +71,7 @@ export function recognize(
     grammar,
     chart,
     tokens,
-    nullable: classicEpsilon ? new Set() : computeNullable(grammar),
+    nullable: classicEpsilon ? new Set() : computeNullable({ grammar }),
     classicEpsilon,
     recorder: options.trace === true ? new TraceRecorder() : undefined,
   };

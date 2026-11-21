@@ -155,7 +155,7 @@ Recorre las filas y las casillas en orden y junta las que tienen más de una pro
 const useful = analyzeUsefulSymbols(grammar);
 const sets = computeFirstFollow(grammar);
 return {
-  nullable: computeNullable(grammar),
+  nullable: computeNullable({ grammar }),
   minYield: computeMinYield(grammar),
   productive: useful.productive,
   reachable: useful.reachable,

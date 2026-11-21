@@ -104,7 +104,7 @@ describe('ε in FIRST', () => {
       const grammar = loadBuiltInGrammar(name);
       const first = computeFirst(grammar);
       const withEmpty = [...grammar.nonterminals].filter((symbol) => first.get(symbol)?.has('ε'));
-      expect(new Set(withEmpty)).toEqual(computeNullable(grammar));
+      expect(new Set(withEmpty)).toEqual(computeNullable({ grammar }));
     },
   );
 });

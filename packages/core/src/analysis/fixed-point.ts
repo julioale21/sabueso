@@ -95,14 +95,14 @@ export function repeatRuleOnSetsUntilNoChange({
   // Same scheme as repeatRuleUntilNoChange, with one set per symbol growing at once. A round
   // copies every set and adds what the rule finds; if the total size did not change,
   // no set changed: fixed point.
-  let knownBefore = copySets(start);
+  let knownBefore = copySets({ sets: start });
   for (let round = 1; ; round++) {
-    const knownAfter = copySets(knownBefore);
+    const knownAfter = copySets({ sets: knownBefore });
     for (const [symbol, member] of newMembersOfRound(knownBefore)) {
       knownAfter.get(symbol)?.add(member);
     }
     onRound?.({ round, setsSoFar: knownAfter });
-    if (totalSize(knownAfter) === totalSize(knownBefore)) {
+    if (totalSize({ sets: knownAfter }) === totalSize({ sets: knownBefore })) {
       return knownAfter; // nothing new in any set: fixed point
     }
     knownBefore = knownAfter;
@@ -110,11 +110,15 @@ export function repeatRuleOnSetsUntilNoChange({
 }
 
 /** A deep copy: a new set for each symbol, so later rounds never change earlier ones. */
-function copySets(sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>): SetsBySymbol {
+function copySets({
+  sets,
+}: {
+  sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}): SetsBySymbol {
   return new Map([...sets].map(([symbol, members]) => [symbol, new Set(members)]));
 }
 
 /** How many members all the sets have together. */
-function totalSize(sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>): number {
+function totalSize({ sets }: { sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>> }): number {
   return [...sets.values()].reduce((total, members) => total + members.size, 0);
 }

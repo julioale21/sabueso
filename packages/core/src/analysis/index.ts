@@ -29,7 +29,7 @@ export function analyzeGrammar(grammar: Grammar): GrammarAnalysis {
   const useful = analyzeUsefulSymbols(grammar);
   const sets = computeFirstFollow(grammar);
   return {
-    nullable: computeNullable(grammar),
+    nullable: computeNullable({ grammar }),
     minYield: computeMinYield(grammar),
     productive: useful.productive,
     reachable: useful.reachable,

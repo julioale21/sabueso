@@ -97,7 +97,7 @@ const accepting = recognition.chart
 if (!recognition.accepted || accepting === undefined) {
   return;
 }
-const context: TreeContext = { grammar, nullable: computeNullable(grammar), onPath: new Set() };
+const context: TreeContext = { grammar, nullable: computeNullable({ grammar }), onPath: new Set() };
 for (const root of treesOfItem(context, accepting)) {
   const [story] = root.kind === 'nonterminal' ? root.children : [];
   if (story !== undefined) {

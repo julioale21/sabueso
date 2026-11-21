@@ -42,7 +42,7 @@ export const cyclesCommand: Command = {
     const grammar = await readGrammar(source, environment);
     const sections = [`${grammar.name}: cycles A ⇒+ A`];
     if (parsed.flags.has(GRAPH_FLAG)) {
-      sections.push(formatUnitGraph(buildUnitGraph(grammar, computeNullable(grammar))));
+      sections.push(formatUnitGraph(buildUnitGraph(grammar, computeNullable({ grammar }))));
     }
     sections.push(formatCycles(findCycles(grammar)));
     environment.writeOutput(`${sections.join('\n\n')}\n`);

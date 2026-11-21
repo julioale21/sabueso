@@ -22,7 +22,7 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
   // A → α B β | α β. With m nullable occurrences there are 2^m versions (with or without
   // each one). The versions keep every sentence except ε itself, which is why A → ε
   // itself is dropped.
-  const nullable = computeNullable(grammar);
+  const nullable = computeNullable({ grammar });
   const productions = grammar.productions.flatMap((production) =>
     withoutNullableSymbols(production.rightSide, nullable).map((rightSide) => ({
       leftSide: production.leftSide,
