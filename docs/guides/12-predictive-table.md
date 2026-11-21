@@ -99,35 +99,38 @@ Con `Inicio → CRI HAL | CRI | HAL`, las dos primeras reglas empiezan con CRI: 
 
 ## 5. El código, función por función
 
-### 5.1 `buildPredictiveTable(grammar, sets?)`
+### 5.1 `buildPredictiveTable({ grammar, sets })`
 
 ```ts
-export function buildPredictiveTable(
-  grammar: Grammar,
-  sets: FirstFollowSets = computeFirstFollow({ grammar }),
-): PredictiveTable {
+export function buildPredictiveTable({
+  grammar,
+  sets = computeFirstFollow({ grammar }),
+}: {
+  grammar: Grammar;
+  sets?: FirstFollowSets | undefined;
+}): PredictiveTable {
   const table = new Map<SymbolName, Map<SymbolName, Production[]>>();
   for (const nonterminal of grammar.nonterminals) {
     table.set(nonterminal, new Map());
   }
   for (const production of grammar.productions) {
     const row = table.get(production.leftSide);
-    for (const lookahead of predictionSet(production, sets)) {
+    for (const lookahead of predictionSet({ production, sets })) {
       row?.set(lookahead, [...(row.get(lookahead) ?? []), production]);
     }
   }
-  const conflicts = findConflicts(table);
+  const conflicts = findConflicts({ table });
   return { table, conflicts, isPredictive: conflicts.length === 0 };
 }
 ```
 
-- `sets = computeFirstFollow({ grammar })`: si quien llama ya tiene FIRST y FOLLOW (como `analyzeGrammar`), los pasa y no se calculan dos veces.
+- `sets = computeFirstFollow({ grammar })`: un valor por defecto dentro del objeto. Si quien llama ya tiene FIRST y FOLLOW (como `analyzeGrammar`), los pasa (`{ grammar, sets }`) y no se calculan dos veces; si no, se calculan acá.
 - Primero crea una fila vacía por no terminal, así todo no terminal aparece en la tabla aunque no tenga casillas.
 - Para cada producción, `predictionSet` dice en qué columnas va. `row.get(lookahead) ?? []` toma lo que ya había en la casilla (o nada) y le agrega esta producción: **por eso una casilla puede terminar con dos**, y eso es el conflicto.
 - No se detiene en el primer conflicto: llena la tabla entera, así se pueden listar todos.
 - `isPredictive` es simplemente "no hubo conflictos".
 
-### 5.2 `predictionSet(production, sets)`
+### 5.2 `predictionSet({ production, sets })`
 
 ```ts
 const firstOfRightSide = firstOfSequence({ symbols: production.rightSide, first: sets.first });
@@ -145,7 +148,7 @@ return lookaheads;
 - Si α puede ser ε, la regla también se elige cuando viene algo que puede ir **después** de A: FOLLOW(A). Por ahí entra `$` en la tabla.
 - Es la idea central del paso: **dos producciones del mismo A tienen conflicto exactamente cuando sus conjuntos de predicción comparten un símbolo**.
 
-### 5.3 `findConflicts(table)`
+### 5.3 `findConflicts({ table })`
 
 Recorre las filas y las casillas en orden y junta las que tienen más de una producción. El orden sigue la gramática (filas) y el orden en que se llenaron las casillas, así la salida es siempre la misma.
 
@@ -164,7 +167,7 @@ return {
   cycles: findCycles({ grammar }),
   first: sets.first,
   follow: sets.follow,
-  predictiveTable: buildPredictiveTable(grammar, sets),
+  predictiveTable: buildPredictiveTable({ grammar, sets }),
 };
 ```
 

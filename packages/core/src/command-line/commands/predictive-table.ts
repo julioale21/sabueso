@@ -48,7 +48,7 @@ export const predictiveTableCommand: Command = {
       return reportUsageError(`Usage: ${PREDICTIVE_TABLE_USAGE}`, environment);
     }
     const grammar = await readGrammar(source, environment);
-    const predictive = buildPredictiveTable(grammar);
+    const predictive = buildPredictiveTable({ grammar });
     const sections = [
       `${grammar.name}: LL(1) table M[A, a] (each cell: the numbers of its productions)`,
       formatPredictiveTable(grammar, predictive),

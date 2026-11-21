@@ -41,7 +41,7 @@ G1 resolvió las dos cosas: listas recursivas a derecha y factorización. Result
 | Qué              | Dónde                                                                                           |
 | ---------------- | ----------------------------------------------------------------------------------------------- |
 | Archivo          | `packages/core/src/analysis/predictive-table.ts`                                                |
-| Funciones        | `buildPredictiveTable(grammar, sets?)` y `predictionSet(production, sets)`                      |
+| Funciones        | `buildPredictiveTable({ grammar, sets })` y `predictionSet({ production, sets })`               |
 | Informe completo | `analyzeGrammar(grammar)` en `analysis/index.ts`: los pasos 7 a 12 juntos                       |
 | Comandos         | `npm run sabueso -- predictive-table --grammar g0`, y `npm run sabueso -- analyze --grammar g1` |
 

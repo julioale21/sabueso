@@ -38,6 +38,6 @@ export function analyzeGrammar(grammar: Grammar): GrammarAnalysis {
     cycles: findCycles({ grammar }),
     first: sets.first,
     follow: sets.follow,
-    predictiveTable: buildPredictiveTable(grammar, sets),
+    predictiveTable: buildPredictiveTable({ grammar, sets }),
   };
 }

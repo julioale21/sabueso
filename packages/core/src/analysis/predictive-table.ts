@@ -32,10 +32,14 @@ export interface PredictiveTable {
  * Builds M[A, a]: for each production A → α, it goes in the cell of every terminal of
  * FIRST(α) and, if α can derive ε, in the cell of every member of FOLLOW(A) ($ included).
  */
-export function buildPredictiveTable(
-  grammar: Grammar,
-  sets: FirstFollowSets = computeFirstFollow({ grammar }),
-): PredictiveTable {
+export function buildPredictiveTable({
+  grammar,
+  sets = computeFirstFollow({ grammar }),
+}: {
+  grammar: Grammar;
+  /** FIRST and FOLLOW, if the caller already has them; otherwise they are computed. */
+  sets?: FirstFollowSets | undefined;
+}): PredictiveTable {
   // The table writes down, before reading any input, the decision an LL(1) parser takes:
   // "I am expanding A and the next token is a: use this production". A cell with two
   // productions means the parser would have to guess: that is a conflict.
@@ -45,11 +49,11 @@ export function buildPredictiveTable(
   }
   for (const production of grammar.productions) {
     const row = table.get(production.leftSide);
-    for (const lookahead of predictionSet(production, sets)) {
+    for (const lookahead of predictionSet({ production, sets })) {
       row?.set(lookahead, [...(row.get(lookahead) ?? []), production]);
     }
   }
-  const conflicts = findConflicts(table);
+  const conflicts = findConflicts({ table });
   return { table, conflicts, isPredictive: conflicts.length === 0 };
 }
 
@@ -57,7 +61,13 @@ export function buildPredictiveTable(
  * The lookaheads that select A → α: FIRST(α) without ε and, if α can derive ε, FOLLOW(A).
  * Two productions of the same A conflict exactly when their prediction sets overlap.
  */
-export function predictionSet(production: Production, sets: FirstFollowSets): Set<SymbolName> {
+export function predictionSet({
+  production,
+  sets,
+}: {
+  production: Production;
+  sets: FirstFollowSets;
+}): Set<SymbolName> {
   const firstOfRightSide = firstOfSequence({ symbols: production.rightSide, first: sets.first });
   const lookaheads = new Set([...firstOfRightSide].filter((member) => member !== EMPTY_STRING));
   if (firstOfRightSide.has(EMPTY_STRING)) {
@@ -69,9 +79,11 @@ export function predictionSet(production: Production, sets: FirstFollowSets): Se
 }
 
 /** Every cell with more than one production, in the order of the rows and of the cells. */
-function findConflicts(
-  table: ReadonlyMap<SymbolName, ReadonlyMap<SymbolName, Production[]>>,
-): PredictiveTableConflict[] {
+function findConflicts({
+  table,
+}: {
+  table: ReadonlyMap<SymbolName, ReadonlyMap<SymbolName, Production[]>>;
+}): PredictiveTableConflict[] {
   const conflicts: PredictiveTableConflict[] = [];
   for (const [nonterminal, row] of table) {
     for (const [lookahead, productions] of row) {
