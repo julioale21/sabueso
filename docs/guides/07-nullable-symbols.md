@@ -101,14 +101,16 @@ export function computeNullable(
   return leastFixedPoint(
     [],
     (nullable) =>
-      leftSidesWhere(grammar.productions, (production) => derivesEmptyString(production, nullable)),
+      nonterminalsWithProductionThat(grammar.productions, (production) =>
+        derivesEmptyString(production, nullable),
+      ),
     onIteration,
   );
 }
 ```
 
 - Se lee como la definición: "parto de ∅; en cada ronda entran los lados izquierdos de las producciones que derivan ε con los anulables conocidos".
-- `leftSidesWhere(productions, condition)` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda.
+- `nonterminalsWithProductionThat(productions, condition)` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda.
 
 ### 5.3 `derivesEmptyString(production, nullable)`
 
