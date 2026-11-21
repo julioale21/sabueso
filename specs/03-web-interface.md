@@ -168,8 +168,11 @@ En esta primera etapa la entrada es la **cadena de etiquetas**, como en la conso
 | **Marcado inmediato**      | mientras se escribe, cada palabra que no está en Σ de la gramática activa se marca en rojo, antes de analizar                                                            |
 | **Ejemplos**               | V1, A1, I1, I5 y L1 cargan la secuencia directamente                                                                                                                     |
 | **Analizar**               | botón y Ctrl+Enter                                                                                                                                                       |
+| **Limpiar**                | borra el relato y su resultado; deja la gramática elegida. Desactivado con el campo vacío                                                                                |
+| **Reiniciar** (encabezado) | vuelve todo al estado inicial: pestaña Análisis, G1, relato vacío, sin resultado, primer árbol y ε colapsado                                                             |
 
 - **Por qué no un selector cerrado:** los errores son parte de lo que se muestra. El anteproyecto pide informar la posición del error y los símbolos esperados. Una etiqueta inexistente (`XYZ`) solo se puede mostrar si se puede escribir; y el error más interesante, etiquetas válidas en mal orden (`CRI REV`), lo produce cualquier forma de entrada.
+- **Analizar está activo también con el campo vacío** (2026-11-21): el relato vacío es la cadena ε, y "¿ε ∈ L(G)?" es una pregunta de pertenencia válida. Con G1 se rechaza, y el diagnóstico muestra "ε (relato vacío)" y con qué etiquetas puede empezar un relato.
 - **El marcado no es un algoritmo de la materia:** compara cada palabra con el alfabeto Σ que entrega el servicio (buscar en un conjunto). El veredicto lo da siempre el núcleo, al analizar.
 
 ---
@@ -370,6 +373,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - `CompareView`: selector k, testigos y listas, con la aclaración "no encontrar nada hasta k no demuestra nada".
 15. **Persistencia conectada.**
     - Se guarda al cambiar la gramática o la entrada.
+    - Reiniciar también borra lo guardado: al recargar después de reiniciar, la página abre en el estado inicial.
 16. **Build y Pages.**
     - Se usa `base` desde `VITE_BASE`.
     - Workflow `deploy-pages.yml`: en cada push a `main` corre `npm ci`, después `npm test`, después `npm run build` con `VITE_BASE=/sabueso/`, y publica `apps/web/dist` con `actions/upload-pages-artifact` y `actions/deploy-pages`.
