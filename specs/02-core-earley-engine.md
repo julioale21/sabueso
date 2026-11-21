@@ -1064,6 +1064,14 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `chomsky-normal-form/remove-useless-symbols.ts`, `chomsky-normal-form/isolate-terminals.ts`, `chomsky-normal-form/binarize.ts` y `chomsky-normal-form/index.ts` (`toChomskyNormalForm` e `isChomskyNormalForm`).
     - Pruebas: `isChomskyNormalForm` da verdadero para todas las gramáticas. `parentheses` da `acceptsEmpty` verdadero. Ficha 22.
     - **Consola:** `npm run sabueso -- chomsky-normal-form --grammar g1` imprime los 6 pasos y termina con `FNC ✓ (n producciones)`.
+    - **Decisiones (2026-11-21):**
+      - USELESS reutiliza `analyzeUsefulSymbols` (paso 9) y nunca borra el inicial: con L(G) = ∅ (`test-empty`) queda el inicial solo, sin producciones. `rewriteGrammar` suma el parámetro opcional `removedNonterminals` para sacar de N los inútiles, y `freshSymbol` suma `taken`, porque TERM y BIN crean varios nombres en el mismo paso.
+      - TERM crea un `T_a` por terminal (no por aparición), en orden de primera aparición, y agrega las `T_a → a` al final. BIN crea una cadena X nueva por producción, como Hopcroft 7.1.5, sin compartir cadenas iguales (en G1, `X2` y `X3` tienen la misma producción). Los X se numeran en toda la gramática y saltean los nombres que ya existen.
+      - Un paso que no cambia nada devuelve el mismo objeto, y el comando escribe `Nothing to do: …` con el motivo.
+      - `chomsky-normal-form/index.ts` exporta `CHOMSKY_NORMAL_FORM_STEPS` (los seis, nombre y función: el orden está en un solo lugar), `toChomskyNormalForm`, `isChomskyNormalForm` y `productionsOutsideChomskyNormalForm`, que devuelve las producciones que rompen la FNC (S → ε rompe si S aparece en algún lado derecho). El comando usa esa lista y guarda sus descripciones en `STEP_DESCRIPTIONS`.
+      - La consola está en inglés, como el resto: el veredicto es `Chomsky normal form ✓ (78 productions)` (en vez de `FNC ✓ (n producciones)`), y solo aparece cuando corren los seis pasos.
+      - En G1: 40 → 46 → 69 → 67 → 75 → 78 producciones. USELESS borra `Descarte`, TERM envuelve 8 terminales y BIN parte 3 producciones.
+      - Los ayudantes de prueba `stringsUpTo` y `accepts` pasaron a `test/helpers/language.ts`.
 
 25. **CYK.**
     - `cocke-younger-kasami/recognizer.ts`: tabla y extracción de un árbol.

@@ -7,10 +7,10 @@ import {
   isUnit,
   removeUnitProductions,
 } from '../../src/chomsky-normal-form/remove-unit-productions.js';
-import { recognize } from '../../src/earley/recognizer.js';
 import { formatProduction } from '../../src/grammar/build.js';
-import type { Grammar, SymbolName } from '../../src/grammar/types.js';
+import type { Grammar } from '../../src/grammar/types.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
+import { accepts, stringsUpTo } from '../helpers/language.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
 const productions = (grammar: Grammar): string[] => grammar.productions.map(formatProduction);
@@ -21,31 +21,6 @@ function firstThreeSteps(grammar: Grammar): [Grammar, Grammar, Grammar] {
   const withoutEpsilon = removeEpsilonProductions(started);
   return [started, withoutEpsilon, removeUnitProductions(withoutEpsilon)];
 }
-
-/** Every string over the alphabet of length 0 to maxLength, shortest first. */
-function stringsUpTo({
-  alphabet,
-  maxLength,
-}: {
-  alphabet: readonly SymbolName[];
-  maxLength: number;
-}): SymbolName[][] {
-  const strings: SymbolName[][] = [[]];
-  let previous: SymbolName[][] = [[]];
-  for (let length = 1; length <= maxLength; length++) {
-    previous = previous.flatMap((prefix) => alphabet.map((symbol) => [...prefix, symbol]));
-    strings.push(...previous);
-  }
-  return strings;
-}
-
-const accepts = ({
-  grammar,
-  tokens,
-}: {
-  grammar: Grammar;
-  tokens: readonly SymbolName[];
-}): boolean => recognize({ grammar, tokens }).accepted;
 
 describe('START: a new start symbol S0 → S, only if S appears on some right side', () => {
   it('adds S0 → S first in parentheses, where S is in S → ( S ) S', () => {

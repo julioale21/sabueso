@@ -4,9 +4,12 @@
  * Reference: Hopcroft 7.1; Augusto 2.4.3.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
-import { addNewStart } from '../../chomsky-normal-form/add-new-start.js';
-import { removeEpsilonProductions } from '../../chomsky-normal-form/remove-epsilon-productions.js';
-import { removeUnitProductions } from '../../chomsky-normal-form/remove-unit-productions.js';
+import {
+  CHOMSKY_NORMAL_FORM_STEPS,
+  productionsOutsideChomskyNormalForm,
+  type ChomskyNormalFormStep,
+  type ChomskyNormalFormStepName,
+} from '../../chomsky-normal-form/index.js';
 import { productionKey } from '../../chomsky-normal-form/rewrite.js';
 import { formatProduction } from '../../grammar/build.js';
 import type { Grammar, Production } from '../../grammar/types.js';
@@ -20,38 +23,43 @@ import {
 } from '../grammar-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
 
-/** One step of the conversion: its name as in the theory, what it does, and the function. */
-interface ConversionStep {
-  name: string;
+/** How the console explains a step: what it does, and why it changed nothing, if it did not. */
+interface StepDescription {
   summary: string;
-  apply: (grammar: Grammar) => Grammar;
-  /** Why the step changed nothing, when it returns the same grammar. */
-  unchangedReason?: (grammar: Grammar) => string;
+  unchangedReason: (grammar: Grammar) => string;
 }
 
-/** The steps implemented so far, in the order of section 3.23. */
-const CONVERSION_STEPS: readonly ConversionStep[] = [
-  {
-    name: 'START',
+/** The explanation of each step of section 3.23. */
+const STEP_DESCRIPTIONS: Record<ChomskyNormalFormStepName, StepDescription> = {
+  START: {
     summary: 'a new start symbol S0 → S, if S appears on some right side',
-    apply: addNewStart,
     unchangedReason: (grammar) =>
       `${grammar.start} appears on no right side: it stays as the start symbol, no S0 is needed`,
   },
-  {
-    name: 'DEL',
+  DEL: {
     summary: 'remove the ε-productions (S → ε stays for the start symbol if ε ∈ L(G))',
-    apply: removeEpsilonProductions,
+    unchangedReason: () => 'there is no ε-production',
   },
-  {
-    name: 'UNIT',
+  UNIT: {
     summary: 'remove the unit productions A → B, using the unit pairs',
-    apply: removeUnitProductions,
+    unchangedReason: () => 'there is no unit production',
   },
-];
+  USELESS: {
+    summary: 'remove the nonterminals that are not productive or not reachable',
+    unchangedReason: () => 'every nonterminal is productive and reachable',
+  },
+  TERM: {
+    summary: 'replace each terminal a by T_a → a in the right sides of length 2 or more',
+    unchangedReason: () => 'no right side of length 2 or more has a terminal',
+  },
+  BIN: {
+    summary: 'split each right side of length 3 or more into a chain X1, X2, … of length 2',
+    unchangedReason: () => 'no right side is longer than 2',
+  },
+};
 
 const UNTIL_OPTION = '--until';
-const STEP_NAMES = CONVERSION_STEPS.map((step) => step.name);
+const STEP_NAMES = CHOMSKY_NORMAL_FORM_STEPS.map((step) => step.name);
 const CHOMSKY_NORMAL_FORM_USAGE = `sabueso chomsky-normal-form ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${UNTIL_OPTION} ${STEP_NAMES.join('|')}]`;
 
 export const chomskyNormalFormCommand: Command = {
@@ -77,7 +85,7 @@ export const chomskyNormalFormCommand: Command = {
       return reportUsageError({ message: `Usage: ${CHOMSKY_NORMAL_FORM_USAGE}`, environment });
     }
     const until = (parsed.values.get(UNTIL_OPTION) ?? STEP_NAMES.at(-1) ?? '').toUpperCase();
-    const lastStep = STEP_NAMES.indexOf(until);
+    const lastStep = STEP_NAMES.findIndex((name) => name === until);
     if (lastStep === -1) {
       return reportUsageError({
         message: `${UNTIL_OPTION} must be one of: ${STEP_NAMES.join(', ')}`,
@@ -87,11 +95,14 @@ export const chomskyNormalFormCommand: Command = {
     const grammar = await readGrammar({ source, environment });
     const sections = [`${grammar.name}: conversion to Chomsky normal form`];
     let current = grammar;
-    CONVERSION_STEPS.slice(0, lastStep + 1).forEach((step, index) => {
+    CHOMSKY_NORMAL_FORM_STEPS.slice(0, lastStep + 1).forEach((step, index) => {
       const next = step.apply(current);
       sections.push(formatStep({ number: index + 1, step, before: current, after: next }));
       current = next;
     });
+    if (lastStep === STEP_NAMES.length - 1) {
+      sections.push(formatVerdict(current));
+    }
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },
@@ -105,13 +116,14 @@ function formatStep({
   after,
 }: {
   number: number;
-  step: ConversionStep;
+  step: ChomskyNormalFormStep;
   before: Grammar;
   after: Grammar;
 }): string {
-  const title = `Step ${number} · ${step.name}: ${step.summary}`;
-  if (after === before && step.unchangedReason !== undefined) {
-    return [title, `Nothing to do: ${step.unchangedReason(before)}`].join('\n');
+  const description = STEP_DESCRIPTIONS[step.name];
+  const title = `Step ${number} · ${step.name}: ${description.summary}`;
+  if (after === before) {
+    return [title, `Nothing to do: ${description.unchangedReason(before)}`].join('\n');
   }
   const added = difference({ productions: after.productions, others: before.productions });
   const removed = difference({ productions: before.productions, others: after.productions });
@@ -119,8 +131,23 @@ function formatStep({
     title,
     formatChanges({ title: 'Added', mark: '+', productions: added }),
     formatChanges({ title: 'Removed', mark: '-', productions: removed }),
-    `After ${step.name} (${after.productions.length} productions):`,
+    `After ${step.name} (${countProductions(after.productions.length)}):`,
     formatGrammar(after),
+  ].join('\n');
+}
+
+/**
+ * 'Chomsky normal form ✓ (n productions)', checked again on the result; if some production
+ * broke the form, ✗ and the list (it would be a bug in one of the steps).
+ */
+function formatVerdict(grammar: Grammar): string {
+  const outside = productionsOutsideChomskyNormalForm(grammar);
+  if (outside.length === 0) {
+    return `Chomsky normal form ✓ (${countProductions(grammar.productions.length)})`;
+  }
+  return [
+    `Chomsky normal form ✗ (${countProductions(outside.length)} break it):`,
+    ...outside.map((production) => `  ${formatProduction(production)}`),
   ].join('\n');
 }
 
@@ -153,4 +180,9 @@ function difference({
 }): Production[] {
   const otherKeys = new Set(others.map(productionKey));
   return productions.filter((production) => !otherKeys.has(productionKey(production)));
+}
+
+/** '1 production', '0 productions', '78 productions'. */
+function countProductions(count: number): string {
+  return `${String(count)} ${count === 1 ? 'production' : 'productions'}`;
 }

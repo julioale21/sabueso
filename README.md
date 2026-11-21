@@ -6,14 +6,14 @@ Laboratorio Integrador Final de **Fundamentos Teóricos de Informática**.
 
 ## Estado actual
 
-Hechos los pasos 1 a 23 del SPEC 02. El núcleo ya:
+Hechos los pasos 1 a 24 del SPEC 02. El núcleo ya:
 
 - lee gramáticas en formato `.grammar` (lexer AFD y parser LL(1)) y trae las del policial: G0 (ambigua) y G1 (la oficial);
 - analiza la gramática: anulables, longitud mínima, símbolos inútiles, ciclos, FIRST/FOLLOW y tabla LL(1);
 - decide con **Earley** si un relato pertenece al lenguaje, explica el rechazo, cuenta y dibuja los árboles y escribe la derivación más a la izquierda;
-- convierte a Forma Normal de Chomsky los pasos START, DEL y UNIT.
+- convierte cualquier gramática a Forma Normal de Chomsky, en seis pasos (START, DEL, UNIT, USELESS, TERM y BIN).
 
-Faltan USELESS, TERM y BIN de la FNC, CYK, el autómata de pila y las pruebas finales (pasos 24 a 30).
+Faltan CYK, el autómata de pila, las búsquedas acotadas y las pruebas finales (pasos 25 a 30).
 
 Para probarlo:
 
@@ -22,7 +22,7 @@ npm run sabueso -- grammars                      # las gramáticas con |N|, |Σ|
 npm run sabueso -- analyze --grammar g1          # todos los análisis de G1
 npm run sabueso -- parse --grammar g1 "CRI PIS REV"   # veredicto, árboles y derivación
 npm run sabueso -- earley --grammar g1 --chart "CRI PIS REV"   # los conjuntos S0 … S3
-npm run sabueso -- chomsky-normal-form --grammar parentheses   # START, DEL y UNIT
+npm run sabueso -- chomsky-normal-form --grammar g1            # los 6 pasos de la FNC
 ```
 
 El recorrido completo está en [`docs/console-demo.md`](docs/console-demo.md).
@@ -74,7 +74,7 @@ El proyecto se implementa por specs, en este orden:
 | Spec                                                            | Contenido                                                                      | Estado                                |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------- |
 | [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Aprobado, terminado                   |
-| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Aprobado, en curso (pasos 1–23 de 30) |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Aprobado, en curso (pasos 1–24 de 30) |
 | [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                              |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                              |
 

@@ -205,11 +205,13 @@ npm run sabueso -- parse --grammar g0 "CRI SOS PIS INT REV"
 npm run sabueso -- parse --grammar g1 "CTX PER PIS REV"
 ```
 
-## Forma Normal de Chomsky: START, DEL y UNIT
+## Forma Normal de Chomsky
 
-Paso 23. Los tres primeros pasos de la conversión a FNC, con las producciones que agrega y quita cada uno. En G1, START no hace nada (`Relato` no aparece a la derecha), DEL borra las 10 producciones ε y UNIT las 10 unitarias. En `parentheses`, START agrega S0 → S, y queda S0 → ε porque su lenguaje contiene la cadena vacía.
+Pasos 23 y 24. Los seis pasos de la conversión a FNC, con las producciones que agrega y quita cada uno. En G1, START no hace nada (`Relato` no aparece a la derecha), DEL borra las 10 producciones ε, UNIT las 10 unitarias, USELESS borra `Descarte`, TERM envuelve 8 terminales en `T_a` y BIN parte los 3 lados derechos largos: termina con `Chomsky normal form ✓ (78 productions)`. En `parentheses`, START agrega S0 → S, y queda S0 → ε porque su lenguaje contiene la cadena vacía. Con `--until` se para en un paso.
 
 ```sh
+npm run sabueso -- chomsky-normal-form --grammar g1
 npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT
 npm run sabueso -- chomsky-normal-form --grammar parentheses
+npm run sabueso -- chomsky-normal-form --grammar test-useless
 ```

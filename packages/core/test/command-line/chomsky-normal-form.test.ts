@@ -54,12 +54,55 @@ describe('sabueso chomsky-normal-form', () => {
     expect(output()).toContain('  - S → ε');
     expect(output()).toContain('After UNIT (9 productions):');
     expect(output()).toContain('   0  S0 → ε');
+    expect(output()).toContain('Chomsky normal form ✓ (19 productions)');
+  });
+
+  it('without --until, runs the six steps on G1 and ends in FNC with 78 productions', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    expect(
+      await runCommandLine({
+        commandLineArguments: ['chomsky-normal-form', '--grammar', 'g1'],
+        environment,
+      }),
+    ).toBe(0);
+    expect(output()).toContain('Step 4 · USELESS');
+    expect(output()).toContain('  - Descarte → DSC Libres');
+    expect(output()).toContain('After USELESS (67 productions):');
+    expect(output()).toContain('Step 5 · TERM');
+    expect(output()).toContain('  + T_CRI → CRI');
+    expect(output()).toContain('After TERM (75 productions):');
+    expect(output()).toContain('Step 6 · BIN');
+    expect(output()).toContain('After BIN (78 productions):');
+    expect(output()).toMatch(/Chomsky normal form ✓ \(78 productions\)\n$/);
+  });
+
+  it('says when a step has nothing to do, and counts a single production in singular', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    await runCommandLine({
+      commandLineArguments: ['chomsky-normal-form', '--grammar', 'epsilon-trap'],
+      environment,
+    });
+    expect(output()).toContain('After USELESS (1 production):');
+    expect(output()).toContain('Nothing to do: no right side of length 2 or more has a terminal');
+    expect(output()).toContain('Nothing to do: no right side is longer than 2');
+    expect(output()).toContain('Chomsky normal form ✓ (1 production)');
+  });
+
+  it('with --until TERM, stops before BIN and prints no verdict', async () => {
+    const { environment, output } = createEnvironmentWithBuiltInGrammars();
+    await runCommandLine({
+      commandLineArguments: ['chomsky-normal-form', '--grammar', 'parentheses', '--until', 'term'],
+      environment,
+    });
+    expect(output()).toContain('After TERM (11 productions):');
+    expect(output()).not.toContain('BIN');
+    expect(output()).not.toContain('Chomsky normal form ✓');
   });
 
   it.each([
     [['chomsky-normal-form']],
     [['chomsky-normal-form', 'g1']],
-    [['chomsky-normal-form', '--grammar', 'g1', '--until', 'BIN']],
+    [['chomsky-normal-form', '--grammar', 'g1', '--until', 'CYK']],
     [['chomsky-normal-form', '--grammar', 'g1', '--until']],
     [['chomsky-normal-form', '--grammar', 'g1', '--steps']],
   ])('wrong usage %j exits with 2', async (commandArguments) => {

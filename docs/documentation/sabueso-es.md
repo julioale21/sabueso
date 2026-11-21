@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo hasta el paso 23 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo hasta el paso 24 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -327,39 +327,43 @@ G0 es ambigua porque `Pasos → Pasos Pasos` agrupa los pasos de todas las forma
 
 Las demás exportaciones, por área:
 
-| Área               | Exporta                                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| Gramáticas         | `buildGrammar`, `parseGrammarText`, `tokenizeGrammar`, `formatProduction` y los tipos del modelo |
-| Autómata finito    | `runDeterministicAutomaton` y sus tipos (para el lexer del SPEC 04)                              |
-| Análisis           | `analyzeGrammar` y `GrammarAnalysis`                                                             |
-| Mostrar resultados | `label`, `dottedRule`, `renderTree`, `renderDerivation`                                          |
-| FNC                | `addNewStart`, `removeEpsilonProductions`, `computeUnitPairs`, `removeUnitProductions`           |
-| Catálogo           | `genres`                                                                                         |
-| Consola            | `createCommandLineProgram`, `formatTable`, `formatSet` (para sumar los comandos del SPEC 04)     |
+| Área               | Exporta                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Gramáticas         | `buildGrammar`, `parseGrammarText`, `tokenizeGrammar`, `formatProduction` y los tipos del modelo     |
+| Autómata finito    | `runDeterministicAutomaton` y sus tipos (para el lexer del SPEC 04)                                  |
+| Análisis           | `analyzeGrammar` y `GrammarAnalysis`                                                                 |
+| Mostrar resultados | `label`, `dottedRule`, `renderTree`, `renderDerivation`                                              |
+| FNC                | `toChomskyNormalForm`, `isChomskyNormalForm` y cada paso por separado (`addNewStart`, …, `binarize`) |
+| Catálogo           | `genres`                                                                                             |
+| Consola            | `createCommandLineProgram`, `formatTable`, `formatSet` (para sumar los comandos del SPEC 04)         |
 
 **Detalle:** guía 22.
 
-# 10. Forma Normal de Chomsky (START, DEL y UNIT)
+# 10. Forma Normal de Chomsky
 
 **Qué hace:** convierte una gramática a FNC (cada producción es A → BC o A → a, y S → ε solo si ε ∈ L(G) y S no aparece a la derecha; Hopcroft 7.1), sin cambiar su lenguaje.
 
 **Se conecta con:** usa los anulables y el punto fijo de la sección 6. Su destino es el algoritmo CYK, que solo funciona con gramáticas en FNC, para comparar sus árboles con los de Earley y para validar Earley contra CYK.
 
-La conversión tiene seis transformaciones. Cada una es una función que recibe una gramática y devuelve otra con el mismo lenguaje, sin modificar la original, así que se pueden encadenar y mostrar paso a paso. Las tres primeras, que **limpian** la gramática, están implementadas:
+La conversión tiene seis transformaciones. Cada una es una función que recibe una gramática y devuelve otra con el mismo lenguaje, sin modificar la original, así que se pueden encadenar y mostrar paso a paso. Las tres primeras **limpian** la gramática y las tres últimas le dan la **forma** final:
 
-| Paso  | Función                             | Qué hace                                                                                                                  | G1                 |
-| ----- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| START | `addNewStart(grammar)`              | agrega `S0 → S` solo si el inicial aparece en algún lado derecho                                                          | 40 (no hace falta) |
-| DEL   | `removeEpsilonProductions(grammar)` | reemplaza cada producción por sus versiones con y sin sus anulables, y borra las ε (salvo la del inicial si ε ∈ L(G))     | 46                 |
-| UNIT  | `removeUnitProductions(grammar)`    | con los pares unitarios (`computeUnitPairs`, el mismo punto fijo), copia a cada A las producciones no unitarias de cada B | 69                 |
+| Paso    | Función                             | Qué hace                                                                                                                  | G1                 |
+| ------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| START   | `addNewStart(grammar)`              | agrega `S0 → S` solo si el inicial aparece en algún lado derecho                                                          | 40 (no hace falta) |
+| DEL     | `removeEpsilonProductions(grammar)` | reemplaza cada producción por sus versiones con y sin sus anulables, y borra las ε (salvo la del inicial si ε ∈ L(G))     | 46                 |
+| UNIT    | `removeUnitProductions(grammar)`    | con los pares unitarios (`computeUnitPairs`, el mismo punto fijo), copia a cada A las producciones no unitarias de cada B | 69                 |
+| USELESS | `removeUselessSymbols(grammar)`     | con el análisis de la sección 6, borra los no terminales no productivos o no alcanzables (en G1, `Descarte`)              | 67                 |
+| TERM    | `isolateTerminals(grammar)`         | en los lados derechos de largo ≥ 2, cambia cada terminal a por `T_a`, con `T_a → a`                                       | 75                 |
+| BIN     | `binarize(grammar)`                 | parte cada lado derecho de largo k ≥ 3 en una cadena de k − 1 producciones con `X1`, `X2`, …                              | 78                 |
 
-- **El orden importa:** DEL crea unitarias nuevas (`Planteo → Hecho MarcoOpc` da `Planteo → Hecho`), así que UNIT va después.
+- **`toChomskyNormalForm(grammar)`** encadena los seis pasos de `CHOMSKY_NORMAL_FORM_STEPS` y devuelve la gramática final, si conserva ε (`acceptsEmpty`) y la gramática después de cada paso. **`isChomskyNormalForm(grammar)`** verifica el resultado producción por producción.
+- **El orden importa:** DEL crea unitarias nuevas (`Planteo → Hecho MarcoOpc` da `Planteo → Hecho`), así que UNIT va después. DEL y UNIT dejan símbolos inútiles, así que USELESS va después de los dos. TERM va antes que BIN para que BIN solo vea no terminales.
 - **Cada paso arma la gramática nueva con `rewriteGrammar`, no con `buildGrammar`,** porque conserva N: un no terminal que se queda sin producciones (A en `epsilon-trap`) no debe pasar a ser terminal.
-- Las pruebas verifican que el lenguaje se preserva después de cada paso.
+- Las pruebas verifican que el lenguaje se preserva después de cada paso y que las 10 gramáticas terminan en FNC.
 
-**Pendiente:** USELESS, TERM y BIN, el algoritmo CYK y el autómata de pila (pasos 24 a 26 del SPEC 02).
+**Pendiente:** el algoritmo CYK y el autómata de pila (pasos 25 y 26 del SPEC 02).
 
-**Detalle:** guía 23 · ficha 22.
+**Detalle:** guías 23 y 24 · ficha 22.
 
 # 11. La consola
 

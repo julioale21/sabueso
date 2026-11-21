@@ -31,12 +31,12 @@ La conversión tiene seis pasos. Este paso implementa los tres primeros, los que
 
 ## 3. Cómo se usa en el programa
 
-| Quién                                     | Llama a                                                            | Recibe                            |
-| ----------------------------------------- | ------------------------------------------------------------------ | --------------------------------- |
-| comando `chomsky-normal-form` (paso 23)   | `addNewStart`, `removeEpsilonProductions`, `removeUnitProductions` | la gramática después de cada paso |
-| `toChomskyNormalForm` (paso 24)           | los mismos tres, y después USELESS, TERM y BIN                     | la FNC y los 6 pasos              |
-| CYK y las pruebas diferenciales (25 y 28) | `toChomskyNormalForm`                                              | la gramática en FNC               |
-| web (SPEC 03)                             | la API pública                                                     | el panel "FNC paso a paso"        |
+| Quién                                     | Llama a                                                  | Recibe                            |
+| ----------------------------------------- | -------------------------------------------------------- | --------------------------------- |
+| comando `chomsky-normal-form`             | `CHOMSKY_NORMAL_FORM_STEPS` (los seis, desde el paso 24) | la gramática después de cada paso |
+| `toChomskyNormalForm` (paso 24)           | los mismos tres, y después USELESS, TERM y BIN           | la FNC y los 6 pasos              |
+| CYK y las pruebas diferenciales (25 y 28) | `toChomskyNormalForm`                                    | la gramática en FNC               |
+| web (SPEC 03)                             | la API pública                                           | el panel "FNC paso a paso"        |
 
 ---
 
@@ -356,14 +356,14 @@ También exporta dos ayudas:
 
 ### 5.7 El comando `chomsky-normal-form`
 
-- `CONVERSION_STEPS` es la lista de pasos implementados, cada uno con su nombre (`START`), una descripción y la función que lo aplica (`addNewStart`). El comando aplica uno tras otro: la salida de un paso es la entrada del siguiente.
-- `--until` dice en qué paso parar. Por defecto llega al último implementado, UNIT. Acepta el nombre en minúsculas.
+- El comando aplica los pasos uno tras otro: la salida de un paso es la entrada del siguiente. Desde el paso 24 la lista de pasos es `CHOMSKY_NORMAL_FORM_STEPS` del núcleo (guía 24, sección 5.4), y las descripciones de la consola están en `STEP_DESCRIPTIONS`.
+- `--until` dice en qué paso parar. Por defecto corre todos. Acepta el nombre en minúsculas.
 - Por cada paso imprime:
   - el título, con lo que hace el paso;
   - las producciones **agregadas** (`+`): las que están después y no estaban antes;
   - las **quitadas** (`-`): las que estaban antes y ya no están. Se comparan por símbolos con `productionKey`, porque los números cambian de un paso a otro;
   - la gramática resultante, con `formatGrammar`.
-- Un `--until` que no es START, DEL ni UNIT es un error de uso (código 2). En el paso 24 se suman USELESS, TERM y BIN.
+- Un `--until` que no es uno de los pasos es un error de uso (código 2).
 
 ---
 

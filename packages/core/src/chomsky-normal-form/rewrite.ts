@@ -16,7 +16,8 @@ export interface NewProduction {
  * Builds G' from G: its productions, and maybe a new start symbol and new nonterminals. Σ is
  * the one of G. Unlike buildGrammar, N is kept as it was: a nonterminal
  * left without productions (A in A → ε, after DEL) stays a nonterminal, so it never turns
- * into a terminal by accident. It is non-productive, and the USELESS step removes it.
+ * into a terminal by accident. It is non-productive, and the USELESS step removes it with
+ * removedNonterminals.
  * A production that appears twice is kept once (P is a set), in the order it first appeared.
  */
 export function rewriteGrammar({
@@ -24,6 +25,7 @@ export function rewriteGrammar({
   productions: newProductions,
   start = grammar.start,
   newNonterminals = [],
+  removedNonterminals = new Set(),
 }: {
   /** G, the grammar before the step. */
   grammar: Grammar;
@@ -33,8 +35,14 @@ export function rewriteGrammar({
   start?: SymbolName | undefined;
   /** Nonterminals added by the step (S0, T_a, Xi). */
   newNonterminals?: readonly SymbolName[] | undefined;
+  /** Nonterminals the step takes out of N (the useless ones, in USELESS). */
+  removedNonterminals?: ReadonlySet<SymbolName> | undefined;
 }): Grammar {
-  const nonterminals = new Set([...newNonterminals, ...grammar.nonterminals]);
+  const nonterminals = new Set(
+    [...newNonterminals, ...grammar.nonterminals].filter(
+      (nonterminal) => !removedNonterminals.has(nonterminal),
+    ),
+  );
   const productions = uniqueProductions(newProductions);
   const productionsByLeftSide = new Map<SymbolName, Production[]>();
   for (const nonterminal of nonterminals) {
@@ -58,10 +66,26 @@ export function productionKey(production: NewProduction): string {
   return JSON.stringify([production.leftSide, ...production.rightSide]);
 }
 
-/** A symbol that is not in N or Σ: the name itself, or with primes until it is new (S0'). */
-export function freshSymbol({ grammar, name }: { grammar: Grammar; name: SymbolName }): SymbolName {
+/**
+ * A symbol that is not in N or Σ, nor among the names the step already took: the name
+ * itself, or with primes until it is new (S0').
+ */
+export function freshSymbol({
+  grammar,
+  name,
+  taken = new Set(),
+}: {
+  grammar: Grammar;
+  name: SymbolName;
+  /** Names already chosen in the same step (TERM and BIN create several). */
+  taken?: ReadonlySet<SymbolName> | undefined;
+}): SymbolName {
   let candidate = name;
-  while (grammar.nonterminals.has(candidate) || grammar.terminals.has(candidate)) {
+  while (
+    grammar.nonterminals.has(candidate) ||
+    grammar.terminals.has(candidate) ||
+    taken.has(candidate)
+  ) {
     candidate = `${candidate}'`;
   }
   return candidate;
