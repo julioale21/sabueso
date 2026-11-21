@@ -6,7 +6,7 @@
 import { analyzeUsefulSymbols, type UsefulSymbolsAnalysis } from '../../analysis/useful.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
-import { formatGrammar, formatSet, formatTable } from '../format.js';
+import { formatGrammar, formatSet, formatSymbolRounds } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
@@ -46,7 +46,8 @@ export const usefulCommand: Command = {
     const sections = [`${grammar.name}: useful symbols`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(
-        formatRounds({
+        formatSymbolRounds({
+          column: 'Symbols so far',
           title: 'Productive (A ⇒* w, w ∈ Σ*), round by round:',
           rounds: analysis.productiveRounds,
           initial: [],
@@ -54,7 +55,8 @@ export const usefulCommand: Command = {
       );
       if (!analysis.isEmpty) {
         sections.push(
-          formatRounds({
+          formatSymbolRounds({
+            column: 'Symbols so far',
             title: 'Reachable from the start symbol, round by round:',
             rounds: analysis.reachableRounds,
             initial: [grammar.start],
@@ -99,34 +101,6 @@ function formatSummary({
       : `Useless: ${formatSymbols([...analysis.useless])}`,
     'L(G) ≠ ∅',
   ].join('\n');
-}
-
-/**
- * One row per round: how many symbols so far and which ones it added. A phase that does not
- * start from ∅ (reachable starts from {S}) shows its starting set as round 0.
- */
-function formatRounds({
-  title,
-  rounds,
-  initial,
-}: {
-  title: string;
-  rounds: readonly ReadonlySet<SymbolName>[];
-  initial: readonly SymbolName[];
-}): string {
-  const start = new Set(initial);
-  const startRow =
-    initial.length === 0 ? [] : [['0', String(start.size), `${initial.join(', ')} (start)`]];
-  const rows = rounds.map((round, index) => {
-    const previous = rounds[index - 1] ?? start;
-    const added = [...round].filter((symbol) => !previous.has(symbol));
-    return [
-      String(index + 1),
-      String(round.size),
-      added.length === 0 ? '(none: fixed point)' : added.sort().join(', '),
-    ];
-  });
-  return `${title}\n\n${formatTable({ header: ['Round', 'Symbols so far', 'Added in this round'], rows: [...startRow, ...rows] })}`;
 }
 
 /** '∅' for no symbols, as in the theory; '{A, B}' otherwise. */

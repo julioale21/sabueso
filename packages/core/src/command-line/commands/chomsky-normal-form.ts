@@ -6,7 +6,7 @@
 import {
   CHOMSKY_NORMAL_FORM_STEPS,
   productionsOutsideChomskyNormalForm,
-  type ChomskyNormalFormStep,
+  toChomskyNormalForm,
   type ChomskyNormalFormStepName,
 } from '../../chomsky-normal-form/index.js';
 import { productionKey } from '../../grammar/productions.js';
@@ -93,14 +93,16 @@ export const chomskyNormalFormCommand: Command = {
     }
     const grammar = await readGrammar({ source, environment });
     const sections = [`${grammar.name}: conversion to Chomsky normal form`];
-    let current = grammar;
-    CHOMSKY_NORMAL_FORM_STEPS.slice(0, lastStep + 1).forEach((step, index) => {
-      const next = step.apply(current);
-      sections.push(formatStep({ number: index + 1, step, before: current, after: next }));
-      current = next;
+    // The steps come from the core, in its order: the console only shows them.
+    const { steps } = toChomskyNormalForm(grammar);
+    steps.slice(0, lastStep + 1).forEach((step, index) => {
+      const before = steps[index - 1]?.grammar ?? grammar;
+      sections.push(
+        formatStep({ number: index + 1, name: step.name, before, after: step.grammar }),
+      );
     });
     if (lastStep === STEP_NAMES.length - 1) {
-      sections.push(formatVerdict(current));
+      sections.push(formatVerdict(steps[lastStep]?.grammar ?? grammar));
     }
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
@@ -110,17 +112,17 @@ export const chomskyNormalFormCommand: Command = {
 /** The title of the step, the productions it added and removed, and the grammar it left. */
 function formatStep({
   number,
-  step,
+  name,
   before,
   after,
 }: {
   number: number;
-  step: ChomskyNormalFormStep;
+  name: ChomskyNormalFormStepName;
   before: Grammar;
   after: Grammar;
 }): string {
-  const description = STEP_DESCRIPTIONS[step.name];
-  const title = `Step ${number} · ${step.name}: ${description.summary}`;
+  const description = STEP_DESCRIPTIONS[name];
+  const title = `Step ${number} · ${name}: ${description.summary}`;
   if (after === before) {
     return [title, `Nothing to do: ${description.unchangedReason(before)}`].join('\n');
   }
@@ -130,7 +132,7 @@ function formatStep({
     title,
     formatChanges({ title: 'Added', mark: '+', productions: added }),
     formatChanges({ title: 'Removed', mark: '-', productions: removed }),
-    `After ${step.name} (${countProductions(after.productions.length)}):`,
+    `After ${name} (${countProductions(after.productions.length)}):`,
     formatGrammar(after),
   ].join('\n');
 }

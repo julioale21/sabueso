@@ -4,9 +4,9 @@
  * Card: docs/concepts/05-first-follow.md
  */
 import { computeFirstFollow } from '../../analysis/first-follow.js';
-import type { Grammar, SymbolName } from '../../grammar/types.js';
+import type { Grammar } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
-import { formatSet, formatTable } from '../format.js';
+import { formatSet, formatSetsRounds, formatTable, type SetsSnapshot } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
@@ -19,7 +19,6 @@ const STEPS_FLAG = '--steps';
 const FIRST_FOLLOW_USAGE = `sabueso first-follow ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${STEPS_FLAG}]`;
 
 /** The sets of every nonterminal after one round. */
-type Snapshot = ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
 
 export const firstFollowCommand: Command = {
   name: 'first-follow',
@@ -48,14 +47,14 @@ export const firstFollowCommand: Command = {
     const sections = [`${grammar.name}: FIRST and FOLLOW`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(
-        formatRounds({
+        formatSetsRounds({
           title: 'FIRST, round by round:',
           rounds: sets.firstRounds,
           start: new Map(),
         }),
       );
       sections.push(
-        formatRounds({
+        formatSetsRounds({
           title: 'FOLLOW, round by round (it starts with $ in FOLLOW of the start symbol):',
           rounds: sets.followRounds,
           start: new Map([[grammar.start, new Set(['$'])]]),
@@ -75,8 +74,8 @@ function formatSetsTable({
   follow,
 }: {
   grammar: Grammar;
-  first: Snapshot;
-  follow: Snapshot;
+  first: SetsSnapshot;
+  follow: SetsSnapshot;
 }): string {
   const rows = [...grammar.nonterminals].map((symbol) => [
     symbol,
@@ -84,33 +83,4 @@ function formatSetsTable({
     formatSet(follow.get(symbol) ?? []),
   ]);
   return formatTable({ header: ['Nonterminal', 'FIRST', 'FOLLOW'], rows });
-}
-
-/** One row per round with what it added to each set; the last round adds nothing. */
-function formatRounds({
-  title,
-  rounds,
-  start,
-}: {
-  title: string;
-  rounds: readonly Snapshot[];
-  start: Snapshot;
-}): string {
-  const rows = rounds.map((round, index) => [
-    String(index + 1),
-    describeAdditions({ before: rounds[index - 1] ?? start, after: round }),
-  ]);
-  return `${title}\n\n${formatTable({ header: ['Round', 'Added in this round'], rows })}`;
-}
-
-/** 'Pista += {INT, PIS}; Inicio += {CRI, HAL}', or the fixed point if nothing was added. */
-function describeAdditions({ before, after }: { before: Snapshot; after: Snapshot }): string {
-  const changes = [...after]
-    .map(([symbol, members]) => ({
-      symbol,
-      added: [...members].filter((member) => !(before.get(symbol)?.has(member) ?? false)),
-    }))
-    .filter((change) => change.added.length > 0)
-    .map((change) => `${change.symbol} += ${formatSet(change.added)}`);
-  return changes.length === 0 ? '(none: fixed point)' : changes.join('; ');
 }

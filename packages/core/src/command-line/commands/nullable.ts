@@ -7,7 +7,7 @@ import { lastRound } from '../../analysis/fixed-point.js';
 import { nullableRounds } from '../../analysis/nullable.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
-import { formatSet, formatTable } from '../format.js';
+import { formatSet, formatSymbolRounds } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
@@ -46,27 +46,13 @@ export const nullableCommand: Command = {
     const nullableSymbols = lastRound(rounds);
     const sections = [`${grammar.name}: nullable symbols (A ⇒* ε)`];
     if (parsed.flags.has(STEPS_FLAG)) {
-      sections.push(formatRounds(rounds));
+      sections.push(formatSymbolRounds({ rounds, column: 'Nullable so far' }));
     }
     sections.push(formatResult({ grammar, nullableSymbols }));
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },
 };
-
-/** One row per round: what it added and how many are known so far. The last adds nothing. */
-function formatRounds(rounds: readonly ReadonlySet<SymbolName>[]): string {
-  const rows = rounds.map((round, index) => {
-    const previous = rounds[index - 1] ?? new Set<SymbolName>();
-    const added = [...round].filter((symbol) => !previous.has(symbol));
-    return [
-      String(index + 1),
-      String(round.size),
-      added.length === 0 ? '(none: fixed point)' : added.sort().join(', '),
-    ];
-  });
-  return formatTable({ header: ['Round', 'Nullable so far', 'Added in this round'], rows });
-}
 
 /** The closing line: the nullable set and how many of the nonterminals it covers. */
 function formatResult({
