@@ -18,3 +18,14 @@
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   }
 }
+
+/* A symbol that enters the stack of the pushdown automaton (SPEC 03, step 13). */
+@theme {
+  --animate-push-in: push-in 250ms ease-out;
+  @keyframes push-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.5rem);
+    }
+  }
+}

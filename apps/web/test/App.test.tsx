@@ -27,6 +27,22 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Sabueso' })).toBeInTheDocument();
   });
 
+  it('splits the tabs in two groups: about the story and about the grammar', () => {
+    render(<App />);
+    const tabsOf = (group: string) =>
+      Array.from(
+        screen.getByRole('group', { name: group }).querySelectorAll('[role="tab"]'),
+        (tab) => tab.textContent,
+      );
+    expect(tabsOf('Sobre el relato')).toEqual([
+      'Análisis',
+      'Earley paso a paso',
+      'FNC y CYK',
+      'Autómata de pila',
+    ]);
+    expect(tabsOf('Sobre la gramática')).toEqual(['LL(1)', 'G0 vs G1']);
+  });
+
   it('A1 with G0: accepted, 4 trees, and the trees 2 and 3 can be browsed', async () => {
     const verdict = await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g0' });
     expect(verdict).toHaveTextContent('✓ Aceptado · 4 árboles (se muestran 3)');

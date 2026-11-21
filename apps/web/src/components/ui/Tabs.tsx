@@ -5,6 +5,7 @@
  */
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { TabButton } from './TabButton';
+import { TabGroup } from './TabGroup';
 import { TabPanel } from './TabPanel';
 
 export interface TabItem<Id extends string> {
@@ -13,6 +14,24 @@ export interface TabItem<Id extends string> {
   panel: ReactNode;
   /** Why the tab cannot be opened yet; undefined when it can. */
   disabledReason?: string | undefined;
+  /** The title of the group the tab belongs to; consecutive tabs with the same one go together. */
+  group?: string | undefined;
+}
+
+/** The tabs split into runs of the same group, in order, keeping each tab's index. */
+function groupsOf<Id extends string>(
+  items: readonly TabItem<Id>[],
+): { title: string | undefined; items: TabItem<Id>[] }[] {
+  const groups: { title: string | undefined; items: TabItem<Id>[] }[] = [];
+  for (const item of items) {
+    const last = groups.at(-1);
+    if (last !== undefined && last.title === item.group) {
+      last.items.push(item);
+    } else {
+      groups.push({ title: item.group, items: [item] });
+    }
+  }
+  return groups;
 }
 
 /**
@@ -95,21 +114,25 @@ export function Tabs<Id extends string>({
       <div
         role="tablist"
         aria-label={label}
-        className="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800"
+        className="flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-slate-200 dark:border-slate-800"
       >
-        {items.map((item) => (
-          <TabButton
-            key={item.id}
-            id={item.id}
-            label={item.label}
-            isActive={item.id === activeItem?.id}
-            disabledReason={item.disabledReason}
-            buttonRef={registerButton(item.id)}
-            onSelect={() => {
-              onChange(item.id);
-            }}
-            onKeyDown={handleKeyDown}
-          />
+        {groupsOf(items).map((group, index) => (
+          <TabGroup key={group.title ?? index} title={group.title} isFirst={index === 0}>
+            {group.items.map((item) => (
+              <TabButton
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                isActive={item.id === activeItem?.id}
+                disabledReason={item.disabledReason}
+                buttonRef={registerButton(item.id)}
+                onSelect={() => {
+                  onChange(item.id);
+                }}
+                onKeyDown={handleKeyDown}
+              />
+            ))}
+          </TabGroup>
         ))}
       </div>
       {activeItem !== undefined && <TabPanel id={activeItem.id}>{activeItem.panel}</TabPanel>}

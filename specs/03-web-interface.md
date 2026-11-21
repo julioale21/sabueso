@@ -87,7 +87,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 ```
 
 - **Las pestañas comparten estado:** gramática activa y secuencia actual. Cambiar de pestaña no pierde la entrada.
-- **Dos grupos de pestañas** (2026-11-21): primero las que dependen del relato (Análisis, Earley paso a paso, FNC y CYK, Autómata de pila) y al final las que dependen solo de la gramática (LL(1), G0 vs G1).
+- **Dos grupos de pestañas** (2026-11-21): primero las que dependen del relato (Análisis, Earley paso a paso, FNC y CYK, Autómata de pila) y al final las que dependen solo de la gramática (LL(1), G0 vs G1). Los grupos se ven: cada uno tiene su título, "Sobre el relato" y "Sobre la gramática", y un separador entre los dos (`TabGroup`). Siguen en una sola barra, así que las flechas del teclado recorren todas las pestañas.
   - Las del relato, salvo Análisis, quedan **desactivadas hasta el primer Analizar** ("Analiza un relato primero") y usan **el relato analizado** (`analyzedInput` en el estado), no lo que se está escribiendo. Limpiar y Reiniciar lo borran.
   - Las de la gramática están siempre activas, con el aviso "Propiedad de la gramática G1 · oficial: no depende del relato": su contenido es el mismo para cualquier relato.
   - El teclado salta las pestañas desactivadas.
@@ -132,14 +132,14 @@ Se descarta Reingold-Tilford porque es más compacto, pero más largo de explica
 
 ### 3.4 Visualización de cada concepto del núcleo
 
-| Pestaña            | Muestra                                                                                                                                                                  | Fuente en el núcleo                                   | Fichas | Equivalente en consola                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ------ | ----------------------------------------------------------------------- |
-| Análisis           | Árbol, derivación con el no terminal reemplazado resaltado y sincronizado con el nodo del árbol, total de árboles, los primeros 3 y diagnóstico                          | `parse`, `renderDerivation`                           | 17–21  | `sabueso parse`, `sabueso trees`                                        |
-| Earley paso a paso | Columnas S0…Sn. El evento actual resaltado con su operación (Predictor, Scanner, Completer o anulable) y su causa. Controles ⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad      | `parse(…, { trace: true })`                           | 11–16  | `sabueso trace`                                                         |
-| LL(1)              | FIRST y FOLLOW por no terminal. Tabla M[A, a] con las celdas en conflicto en rojo. Insignia "LL(1) ✓ ⇒ no ambigua" o "k conflictos"                                      | `analyzeGrammar`                                      | 5–10   | `sabueso predictive-table`, `sabueso first-follow`                      |
-| FNC y CYK          | Lista de los 6 pasos con la gramática después de cada uno. Tabla triangular CYK para la secuencia actual. Árbol FNC al lado del árbol de Earley                          | `toChomskyNormalForm`, `recognizeCockeYoungerKasami`  | 22–23  | `sabueso chomsky-normal-form`, `sabueso cocke-younger-kasami --compare` |
-| Autómata de pila   | Transiciones expandir/emparejar. Camino de aceptación como tabla de descripciones instantáneas (entrada que falta, pila) y el resultado: acepta, rechaza o indeterminado | `buildPushdownAutomaton`, `simulatePushdownAutomaton` | 24     | `sabueso pushdown-automaton`                                            |
-| G0 vs G1           | Selector k entre 1 y 6. Testigo de ambigüedad de G0 y de G1. Listas "solo en G0" y "solo en G1", con la aclaración de que no encontrar nada no demuestra nada            | `findAmbiguityWitness`, `compareLanguages`            | 21, 25 | `sabueso ambiguity`, `sabueso compare`                                  |
+| Pestaña            | Muestra                                                                                                                                                                                                               | Fuente en el núcleo                                   | Fichas | Equivalente en consola                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| Análisis           | Árbol, derivación con el no terminal reemplazado resaltado y sincronizado con el nodo del árbol, total de árboles, los primeros 3 y diagnóstico                                                                       | `parse`, `renderDerivation`                           | 17–21  | `sabueso parse`, `sabueso trees`                                        |
+| Earley paso a paso | Columnas S0…Sn. El evento actual resaltado con su operación (Predictor, Scanner, Completer o anulable) y su causa. Controles ⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad                                                   | `parse(…, { trace: true })`                           | 11–16  | `sabueso trace`                                                         |
+| LL(1)              | FIRST y FOLLOW por no terminal. Tabla M[A, a] con las celdas en conflicto en rojo. Insignia "LL(1) ✓ ⇒ no ambigua" o "k conflictos"                                                                                   | `analyzeGrammar`                                      | 5–10   | `sabueso predictive-table`, `sabueso first-follow`                      |
+| FNC y CYK          | Lista de los 6 pasos con la gramática después de cada uno. Tabla triangular CYK para la secuencia actual. Árbol FNC al lado del árbol de Earley                                                                       | `toChomskyNormalForm`, `recognizeCockeYoungerKasami`  | 22–23  | `sabueso chomsky-normal-form`, `sabueso cocke-younger-kasami --compare` |
+| Autómata de pila   | Transiciones expandir/emparejar. Camino de aceptación como tabla de descripciones instantáneas (entrada que falta, pila) y el resultado: acepta, rechaza o indeterminado                                              | `buildPushdownAutomaton`, `simulatePushdownAutomaton` | 24     | `sabueso pushdown-automaton`                                            |
+| G0 vs G1           | Selector k entre 1 y 6. Testigo de ambigüedad de G0 y de G1. Listas "Relatos que solo genera G0" y "Relatos que solo genera G1" (oraciones, no árboles), con la aclaración de que no encontrar nada no demuestra nada | `findAmbiguityWitness`, `compareLanguages`            | 21, 25 | `sabueso ambiguity`, `sabueso compare`                                  |
 
 **Límites de la UI y sus fundamentos:**
 
@@ -303,7 +303,11 @@ apps/web/
     components/cnf-cyk/          # NormalFormSteps, NormalFormStep, CykTable, CykCell, CykVerdict, TreeComparison
     domain/normal-form.ts        # qué hace cada paso de la FNC y qué producciones agregó y quitó
     views/PdaView.tsx
+    components/pda/              # PdaDefinition, PdaVerdict, PdaPlayer, StackView, StackCell, InputTape, AcceptingPathTable, PathStepRow, TransitionList, TransitionItem
+    domain/pushdown.ts           # cómo se escriben las transiciones, la pila y la entrada que falta
     views/CompareView.tsx
+    components/compare/          # LengthSelector, AmbiguityCard, SentenceList, ComparisonVerdict
+    domain/bounded.ts            # los k posibles y cómo se escriben oraciones y cantidades de árboles
     styles/index.css             # @import "tailwindcss" y unos pocos estilos base
   test/
     layout.test.ts
@@ -386,8 +390,15 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - Prueba: CRI PIS REV con G1 tiene Relato en T[0][3] y X1 en T[1][2]; la FNC de G1 tiene 78 producciones.
 13. **Vista del autómata de pila.**
     - `PdaView`: transiciones y tabla de descripciones instantáneas del camino de aceptación.
+    - **Reproductor de la pila** (pedido el 2026-11-21, adelantado del paso 18): con los mismos controles que Earley, la pila se dibuja como una columna con el tope arriba. Expandir hace entrar el lado derecho; emparejar saca la etiqueta y la tacha en la entrada. Una frase dice qué salió y qué entró. La fila actual de la tabla se resalta, y un clic en una fila salta a ese paso. Con movimiento reducido no hay animación.
+    - Las transiciones δ están en una lista desplegable; las 17 que usa el camino de `CRI PIS REV` están marcadas.
+    - Prueba: `CRI PIS REV` con G1 acepta con 23 configuraciones exploradas y un camino de 17 transiciones (14 expandir, 3 emparejar), como `sabueso pushdown-automaton`.
 14. **Vista G0 vs G1.**
     - `CompareView`: selector k, testigos y listas, con la aclaración "no encontrar nada hasta k no demuestra nada".
+    - Compara siempre las dos gramáticas del género (la alternativa contra la oficial): no depende de la gramática elegida.
+    - Cada lista muestra las primeras 20 oraciones y cuenta el resto (con k = 6, G0 tiene 2349 que G1 no genera).
+    - El efecto de búsqueda depende de los ids de las gramáticas, no de los objetos de opción: con los objetos, que se crean en cada render, la búsqueda se repetía sin fin y la pestaña se colgaba. Una prueba lo verifica (una sola llamada a `compare` por k).
+    - Prueba: con k = 3, "Relatos que solo genera G0" es exactamente `CRI DSC REV` y `HAL DSC REV`; con k = 4, G0 tiene el testigo `CRI SOS ATQ REV` con 2 árboles y G1 no tiene testigo.
 15. **Persistencia conectada.**
     - Se guarda al cambiar la gramática o la entrada.
     - Reiniciar también borra lo guardado: al recargar después de reiniciar, la página abre en el estado inicial.
@@ -403,7 +414,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
       - **Cuándo se anima** (acordado el 2026-11-21, con un prototipo): al llegar un resultado aceptado de hasta unos 40 pasos de derivación, el árbol se arma solo una vez, rápido (4 a 6 s en total), y queda completo. El reproductor está siempre visible: pausar, paso a paso, volver a reproducir y "Ver completo". Elegir un paso en la lista de la derivación mueve el mismo paso actual.
       - **Cuándo no:** con relatos largos (L1), al cambiar de árbol con el paginador y con `prefers-reduced-motion`, el árbol aparece completo; el reproductor sigue disponible.
       - Comparte los controles con el reproductor de Earley (paso 10).
-    - **Otras animaciones:** el chart de Earley que se llena ítem por ítem en su pestaña, la tabla CYK que se completa por largo, y la pila del autómata que crece y se vacía.
+    - **Otras animaciones:** el chart de Earley que se llena ítem por ítem en su pestaña, la tabla CYK que se completa por largo, (la pila del autómata ya se anima desde el paso 13).
     - **Diagnóstico con los ítems activos:** cuando un relato se rechaza no hay árbol (no existe derivación). En lugar de un árbol parcial, el panel de diagnóstico muestra los ítems de Earley activos en el punto del error (por ejemplo, `Planteo → Marco • Hecho`, esperaba `CRI` o `HAL`): qué parte de la estructura quedó incompleta.
     - **Estilo del árbol:** un layout más compacto (por ejemplo, `d3-hierarchy`), zoom y arrastre para árboles grandes como L1, y el pulido general de colores, tipografía y espaciado.
     - **Regla:** cada animación se puede pausar y avanzar a mano (sirve para explicar en la exposición), y respeta `prefers-reduced-motion`. Si alguna mejora necesita una dependencia de producción (por ejemplo, para el layout o el zoom), se propone y se anota como decisión antes de agregarla.
