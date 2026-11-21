@@ -40,7 +40,7 @@ export function ResultPanel({
     return (
       <div className="space-y-3">
         <VerdictBanner accepted={false} treeCount={0n} treesShown={0} />
-        <DiagnosticPanel tokens={result.tokens} error={result.error} />
+        <DiagnosticPanel tokens={result.tokens} error={result.error} chart={result.chart} />
       </div>
     );
   }

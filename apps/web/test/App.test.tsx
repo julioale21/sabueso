@@ -84,6 +84,9 @@ describe('App', () => {
       .getByRole('list', { name: 'Relato con el error marcado' })
       .querySelector('[aria-current]');
     expect(marked).toHaveTextContent('PIS');
+    expect(
+      screen.getByRole('region', { name: 'Estructuras empezadas que no pudieron seguir' }),
+    ).toHaveTextContent('Planteo → Marco • Hecho, 0');
   });
 
   it('the empty story is analyzed: ε is not in L(G1), and it says what a story can start with', async () => {
