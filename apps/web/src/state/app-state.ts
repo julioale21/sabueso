@@ -5,6 +5,7 @@
  */
 import type { Dispatch } from 'react';
 import type { GrammarId } from '../analysis/service';
+import type { AnalysisRun } from '../analysis/use-analyze';
 
 /** The views of the page (SPEC 03, section 3.4). */
 export type TabId = 'analysis' | 'earley' | 'll1' | 'cnf-cyk' | 'pda' | 'compare';
@@ -26,6 +27,11 @@ export interface AppState {
   selectedTree: number;
   /** Draw the subtrees that only derive ε as one dimmed node (SPEC 03, section 3.3). */
   collapseEpsilon: boolean;
+  /**
+   * How many times Analizar was pressed: pressing it again with the same story must analyze
+   * again, and this number is what changes (SPEC 06, W2).
+   */
+  analysisRequest: number;
 }
 
 export type AppAction =
@@ -42,6 +48,8 @@ export type AppAction =
 export interface ViewProps {
   state: AppState;
   dispatch: Dispatch<AppAction>;
+  /** The analysis of the story, owned by the page so it survives changing tabs (SPEC 06, W2). */
+  analysis: AnalysisRun;
 }
 
 /** The official grammar of the detective story: what the page shows first. */
@@ -57,6 +65,7 @@ export function createInitialState(): AppState {
     analyzedInput: null,
     selectedTree: 0,
     collapseEpsilon: false,
+    analysisRequest: 0,
   };
 }
 
@@ -70,7 +79,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'set-input':
       return { ...state, input: action.input, selectedTree: 0 };
     case 'analyze':
-      return { ...state, analyzedInput: state.input, selectedTree: 0 };
+      return {
+        ...state,
+        analyzedInput: state.input,
+        selectedTree: 0,
+        analysisRequest: state.analysisRequest + 1,
+      };
     case 'clear':
       return { ...state, input: '', analyzedInput: null, selectedTree: 0 };
     case 'select-tree':

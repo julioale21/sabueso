@@ -3,7 +3,6 @@
  * alphabet and a string over it (card 01), the grammar and its analysis (cards 02 and 06 to
  * 10), and the result: verdict, trees, derivation and diagnosis (cards 17 to 21).
  */
-import { useAnalyze } from '../analysis/use-analyze';
 import { useGrammars } from '../analysis/use-grammars';
 import { useEffect, useRef } from 'react';
 import { ResultPanel } from '../components/result-panel/ResultPanel';
@@ -14,28 +13,23 @@ import { Panel } from '../components/ui/Panel';
 import { EXAMPLES } from '../domain/examples';
 import type { ViewProps } from '../state/app-state';
 
-export function AnalysisView({ state, dispatch }: ViewProps) {
+export function AnalysisView({ state, dispatch, analysis }: ViewProps) {
   const catalog = useGrammars();
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
   const grammar = catalog?.grammars.find((each) => each.id === state.grammarId);
-  const { result, isAnalyzing, runCount, analyze, reset } = useAnalyze();
+  const { result, isAnalyzing, runCount, reset } = analysis;
   const resultRef = useRef<HTMLDivElement>(null);
+  // A result is new when it arrived after this view was mounted. Coming back to the tab shows
+  // the last result as it was: no slide-in, no scrolling, no tree building itself again.
+  const [runCountAtMount] = useState(runCount);
+  const isNewResult = runCount > runCountAtMount;
 
   // Each new result: bring it into view (jsdom has no scrollIntoView).
   useEffect(() => {
-    if (runCount > 0) {
+    if (isNewResult) {
       resultRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
     }
-  }, [runCount]);
-
-  // Another grammar gives another analysis: redo the last one with the new grammar.
-  useEffect(() => {
-    if (state.analyzedInput !== null) {
-      analyze(state.grammarId, state.analyzedInput);
-    }
-    // Only when the grammar changes; the input changes are analyzed on demand.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.grammarId]);
+  }, [isNewResult, runCount]);
 
   return (
     <div className="space-y-4">
@@ -63,8 +57,8 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
                   dispatch({ type: 'set-input', input });
                 }}
                 onAnalyze={() => {
+                  // The page analyzes when analysisRequest changes (App.tsx).
                   dispatch({ type: 'analyze' });
-                  analyze(state.grammarId, state.input);
                 }}
                 onClear={() => {
                   dispatch({ type: 'clear' });
