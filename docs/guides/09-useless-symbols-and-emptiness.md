@@ -63,24 +63,17 @@ Para el proyecto sirve como **validador**: alguien que escribe un `.grammar` con
 
 ## 5. El código, función por función
 
-### 5.1 `analyzeUsefulSymbols({ grammar, onRound })`
+### 5.1 `analyzeUsefulSymbols(grammar)`
 
 ```ts
-const productive = computeProductive({
-  grammar,
-  onRound: ({ round, symbolsSoFar }) => onRound?.({ phase: 'productive', round, symbolsSoFar }),
-});
+const productiveRoundList = productiveRounds(grammar);
+const productive = lastRound(productiveRoundList);
 const isEmpty = !productive.has(grammar.start);
 const productions = grammar.productions.filter((production) =>
   usesOnly({ production, nonterminals: productive, grammar }),
 );
-const reachable = isEmpty
-  ? new Set<SymbolName>()
-  : computeReachable({
-      start: grammar.start,
-      productions,
-      onRound: ({ round, symbolsSoFar }) => onRound?.({ phase: 'reachable', round, symbolsSoFar }),
-    });
+const reachableRoundList = isEmpty ? [] : reachableRounds({ start: grammar.start, productions });
+const reachable = isEmpty ? new Set<SymbolName>() : lastRound(reachableRoundList);
 const useless = new Set(
   [...grammar.nonterminals].filter((symbol) => !productive.has(symbol) || !reachable.has(symbol)),
 );
@@ -89,21 +82,22 @@ const useless = new Set(
 - El orden es el de Hopcroft 7.1.1: primero productivos, después se filtran las producciones, y recién entonces alcanzables. Al revés puede quedar un inútil (sección 6).
 - `isEmpty = !productive.has(grammar.start)`: es la prueba de vacuidad. L(G) = ∅ si y solo si S no es productivo.
 - `grammar.productions.filter(... usesOnly({ production, nonterminals: productive, grammar }))`: se quedan solo las producciones que usan terminales y productivos. Una producción con un no productivo nunca termina en una cadena de Σ\*, así que se descarta.
-- `computeReachable({ start: grammar.start, productions, ... })`: recibe las producciones **filtradas**. Así, un símbolo que solo se alcanzaba a través de una producción descartada queda como no alcanzable.
-- `isEmpty ? new Set<SymbolName>() : ...`: si L(G) = ∅, no corre la fase de alcanzables. Ningún símbolo es útil, y el conjunto vacío hace que todos queden inútiles.
+- `reachableRounds({ start: grammar.start, productions })`: recibe las producciones **filtradas**. Así, un símbolo que solo se alcanzaba a través de una producción descartada queda como no alcanzable.
+- `isEmpty ? [] : ...`: si L(G) = ∅, no corre la fase de alcanzables (no hay rondas). Ningún símbolo es útil, y el conjunto vacío hace que todos queden inútiles.
 - `!productive.has(symbol) || !reachable.has(symbol)`: la definición de inútil. Útil exige las dos cosas, así que basta con que falle una.
-- Cada fase llama a `onRound` con `{ phase, round, symbolsSoFar }`, donde `phase` es `'productive'` o `'reachable'`. Su tipo es `UsefulRoundListener`. Con eso `--steps` arma dos tablas.
+- `productiveRounds` y `reachableRounds` devuelven todas las rondas de cada fase; `lastRound` toma el resultado. El análisis las devuelve en los campos `productiveRounds` y `reachableRounds`, y con eso `--steps` arma dos tablas.
 - Devuelve también `usefulGrammar`: `null` si L(G) = ∅; si no, el resultado de `buildUsefulGrammar` (sección 5.5).
 
-### 5.2 `computeProductive({ grammar, onRound })`
+### 5.2 `productiveRounds(grammar)` y `computeProductive(grammar)`
 
 ```ts
 return repeatRuleUntilNoChange({
   start: [],
   newSymbolsOfRound: (productiveSymbols) => newProductiveSymbols({ grammar, productiveSymbols }),
-  onRound,
 });
 ```
+
+- `productiveRounds` devuelve todas las rondas; `computeProductive` es `lastRound(productiveRounds(grammar))`, solo el resultado.
 
 - Usa el mismo `repeatRuleUntilNoChange` que los anulables (guía 07, sección 5.1). Parte de `start: []`, es decir, de ∅.
 - La regla de cada ronda es `newProductiveSymbols`, definida justo debajo:
@@ -128,7 +122,7 @@ return production.rightSide.every(
 
 ¿Todos los símbolos son terminales o están en el conjunto dado? Con ε (lado derecho vacío), `every` da `true`. Se usa dos veces: para decidir si una producción hace productivo a su lado izquierdo, y para filtrar las producciones antes de los alcanzables.
 
-### 5.4 `computeReachable({ start, productions, onRound })` y `nonterminalsUsedBy`
+### 5.4 `reachableRounds({ start, productions })` y `nonterminalsUsedBy`
 
 ```ts
 const nonterminals = new Set(productions.map((production) => production.leftSide));
@@ -136,7 +130,6 @@ return repeatRuleUntilNoChange({
   start: [start],
   newSymbolsOfRound: (reachableSymbols) =>
     nonterminalsUsedBy({ symbols: reachableSymbols, productions, nonterminals }),
-  onRound,
 });
 ```
 

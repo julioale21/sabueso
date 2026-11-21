@@ -26,12 +26,12 @@ En G1, las 10 partes opcionales (`MarcoOpc`, `PerOpc`, `CtxOpc`, `HallazgoOpc`, 
 
 ## 3. Dónde está en el código
 
-| Qué                | Dónde                                                                                                                                                                                |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Archivo            | `packages/core/src/analysis/nullable.ts`                                                                                                                                             |
-| Función            | `computeNullable({ grammar, onRound })`, sobre el esquema general `repeatRuleUntilNoChange` de `analysis/fixed-point.ts` (lo comparten los productivos y los alcanzables del paso 9) |
-| Comando de consola | `npm run sabueso -- nullable --grammar g1 --steps` (ronda por ronda)                                                                                                                 |
-| Quién lo usa       | Earley, en el arreglo de ε (paso 15); FIRST/FOLLOW (paso 11); FNC (paso 23)                                                                                                          |
+| Qué                | Dónde                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Archivo            | `packages/core/src/analysis/nullable.ts`                                                                                                                                                                                    |
+| Función            | `computeNullable(grammar)` (y `nullableRounds(grammar)`, con todas las rondas), sobre el esquema general `repeatRuleUntilNoChange` de `analysis/fixed-point.ts` (lo comparten los productivos y los alcanzables del paso 9) |
+| Comando de consola | `npm run sabueso -- nullable --grammar g1 --steps` (ronda por ronda)                                                                                                                                                        |
+| Quién lo usa       | Earley, en el arreglo de ε (paso 15); FIRST/FOLLOW (paso 11); FNC (paso 23)                                                                                                                                                 |
 
 ## 4. Qué prueba lo verifica
 
