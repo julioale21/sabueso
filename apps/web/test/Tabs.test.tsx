@@ -6,7 +6,7 @@ describe('the tabs of the page', () => {
   it('shows the six views, with Análisis selected first', () => {
     render(<App />);
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent)).toEqual([
+    expect(tabs.map((tab) => tab.firstChild?.textContent)).toEqual([
       'Análisis',
       'Earley paso a paso',
       'FNC y CYK',
@@ -44,6 +44,39 @@ describe('the tabs of the page', () => {
     expect(screen.getByRole('tab', { name: 'Análisis' })).toHaveAttribute('aria-selected', 'true');
     press('ArrowLeft');
     expect(screen.getByRole('tab', { name: 'G0 vs G1' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('the arrows up and down also move, since the bar is vertical', () => {
+    render(<App />);
+    screen.getByRole('tab', { name: 'Análisis' }).focus();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'ArrowDown' });
+    expect(screen.getByRole('tab', { name: 'LL(1)' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'ArrowUp' });
+    expect(screen.getByRole('tab', { name: 'Análisis' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('on small screens, a bar with the current view opens the drawer, and choosing a view closes it', () => {
+    render(<App />);
+    const menu = screen.getByRole('button', { name: /Vista: Análisis/ });
+    expect(menu).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(menu);
+    expect(menu).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'LL(1)' }));
+    expect(screen.getByRole('button', { name: /Vista: LL\(1\)/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('the drawer also closes with ✕ and with Escape', () => {
+    render(<App />);
+    const menu = screen.getByRole('button', { name: /Vista: Análisis/ });
+    fireEvent.click(menu);
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar las vistas' }));
+    expect(menu).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(menu);
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Análisis' }), { key: 'Escape' });
+    expect(menu).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('clicking a tab shows its panel', () => {

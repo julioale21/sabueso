@@ -32,7 +32,7 @@ describe('App', () => {
     const tabsOf = (group: string) =>
       Array.from(
         screen.getByRole('group', { name: group }).querySelectorAll('[role="tab"]'),
-        (tab) => tab.textContent,
+        (tab) => tab.firstChild?.textContent,
       );
     expect(tabsOf('Sobre el relato')).toEqual([
       'Análisis',

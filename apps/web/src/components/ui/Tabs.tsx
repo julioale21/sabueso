@@ -1,11 +1,14 @@
 /**
- * Accessible tabs (WAI-ARIA tablist): click a tab, or move between tabs with the arrow keys,
- * Home and End. Only the active panel is rendered.
+ * Accessible tabs (WAI-ARIA tablist), drawn as a side bar: click a tab, or move between tabs
+ * with the arrow keys, Home and End. On small screens the bar becomes a drawer that opens from
+ * a button with the current view. Only the active panel is rendered.
  * Reference: SPEC 03, section 3.1.
  */
-import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { TabButton } from './TabButton';
 import { TabGroup } from './TabGroup';
+import { TabDrawer } from './TabDrawer';
+import { TabMenuButton } from './TabMenuButton';
 import { TabPanel } from './TabPanel';
 
 export interface TabItem<Id extends string> {
@@ -59,6 +62,8 @@ function keyTarget({
     return undefined;
   };
   const moves: Record<string, () => number | undefined> = {
+    ArrowDown: () => walk(active, 1),
+    ArrowUp: () => walk(active, -1),
     ArrowRight: () => walk(active, 1),
     ArrowLeft: () => walk(active, -1),
     Home: () => walk(-1, 1),
@@ -80,6 +85,8 @@ export function Tabs<Id extends string>({
   onChange: (id: Id) => void;
 }) {
   const buttons = useRef(new Map<Id, HTMLButtonElement>());
+  // On small screens the list is a drawer that opens from a bar with the current view.
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const activeIndex = Math.max(
     items.findIndex((item) => item.id === activeId),
     0,
@@ -109,32 +116,51 @@ export function Tabs<Id extends string>({
     }
   };
 
+  const select = (id: Id) => {
+    onChange(id);
+    setIsMenuOpen(false);
+  };
+
   return (
-    <div>
-      <div
-        role="tablist"
-        aria-label={label}
-        className="flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-slate-200 dark:border-slate-800"
-      >
-        {groupsOf(items).map((group, index) => (
-          <TabGroup key={group.title ?? index} title={group.title} isFirst={index === 0}>
-            {group.items.map((item) => (
-              <TabButton
-                key={item.id}
-                id={item.id}
-                label={item.label}
-                isActive={item.id === activeItem?.id}
-                disabledReason={item.disabledReason}
-                buttonRef={registerButton(item.id)}
-                onSelect={() => {
-                  onChange(item.id);
-                }}
-                onKeyDown={handleKeyDown}
-              />
+    <div className="md:flex md:items-start md:gap-6">
+      <nav className="md:sticky md:top-4 md:h-[calc(100dvh-2rem)] md:w-52 md:shrink-0">
+        <TabMenuButton
+          label={activeItem?.label ?? ''}
+          isOpen={isMenuOpen}
+          controls="view-list"
+          onToggle={() => {
+            setIsMenuOpen((open) => !open);
+          }}
+        />
+        <TabDrawer
+          id="view-list"
+          isOpen={isMenuOpen}
+          onClose={() => {
+            setIsMenuOpen(false);
+          }}
+        >
+          <div role="tablist" aria-label={label} aria-orientation="vertical" className="space-y-4">
+            {groupsOf(items).map((group, index) => (
+              <TabGroup key={group.title ?? index} title={group.title}>
+                {group.items.map((item) => (
+                  <TabButton
+                    key={item.id}
+                    id={item.id}
+                    label={item.label}
+                    isActive={item.id === activeItem?.id}
+                    disabledReason={item.disabledReason}
+                    buttonRef={registerButton(item.id)}
+                    onSelect={() => {
+                      select(item.id);
+                    }}
+                    onKeyDown={handleKeyDown}
+                  />
+                ))}
+              </TabGroup>
             ))}
-          </TabGroup>
-        ))}
-      </div>
+          </div>
+        </TabDrawer>
+      </nav>
       {activeItem !== undefined && <TabPanel id={activeItem.id}>{activeItem.panel}</TabPanel>}
     </div>
   );

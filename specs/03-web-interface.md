@@ -87,7 +87,8 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 ```
 
 - **Las pestañas comparten estado:** gramática activa y secuencia actual. Cambiar de pestaña no pierde la entrada.
-- **Dos grupos de pestañas** (2026-11-21): primero las que dependen del relato (Análisis, Earley paso a paso, FNC y CYK, Autómata de pila) y al final las que dependen solo de la gramática (LL(1), G0 vs G1). Los grupos se ven: cada uno tiene su título, "Sobre el relato" y "Sobre la gramática", y un separador entre los dos (`TabGroup`). Siguen en una sola barra, así que las flechas del teclado recorren todas las pestañas.
+- **Dos grupos de pestañas** (2026-11-21): primero las que dependen del relato (Análisis, Earley paso a paso, FNC y CYK, Autómata de pila) y al final las que dependen solo de la gramática (LL(1), G0 vs G1). Los grupos se ven: cada uno tiene su título, "Sobre el relato" y "Sobre la gramática" (`TabGroup`).
+- **Barra lateral y drawer** (2026-11-21, elegido entre cinco prototipos de navegación): en escritorio las vistas son una barra lateral angosta, fija al hacer scroll y tan alta como la ventana, sobre un panel gris para que se distinga; la vista activa va en blanco con un borde índigo. En pantallas chicas la barra es un drawer que entra desde la izquierda y cubre toda la pantalla, abierto desde una barra "☰ Vista: Análisis"; se cierra con ✕, con Escape o al elegir una vista. Las pestañas bloqueadas escriben su motivo debajo, porque en una pantalla táctil no hay hover. Sigue siendo un solo `tablist` vertical: las flechas, en las cuatro direcciones, y Home y End recorren todas las vistas. La página usa todo el ancho de la pantalla.
   - Las del relato, salvo Análisis, quedan **desactivadas hasta el primer Analizar** ("Analiza un relato primero") y usan **el relato analizado** (`analyzedInput` en el estado), no lo que se está escribiendo. Limpiar y Reiniciar lo borran.
   - Las de la gramática están siempre activas, con el aviso "Propiedad de la gramática G1 · oficial: no depende del relato": su contenido es el mismo para cualquier relato.
   - El teclado salta las pestañas desactivadas.
@@ -288,6 +289,8 @@ apps/web/
     domain/tree-count.ts         # el total de árboles, completo o aproximado
     domain/diagnostic-message.ts # el diagnóstico en palabras
     components/AppHeader.tsx
+    components/ui/TabDrawer.tsx  # la barra lateral, que en pantallas chicas es un drawer
+    components/ui/TabMenuButton.tsx # la barra "☰ Vista: …" que abre el drawer
     components/PendingView.tsx   # marcador de una vista que llega en un paso posterior
     views/view-tabs.tsx          # una pestaña por vista, en el orden del análisis
     views/AnalysisView.tsx
