@@ -21,7 +21,9 @@ describe('computeNullable', () => {
   });
 
   it('epsilon-trap: A is nullable, S is not (S → A A x needs the terminal x)', () => {
-    expect(computeNullable({ grammar: loadBuiltInGrammar('epsilon-trap') })).toEqual(new Set(['A']));
+    expect(computeNullable({ grammar: loadBuiltInGrammar('epsilon-trap') })).toEqual(
+      new Set(['A']),
+    );
   });
 
   it('G1 has the 10 nullable symbols of its optional parts', () => {

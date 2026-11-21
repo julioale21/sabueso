@@ -95,16 +95,22 @@ export function repeatRuleUntilNoChange({
 - **Comparar tamaños alcanza:** `knownAfter` contiene a `knownBefore` y nunca pierde elementos. Si el tamaño no cambió, la ronda no agregó nada: es el punto fijo.
 - **Por qué termina:** el conjunto solo crece y no puede tener más símbolos que N. Hay a lo sumo |N| + 1 rondas.
 
-### 5.2 `computeNullable(grammar, onRound?)`
+### 5.2 `computeNullable({ grammar, onRound })`
 
 ```ts
-export function computeNullable(grammar: Grammar, onRound?: RoundListener): Set<SymbolName> {
+export function computeNullable({
+  grammar,
+  onRound,
+}: {
+  grammar: Grammar;
+  onRound?: RoundListener | undefined;
+}): Set<SymbolName> {
   return repeatRuleUntilNoChange({
     start: [],
     newSymbolsOfRound: (nullable) =>
       nonterminalsWithProductionMatching({
         productions: grammar.productions,
-        condition: (production) => derivesEmptyString(production, nullable),
+        condition: (production) => derivesEmptyString({ production, nullable }),
       }),
     onRound,
   });
@@ -114,7 +120,7 @@ export function computeNullable(grammar: Grammar, onRound?: RoundListener): Set<
 - Se lee como la definición: "parto de ∅; en cada ronda entran los lados izquierdos de las producciones que derivan ε con los anulables conocidos".
 - `nonterminalsWithProductionMatching({ productions, condition })` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda. La condición la decide quien llama: acá, `derivesEmptyString`; en los productivos (paso 9), `usesOnly`.
 
-### 5.3 `derivesEmptyString(production, nullable)`
+### 5.3 `derivesEmptyString({ production, nullable })`
 
 ```ts
 return production.rightSide.every((symbol) => nullable.has(symbol));
@@ -127,7 +133,7 @@ return production.rightSide.every((symbol) => nullable.has(symbol));
 
 1. Lee `--grammar <nombre>` o `--grammar-file <ruta>`, y `--steps`. No acepta argumentos sueltos.
 2. Lee la gramática con `readGrammar` (lexer → parser → `buildGrammar`). `readGrammar` es nueva en este paso: la comparten `tokens`, `nullable` y los análisis que vienen.
-3. Llama a `computeNullable` guardando cada ronda.
+3. Llama a `computeNullable({ grammar, onRound })`, con un `onRound` que guarda cada ronda.
 4. Con `--steps` imprime una fila por ronda: cuántos anulables hay y cuáles se agregaron. La última dice `(none: fixed point)`.
 5. Imprime el resultado. Un conjunto vacío se escribe ∅, como en la teoría.
 
