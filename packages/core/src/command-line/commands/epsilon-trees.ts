@@ -51,7 +51,7 @@ export const epsilonTreesCommand: Command = {
         environment,
       });
     }
-    const nullableSymbols = computeNullable({ grammar });
+    const nullableSymbols = computeNullable(grammar);
     const text =
       symbol === undefined
         ? formatAllNullable({ grammar, nullableSymbols })

@@ -59,7 +59,7 @@ export function* enumerateTrees({
   }
   const context: TreeContext = {
     grammar,
-    nullableSymbols: computeNullable({ grammar }),
+    nullableSymbols: computeNullable(grammar),
     onPath: new Set(),
   };
   for (const root of treesOfItem({ context, item: accepting })) {

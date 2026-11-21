@@ -34,7 +34,7 @@ export interface PredictiveTable {
  */
 export function buildPredictiveTable({
   grammar,
-  sets = computeFirstFollow({ grammar }),
+  sets = computeFirstFollow(grammar),
 }: {
   grammar: Grammar;
   /** FIRST and FOLLOW, if the caller already has them; otherwise they are computed. */

@@ -4,7 +4,7 @@
  * Reference: Hopcroft 7.1.4; SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
-import { repeatRuleUntilNoChange } from '../analysis/fixed-point.js';
+import { lastRound, repeatRuleUntilNoChange } from '../analysis/fixed-point.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import { rewriteGrammar } from './rewrite.js';
 
@@ -19,11 +19,11 @@ export function computeUnitPairs(grammar: Grammar): Map<SymbolName, Set<SymbolNa
   // It stops because the set only grows and is bounded by |N|.
   const unitPairs = new Map<SymbolName, Set<SymbolName>>();
   for (const nonterminal of grammar.nonterminals) {
-    const reached = repeatRuleUntilNoChange({
+    const rounds = repeatRuleUntilNoChange({
       start: [nonterminal],
       newSymbolsOfRound: (reachedSymbols) => unitTargets({ grammar, reachedSymbols }),
     });
-    unitPairs.set(nonterminal, reached);
+    unitPairs.set(nonterminal, lastRound(rounds));
   }
   return unitPairs;
 }

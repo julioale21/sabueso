@@ -99,7 +99,7 @@ if (!recognition.accepted || accepting === undefined) {
 }
 const context: TreeContext = {
   grammar,
-  nullableSymbols: computeNullable({ grammar }),
+  nullableSymbols: computeNullable(grammar),
   onPath: new Set(),
 };
 for (const root of treesOfItem({ context, item: accepting })) {

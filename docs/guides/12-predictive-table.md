@@ -104,7 +104,7 @@ Con `Inicio → CRI HAL | CRI | HAL`, las dos primeras reglas empiezan con CRI: 
 ```ts
 export function buildPredictiveTable({
   grammar,
-  sets = computeFirstFollow({ grammar }),
+  sets = computeFirstFollow(grammar),
 }: {
   grammar: Grammar;
   sets?: FirstFollowSets | undefined;
@@ -124,7 +124,7 @@ export function buildPredictiveTable({
 }
 ```
 
-- `sets = computeFirstFollow({ grammar })`: un valor por defecto dentro del objeto. Si quien llama ya tiene FIRST y FOLLOW (como `analyzeGrammar`), los pasa (`{ grammar, sets }`) y no se calculan dos veces; si no, se calculan acá.
+- `sets = computeFirstFollow(grammar)`: un valor por defecto dentro del objeto. Si quien llama ya tiene FIRST y FOLLOW (como `analyzeGrammar`), los pasa (`{ grammar, sets }`) y no se calculan dos veces; si no, se calculan acá.
 - Primero crea una fila vacía por no terminal, así todo no terminal aparece en la tabla aunque no tenga casillas.
 - Para cada producción, `predictionSet` dice en qué columnas va. `row.get(lookahead) ?? []` toma lo que ya había en la casilla (o nada) y le agrega esta producción: **por eso una casilla puede terminar con dos**, y eso es el conflicto.
 - No se detiene en el primer conflicto: llena la tabla entera, así se pueden listar todos.
@@ -155,10 +155,10 @@ Recorre las filas y las casillas en orden y junta las que tienen más de una pro
 ### 5.4 `analyzeGrammar(grammar)` (`analysis/index.ts`)
 
 ```ts
-const useful = analyzeUsefulSymbols({ grammar });
-const sets = computeFirstFollow({ grammar });
+const useful = analyzeUsefulSymbols(grammar);
+const sets = computeFirstFollow(grammar);
 return {
-  nullableSymbols: computeNullable({ grammar }),
+  nullableSymbols: computeNullable(grammar),
   minYield: computeMinYield(grammar),
   productive: useful.productive,
   reachable: useful.reachable,

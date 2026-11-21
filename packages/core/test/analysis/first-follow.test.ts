@@ -30,7 +30,7 @@ function sorted({
 }
 
 describe('FIRST and FOLLOW of the mini detective story (the hand-made tables)', () => {
-  const { first, follow } = computeFirstFollow({ grammar: miniDetective });
+  const { first, follow } = computeFirstFollow(miniDetective);
 
   it.each([
     ['Relato', ['CRI', 'HAL']],
@@ -60,7 +60,7 @@ describe('FIRST and FOLLOW of the mini detective story (the hand-made tables)', 
 });
 
 describe('G1: the sets of section 4.4 of the spec', () => {
-  const { first, follow } = computeFirstFollow({ grammar: loadBuiltInGrammar('g1') });
+  const { first, follow } = computeFirstFollow(loadBuiltInGrammar('g1'));
 
   it.each([
     ['Pasos', ['REV']],
@@ -98,7 +98,7 @@ describe('G1: the sets of section 4.4 of the spec', () => {
 
 describe('G0', () => {
   it('FOLLOW(Pasos) also has what a Pasos can start with, because of Pasos → Pasos Pasos', () => {
-    const { follow } = computeFirstFollow({ grammar: loadBuiltInGrammar('g0') });
+    const { follow } = computeFirstFollow(loadBuiltInGrammar('g0'));
     expect(sorted({ sets: follow, symbol: 'Pasos' })).toEqual([
       'ATQ',
       'DSC',
@@ -115,15 +115,15 @@ describe('ε in FIRST', () => {
     '%s: ε ∈ FIRST(A) exactly for the nullable symbols of step 7',
     (name) => {
       const grammar = loadBuiltInGrammar(name);
-      const first = computeFirst({ grammar });
+      const first = computeFirst(grammar);
       const withEmpty = [...grammar.nonterminals].filter((symbol) => first.get(symbol)?.has('ε'));
-      expect(new Set(withEmpty)).toEqual(computeNullable({ grammar }));
+      expect(new Set(withEmpty)).toEqual(computeNullable(grammar));
     },
   );
 });
 
 describe('firstOfSequence', () => {
-  const first = computeFirst({ grammar: miniDetective });
+  const first = computeFirst(miniDetective);
 
   it('a terminal is its own FIRST', () => {
     expect([...firstOfSequence({ symbols: ['REV'], first })]).toEqual(['REV']);
@@ -149,28 +149,26 @@ describe('firstOfSequence', () => {
 
 describe('the rounds of the fixed points', () => {
   it('mini detective: FIRST takes 2 rounds plus the check, then FOLLOW', () => {
-    const phases: string[] = [];
-    computeFirstFollow({
-      grammar: miniDetective,
-      onRound: ({ phase, round }) => phases.push(`${phase} ${round}`),
-    });
-    expect(phases.slice(0, 3)).toEqual(['first 1', 'first 2', 'first 3']);
-    expect(phases.filter((step) => step.startsWith('follow')).length).toBeGreaterThan(1);
+    const sets = computeFirstFollow(miniDetective);
+    expect(sets.firstRounds).toHaveLength(3);
+    expect(sets.followRounds.length).toBeGreaterThan(1);
+    expect(sets.firstRounds.at(-1)).toEqual(sets.first);
   });
 
   it('computeFollow starts with $ in FOLLOW(S)', () => {
     const grammar = parseGrammarText({ text: "S -> 'a'\n", name: 'one' });
     expect(
       sorted({
-        sets: computeFollow({ grammar, first: computeFirst({ grammar }) }),
+        sets: computeFollow({ grammar, first: computeFirst(grammar) }),
         symbol: 'S',
       }),
     ).toEqual(['$']);
   });
 
   it('left recursion is no problem: arithmetic FIRST(E) = {(, id}', () => {
-    expect(
-      sorted({ sets: computeFirst({ grammar: loadBuiltInGrammar('arithmetic') }), symbol: 'E' }),
-    ).toEqual(['(', 'id']);
+    expect(sorted({ sets: computeFirst(loadBuiltInGrammar('arithmetic')), symbol: 'E' })).toEqual([
+      '(',
+      'id',
+    ]);
   });
 });

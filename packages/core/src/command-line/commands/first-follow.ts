@@ -4,7 +4,7 @@
  * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.2.
  * Card: docs/concepts/05-first-follow.md
  */
-import { computeFirstFollow, type FirstFollowPhase } from '../../analysis/first-follow.js';
+import { computeFirstFollow } from '../../analysis/first-follow.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
 import { formatSet, formatTable } from '../format.js';
@@ -45,20 +45,20 @@ export const firstFollowCommand: Command = {
       return reportUsageError({ message: `Usage: ${FIRST_FOLLOW_USAGE}`, environment });
     }
     const grammar = await readGrammar({ source, environment });
-    const rounds: Record<FirstFollowPhase, Snapshot[]> = { first: [], follow: [] };
-    const sets = computeFirstFollow({
-      grammar,
-      onRound: ({ phase, setsSoFar }) => rounds[phase].push(setsSoFar),
-    });
+    const sets = computeFirstFollow(grammar);
     const sections = [`${grammar.name}: FIRST and FOLLOW`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(
-        formatRounds({ title: 'FIRST, round by round:', rounds: rounds.first, start: new Map() }),
+        formatRounds({
+          title: 'FIRST, round by round:',
+          rounds: sets.firstRounds,
+          start: new Map(),
+        }),
       );
       sections.push(
         formatRounds({
           title: 'FOLLOW, round by round (it starts with $ in FOLLOW of the start symbol):',
-          rounds: rounds.follow,
+          rounds: sets.followRounds,
           start: new Map([[grammar.start, new Set(['$'])]]),
         }),
       );

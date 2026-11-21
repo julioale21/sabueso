@@ -8,12 +8,12 @@ import { loadBuiltInGrammar } from '../helpers/load.js';
 
 function setup(text: string) {
   const grammar = parseGrammarText({ text, name: 'test' });
-  return { grammar, nullableSymbols: computeNullable({ grammar }) };
+  return { grammar, nullableSymbols: computeNullable(grammar) };
 }
 
 describe('G1', () => {
   const grammar = loadBuiltInGrammar('g1');
-  const nullableSymbols = computeNullable({ grammar });
+  const nullableSymbols = computeNullable(grammar);
 
   it.each([...nullableSymbols])('%s has exactly 1 ε-tree', (symbol) => {
     expect(countEpsilonTrees({ grammar, nullableSymbols, symbol })).toBe(1n);
@@ -71,7 +71,7 @@ describe('cycles', () => {
 describe('symbols that do not derive ε', () => {
   it('have 0 ε-trees', () => {
     const grammar = loadBuiltInGrammar('g1');
-    const nullableSymbols = computeNullable({ grammar });
+    const nullableSymbols = computeNullable(grammar);
     expect(countEpsilonTrees({ grammar, nullableSymbols, symbol: 'Relato' })).toBe(0n);
     expect(epsilonTrees({ grammar, nullableSymbols, symbol: 'Relato' })).toEqual([]);
   });

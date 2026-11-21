@@ -4,11 +4,7 @@
  * Reference: Hopcroft 7.1.1, 7.1.2 and 7.4.3.
  * Card: docs/concepts/08-useless-symbols-and-emptiness.md
  */
-import {
-  analyzeUsefulSymbols,
-  type UsefulPhase,
-  type UsefulSymbolsAnalysis,
-} from '../../analysis/useful.js';
+import { analyzeUsefulSymbols, type UsefulSymbolsAnalysis } from '../../analysis/useful.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
 import { formatGrammar, formatSet, formatTable } from '../format.js';
@@ -47,20 +43,13 @@ export const usefulCommand: Command = {
       return reportUsageError({ message: `Usage: ${USEFUL_USAGE}`, environment });
     }
     const grammar = await readGrammar({ source, environment });
-    const rounds: Record<UsefulPhase, ReadonlySet<SymbolName>[]> = {
-      productive: [],
-      reachable: [],
-    };
-    const analysis = analyzeUsefulSymbols({
-      grammar,
-      onRound: ({ phase, symbolsSoFar }) => rounds[phase].push(symbolsSoFar),
-    });
+    const analysis = analyzeUsefulSymbols(grammar);
     const sections = [`${grammar.name}: useful symbols`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(
         formatRounds({
           title: 'Productive (A ⇒* w, w ∈ Σ*), round by round:',
-          rounds: rounds.productive,
+          rounds: analysis.productiveRounds,
           initial: [],
         }),
       );
@@ -68,7 +57,7 @@ export const usefulCommand: Command = {
         sections.push(
           formatRounds({
             title: 'Reachable from the start symbol, round by round:',
-            rounds: rounds.reachable,
+            rounds: analysis.reachableRounds,
             initial: [grammar.start],
           }),
         );

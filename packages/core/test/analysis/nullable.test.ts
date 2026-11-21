@@ -1,6 +1,6 @@
 // Nullable symbols (A ⇒* ε) by least fixed point: the values of step 7 of the spec.
 import { describe, expect, it } from 'vitest';
-import { computeNullable } from '../../src/analysis/nullable.js';
+import { computeNullable, nullableRounds } from '../../src/analysis/nullable.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import type { SymbolName } from '../../src/grammar/types.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
@@ -13,21 +13,19 @@ const chainGrammar = parseGrammarText({
 
 describe('computeNullable', () => {
   it('G0 has no nullable symbols: it has no ε-productions', () => {
-    expect(computeNullable({ grammar: loadBuiltInGrammar('g0') })).toEqual(new Set());
+    expect(computeNullable(loadBuiltInGrammar('g0'))).toEqual(new Set());
   });
 
   it('parentheses: S → ε makes S nullable', () => {
-    expect(computeNullable({ grammar: loadBuiltInGrammar('parentheses') })).toEqual(new Set(['S']));
+    expect(computeNullable(loadBuiltInGrammar('parentheses'))).toEqual(new Set(['S']));
   });
 
   it('epsilon-trap: A is nullable, S is not (S → A A x needs the terminal x)', () => {
-    expect(computeNullable({ grammar: loadBuiltInGrammar('epsilon-trap') })).toEqual(
-      new Set(['A']),
-    );
+    expect(computeNullable(loadBuiltInGrammar('epsilon-trap'))).toEqual(new Set(['A']));
   });
 
   it('G1 has the 10 nullable symbols of its optional parts', () => {
-    expect(computeNullable({ grammar: loadBuiltInGrammar('g1') })).toEqual(
+    expect(computeNullable(loadBuiltInGrammar('g1'))).toEqual(
       new Set([
         'MarcoOpc',
         'PerOpc',
@@ -44,31 +42,23 @@ describe('computeNullable', () => {
   });
 
   it('a symbol whose productions are all nullable is nullable too, one round later', () => {
-    expect(computeNullable({ grammar: chainGrammar })).toEqual(new Set(['A', 'B', 'S']));
+    expect(computeNullable(chainGrammar)).toEqual(new Set(['A', 'B', 'S']));
   });
 
   it('terminals are never nullable, even when the rest of the right side is', () => {
     const grammar = parseGrammarText({ text: "S -> A 'x'\nA -> ε\n", name: 'terminal' });
-    expect(computeNullable({ grammar })).toEqual(new Set(['A']));
+    expect(computeNullable(grammar)).toEqual(new Set(['A']));
   });
 
   it('a symbol in a cycle with no way out to ε is not nullable', () => {
-    expect(computeNullable({ grammar: loadBuiltInGrammar('test-cyclic') })).toEqual(new Set());
+    expect(computeNullable(loadBuiltInGrammar('test-cyclic'))).toEqual(new Set());
   });
 });
 
-describe('computeNullable with onRound', () => {
+describe('nullableRounds', () => {
   function rounds(grammarName: string | undefined): SymbolName[][] {
     const grammar = grammarName === undefined ? chainGrammar : loadBuiltInGrammar(grammarName);
-    const seen: SymbolName[][] = [];
-    computeNullable({
-      grammar,
-      onRound: ({ round, symbolsSoFar }) => {
-        expect(round).toBe(seen.length + 1);
-        seen.push([...symbolsSoFar].sort());
-      },
-    });
-    return seen;
+    return nullableRounds(grammar).map((round) => [...round].sort());
   }
 
   it('round i finds the symbols with an ε-tree of height i; the last round adds nothing', () => {
@@ -86,12 +76,11 @@ describe('computeNullable with onRound', () => {
     expect(rounds('g0')).toEqual([[]]);
   });
 
-  it('the snapshots are copies: later rounds do not change them', () => {
-    const snapshots: ReadonlySet<SymbolName>[] = [];
-    computeNullable({
-      grammar: chainGrammar,
-      onRound: ({ symbolsSoFar }) => snapshots.push(symbolsSoFar),
-    });
-    expect(snapshots.map((snapshot) => snapshot.size)).toEqual([1, 2, 3, 3]);
+  it('each round is its own set: later rounds do not change it', () => {
+    expect(nullableRounds(chainGrammar).map((round) => round.size)).toEqual([1, 2, 3, 3]);
+  });
+
+  it('the last round is the result of computeNullable', () => {
+    expect(nullableRounds(chainGrammar).at(-1)).toEqual(computeNullable(chainGrammar));
   });
 });

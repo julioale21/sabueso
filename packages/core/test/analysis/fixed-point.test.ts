@@ -1,6 +1,7 @@
 // The least fixed point by rounds, shared by the nullable, productive and reachable analyses.
 import { describe, expect, it } from 'vitest';
 import {
+  lastRound,
   repeatRuleUntilNoChange,
   repeatRuleOnSetsUntilNoChange,
 } from '../../src/analysis/fixed-point.js';
@@ -12,20 +13,14 @@ const followChain = (known: ReadonlySet<SymbolName>): SymbolName[] =>
   [...known].flatMap((symbol) => successors[symbol] ?? []);
 
 describe('repeatRuleUntilNoChange', () => {
-  it('applies the rule until a round adds nothing', () => {
-    expect(repeatRuleUntilNoChange({ start: ['a'], newSymbolsOfRound: followChain })).toEqual(
-      new Set(['a', 'b', 'c', 'd']),
-    );
+  it('applies the rule until a round adds nothing; the last round is the result', () => {
+    const rounds = repeatRuleUntilNoChange({ start: ['a'], newSymbolsOfRound: followChain });
+    expect(lastRound(rounds)).toEqual(new Set(['a', 'b', 'c', 'd']));
   });
 
   it('a symbol found in a round only counts in the next one: one link per round', () => {
-    const rounds: SymbolName[][] = [];
-    repeatRuleUntilNoChange({
-      start: ['a'],
-      newSymbolsOfRound: followChain,
-      onRound: ({ symbolsSoFar }) => rounds.push([...symbolsSoFar].sort()),
-    });
-    expect(rounds).toEqual([
+    const rounds = repeatRuleUntilNoChange({ start: ['a'], newSymbolsOfRound: followChain });
+    expect(rounds.map((round) => [...round].sort())).toEqual([
       ['a', 'b'],
       ['a', 'b', 'c'],
       ['a', 'b', 'c', 'd'],
@@ -33,42 +28,30 @@ describe('repeatRuleUntilNoChange', () => {
     ]);
   });
 
-  it('numbers the rounds from 1, and the last one is the check', () => {
-    const numbers: number[] = [];
-    repeatRuleUntilNoChange({
-      start: ['a'],
-      newSymbolsOfRound: followChain,
-      onRound: ({ round }) => numbers.push(round),
-    });
-    expect(numbers).toEqual([1, 2, 3, 4]);
-  });
-
   it('a rule that finds nothing stops after one round, with the start set', () => {
-    const rounds: number[] = [];
-    expect(
-      repeatRuleUntilNoChange({
-        start: [],
-        newSymbolsOfRound: () => [],
-        onRound: ({ round }) => rounds.push(round),
-      }),
-    ).toEqual(new Set());
-    expect(rounds).toEqual([1]);
+    expect(repeatRuleUntilNoChange({ start: [], newSymbolsOfRound: () => [] })).toEqual([
+      new Set(),
+    ]);
   });
 
   it('repeated symbols from the rule do not count as new: it still stops', () => {
-    expect(repeatRuleUntilNoChange({ start: ['a'], newSymbolsOfRound: () => ['a', 'a'] })).toEqual(
-      new Set(['a']),
-    );
+    const rounds = repeatRuleUntilNoChange({ start: ['a'], newSymbolsOfRound: () => ['a', 'a'] });
+    expect(lastRound(rounds)).toEqual(new Set(['a']));
   });
 
-  it('the sets given to onRound do not change in later rounds', () => {
-    const snapshots: ReadonlySet<SymbolName>[] = [];
-    repeatRuleUntilNoChange({
-      start: ['a'],
-      newSymbolsOfRound: followChain,
-      onRound: ({ symbolsSoFar }) => snapshots.push(symbolsSoFar),
-    });
-    expect(snapshots.map((snapshot) => snapshot.size)).toEqual([2, 3, 4, 4]);
+  it('each round is its own set: later rounds do not change earlier ones', () => {
+    const rounds = repeatRuleUntilNoChange({ start: ['a'], newSymbolsOfRound: followChain });
+    expect(rounds.map((round) => round.size)).toEqual([2, 3, 4, 4]);
+  });
+});
+
+describe('lastRound', () => {
+  it('returns the last round', () => {
+    expect(lastRound([new Set(['a']), new Set(['a', 'b'])])).toEqual(new Set(['a', 'b']));
+  });
+
+  it('throws on an empty list: a fixed point always has at least one round', () => {
+    expect(() => lastRound([])).toThrow();
   });
 });
 
@@ -85,19 +68,14 @@ describe('repeatRuleOnSetsUntilNoChange', () => {
   ]);
 
   it('grows every set until no set changes', () => {
-    const result = repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound: copyRule });
+    const result = lastRound(repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound: copyRule }));
     expect(result.get('a')).toEqual(new Set(['x']));
     expect(result.get('b')).toEqual(new Set(['x']));
   });
 
   it('a member found in a round only counts in the next one', () => {
-    const sizes: number[] = [];
-    repeatRuleOnSetsUntilNoChange({
-      start,
-      newMembersOfRound: copyRule,
-      onRound: ({ setsSoFar }) => sizes.push(setsSoFar.get('a')?.size ?? 0),
-    });
-    expect(sizes).toEqual([0, 1, 1]);
+    const rounds = repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound: copyRule });
+    expect(rounds.map((round) => round.get('a')?.size ?? 0)).toEqual([0, 1, 1]);
   });
 
   it('does not change the start sets', () => {

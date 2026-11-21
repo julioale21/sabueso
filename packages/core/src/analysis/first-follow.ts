@@ -5,27 +5,13 @@
  * Card: docs/concepts/05-first-follow.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
-import {
-  repeatRuleOnSetsUntilNoChange,
-  type SetsBySymbol,
-  type SetsRoundListener,
-} from './fixed-point.js';
+import { lastRound, repeatRuleOnSetsUntilNoChange, type SetsBySymbol } from './fixed-point.js';
 
 /** The member of a FIRST set that means "this can derive the empty string". */
 export const EMPTY_STRING = 'ε';
 
 /** The member of a FOLLOW set that means "this can be the last thing of the input". */
 export const END_OF_INPUT = '$';
-
-/** The two fixed points, in the order they run: FOLLOW needs FIRST. */
-export type FirstFollowPhase = 'first' | 'follow';
-
-/** Called after each round of each phase with every set as found so far. */
-export type FirstFollowRoundListener = (round: {
-  phase: FirstFollowPhase;
-  round: number;
-  setsSoFar: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
-}) => void;
 
 export interface FirstFollowSets {
   /** FIRST(A) for each nonterminal: the terminals A can start with, plus ε if A ⇒* ε. */
@@ -34,46 +20,43 @@ export interface FirstFollowSets {
   follow: SetsBySymbol;
 }
 
+/** FIRST and FOLLOW together with every round of their fixed points (the --steps tables). */
+export interface FirstFollowWithRounds extends FirstFollowSets {
+  /** Every round of the FIRST fixed point; the last is `first`. */
+  firstRounds: SetsBySymbol[];
+  /** Every round of the FOLLOW fixed point; the last is `follow`. */
+  followRounds: SetsBySymbol[];
+}
+
 /** FIRST and FOLLOW of every nonterminal; FIRST first, because FOLLOW is built from it. */
-export function computeFirstFollow({
-  grammar,
-  onRound,
-}: {
-  grammar: Grammar;
-  /** Called after each round of each phase (the --steps tables). */
-  onRound?: FirstFollowRoundListener | undefined;
-}): FirstFollowSets {
-  const first = computeFirst({
-    grammar,
-    onRound: ({ round, setsSoFar }) => onRound?.({ phase: 'first', round, setsSoFar }),
-  });
-  const follow = computeFollow({
-    grammar,
+export function computeFirstFollow(grammar: Grammar): FirstFollowWithRounds {
+  const firstRoundList = firstRounds(grammar);
+  const first = lastRound(firstRoundList);
+  const followRoundList = followRounds({ grammar, first });
+  return {
     first,
-    onRound: ({ round, setsSoFar }) => onRound?.({ phase: 'follow', round, setsSoFar }),
-  });
-  return { first, follow };
+    follow: lastRound(followRoundList),
+    firstRounds: firstRoundList,
+    followRounds: followRoundList,
+  };
 }
 
 /**
  * FIRST(A) for every nonterminal A, by least fixed point: for each A → α, everything that
  * FIRST(α) has so far goes into FIRST(A).
  */
-export function computeFirst({
-  grammar,
-  onRound,
-}: {
-  grammar: Grammar;
-  /** Called after each round with every FIRST set as found so far. */
-  onRound?: SetsRoundListener | undefined;
-}): SetsBySymbol {
+export function computeFirst(grammar: Grammar): SetsBySymbol {
+  return lastRound(firstRounds(grammar));
+}
+
+/** Every round of the FIRST fixed point; the last one is the result. */
+export function firstRounds(grammar: Grammar): SetsBySymbol[] {
   // Each round, for every production A → X1…Xk: a sequence starts with what X1 starts
   // with; if X1 can vanish (ε ∈ FIRST(X1)), also with what X2 starts with, and so on.
   // If all of them can vanish, A can too, and ε goes into FIRST(A).
   return repeatRuleOnSetsUntilNoChange({
     start: emptySetFor(grammar.nonterminals),
     newMembersOfRound: (first) => newFirstMembers({ grammar, first }),
-    onRound,
   });
 }
 
@@ -103,14 +86,23 @@ function newFirstMembers({
 export function computeFollow({
   grammar,
   first,
-  onRound,
 }: {
   grammar: Grammar;
   /** FIRST of every nonterminal, already computed. */
   first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
-  /** Called after each round with every FOLLOW set as found so far. */
-  onRound?: SetsRoundListener | undefined;
 }): SetsBySymbol {
+  return lastRound(followRounds({ grammar, first }));
+}
+
+/** Every round of the FOLLOW fixed point; the last one is the result. */
+export function followRounds({
+  grammar,
+  first,
+}: {
+  grammar: Grammar;
+  /** FIRST of every nonterminal, already computed. */
+  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}): SetsBySymbol[] {
   // FOLLOW looks to the right: what comes after B is what β starts with. When β can
   // vanish, B can be the last thing of A, so whatever comes after A comes after B too.
   const start = emptySetFor(grammar.nonterminals);
@@ -118,7 +110,6 @@ export function computeFollow({
   return repeatRuleOnSetsUntilNoChange({
     start,
     newMembersOfRound: (follow) => newFollowMembers({ grammar, first, follow }),
-    onRound,
   });
 }
 

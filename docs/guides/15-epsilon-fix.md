@@ -119,7 +119,7 @@ const context: RecognizerContext = {
   grammar,
   chart,
   tokens,
-  nullableSymbols: classicEpsilon ? new Set() : computeNullable({ grammar }),
+  nullableSymbols: classicEpsilon ? new Set() : computeNullable(grammar),
   classicEpsilon,
 };
 ```

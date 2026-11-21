@@ -2,12 +2,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   analyzeUsefulSymbols,
-  computeProductive,
   computeReachable,
+  productiveRounds,
+  reachableRounds,
 } from '../../src/analysis/useful.js';
 import { formatProduction } from '../../src/grammar/build.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
-import type { SymbolName } from '../../src/grammar/types.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
 /**
@@ -21,7 +21,7 @@ const hopcroftExample = parseGrammarText({
 
 describe('analyzeUsefulSymbols', () => {
   it('test-useless: A is not productive and, once it is removed, C is not reachable', () => {
-    const analysis = analyzeUsefulSymbols({ grammar: loadBuiltInGrammar('test-useless') });
+    const analysis = analyzeUsefulSymbols(loadBuiltInGrammar('test-useless'));
     expect(analysis.productive).toEqual(new Set(['S', 'C']));
     expect(analysis.reachable).toEqual(new Set(['S']));
     expect(analysis.useless).toEqual(new Set(['A', 'C']));
@@ -30,7 +30,7 @@ describe('analyzeUsefulSymbols', () => {
   });
 
   it('test-empty: S is not productive, so L(G) = ∅ and there is no useful grammar', () => {
-    const analysis = analyzeUsefulSymbols({ grammar: loadBuiltInGrammar('test-empty') });
+    const analysis = analyzeUsefulSymbols(loadBuiltInGrammar('test-empty'));
     expect(analysis.isEmpty).toBe(true);
     expect(analysis.productive).toEqual(new Set());
     expect(analysis.useless).toEqual(new Set(['S']));
@@ -41,7 +41,7 @@ describe('analyzeUsefulSymbols', () => {
     '%s has no useless symbols and L(G) ≠ ∅',
     (name) => {
       const grammar = loadBuiltInGrammar(name);
-      const analysis = analyzeUsefulSymbols({ grammar });
+      const analysis = analyzeUsefulSymbols(grammar);
       expect(analysis.useless).toEqual(new Set());
       expect(analysis.isEmpty).toBe(false);
       expect(analysis.usefulGrammar?.productions).toHaveLength(grammar.productions.length);
@@ -49,7 +49,7 @@ describe('analyzeUsefulSymbols', () => {
   );
 
   it('the order matters: removing the non-productive B first makes A unreachable', () => {
-    const analysis = analyzeUsefulSymbols({ grammar: hopcroftExample });
+    const analysis = analyzeUsefulSymbols(hopcroftExample);
     expect(analysis.productive).toEqual(new Set(['S', 'A']));
     expect(analysis.reachable).toEqual(new Set(['S']));
     expect(analysis.useless).toEqual(new Set(['A', 'B']));
@@ -65,9 +65,7 @@ describe('analyzeUsefulSymbols', () => {
   });
 
   it('the useful grammar keeps the language and shrinks Σ to the terminals still used', () => {
-    const useful = analyzeUsefulSymbols({
-      grammar: loadBuiltInGrammar('test-useless'),
-    }).usefulGrammar;
+    const useful = analyzeUsefulSymbols(loadBuiltInGrammar('test-useless')).usefulGrammar;
     expect(useful?.terminals).toEqual(new Set(['b']));
     expect(useful?.start).toBe('S');
   });
@@ -75,41 +73,27 @@ describe('analyzeUsefulSymbols', () => {
 
 describe('the rounds of each fixed point', () => {
   it('productive: round i finds the symbols with a terminal tree of height i (G1: 4 rounds + check)', () => {
-    const rounds: SymbolName[][] = [];
-    computeProductive({
-      grammar: loadBuiltInGrammar('g1'),
-      onRound: ({ symbolsSoFar }) => rounds.push([...symbolsSoFar]),
-    });
-    expect(rounds.map((round) => round.length)).toEqual([12, 18, 20, 21, 21]);
-    expect(rounds[3]).toContain('Relato');
+    const rounds = productiveRounds(loadBuiltInGrammar('g1'));
+    expect(rounds.map((round) => round.size)).toEqual([12, 18, 20, 21, 21]);
+    expect(rounds[3]?.has('Relato')).toBe(true);
   });
 
   it('reachable: round i adds the symbols at distance i from S', () => {
     const grammar = loadBuiltInGrammar('g1');
-    const rounds: number[] = [];
-    computeReachable({
-      start: grammar.start,
-      productions: grammar.productions,
-      onRound: ({ symbolsSoFar }) => rounds.push(symbolsSoFar.size),
-    });
-    expect(rounds).toEqual([4, 10, 18, 20, 21, 21]);
+    const rounds = reachableRounds({ start: grammar.start, productions: grammar.productions });
+    expect(rounds.map((round) => round.size)).toEqual([4, 10, 18, 20, 21, 21]);
   });
 
-  it('analyzeUsefulSymbols reports both phases, productive first', () => {
-    const phases: string[] = [];
-    analyzeUsefulSymbols({
-      grammar: loadBuiltInGrammar('test-useless'),
-      onRound: ({ phase }) => phases.push(phase),
-    });
-    expect(phases).toEqual(['productive', 'productive', 'reachable']);
+  it('analyzeUsefulSymbols returns the rounds of both phases', () => {
+    const analysis = analyzeUsefulSymbols(loadBuiltInGrammar('test-useless'));
+    expect(analysis.productiveRounds).toHaveLength(2);
+    expect(analysis.reachableRounds).toHaveLength(1);
+    expect(analysis.productiveRounds.at(-1)).toEqual(analysis.productive);
   });
 
-  it('an empty language skips the reachable phase', () => {
-    const phases: string[] = [];
-    analyzeUsefulSymbols({
-      grammar: loadBuiltInGrammar('test-empty'),
-      onRound: ({ phase }) => phases.push(phase),
-    });
-    expect(phases).toEqual(['productive']);
+  it('an empty language skips the reachable phase: no reachable rounds', () => {
+    const analysis = analyzeUsefulSymbols(loadBuiltInGrammar('test-empty'));
+    expect(analysis.productiveRounds).toHaveLength(1);
+    expect(analysis.reachableRounds).toEqual([]);
   });
 });

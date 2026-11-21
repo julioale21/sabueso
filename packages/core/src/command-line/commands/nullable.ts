@@ -4,7 +4,8 @@
  * Reference: Hopcroft 7.1.3; Augusto 2.3.
  * Card: docs/concepts/07-nullable-symbols.md
  */
-import { computeNullable } from '../../analysis/nullable.js';
+import { lastRound } from '../../analysis/fixed-point.js';
+import { nullableRounds } from '../../analysis/nullable.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
 import { formatSet, formatTable } from '../format.js';
@@ -42,11 +43,8 @@ export const nullableCommand: Command = {
       return reportUsageError({ message: `Usage: ${NULLABLE_USAGE}`, environment });
     }
     const grammar = await readGrammar({ source, environment });
-    const rounds: ReadonlySet<SymbolName>[] = [];
-    const nullableSymbols = computeNullable({
-      grammar,
-      onRound: ({ symbolsSoFar }) => rounds.push(symbolsSoFar),
-    });
+    const rounds = nullableRounds(grammar);
+    const nullableSymbols = lastRound(rounds);
     const sections = [`${grammar.name}: nullable symbols (A ⇒* ε)`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(formatRounds(rounds));
