@@ -1,6 +1,6 @@
 # SPEC 03 — Interfaz web de Sabueso: análisis visual y vistas didácticas
 
-> **Estado:** Revisado, pendiente de aprobación
+> **Estado:** Aprobado (2026-11-21). Se implementa en la rama `ui_v1`: primera versión de la UI, con un diseño simple
 > **Depende de:** SPEC 01, SPEC 02 (terminado)
 > **Fecha:** 2026-11-14 · **Revisión:** 2026-11-21 (con el núcleo terminado)
 > **Objetivo:** Construir `apps/web`, una aplicación React de una sola página y sin servidor que usa `@sabueso/core` sin modificarlo, para cargar un relato, ver su árbol, su derivación y su diagnóstico, y recorrer visualmente cada concepto teórico del núcleo durante la exposición.
@@ -31,7 +31,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 
 - El workspace `apps/web` (`@sabueso/web`) con Vite, React 19 y TypeScript estricto.
 - **Vista "Análisis"** (la principal, según el boceto del anteproyecto):
-  - entrada de secuencia con paleta de terminales y campo de texto;
+  - entrada de secuencia: campo de texto libre, con la paleta de etiquetas válidas siempre visible y las etiquetas desconocidas marcadas mientras se escribe (sección 3.7);
   - ejemplos precargados;
   - selector de género (hoy solo el policial de enigma) y de versión (G1 oficial o G0 para ver la ambigüedad), con la gramática activa en solo lectura y su resumen de análisis;
   - resultado: árbol en SVG, derivación paso a paso, el total de árboles y los primeros 3 para recorrer;
@@ -150,12 +150,27 @@ Se descarta Reingold-Tilford porque es más compacto, pero más largo de explica
 - **Selector:** se construye desde el **catálogo de géneros** del núcleo (`genres`). Tiene dos niveles: género (hoy solo "Policial de enigma") y versión ("G1: oficial" o "G0: ambigua"). Por defecto, la versión oficial. Las gramáticas internas (`meta` y las de `grammars/test/`) no se ofrecen: no identifican ningún género. Si en el futuro se suma un género al catálogo, aparece en el selector sin cambiar la UI.
 - **Texto de la gramática:** se muestra en solo lectura, con las producciones tal como están en el `.grammar`. Así, durante la defensa, se ve contra qué se está analizando.
 - **Resumen:** LL(1) ✓/✗, cantidad de anulables, inútiles, si es vacía y si tiene ciclos (de `analyzeGrammar`).
-- **Paleta:** muestra las **etiquetas del género activo** (`Genre.tags`), con su función narrativa como tooltip.
+- **Paleta:** muestra las **etiquetas del género activo** (`Genre.tags`), cada una con su nombre y su función narrativa corta (sección 3.7).
 - **Origen:** las gramáticas son archivos fijos de `packages/core/grammars/`. El usuario no puede cargar ni editar gramáticas. Si la cátedra pide un cambio, se edita el `.grammar` en el repositorio, sin tocar el código (anteproyecto).
 
 ### 3.6 Metadatos de las etiquetas
 
 Las etiquetas, su función narrativa y su ejemplo (tabla del anteproyecto) vienen del catálogo de géneros del núcleo (`Genre.tags`). La web no define datos de dominio propios: así la CLI y la UI usan la misma fuente, y un género nuevo trae sus etiquetas.
+
+### 3.7 La entrada del relato
+
+En esta primera etapa la entrada es la **cadena de etiquetas**, como en la consola (el texto en español llega con el SPEC 04). Se escribe libremente, con la lista de valores válidos siempre a la vista:
+
+| Pieza                      | Qué hace                                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Paleta siempre visible** | las 14 etiquetas del género como botones, cada una con su nombre y su función corta (`PIS · pista`). Es la lista de valores válidos; un clic agrega la etiqueta al final |
+| **Campo de texto libre**   | se escribe o se edita a mano, separado por espacios                                                                                                                      |
+| **Marcado inmediato**      | mientras se escribe, cada palabra que no está en Σ de la gramática activa se marca en rojo, antes de analizar                                                            |
+| **Ejemplos**               | V1, A1, I1, I5 y L1 cargan la secuencia directamente                                                                                                                     |
+| **Analizar**               | botón y Ctrl+Enter                                                                                                                                                       |
+
+- **Por qué no un selector cerrado:** los errores son parte de lo que se muestra. El anteproyecto pide informar la posición del error y los símbolos esperados. Una etiqueta inexistente (`XYZ`) solo se puede mostrar si se puede escribir; y el error más interesante, etiquetas válidas en mal orden (`CRI REV`), lo produce cualquier forma de entrada.
+- **El marcado no es un algoritmo de la materia:** compara cada palabra con el alfabeto Σ que entrega el servicio (buscar en un conjunto). El veredicto lo da siempre el núcleo, al analizar.
 
 ---
 
@@ -167,6 +182,7 @@ type GrammarId = string; // 'detective/g1' | 'detective/g0': solo gramáticas de
 interface LoadedGrammar {
   id: GrammarId;
   text: string; // el .grammar tal cual, para el panel en solo lectura
+  alphabet: string[]; // Σ, para marcar las etiquetas desconocidas mientras se escribe
   analysis: GrammarAnalysis;
 }
 interface AnalysisService {
@@ -251,7 +267,7 @@ apps/web/
     state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
     tree-layout/layout.ts
-    components/Tabs.tsx
+    components/ui/               # primitivas reutilizables, sin dependencias: cx, Tabs, Button, Panel, Badge, Table…
     components/SequenceInput.tsx
     components/GrammarPanel.tsx
     components/TreeView.tsx
@@ -291,6 +307,14 @@ Toda la lógica teórica que la UI muestra ya es ejecutable por consola desde el
 
 Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Como en el SPEC 02, cada paso actualiza su guía de estudio.
 
+El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y se divide en **tres fases**. Cada una deja la web funcionando y se puede cerrar con su propio pull request a `main`:
+
+| Fase                     | Pasos | Resultado                                                                                                                                      |
+| ------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. Lo esencial**       | 1–9   | la vista Análisis funciona de punta a punta: veredicto, árbol, derivación y diagnóstico. Con esto la web ya cumple lo que pide el anteproyecto |
+| **B. Vistas didácticas** | 10–14 | una pestaña por concepto. Son independientes entre sí: se pueden hacer en cualquier orden                                                      |
+| **C. Cierre**            | 15–17 | persistencia conectada, publicación en GitHub Pages y verificación manual                                                                      |
+
 1. **Punto de partida (cubierto por el SPEC 01).**
    - El esqueleto de `apps/web` (Vite, React 19, TS, Vitest con jsdom y Testing Library, prueba de humo) lo crea el SPEC 01. Este paso no agrega código.
    - Verificación antes de empezar: `npm run dev -w @sabueso/web` muestra "Sabueso", y `npm test` pasa.
@@ -305,8 +329,8 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
    - `app-state.ts` (un `useReducer`) y `persistence.ts`.
    - Pruebas: guardar y recuperar; un `localStorage` que lanza no rompe nada; una versión distinta o una gramática que no existe se ignoran.
 5. **Entrada de secuencia.**
-   - `SequenceInput` con paleta de terminales (etiquetas y tooltips desde el catálogo de géneros), campo de texto, ejemplos de `examples.ts` y botón Analizar (también Ctrl+Enter).
-   - Prueba: hacer clic en `CRI` y después en `PIS` deja "CRI PIS" en el campo.
+   - `SequenceInput` según la sección 3.7: paleta siempre visible (etiquetas y funciones desde el catálogo de géneros), campo de texto libre con las etiquetas desconocidas marcadas, ejemplos de `examples.ts` y botón Analizar (también Ctrl+Enter).
+   - Pruebas: hacer clic en `CRI` y después en `PIS` deja "CRI PIS" en el campo; escribir `CRI XYZ REV` marca `XYZ` como desconocida y no marca las otras dos.
 6. **Panel de gramática.**
    - `GrammarPanel` con selector, texto de la gramática en solo lectura y resumen del análisis.
    - Prueba: al elegir G0 el resumen dice "LL(1) ✗", y al elegir G1 dice "LL(1) ✓".
@@ -358,6 +382,7 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 - [ ] La vista LL(1) muestra "LL(1) ✓" para G1 y conflictos resaltados para G0.
 - [ ] La vista G0 vs G1 con k = 3 lista exactamente `CRI DSC REV` y `HAL DSC REV` como "solo en G0", y con k = 4 muestra el testigo `CRI SOS ATQ REV` de G0.
 - [ ] El selector ofrece solo el género policial con sus versiones G1 y G0, y la paleta muestra sus 14 etiquetas con su función narrativa. No aparece ninguna gramática interna (meta ni de prueba).
+- [ ] Escribir `CRI XYZ REV` marca `XYZ` en rojo antes de analizar, y la paleta muestra siempre las 14 etiquetas con su función corta.
 - [ ] El panel de gramática muestra el texto de la gramática activa sin permitir editarlo, y la UI no ofrece ninguna forma de cargar una gramática.
 - [ ] Al recargar la página se conservan la gramática elegida y la entrada.
 - [ ] Con `localStorage` bloqueado, la app funciona sin errores visibles.
@@ -397,6 +422,8 @@ Cada paso deja `npm test` y `npm run build` en verde, y es un commit propio. Com
 - **Sí:** Tailwind CSS v4 (revisión 2026-11-21). Lo pesado de esta UI son tablas, grillas y un SVG propio, y con Tailwind se maquetan rápido sin archivos de estilos aparte. Es solo de desarrollo: no agrega dependencias de producción. El tema oscuro sale con `dark:`.
 - **No:** CSS Modules con custom properties (lo que decía el borrador). Funciona, pero es más lento de escribir para una UI hecha de tablas.
 - **No:** Material UI ni otras librerías de componentes. Resuelven botones, pestañas e inputs, que es lo menos importante acá, y no ayudan con el árbol, el chart ni las tablas teóricas. Además son dependencias de producción pesadas.
+- **No, en la primera versión:** shadcn/ui (2026-11-21). Copia los componentes al repo, pero dependen de paquetes de producción (Radix UI, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`), y lo que aporta (diálogos, menús, combobox) casi no se usa acá. Se toma su forma de organizar: primitivas propias en `components/ui/`, con sus variantes en un objeto y sin dependencias. Si la UI v2 lo usa, se reemplazan las primitivas sin tocar las vistas.
+- **Sí:** reglas de Tailwind (2026-11-21). Las clases viven en las primitivas (`<Button variant="primary">`, no veinte clases en cada vista); las variantes son objetos de datos, no ternarios anidados en `className`; un helper `cx` de tres líneas combina las clases condicionales; `@apply` solo en los estilos base.
 - **Sí:** diseño simple en la primera versión. Lo que se evalúa son los conceptos que cada vista muestra; el pulido visual puede venir después sin cambiar la estructura.
 - **Sí:** reproductor de traza para Earley. Es la mejor forma de explicar Predictor, Scanner y Completer, y el núcleo ya expone `trace`.
 - **No:** solo el chart final. Se pierde la dinámica del algoritmo, que es lo que se explica.

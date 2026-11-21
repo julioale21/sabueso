@@ -1,0 +1,20 @@
+/* Tailwind v4 and the few base styles of the page (SPEC 03, step 2). */
+@import 'tailwindcss';
+
+@layer base {
+  html {
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+  body {
+    @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+  code,
+  pre {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+}
