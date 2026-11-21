@@ -4,20 +4,13 @@
  * Reference: SPEC 03, section 3.1.
  */
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { cx } from './cx';
+import { TabButton } from './TabButton';
 
 export interface TabItem<Id extends string> {
   id: Id;
   label: string;
   panel: ReactNode;
 }
-
-const tabStyles = {
-  base: '-mb-px border-b-2 px-3 py-2 text-sm font-medium',
-  active: 'border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-300',
-  inactive:
-    'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100',
-};
 
 /** Where each key moves the selection, from the active index. */
 function keyTarget({ key, active, count }: { key: string; active: number; count: number }) {
@@ -67,34 +60,25 @@ export function Tabs<Id extends string>({
         aria-label={label}
         className="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800"
       >
-        {items.map((item) => {
-          const isActive = item.id === activeItem?.id;
-          return (
-            <button
-              key={item.id}
-              ref={(element) => {
-                if (element === null) {
-                  buttons.current.delete(item.id);
-                } else {
-                  buttons.current.set(item.id, element);
-                }
-              }}
-              type="button"
-              role="tab"
-              id={`tab-${item.id}`}
-              aria-selected={isActive}
-              aria-controls={`panel-${item.id}`}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => {
-                onChange(item.id);
-              }}
-              onKeyDown={handleKeyDown}
-              className={cx(tabStyles.base, isActive ? tabStyles.active : tabStyles.inactive)}
-            >
-              {item.label}
-            </button>
-          );
-        })}
+        {items.map((item) => (
+          <TabButton
+            key={item.id}
+            id={item.id}
+            label={item.label}
+            isActive={item.id === activeItem?.id}
+            buttonRef={(element) => {
+              if (element === null) {
+                buttons.current.delete(item.id);
+              } else {
+                buttons.current.set(item.id, element);
+              }
+            }}
+            onSelect={() => {
+              onChange(item.id);
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        ))}
       </div>
       {activeItem !== undefined && (
         <div

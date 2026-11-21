@@ -267,8 +267,10 @@ apps/web/
     state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
     tree-layout/layout.ts
-    components/ui/               # primitivas reutilizables, sin dependencias: cx, Tabs, Button, Panel, Badge, Table…
-    components/SequenceInput.tsx
+    components/ui/               # primitivas reutilizables, sin dependencias: Tabs, Button, Panel, Badge, Table…
+    utils/cx.ts                  # combina clases condicionales (tres líneas)
+    domain/tags.ts               # separa el relato en etiquetas
+    components/sequence-input/   # SequenceInput y sus piezas: TagPalette, TagButton, StoryField, TagSequence, TagChip…
     components/GrammarPanel.tsx
     components/TreeView.tsx
     components/DerivationView.tsx
@@ -423,7 +425,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 - **No:** CSS Modules con custom properties (lo que decía el borrador). Funciona, pero es más lento de escribir para una UI hecha de tablas.
 - **No:** Material UI ni otras librerías de componentes. Resuelven botones, pestañas e inputs, que es lo menos importante acá, y no ayudan con el árbol, el chart ni las tablas teóricas. Además son dependencias de producción pesadas.
 - **No, en la primera versión:** shadcn/ui (2026-11-21). Copia los componentes al repo, pero dependen de paquetes de producción (Radix UI, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`), y lo que aporta (diálogos, menús, combobox) casi no se usa acá. Se toma su forma de organizar: primitivas propias en `components/ui/`, con sus variantes en un objeto y sin dependencias. Si la UI v2 lo usa, se reemplazan las primitivas sin tocar las vistas.
-- **Sí:** reglas de Tailwind (2026-11-21). Las clases viven en las primitivas (`<Button variant="primary">`, no veinte clases en cada vista); las variantes son objetos de datos, no ternarios anidados en `className`; un helper `cx` de tres líneas combina las clases condicionales; `@apply` solo en los estilos base.
+- **Sí:** reglas de Tailwind (2026-11-21). Las clases viven en las primitivas (`<Button variant="primary">`, no veinte clases en cada vista); las variantes son objetos de datos, no ternarios anidados en `className`; un helper `cx` de tres líneas (`src/utils/cx.ts`) combina las clases condicionales; `@apply` solo en los estilos base.
 - **Sí:** diseño simple en la primera versión. Lo que se evalúa son los conceptos que cada vista muestra; el pulido visual puede venir después sin cambiar la estructura.
 - **Sí:** reproductor de traza para Earley. Es la mejor forma de explicar Predictor, Scanner y Completer, y el núcleo ya expone `trace`.
 - **No:** solo el chart final. Se pierde la dinámica del algoritmo, que es lo que se explica.

@@ -7,6 +7,7 @@ import { AnalysisServiceProvider } from './analysis/context';
 import { createLocalAnalysisService } from './analysis/local-service';
 import { Tabs, type TabItem } from './components/ui/Tabs';
 import { appReducer, createInitialState, type TabId } from './state/app-state';
+import { AnalysisView } from './views/AnalysisView';
 
 /** The only place that chooses how the core runs: here, in the browser (SPEC 03, section 3.2). */
 const analysisService = createLocalAnalysisService();
@@ -20,38 +21,41 @@ function Pending({ concept, step }: { concept: string; step: number }) {
   );
 }
 
-const TABS: readonly TabItem<TabId>[] = [
-  {
-    id: 'analysis',
-    label: 'Análisis',
-    panel: <Pending concept="Análisis de un relato" step={9} />,
-  },
-  {
-    id: 'earley',
-    label: 'Earley paso a paso',
-    panel: <Pending concept="Earley paso a paso" step={10} />,
-  },
-  {
-    id: 'll1',
-    label: 'LL(1)',
-    panel: <Pending concept="FIRST, FOLLOW y la tabla LL(1)" step={11} />,
-  },
-  {
-    id: 'cnf-cyk',
-    label: 'FNC y CYK',
-    panel: <Pending concept="Forma Normal de Chomsky y CYK" step={12} />,
-  },
-  { id: 'pda', label: 'Autómata de pila', panel: <Pending concept="Autómata de pila" step={13} /> },
-  {
-    id: 'compare',
-    label: 'G0 vs G1',
-    panel: <Pending concept="Testigo de ambigüedad y comparación" step={14} />,
-  },
-];
-
 export function App() {
   // Saved grammar and story are connected in step 15 (SPEC 03); until then, the defaults.
   const [state, dispatch] = useReducer(appReducer, null, createInitialState);
+  const tabs: readonly TabItem<TabId>[] = [
+    {
+      id: 'analysis',
+      label: 'Análisis',
+      panel: <AnalysisView state={state} dispatch={dispatch} />,
+    },
+    {
+      id: 'earley',
+      label: 'Earley paso a paso',
+      panel: <Pending concept="Earley paso a paso" step={10} />,
+    },
+    {
+      id: 'll1',
+      label: 'LL(1)',
+      panel: <Pending concept="FIRST, FOLLOW y la tabla LL(1)" step={11} />,
+    },
+    {
+      id: 'cnf-cyk',
+      label: 'FNC y CYK',
+      panel: <Pending concept="Forma Normal de Chomsky y CYK" step={12} />,
+    },
+    {
+      id: 'pda',
+      label: 'Autómata de pila',
+      panel: <Pending concept="Autómata de pila" step={13} />,
+    },
+    {
+      id: 'compare',
+      label: 'G0 vs G1',
+      panel: <Pending concept="Testigo de ambigüedad y comparación" step={14} />,
+    },
+  ];
   return (
     <AnalysisServiceProvider value={analysisService}>
       <div className="mx-auto max-w-7xl px-4 py-6">
@@ -65,7 +69,7 @@ export function App() {
         <main>
           <Tabs
             label="Vistas"
-            items={TABS}
+            items={tabs}
             activeId={state.activeTab}
             onChange={(tab) => {
               dispatch({ type: 'select-tab', tab });
