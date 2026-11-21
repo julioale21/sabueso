@@ -11,8 +11,8 @@ import { viewTabs } from './views/view-tabs';
 const analysisService = createLocalAnalysisService();
 
 export function App() {
-  // Saved grammar and story are connected in step 15 (SPEC 03); until then, the defaults.
-  const [state, dispatch] = useReducer(appReducer, null, createInitialState);
+  // Nothing is saved between visits: the page always opens with G1 and an empty story.
+  const [state, dispatch] = useReducer(appReducer, undefined, createInitialState);
   // Each reset mounts the views again, so their own state (results, selected steps) goes too.
   const [resets, setResets] = useState(0);
   const reset = () => {

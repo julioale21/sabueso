@@ -43,7 +43,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
   - "Autómata de pila": transiciones y camino de aceptación;
   - "G0 vs G1": testigo de ambigüedad y comparación acotada de lenguajes.
 - Un servicio de análisis (`AnalysisService`, sección 3.2): una interfaz asíncrona por la que pasa toda llamada al núcleo. La primera implementación corre el núcleo en el navegador, en el mismo hilo; la interfaz deja lista una futura API web o un Worker sin cambiar las vistas.
-- Persistencia mínima en `localStorage` (clave `sabueso:v1`): la gramática elegida y la última entrada.
+- Sin persistencia: la página abre siempre con G1 y el relato vacío (decisión del 2026-11-21, sección 9).
 - Estilos con **Tailwind CSS v4** (solo como dependencia de desarrollo, con `@tailwindcss/vite`), tema claro/oscuro con la variante `dark:` (sigue a `prefers-color-scheme`).
 - Pruebas de componentes con Vitest, Testing Library y jsdom, y pruebas unitarias del posicionamiento del árbol.
 - Build estático (`apps/web/dist`) y workflow de GitHub Actions para publicar en GitHub Pages, para que la cátedra pueda probar la herramienta sin instalar nada.
@@ -221,14 +221,6 @@ interface AppState {
   collapseEpsilon: boolean; // por defecto true
 }
 
-// src/state/persistence.ts — clave 'sabueso:v1'
-interface PersistedState {
-  version: 1;
-  genreId: string;
-  grammarId: GrammarId;
-  input: string;
-}
-
 // src/tree-layout/layout.ts
 interface LayoutNode {
   id: string;
@@ -248,12 +240,6 @@ interface TreeLayout {
 // Genre y TagInfo se importan de @sabueso/core (catálogo de géneros)
 ```
 
-**Reglas de persistencia:**
-
-- Se guarda solo lo indicado. Los resultados no se guardan porque se recalculan.
-- Si `localStorage` lanza una excepción (modo privado o cuota llena), la app funciona igual sin guardar y sin mostrar errores al usuario.
-- Si `version` no es 1, o la gramática guardada ya no existe en el catálogo, se ignora lo guardado.
-
 ---
 
 ## 5. Estructura de archivos
@@ -272,7 +258,6 @@ apps/web/
     analysis/local-service.ts    # la implementación que corre el núcleo en el navegador
     analysis/context.tsx         # el contexto de React que la entrega a las vistas
     state/app-state.ts
-    state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
     tree-layout/layout.ts        # posición de cada nodo: hojas en columnas, padres centrados, colapso de ε
     components/ui/               # primitivas reutilizables, sin dependencias: Tabs, TabButton, TabPanel, Button, Panel, Badge, SelectField, MutedText…
@@ -314,7 +299,6 @@ apps/web/
     styles/index.css             # @import "tailwindcss" y unos pocos estilos base
   test/
     layout.test.ts
-    persistence.test.ts
     local-service.test.ts
     SequenceInput.test.tsx
     DiagnosticPanel.test.tsx
@@ -332,7 +316,7 @@ El código y sus comentarios van en inglés, como en el SPEC 02; los textos de l
 Se aplica la regla del SPEC 02 (sección 8.1), adaptada a la UI. Cada paso termina con dos cosas:
 
 1. **Ejecutable:** el resultado del paso se ve funcionando en `npm run dev -w @sabueso/web`. Ningún paso deja la app sin arrancar o con pantallas rotas.
-2. **Testeable:** una prueba automatizada. Si el paso tiene lógica pura (posicionamiento, persistencia, operaciones), se prueba con Vitest. Si es un componente, se prueba con Testing Library.
+2. **Testeable:** una prueba automatizada. Si el paso tiene lógica pura (posicionamiento, operaciones), se prueba con Vitest. Si es un componente, se prueba con Testing Library.
 
 Toda la lógica teórica que la UI muestra ya es ejecutable por consola desde el SPEC 02 (columna "Equivalente en consola" de la tabla 3.4). Si una vista muestra algo raro, se compara con su comando.
 
@@ -344,7 +328,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 | ------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | **A. Lo esencial**       | 1–9   | la vista Análisis funciona de punta a punta: veredicto, árbol, derivación y diagnóstico. Con esto la web ya cumple lo que pide el anteproyecto |
 | **B. Vistas didácticas** | 10–14 | una pestaña por concepto. Son independientes entre sí: se pueden hacer en cualquier orden                                                      |
-| **C. Cierre**            | 15–17 | persistencia conectada, publicación en GitHub Pages y verificación manual                                                                      |
+| **C. Cierre**            | 16–17 | publicación en GitHub Pages y verificación manual (el paso 15, persistencia, se descartó)                                                      |
 | **D. Mejoras de la UI**  | 18    | versión 2: el árbol que se construye al ritmo de la derivación, animaciones de cada vista y pulido visual                                      |
 
 1. **Punto de partida (cubierto por el SPEC 01).**
@@ -357,9 +341,9 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 3. **El servicio de análisis.**
    - `analysis/service.ts` (la interfaz), `analysis/local-service.ts` (las gramáticas del catálogo, parseadas una vez, y las operaciones) y `analysis/context.tsx`.
    - Prueba: `analyze('detective/g0', A1)` resuelve con 4 árboles en total y 3 construidos; `analyze('detective/g1', I1)` resuelve con el error en la posición 2.
-4. **Estado y persistencia.**
-   - `app-state.ts` (un `useReducer`) y `persistence.ts`.
-   - Pruebas: guardar y recuperar; un `localStorage` que lanza no rompe nada; una versión distinta o una gramática que no existe se ignoran.
+4. **Estado.**
+   - `app-state.ts` (un `useReducer`). Al principio incluía `persistence.ts`; se quitó con el paso 15.
+   - Pruebas: el estado inicial y cada acción del reducer.
 5. **Entrada de secuencia.**
    - `SequenceInput` según la sección 3.7: paleta siempre visible (etiquetas y funciones desde el catálogo de géneros), campo de texto libre con las etiquetas desconocidas marcadas, ejemplos de `examples.ts` y botón Analizar (también Ctrl+Enter).
    - Pruebas: hacer clic en `CRI` y después en `PIS` deja "CRI PIS" en el campo; escribir `CRI XYZ REV` marca `XYZ` como desconocida y no marca las otras dos.
@@ -402,9 +386,8 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - Cada lista muestra las primeras 20 oraciones y cuenta el resto (con k = 6, G0 tiene 2349 que G1 no genera).
     - El efecto de búsqueda depende de los ids de las gramáticas, no de los objetos de opción: con los objetos, que se crean en cada render, la búsqueda se repetía sin fin y la pestaña se colgaba. Una prueba lo verifica (una sola llamada a `compare` por k).
     - Prueba: con k = 3, "Relatos que solo genera G0" es exactamente `CRI DSC REV` y `HAL DSC REV`; con k = 4, G0 tiene el testigo `CRI SOS ATQ REV` con 2 árboles y G1 no tiene testigo.
-15. **Persistencia conectada.**
-    - Se guarda al cambiar la gramática o la entrada.
-    - Reiniciar también borra lo guardado: al recargar después de reiniciar, la página abre en el estado inicial.
+15. ~~**Persistencia conectada.**~~ **Descartado** (2026-11-21).
+    - Se llegó a implementar y se quitó: recordar el relato al recargar no muestra ningún concepto de la materia, y en una exposición en vivo confunde (aparece un relato viejo con las pestañas del relato bloqueadas). También se borraron `persistence.ts` y su prueba.
 16. **Build y Pages.**
     - Se usa `base` desde `VITE_BASE`.
     - Workflow `deploy-pages.yml`: en cada push a `main` corre `npm ci`, después `npm test`, después `npm run build` con `VITE_BASE=/sabueso/`, y publica `apps/web/dist` con `actions/upload-pages-artifact` y `actions/deploy-pages`.
@@ -441,8 +424,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 - [ ] El selector ofrece solo el género policial con sus versiones G1 y G0, y la paleta muestra sus 14 etiquetas con su función narrativa. No aparece ninguna gramática interna (meta ni de prueba).
 - [ ] Escribir `CRI XYZ REV` marca `XYZ` en rojo antes de analizar, y la paleta muestra siempre las 14 etiquetas con su función corta.
 - [ ] El panel de gramática muestra el texto de la gramática activa sin permitir editarlo, y la UI no ofrece ninguna forma de cargar una gramática.
-- [ ] Al recargar la página se conservan la gramática elegida y la entrada.
-- [ ] Con `localStorage` bloqueado, la app funciona sin errores visibles.
+- [ ] Al recargar, la página abre con G1 y el relato vacío: no se guarda nada.
 - [ ] El workflow `deploy-pages.yml` existe y es válido. Con Pages habilitado, el sitio carga en `https://<usuario>.github.io/sabueso/`.
 - [ ] Existe `docs/web-manual-check.md`, y cada caso fue marcado como verificado.
 
@@ -487,8 +469,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 - **Sí:** reproductor de traza para Earley. Es la mejor forma de explicar Predictor, Scanner y Completer, y el núcleo ya expone `trace`.
 - **No:** solo el chart final. Se pierde la dinámica del algoritmo, que es lo que se explica.
 - **Sí:** las vistas pasan el identificador de la gramática, nunca una gramática. Las gramáticas se cargan una vez dentro del servicio, y no existe un camino para analizar una gramática arbitraria (tampoco en una futura API).
-- **Sí:** `localStorage` mínimo con clave versionada. Recordar la gramática y la entrada ayuda a preparar la demo, y la versión permite cambiar el esquema más adelante.
-- **No:** persistir resultados. Se recalculan en milisegundos, y guardarlos solo agrega estado inconsistente.
+- **No:** persistencia (2026-11-21, revisado). Primero se decidió guardar la gramática y la entrada en `localStorage`; se implementó y se quitó. No suma ningún concepto, agrega estado que defender y probar, y al recargar en una exposición aparece un relato viejo. Los resultados nunca se guardaron: se recalculan en milisegundos.
 - **Sí:** Testing Library + jsdom solo como `devDependencies`. Son herramientas de prueba sin lógica de dominio, igual que Vitest en el SPEC 02.
 - **Sí:** GitHub Pages con un workflow. La cátedra puede probar la herramienta sin instalar nada. El build sigue funcionando en local gracias a `VITE_BASE`.
 - **Sí:** límites de la UI (15 etiquetas en Earley, 10 en el AP, k ≤ 6). Son visualizaciones para exponer. El núcleo no tiene esos límites, y la CLI sigue disponible para casos grandes.

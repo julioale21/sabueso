@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { appReducer, createInitialState, DEFAULT_GRAMMAR } from '../src/state/app-state';
 
 describe('createInitialState', () => {
-  it('opens on Análisis with G1 and an empty story when nothing was saved', () => {
-    expect(createInitialState(null)).toEqual({
+  it('opens on Análisis with G1 and an empty story ', () => {
+    expect(createInitialState()).toEqual({
       activeTab: 'analysis',
       genreId: 'detective',
       grammarId: 'detective/g1',
@@ -14,20 +14,10 @@ describe('createInitialState', () => {
       collapseEpsilon: true,
     });
   });
-
-  it('starts from what was saved', () => {
-    const state = createInitialState({
-      genreId: 'detective',
-      grammarId: 'detective/g0',
-      input: 'CRI SOS PIS INT REV',
-    });
-    expect(state.grammarId).toBe('detective/g0');
-    expect(state.input).toBe('CRI SOS PIS INT REV');
-  });
 });
 
 describe('appReducer', () => {
-  const state = { ...createInitialState(null), selectedTree: 2 };
+  const state = { ...createInitialState(), selectedTree: 2 };
 
   it('select-tab changes the view and keeps the story', () => {
     const next = appReducer({ ...state, input: 'CRI PIS REV' }, { type: 'select-tab', tab: 'll1' });
@@ -74,13 +64,13 @@ describe('appReducer', () => {
       input: 'CRI SOS PIS INT REV',
       collapseEpsilon: false,
     };
-    expect(appReducer(changed, { type: 'reset' })).toEqual(createInitialState(null));
+    expect(appReducer(changed, { type: 'reset' })).toEqual(createInitialState());
   });
 
   it('does not change the state it receives', () => {
-    const before = createInitialState(null);
+    const before = createInitialState();
     appReducer(before, { type: 'set-input', input: 'CRI' });
-    expect(before).toEqual(createInitialState(null));
+    expect(before).toEqual(createInitialState());
     expect(DEFAULT_GRAMMAR.grammarId).toBe('detective/g1');
   });
 });

@@ -16,7 +16,7 @@ function renderPlayer({
   input: string;
   grammarId?: string;
 }) {
-  const state = { ...createInitialState(null), input, analyzedInput: input, grammarId };
+  const state = { ...createInitialState(), input, analyzedInput: input, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
       <EarleyPlayerView state={state} dispatch={() => undefined} />

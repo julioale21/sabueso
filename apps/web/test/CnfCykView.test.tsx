@@ -11,7 +11,7 @@ import { CnfCykView } from '../src/views/CnfCykView';
 const service = createLocalAnalysisService();
 
 function renderView({ input, grammarId = 'detective/g1' }: { input: string; grammarId?: string }) {
-  const state = { ...createInitialState(null), input, analyzedInput: input, grammarId };
+  const state = { ...createInitialState(), input, analyzedInput: input, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
       <CnfCykView state={state} dispatch={() => undefined} />

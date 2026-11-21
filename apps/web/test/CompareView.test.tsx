@@ -12,7 +12,7 @@ const service = createLocalAnalysisService();
 function renderView(value = service) {
   render(
     <AnalysisServiceProvider value={value}>
-      <CompareView state={createInitialState(null)} dispatch={() => undefined} />
+      <CompareView state={createInitialState()} dispatch={() => undefined} />
     </AnalysisServiceProvider>,
   );
 }

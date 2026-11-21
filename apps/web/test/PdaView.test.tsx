@@ -10,7 +10,7 @@ import { PdaView } from '../src/views/PdaView';
 const service = createLocalAnalysisService();
 
 function renderView({ input, grammarId = 'detective/g1' }: { input: string; grammarId?: string }) {
-  const state = { ...createInitialState(null), input, analyzedInput: input, grammarId };
+  const state = { ...createInitialState(), input, analyzedInput: input, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
       <PdaView state={state} dispatch={() => undefined} />

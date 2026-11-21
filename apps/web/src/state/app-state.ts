@@ -47,15 +47,13 @@ export interface ViewProps {
 /** The official grammar of the detective story: what the page shows first. */
 export const DEFAULT_GRAMMAR = { genreId: 'detective', grammarId: 'detective/g1' } as const;
 
-/** The state when the page opens: the default grammar, or what was saved last time. */
-export function createInitialState(
-  saved: Pick<AppState, 'genreId' | 'grammarId' | 'input'> | null,
-): AppState {
+/** The state when the page opens: the default grammar and an empty story. Nothing is saved. */
+export function createInitialState(): AppState {
   return {
     activeTab: 'analysis',
-    genreId: saved?.genreId ?? DEFAULT_GRAMMAR.genreId,
-    grammarId: saved?.grammarId ?? DEFAULT_GRAMMAR.grammarId,
-    input: saved?.input ?? '',
+    genreId: DEFAULT_GRAMMAR.genreId,
+    grammarId: DEFAULT_GRAMMAR.grammarId,
+    input: '',
     analyzedInput: null,
     selectedTree: 0,
     collapseEpsilon: true,
@@ -80,7 +78,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'toggle-collapse-epsilon':
       return { ...state, collapseEpsilon: !state.collapseEpsilon };
     case 'reset':
-      // Back to how the page opens the first time, ignoring anything saved.
-      return createInitialState(null);
+      // Back to how the page opens.
+      return createInitialState();
   }
 }
