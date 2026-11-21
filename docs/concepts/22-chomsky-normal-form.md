@@ -42,13 +42,13 @@ En **G1** (40 producciones):
 
 ## 3. Dónde está en el código
 
-| Qué                | Dónde                                                                                                                                    |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| START              | `packages/core/src/chomsky-normal-form/add-new-start.ts`: `addNewStart`                                                                  |
-| DEL                | `packages/core/src/chomsky-normal-form/remove-epsilon-productions.ts`: `removeEpsilonProductions` (usa `computeNullable`, ficha 07)      |
-| UNIT               | `packages/core/src/chomsky-normal-form/remove-unit-productions.ts`: `computeUnitPairs` y `removeUnitProductions` (usa `leastFixedPoint`) |
-| G → G'             | `packages/core/src/chomsky-normal-form/rewrite.ts`: `rewriteGrammar` (renumera P, quita repetidas y conserva N)                          |
-| Comando de consola | `npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT`                                                                       |
+| Qué                | Dónde                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| START              | `packages/core/src/chomsky-normal-form/add-new-start.ts`: `addNewStart`                                                                          |
+| DEL                | `packages/core/src/chomsky-normal-form/remove-epsilon-productions.ts`: `removeEpsilonProductions` (usa `computeNullable`, ficha 07)              |
+| UNIT               | `packages/core/src/chomsky-normal-form/remove-unit-productions.ts`: `computeUnitPairs` y `removeUnitProductions` (usa `repeatRuleUntilNoChange`) |
+| G → G'             | `packages/core/src/chomsky-normal-form/rewrite.ts`: `rewriteGrammar` (renumera P, quita repetidas y conserva N)                                  |
+| Comando de consola | `npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT`                                                                               |
 
 ## 4. Qué prueba lo verifica
 

@@ -4,7 +4,7 @@
  * Reference: Hopcroft 7.1.4; SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
-import { leastFixedPoint } from '../analysis/fixed-point.js';
+import { repeatRuleUntilNoChange } from '../analysis/fixed-point.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import { rewriteGrammar } from './rewrite.js';
 
@@ -20,11 +20,13 @@ export function computeUnitPairs(grammar: Grammar): Map<SymbolName, Set<SymbolNa
   return new Map(
     [...grammar.nonterminals].map((nonterminal) => [
       nonterminal,
-      leastFixedPoint([nonterminal], (reached) =>
-        grammar.productions
-          .filter((production) => reached.has(production.leftSide) && isUnit(production, grammar))
-          .map((production) => production.rightSide[0] ?? ''),
-      ),
+      repeatRuleUntilNoChange({
+        start: [nonterminal],
+        newSymbolsOfRound: (reached) =>
+          grammar.productions
+            .filter((production) => reached.has(production.leftSide) && isUnit(production, grammar))
+            .map((production) => production.rightSide[0] ?? ''),
+      }),
     ]),
   );
 }

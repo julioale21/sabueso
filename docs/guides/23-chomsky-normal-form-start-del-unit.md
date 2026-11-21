@@ -25,7 +25,7 @@ La conversión tiene seis pasos. Este paso implementa los tres primeros, los que
 - **START primero, y solo cuando hace falta:** la FNC permite S → ε para el inicial cuando ε ∈ L(G), siempre que el inicial no aparezca en ningún lado derecho. Sipser agrega S0 siempre; acá se agrega solo si el inicial aparece a la derecha, porque si no, el inicial ya cumple esa condición. Así G1 conserva `Relato` como inicial y no suma una producción que UNIT y USELESS borrarían después.
 - **S → ε conservado en DEL:** después de START el inicial no aparece a la derecha, así que alcanza con no borrar su producción ε. La alternativa, borrar todas las ε y agregar S → ε al final, da el mismo resultado con un paso extra fuera de la lista de seis.
 - **N no se recalcula:** `buildGrammar` deduce N de los lados izquierdos. Después de DEL, `A` en `epsilon-trap` (A → ε) se queda sin producciones pero sigue en `S → A A x`. Con `buildGrammar` pasaría a ser un **terminal**, y la gramática cambiaría de lenguaje. Por eso los pasos usan `rewriteGrammar`, que conserva N; el paso USELESS lo borra después, porque A no es productivo.
-- **Se reutiliza el análisis:** DEL usa los anulables del paso 7, y los pares unitarios usan el mismo `leastFixedPoint`.
+- **Se reutiliza el análisis:** DEL usa los anulables del paso 7, y los pares unitarios usan el mismo `repeatRuleUntilNoChange`.
 
 ---
 
@@ -252,18 +252,20 @@ Se queda con la producción si su lado derecho no está vacío **o** si es del s
 return new Map(
   [...grammar.nonterminals].map((nonterminal) => [
     nonterminal,
-    leastFixedPoint([nonterminal], (reached) =>
-      grammar.productions
-        .filter((production) => reached.has(production.leftSide) && isUnit(production, grammar))
-        .map((production) => production.rightSide[0] ?? ''),
-    ),
+    repeatRuleUntilNoChange({
+      start: [nonterminal],
+      newSymbolsOfRound: (reached) =>
+        grammar.productions
+          .filter((production) => reached.has(production.leftSide) && isUnit(production, grammar))
+          .map((production) => production.rightSide[0] ?? ''),
+    }),
   ]),
 );
 ```
 
 **Qué devuelve:** un `Map` que a cada no terminal A le asocia el conjunto de los B a los que llega con renombres (sus pares unitarios).
 
-Para cada no terminal A, corre un **menor punto fijo** (el mismo `leastFixedPoint` de los anulables):
+Para cada no terminal A, corre un **menor punto fijo** (el mismo `repeatRuleUntilNoChange` de los anulables):
 
 - **Empieza con `{A}`:** A llega a sí mismo sin hacer nada.
 - **Cada ronda:** mira las producciones unitarias `B → C` cuyo B ya está en el conjunto (`reached`) y agrega los C. `production.rightSide[0]` es ese C, el único símbolo del lado derecho.

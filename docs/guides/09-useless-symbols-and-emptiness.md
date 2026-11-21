@@ -95,17 +95,17 @@ const useless = new Set(
 ### 5.2 `computeProductive(grammar, onIteration?)`
 
 ```ts
-return leastFixedPoint(
-  [],
-  (productive) =>
+return repeatRuleUntilNoChange({
+  start: [],
+  newSymbolsOfRound: (productive) =>
     nonterminalsWithProductionThat(grammar.productions, (production) =>
       usesOnly(production, productive, grammar),
     ),
   onIteration,
-);
+});
 ```
 
-- Usa el mismo `leastFixedPoint` que los anulables (guía 07, sección 5.1). Parte de `[]`, es decir, de ∅.
+- Usa el mismo `repeatRuleUntilNoChange` que los anulables (guía 07, sección 5.1). Parte de `start: []`, es decir, de ∅.
 - `nonterminalsWithProductionThat(...)`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
 - `usesOnly(production, productive, grammar)`: la condición. Todo el lado derecho son terminales o productivos ya conocidos.
 - La única diferencia con los anulables es esa regla: `usesOnly` acepta terminales, porque un terminal ya es una cadena de Σ\*. En la ronda 1 entran los A con lado derecho de solo terminales (o ε).
@@ -124,14 +124,14 @@ return production.rightSide.every(
 
 ```ts
 const nonterminals = new Set(productions.map((production) => production.leftSide));
-return leastFixedPoint(
-  [start],
-  (reachable) => nonterminalsUsedBy(reachable, productions, nonterminals),
+return repeatRuleUntilNoChange({
+  start: [start],
+  newSymbolsOfRound: (reachable) => nonterminalsUsedBy(reachable, productions, nonterminals),
   onIteration,
-);
+});
 ```
 
-- Otra vez `leastFixedPoint`, pero arranca con `[start]` en lugar de ∅: S es alcanzable sin aplicar ninguna regla.
+- Otra vez `repeatRuleUntilNoChange`, pero arranca con `start: [start]` en lugar de ∅: S es alcanzable sin aplicar ninguna regla.
 - Recibe las **producciones** (no la gramática) porque trabaja sobre las que quedaron después de quitar los no productivos.
 - `nonterminals` sale de los lados izquierdos de esas producciones. Sirve para separar no terminales de terminales en el lado derecho.
 

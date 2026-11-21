@@ -880,7 +880,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - Con `--steps` la tabla muestra, por ronda, cuántos anulables hay y cuáles se agregaron (el conjunto completo solo al final, para que la tabla no sea demasiado ancha). El conjunto vacío se imprime ∅.
      - `readGrammar(source, environment)` en `grammar-source.ts` lee y construye la gramática elegida; la comparten `tokens`, `nullable` y los análisis siguientes.
      - Ejemplo nuevo `examples/grammars/nullable-chain.grammar`, con un anulable por ronda, para mostrar cómo crece el punto fijo.
-     - Refactor (2026-11-20): el esquema de punto fijo por rondas se escribe una sola vez, `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` en `analysis/fixed-point.ts`, junto con `leftSidesWhere` (renombrada `nonterminalsWithProductionThat` en el paso 23). Lo usan los anulables, los productivos y los alcanzables; cada análisis solo aporta su regla. minYield (números, no conjuntos) mantiene su propio ciclo.
+     - Refactor (2026-11-20): el esquema de punto fijo por rondas se escribe una sola vez, `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` en `analysis/fixed-point.ts` (en el paso 23 se renombra `repeatRuleUntilNoChange` y pasa a recibir un objeto: `repeatRuleUntilNoChange({ start, newSymbolsOfRound, onIteration })`), junto con `leftSidesWhere` (renombrada `nonterminalsWithProductionThat` en el paso 23). Lo usan los anulables, los productivos y los alcanzables; cada análisis solo aporta su regla. minYield (números, no conjuntos) mantiene su propio ciclo.
 
 8. **Longitud mínima.**
    - `analysis/min-yield.ts`.

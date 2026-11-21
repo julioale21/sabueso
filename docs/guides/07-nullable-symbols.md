@@ -58,16 +58,20 @@ Costo: cada ronda recorre P una vez (O(|P|·k), con k el largo máximo de un lad
 
 ## 5. El código, función por función
 
-### 5.1 `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` (`src/analysis/fixed-point.ts`)
+### 5.1 `repeatRuleUntilNoChange({ start, newSymbolsOfRound, onIteration })` (`src/analysis/fixed-point.ts`)
 
-El esquema de punto fijo se escribe **una sola vez**, con nombre propio. Lo usan los anulables y, en el paso 9, los productivos y los alcanzables. Cada análisis solo aporta su regla.
+El esquema de punto fijo se escribe **una sola vez**, con nombre propio: repite la regla hasta que no cambia nada. En la teoría se llama **menor punto fijo** (_least fixed point_). Lo usan los anulables y, en el paso 9, los productivos y los alcanzables. Cada análisis solo aporta su regla.
 
 ```ts
-export function leastFixedPoint(
-  start: Iterable<SymbolName>,
-  newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>,
-  onIteration?: FixedPointObserver,
-): Set<SymbolName> {
+export function repeatRuleUntilNoChange({
+  start,
+  newSymbolsOfRound,
+  onIteration,
+}: {
+  start: Iterable<SymbolName>;
+  newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>;
+  onIteration?: FixedPointObserver | undefined;
+}): Set<SymbolName> {
   let knownBefore = new Set(start);
   for (let round = 1; ; round++) {
     const knownAfter = new Set([...knownBefore, ...newSymbolsOfRound(knownBefore)]);
@@ -98,14 +102,14 @@ export function computeNullable(
   grammar: Grammar,
   onIteration?: FixedPointObserver,
 ): Set<SymbolName> {
-  return leastFixedPoint(
-    [],
-    (nullable) =>
+  return repeatRuleUntilNoChange({
+    start: [],
+    newSymbolsOfRound: (nullable) =>
       nonterminalsWithProductionThat(grammar.productions, (production) =>
         derivesEmptyString(production, nullable),
       ),
     onIteration,
-  );
+  });
 }
 ```
 

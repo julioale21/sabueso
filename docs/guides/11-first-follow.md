@@ -97,7 +97,7 @@ Los conjuntos son `Map<SymbolName, Set<SymbolName>>`. ε y `$` se guardan como l
 
 ### 5.1 `leastFixedPointOfSets(start, newMembersOfRound, onIteration?)` (`fixed-point.ts`)
 
-La versión de `leastFixedPoint` (guía 07) para un conjunto por símbolo.
+La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo.
 
 ```ts
 let knownBefore = copySets(start);
@@ -115,7 +115,7 @@ for (let round = 1; ; round++) {
 ```
 
 - La regla devuelve pares `[symbol, member]`: "este elemento entra en el conjunto de este símbolo".
-- `newMembersOfRound(knownBefore)`: la regla lee solo los conjuntos de la ronda anterior. Lo nuevo va a `knownAfter`, así que un elemento hallado en esta ronda recién cuenta en la siguiente. Es la misma disciplina de rondas que en `leastFixedPoint`.
+- `newMembersOfRound(knownBefore)`: la regla lee solo los conjuntos de la ronda anterior. Lo nuevo va a `knownAfter`, así que un elemento hallado en esta ronda recién cuenta en la siguiente. Es la misma disciplina de rondas que en `repeatRuleUntilNoChange`.
 - `knownAfter.get(symbol)?.add(member)`: el `?.` ignora un par cuyo símbolo no tiene conjunto. Como `Set`, un elemento repetido no cuenta dos veces.
 - `totalSize(knownAfter) === totalSize(knownBefore)`: si ninguna ronda agregó nada, es el punto fijo.
 - Siempre termina: los conjuntos solo crecen y sus elementos salen de un conjunto finito (terminales, ε y $).

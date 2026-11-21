@@ -6,7 +6,7 @@
 import { buildGrammar } from '../grammar/build.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {
-  leastFixedPoint,
+  repeatRuleUntilNoChange,
   nonterminalsWithProductionThat,
   type FixedPointObserver,
 } from './fixed-point.js';
@@ -82,14 +82,14 @@ export function computeProductive(
 ): Set<SymbolName> {
   // Like nullable, with another base: a terminal already "produces" (it is a string of Σ*).
   // Round 1: the A with a right side of only terminals (or ε).
-  return leastFixedPoint(
-    [],
-    (productive) =>
+  return repeatRuleUntilNoChange({
+    start: [],
+    newSymbolsOfRound: (productive) =>
       nonterminalsWithProductionThat(grammar.productions, (production) =>
         usesOnly(production, productive, grammar),
       ),
     onIteration,
-  );
+  });
 }
 
 /**
@@ -104,11 +104,11 @@ export function computeReachable(
   // The same fixed point, now top-down: start from {S}, and each round adds the
   // nonterminals in the right sides of those already reached (S ⇒* αAβ).
   const nonterminals = new Set(productions.map((production) => production.leftSide));
-  return leastFixedPoint(
-    [start],
-    (reachable) => nonterminalsUsedBy(reachable, productions, nonterminals),
+  return repeatRuleUntilNoChange({
+    start: [start],
+    newSymbolsOfRound: (reachable) => nonterminalsUsedBy(reachable, productions, nonterminals),
     onIteration,
-  );
+  });
 }
 
 /** The nonterminals in the right sides of the productions of the given symbols. */

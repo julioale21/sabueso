@@ -5,7 +5,7 @@
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {
-  leastFixedPoint,
+  repeatRuleUntilNoChange,
   nonterminalsWithProductionThat,
   type FixedPointObserver,
 } from './fixed-point.js';
@@ -23,14 +23,14 @@ export function computeNullable(
 ): Set<SymbolName> {
   // Round 1: the A with A → ε. Round i: the A with A → X1…Xk and every Xi already nullable.
   // A terminal is never nullable (it always contributes a symbol), so it never enters.
-  return leastFixedPoint(
-    [],
-    (nullable) =>
+  return repeatRuleUntilNoChange({
+    start: [],
+    newSymbolsOfRound: (nullable) =>
       nonterminalsWithProductionThat(grammar.productions, (production) =>
         derivesEmptyString(production, nullable),
       ),
     onIteration,
-  );
+  });
 }
 
 /** A → X1…Xk derives ε when every Xi is nullable. `every` is true for k = 0, so A → ε counts. */

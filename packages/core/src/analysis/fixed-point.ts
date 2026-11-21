@@ -10,17 +10,25 @@ import type { Production, SymbolName } from '../grammar/types.js';
 export type FixedPointObserver = (round: number, known: ReadonlySet<SymbolName>) => void;
 
 /**
- * Least fixed point by rounds: starts from `start` and, each round, adds the symbols the rule
- * finds using only what was known at the end of the previous round. Stops when a round adds
- * nothing, and returns that set.
+ * Applies the rule round after round until it adds nothing new. Starts from `start` and, each
+ * round, adds the symbols the rule finds using only what was known at the end of the previous
+ * round. Stops when a round adds nothing, and returns that set: in the theory, the least fixed
+ * point of the rule.
  *
  * It always stops: the set only grows, and the rule can only add symbols of a finite set.
  */
-export function leastFixedPoint(
-  start: Iterable<SymbolName>,
-  newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>,
-  onIteration?: FixedPointObserver,
-): Set<SymbolName> {
+export function repeatRuleUntilNoChange({
+  start,
+  newSymbolsOfRound,
+  onIteration,
+}: {
+  /** The symbols known before the first round: the base of the induction (often ∅). */
+  start: Iterable<SymbolName>;
+  /** The rule of a round: the symbols to add, given what was known before it. */
+  newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>;
+  /** Called after each round, if given. */
+  onIteration?: FixedPointObserver | undefined;
+}): Set<SymbolName> {
   // Least fixed point: start from `start` (almost always ∅); each round applies the rule
   // to what was known at the end of the previous round (knownBefore). New symbols go to
   // another set (knownAfter), so a symbol found in this round only counts in the
@@ -69,7 +77,7 @@ export function leastFixedPointOfSets(
   ) => Iterable<[SymbolName, SymbolName]>,
   onIteration?: SetsFixedPointObserver,
 ): SetsBySymbol {
-  // Same scheme as leastFixedPoint, with one set per symbol growing at once. A round
+  // Same scheme as repeatRuleUntilNoChange, with one set per symbol growing at once. A round
   // copies every set and adds what the rule finds; if the total size did not change,
   // no set changed: fixed point.
   let knownBefore = copySets(start);
