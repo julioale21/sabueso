@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   repeatRuleUntilNoChange,
-  leastFixedPointOfSets,
+  repeatRuleOnSetsUntilNoChange,
   nonterminalsWithProductionThat,
 } from '../../src/analysis/fixed-point.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
@@ -85,7 +85,7 @@ describe('nonterminalsWithProductionThat', () => {
   });
 });
 
-describe('leastFixedPointOfSets', () => {
+describe('repeatRuleOnSetsUntilNoChange', () => {
   /** Each round, a copies what b has, and b copies what c has. */
   const copyRule = (known: ReadonlyMap<string, ReadonlySet<string>>): [string, string][] => [
     ...[...(known.get('b') ?? [])].map((member): [string, string] => ['a', member]),
@@ -98,21 +98,23 @@ describe('leastFixedPointOfSets', () => {
   ]);
 
   it('grows every set until no set changes', () => {
-    const result = leastFixedPointOfSets(start, copyRule);
+    const result = repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound: copyRule });
     expect(result.get('a')).toEqual(new Set(['x']));
     expect(result.get('b')).toEqual(new Set(['x']));
   });
 
   it('a member found in a round only counts in the next one', () => {
     const sizes: number[] = [];
-    leastFixedPointOfSets(start, copyRule, (_round, known) =>
-      sizes.push(known.get('a')?.size ?? 0),
-    );
+    repeatRuleOnSetsUntilNoChange({
+      start,
+      newMembersOfRound: copyRule,
+      onIteration: (_round, known) => sizes.push(known.get('a')?.size ?? 0),
+    });
     expect(sizes).toEqual([0, 1, 1]);
   });
 
   it('does not change the start sets', () => {
-    leastFixedPointOfSets(start, copyRule);
+    repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound: copyRule });
     expect(start.get('a')).toEqual(new Set());
   });
 });

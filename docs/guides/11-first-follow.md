@@ -1,6 +1,6 @@
 # Guía de estudio: 11 — FIRST y FOLLOW
 
-> **Paso 11 del SPEC 02.** Archivos: `packages/core/src/analysis/first-follow.ts`, `leastFixedPointOfSets` en `packages/core/src/analysis/fixed-point.ts` y `packages/core/src/command-line/commands/first-follow.ts`.
+> **Paso 11 del SPEC 02.** Archivos: `packages/core/src/analysis/first-follow.ts`, `repeatRuleOnSetsUntilNoChange` en `packages/core/src/analysis/fixed-point.ts` y `packages/core/src/command-line/commands/first-follow.ts`.
 > Ficha teórica relacionada: [`docs/concepts/05-first-follow.md`](../concepts/05-first-follow.md).
 
 ---
@@ -95,9 +95,9 @@ Los conjuntos son `Map<SymbolName, Set<SymbolName>>`. ε y `$` se guardan como l
 
 ## 5. El código, función por función
 
-### 5.1 `leastFixedPointOfSets(start, newMembersOfRound, onIteration?)` (`fixed-point.ts`)
+### 5.1 `repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound, onIteration })` (`fixed-point.ts`)
 
-La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo.
+La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo: repite la regla hasta que ningún conjunto cambia. Recibe un objeto con tres campos: `start` (el conjunto de cada símbolo antes de la primera ronda), `newMembersOfRound` (la regla) y `onIteration` (opcional).
 
 ```ts
 let knownBefore = copySets(start);
@@ -165,9 +165,9 @@ return result;
 ### 5.3 `computeFirst(grammar, onIteration?)`
 
 ```ts
-return leastFixedPointOfSets(
-  emptySetFor(grammar.nonterminals),
-  (first) =>
+return repeatRuleOnSetsUntilNoChange({
+  start: emptySetFor(grammar.nonterminals),
+  newMembersOfRound: (first) =>
     grammar.productions.flatMap((production) =>
       [...firstOfSequence(production.rightSide, first)].map((member): [SymbolName, SymbolName] => [
         production.leftSide,
@@ -175,13 +175,13 @@ return leastFixedPointOfSets(
       ]),
     ),
   onIteration,
-);
+});
 ```
 
-- `emptySetFor(grammar.nonterminals)`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
+- `start: emptySetFor(grammar.nonterminals)`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
 - `firstOfSequence(production.rightSide, first)`: para A → α, calcula FIRST(α) con los conjuntos de la ronda anterior (regla de la sección 3.1).
 - `.map((member) => [production.leftSide, member])`: convierte cada elemento en un par "este elemento entra en FIRST(A)".
-- `flatMap` junta los pares de todas las producciones en una sola lista. Es el formato que espera `leastFixedPointOfSets`.
+- `flatMap` junta los pares de todas las producciones en una sola lista. Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
 - ε entra en FIRST(A) solo si `firstOfSequence` lo devuelve, es decir, si todo α puede desaparecer.
 
 ### 5.4 `computeFollow(grammar, first, onIteration?)`
@@ -189,11 +189,12 @@ return leastFixedPointOfSets(
 ```ts
 const start = emptySetFor(grammar.nonterminals);
 start.get(grammar.start)?.add(END_OF_INPUT);
-return leastFixedPointOfSets(
+return repeatRuleOnSetsUntilNoChange({
   start,
-  (follow) => grammar.productions.flatMap((production) => followPairs(production, first, follow)),
+  newMembersOfRound: (follow) =>
+    grammar.productions.flatMap((production) => followPairs(production, first, follow)),
   onIteration,
-);
+});
 ```
 
 - `start.get(grammar.start)?.add(END_OF_INPUT)`: `$` va en FOLLOW(S) desde el principio. Es la primera regla de FOLLOW: después de una oración completa viene el fin de la entrada.
@@ -304,7 +305,7 @@ Libres         {ATQ, INT, PIS, ε}    {REV, SOS}
 | `firstOfSequence`    | un terminal, saltear un anulable, ε solo si todo puede ser ε                                                                                                   |
 | rondas               | FIRST del mini policial en 2 rondas más la verificación; recursión a izquierda                                                                                 |
 
-**`test/command-line/first-follow.test.ts`:** la tabla de G1, las rondas del mini policial con `--steps` y los errores de uso. `test/analysis/fixed-point.test.ts` prueba también `leastFixedPointOfSets`.
+**`test/command-line/first-follow.test.ts`:** la tabla de G1, las rondas del mini policial con `--steps` y los errores de uso. `test/analysis/fixed-point.test.ts` prueba también `repeatRuleOnSetsUntilNoChange`.
 
 ---
 

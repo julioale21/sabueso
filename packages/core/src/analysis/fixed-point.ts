@@ -66,17 +66,25 @@ export type SetsFixedPointObserver = (
 ) => void;
 
 /**
- * The same least fixed point when there is one set per symbol (FIRST, FOLLOW): starts from
+ * repeatRuleUntilNoChange when there is one set per symbol (FIRST, FOLLOW): starts from
  * `start` and, each round, adds the [symbol, member] pairs the rule finds using only the
- * sets known at the end of the previous round. Stops when a round adds no member to any set.
+ * sets known at the end of the previous round. Stops when a round adds no member to any set:
+ * in the theory, the least fixed point of the rule.
  */
-export function leastFixedPointOfSets(
-  start: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
+export function repeatRuleOnSetsUntilNoChange({
+  start,
+  newMembersOfRound,
+  onIteration,
+}: {
+  /** The set of each symbol before the first round (FOLLOW starts with $ in FOLLOW(S)). */
+  start: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+  /** The rule of a round: [symbol, member] pairs to add, given the sets known before it. */
   newMembersOfRound: (
     knownBefore: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-  ) => Iterable<[SymbolName, SymbolName]>,
-  onIteration?: SetsFixedPointObserver,
-): SetsBySymbol {
+  ) => Iterable<[SymbolName, SymbolName]>;
+  /** Called after each round, if given. */
+  onIteration?: SetsFixedPointObserver | undefined;
+}): SetsBySymbol {
   // Same scheme as repeatRuleUntilNoChange, with one set per symbol growing at once. A round
   // copies every set and adds what the rule finds; if the total size did not change,
   // no set changed: fixed point.

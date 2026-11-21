@@ -6,7 +6,7 @@
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
 import {
-  leastFixedPointOfSets,
+  repeatRuleOnSetsUntilNoChange,
   type SetsBySymbol,
   type SetsFixedPointObserver,
 } from './fixed-point.js';
@@ -51,16 +51,16 @@ export function computeFirst(grammar: Grammar, onIteration?: SetsFixedPointObser
   // Each round, for every production A → X1…Xk: a sequence starts with what X1 starts
   // with; if X1 can vanish (ε ∈ FIRST(X1)), also with what X2 starts with, and so on.
   // If all of them can vanish, A can too, and ε goes into FIRST(A).
-  return leastFixedPointOfSets(
-    emptySetFor(grammar.nonterminals),
-    (first) =>
+  return repeatRuleOnSetsUntilNoChange({
+    start: emptySetFor(grammar.nonterminals),
+    newMembersOfRound: (first) =>
       grammar.productions.flatMap((production) =>
         [...firstOfSequence(production.rightSide, first)].map(
           (member): [SymbolName, SymbolName] => [production.leftSide, member],
         ),
       ),
     onIteration,
-  );
+  });
 }
 
 /**
@@ -77,11 +77,12 @@ export function computeFollow(
   // vanish, B can be the last thing of A, so whatever comes after A comes after B too.
   const start = emptySetFor(grammar.nonterminals);
   start.get(grammar.start)?.add(END_OF_INPUT);
-  return leastFixedPointOfSets(
+  return repeatRuleOnSetsUntilNoChange({
     start,
-    (follow) => grammar.productions.flatMap((production) => followPairs(production, first, follow)),
+    newMembersOfRound: (follow) =>
+      grammar.productions.flatMap((production) => followPairs(production, first, follow)),
     onIteration,
-  );
+  });
 }
 
 /**

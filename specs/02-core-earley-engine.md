@@ -920,7 +920,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Decisiones (2026-11-20):**
       - **Desvío en la prueba de G0:** el spec pedía FOLLOW(Pasos) = {REV} en G0, pero ese es el valor de **G1**. En G0, `Pasos → Pasos Pasos` hace que FIRST(Pasos) ⊆ FOLLOW(Pasos), y `Linea → SOS Pasos` agrega FOLLOW(Linea): el valor correcto es {ATQ, DSC, INT, PIS, REV, SOS}. La prueba usa ese valor; {REV} se prueba en G1.
       - Funciones: `computeFirstFollow(grammar, onIteration?)`, y por separado `computeFirst`, `computeFollow` y `firstOfSequence` (la usa la tabla LL(1) del paso 12). Los conjuntos son `Map<SymbolName, Set<SymbolName>>`, con ε y `$` como los textos `'ε'` y `'$'` (`EMPTY_STRING`, `END_OF_INPUT`).
-      - El punto fijo de "un conjunto por símbolo" se escribe una vez, `leastFixedPointOfSets` en `analysis/fixed-point.ts`, igual que `leastFixedPoint` para un solo conjunto. `onIteration(phase, round, sets)` agrega la fase (`'first'` o `'follow'`).
+      - El punto fijo de "un conjunto por símbolo" se escribe una vez, `leastFixedPointOfSets` en `analysis/fixed-point.ts` (en el paso 23 se renombra `repeatRuleOnSetsUntilNoChange` y pasa a recibir un objeto: `{ start, newMembersOfRound, onIteration }`), igual que `leastFixedPoint` para un solo conjunto. `onIteration(phase, round, sets)` agrega la fase (`'first'` o `'follow'`).
       - Ejemplo nuevo `examples/grammars/mini-detective.grammar`: el mini policial con el que se explican a mano LL(1), FIRST, FOLLOW y la tabla (guía 11 y notas de la defensa).
 
 12. **Tabla LL(1) y análisis completo.**

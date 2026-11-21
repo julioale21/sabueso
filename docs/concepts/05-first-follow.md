@@ -36,7 +36,7 @@ En G1, FOLLOW(Pasos) = {REV}: después de la investigación viene la revelación
 | ------------------ | ------------------------------------------------------------------------------------------------------ |
 | Archivo            | `packages/core/src/analysis/first-follow.ts`                                                           |
 | Funciones          | `computeFirstFollow`, `computeFirst`, `computeFollow`, `firstOfSequence`                               |
-| Punto fijo         | `leastFixedPointOfSets` en `analysis/fixed-point.ts` (un conjunto por símbolo)                         |
+| Punto fijo         | `repeatRuleOnSetsUntilNoChange` en `analysis/fixed-point.ts` (un conjunto por símbolo)                 |
 | Comando de consola | `npm run sabueso -- first-follow --grammar g1 [--steps]`                                               |
 | Quién lo usa       | la tabla LL(1) (paso 12); el parser de `.grammar` (paso 4) usa los mismos conjuntos, calculados a mano |
 
