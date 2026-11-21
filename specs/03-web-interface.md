@@ -267,7 +267,7 @@ apps/web/
     state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
     tree-layout/layout.ts
-    components/ui/               # primitivas reutilizables, sin dependencias: Tabs, Button, Panel, Badge, Table…
+    components/ui/               # primitivas reutilizables, sin dependencias: Tabs, TabButton, TabPanel, Button, Panel, MutedText…
     utils/cx.ts                  # combina clases condicionales (tres líneas)
     domain/tags.ts               # separa el relato en etiquetas
     components/sequence-input/   # SequenceInput y sus piezas: TagPalette, TagButton, StoryField, TagSequence, TagChip…
@@ -276,6 +276,9 @@ apps/web/
     components/DerivationView.tsx
     components/ResultPanel.tsx
     components/DiagnosticPanel.tsx
+    components/AppHeader.tsx
+    components/PendingView.tsx   # marcador de una vista que llega en un paso posterior
+    views/view-tabs.tsx          # una pestaña por vista, en el orden del análisis
     views/AnalysisView.tsx
     views/EarleyPlayerView.tsx
     views/Ll1View.tsx

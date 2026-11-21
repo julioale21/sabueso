@@ -4,17 +4,12 @@
  */
 import { useGrammars } from '../analysis/use-grammars';
 import { SequenceInput } from '../components/sequence-input/SequenceInput';
+import { MutedText } from '../components/ui/MutedText';
 import { Panel } from '../components/ui/Panel';
 import { EXAMPLES } from '../domain/examples';
-import type { AppAction, AppState } from '../state/app-state';
+import type { ViewProps } from '../state/app-state';
 
-export function AnalysisView({
-  state,
-  dispatch,
-}: {
-  state: AppState;
-  dispatch: (action: AppAction) => void;
-}) {
+export function AnalysisView({ state, dispatch }: ViewProps) {
   const catalog = useGrammars();
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
 
@@ -22,7 +17,7 @@ export function AnalysisView({
     <div className="space-y-4">
       <Panel title="Entrada">
         {genre === undefined ? (
-          <p className="text-sm text-slate-500">Cargando las gramáticas…</p>
+          <MutedText>Cargando las gramáticas…</MutedText>
         ) : (
           <SequenceInput
             tags={genre.tags}
@@ -38,9 +33,9 @@ export function AnalysisView({
         )}
       </Panel>
       <Panel title="Resultado">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <MutedText>
           El veredicto, el árbol y la derivación llegan en el paso 9 del SPEC 03.
-        </p>
+        </MutedText>
       </Panel>
     </div>
   );

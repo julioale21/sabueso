@@ -5,6 +5,7 @@
  */
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { TabButton } from './TabButton';
+import { TabPanel } from './TabPanel';
 
 export interface TabItem<Id extends string> {
   id: Id;
@@ -43,6 +44,15 @@ export function Tabs<Id extends string>({
   );
   const activeItem = items[activeIndex];
 
+  /** Keeps a reference to each tab button, to move the focus with the keyboard. */
+  const registerButton = (id: Id) => (element: HTMLButtonElement | null) => {
+    if (element === null) {
+      buttons.current.delete(id);
+    } else {
+      buttons.current.set(id, element);
+    }
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const target = keyTarget({ key: event.key, active: activeIndex, count: items.length });
     const item = target === undefined ? undefined : items[target];
@@ -66,13 +76,7 @@ export function Tabs<Id extends string>({
             id={item.id}
             label={item.label}
             isActive={item.id === activeItem?.id}
-            buttonRef={(element) => {
-              if (element === null) {
-                buttons.current.delete(item.id);
-              } else {
-                buttons.current.set(item.id, element);
-              }
-            }}
+            buttonRef={registerButton(item.id)}
             onSelect={() => {
               onChange(item.id);
             }}
@@ -80,16 +84,7 @@ export function Tabs<Id extends string>({
           />
         ))}
       </div>
-      {activeItem !== undefined && (
-        <div
-          role="tabpanel"
-          id={`panel-${activeItem.id}`}
-          aria-labelledby={`tab-${activeItem.id}`}
-          className="py-4"
-        >
-          {activeItem.panel}
-        </div>
-      )}
+      {activeItem !== undefined && <TabPanel id={activeItem.id}>{activeItem.panel}</TabPanel>}
     </div>
   );
 }

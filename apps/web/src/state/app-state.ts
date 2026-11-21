@@ -3,6 +3,7 @@
  * what the user picked in the result (SPEC 03, section 4). One reducer, so every change has a
  * name and a test.
  */
+import type { Dispatch } from 'react';
 import type { GrammarId } from '../analysis/service';
 
 /** The views of the page (SPEC 03, section 3.4). */
@@ -28,6 +29,12 @@ export type AppAction =
   | { type: 'set-input'; input: string }
   | { type: 'select-tree'; index: number }
   | { type: 'toggle-collapse-epsilon' };
+
+/** What every view receives: the shared state and the way to change it. */
+export interface ViewProps {
+  state: AppState;
+  dispatch: Dispatch<AppAction>;
+}
 
 /** The official grammar of the detective story: what the page shows first. */
 export const DEFAULT_GRAMMAR = { genreId: 'detective', grammarId: 'detective/g1' } as const;
