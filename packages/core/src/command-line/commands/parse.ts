@@ -72,7 +72,8 @@ export const parseCommand: Command = {
 function formatResult(result: ParseResult): string[] {
   const trace = result.trace.length === 0 ? [] : [formatTrace(result)];
   if (!result.accepted) {
-    return [formatRejection(result.error), ...trace];
+    const renderRejection = formatRejection as (error: unknown) => string;
+    return [renderRejection(result.error), ...trace];
   }
   const trees = result.trees.map((tree, index) => `Tree ${index + 1}:\n${renderTree(tree)}`);
   const renderLeftmostDerivation = renderDerivation as (derivation: unknown) => string;
