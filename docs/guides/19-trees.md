@@ -47,7 +47,7 @@ Si un ítem tiene **dos enlaces**, se llegó a él de dos formas: hay dos listas
 
 ### 2.4 De a uno y hasta un límite
 
-En G0 un relato puede tener muchísimos árboles: L1 tiene C(197), un número de 115 dígitos. No se pueden armar todos. Por eso los árboles se producen **de a uno**, con un **generador** de JavaScript (`function*`): el siguiente árbol recién se arma cuando se lo pide. `parseTrees` pide hasta un límite (por defecto 50).
+En G0 un relato puede tener muchísimos árboles: L1 tiene C(197), un número de 115 dígitos. No se pueden armar todos. Por eso los árboles se producen **de a uno**, con un **generador** de JavaScript (`function*`): el siguiente árbol recién se arma cuando se lo pide. `parseTrees` pide hasta un límite: por defecto **3**, que alcanza para mostrar una ambigüedad (`DEFAULT_TREE_LIMIT`). Cuántos hay en total lo dice el conteo (guía 20), que no arma ningún árbol.
 
 ---
 
@@ -214,8 +214,8 @@ No hay errores nuevos. El comando termina con código 1 si el relato se rechaza 
 ## 8. Consola y pruebas
 
 ```sh
-npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV"            # 4 trees
-npm run sabueso -- trees --grammar g0 --max 2 "CRI SOS PIS INT REV"    # the first 2 (there are more)
+npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV"            # the first 3 of 4 trees
+npm run sabueso -- trees --grammar g0 --max 10 "CRI SOS PIS INT REV"   # all 4
 npm run sabueso -- trees --grammar g1 "CRI PIS REV"                    # 1 tree, with its ε-subtrees
 ```
 
@@ -232,7 +232,9 @@ npm run sabueso -- trees --grammar g1 "CRI PIS REV"                    # 1 tree,
 | generador                     | los primeros árboles de L1 salen al instante                                                                           |
 | rechazo, ciclo, entrada vacía | sin árboles; los árboles sin repetir; `S → ε`                                                                          |
 
-**`test/command-line/trees.test.ts`:** los 4 árboles numerados, 1 con G1, `--max`, un rechazo y los errores de uso.
+**`test/command-line/trees.test.ts`:** los primeros 3 de 4 árboles numerados, los 4 con `--max 10`, 1 con G1, `--max 2`, un ciclo (infinitos árboles: dibuja los que no repiten el ciclo), un rechazo y los errores de uso.
+
+**El resumen del comando:** como contar es barato, `trees` llama a `countTrees` y siempre dice el total: `The first 3 of 4 trees: the grammar is ambiguous for this input (--max n draws more)`. Con un ciclo: `Infinitely many trees (a cycle A ⇒+ A): … Drawn: 2, the ones that go around no cycle`.
 
 ---
 

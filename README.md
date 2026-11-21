@@ -1,81 +1,273 @@
 # Sabueso
 
-Sabueso decide si un relato respeta la estructura del **policial de enigma**, usando una gramática libre de contexto y un analizador de **Earley** implementado desde cero.
+**Analizador sintáctico de relatos policiales.** Decide si un relato respeta la estructura del policial de enigma, con una gramática libre de contexto y un analizador de Earley implementado desde cero.
 
-Laboratorio Integrador Final de **Fundamentos Teóricos de Informática**.
+[![CI](https://github.com/julioale21/sabueso/actions/workflows/ci.yml/badge.svg)](https://github.com/julioale21/sabueso/actions/workflows/ci.yml)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.0-blue)
+![Estado](https://img.shields.io/badge/SPEC%2002-paso%2025%20de%2030-orange)
+![Node](https://img.shields.io/badge/node-%E2%89%A520.19-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
 
-## Estado actual
+Laboratorio Integrador Final de **Fundamentos Teóricos de Informática** · Licenciatura en Informática · Facultad de Ingeniería · UNPSJB · 2026.
 
-Hechos los pasos 1 a 24 del SPEC 02. El núcleo ya:
+---
 
-- lee gramáticas en formato `.grammar` (lexer AFD y parser LL(1)) y trae las del policial: G0 (ambigua) y G1 (la oficial);
-- analiza la gramática: anulables, longitud mínima, símbolos inútiles, ciclos, FIRST/FOLLOW y tabla LL(1);
-- decide con **Earley** si un relato pertenece al lenguaje, explica el rechazo, cuenta y dibuja los árboles y escribe la derivación más a la izquierda;
-- convierte cualquier gramática a Forma Normal de Chomsky, en seis pasos (START, DEL, UNIT, USELESS, TERM y BIN).
+## Contenido
 
-Faltan CYK, el autómata de pila, las búsquedas acotadas y las pruebas finales (pasos 25 a 30).
+- [Qué es](#qué-es)
+  - [Por qué "Sabueso"](#por-qué-sabueso)
+- [El anteproyecto en resumen](#el-anteproyecto-en-resumen)
+- [Cómo funciona](#cómo-funciona)
+- [Decisiones de diseño](#decisiones-de-diseño)
+- [Estado](#estado)
+- [Primeros pasos](#primeros-pasos)
+- [Uso](#uso)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Comandos npm](#comandos-npm)
+- [Calidad](#calidad)
+- [Documentación](#documentación)
+- [Autor](#autor)
 
-Para probarlo:
+---
 
-```sh
-npm run sabueso -- grammars                      # las gramáticas con |N|, |Σ| y |P|
-npm run sabueso -- analyze --grammar g1          # todos los análisis de G1
-npm run sabueso -- parse --grammar g1 "CRI PIS REV"   # veredicto, árboles y derivación
-npm run sabueso -- earley --grammar g1 --chart "CRI PIS REV"   # los conjuntos S0 … S3
-npm run sabueso -- chomsky-normal-form --grammar g1            # los 6 pasos de la FNC
+## Qué es
+
+Sabueso recibe un relato policial escrito como una **secuencia de etiquetas narrativas**, una por evento, y responde si es una oración del lenguaje del género:
+
+- si el relato es válido, muestra el **árbol sintáctico** y la **derivación más a la izquierda**;
+- si no lo es, informa la **posición del error** y los **símbolos esperados**;
+- si la gramática es ambigua, **cuenta** todos los árboles sin construirlos y **dibuja** los primeros, para mostrar la ambigüedad.
+
+El motor es genérico: recibe la gramática como dato, en un archivo de texto `.grammar`. Cambiar la gramática no requiere tocar el código.
+
+**La entrada, hoy y en la versión final:**
+
+| Versión                          | Qué escribe el usuario                                                                                                                        | Estado              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| **Núcleo** (SPEC 02)             | La secuencia de etiquetas, una por evento: `CTX HAL ENC INT SOS PIS DSC REV CNF CAP`                                                          | En curso            |
+| **Español controlado** (SPEC 04) | El relato en español, con oraciones simples (una por evento) y un vocabulario cerrado. Sabueso lo traduce a etiquetas y se las pasa al núcleo | Ampliación opcional |
+
+**Un ejemplo.** Este es el relato de ejemplo del anteproyecto. Cada oración cuenta un evento, y cada evento tiene su etiqueta:
+
+| Oración                                         | Etiqueta | Evento                  |
+| ----------------------------------------------- | -------- | ----------------------- |
+| Lord Ashby vivía en una mansión de Kent.        | `CTX`    | contexto                |
+| El mayordomo encontró el cadáver de Lord Ashby. | `HAL`    | hallazgo del crimen     |
+| La viuda llamó al inspector Miller.             | `ENC`    | encargo al detective    |
+| Miller interrogó a la cocinera.                 | `INT`    | interrogatorio          |
+| Miller sospechó del sobrino.                    | `SOS`    | sospecha                |
+| Miller encontró un pañuelo en el jardín.        | `PIS`    | pista                   |
+| El sobrino tenía una coartada.                  | `DSC`    | descarte de la sospecha |
+| Miller acusó a la cocinera.                     | `REV`    | revelación del culpable |
+| La cocinera confesó el crimen.                  | `CNF`    | confesión               |
+| La policía arrestó a la cocinera.               | `CAP`    | captura                 |
+
+- **En el núcleo**, la persona hace esta traducción y escribe la columna de etiquetas: `CTX HAL ENC INT SOS PIS DSC REV CNF CAP`. Sabueso la analiza y la acepta.
+- **Con el SPEC 04**, la persona escribe la columna de oraciones, y Sabueso arma solo la secuencia de etiquetas antes de analizarla.
+
+El texto libre, sin restricciones de vocabulario ni de forma, queda fuera de alcance, como dice el anteproyecto.
+
+### Por qué "Sabueso"
+
+Esta primera versión cubre un solo género, el **relato policial de enigma**, y de ahí el nombre. Pero el motor no depende del policial: Earley, el análisis y la FNC reciben la gramática como dato, y el género es solo una entrada del catálogo.
+
+Para sumar otro tipo de narrativa (el cuento maravilloso, la tragedia, el relato de aventuras) no hace falta tocar el motor. Alcanza con tres archivos:
+
+| Qué agregar                | Dónde                                       | Ejemplo del policial                         |
+| -------------------------- | ------------------------------------------- | -------------------------------------------- |
+| Las gramáticas del género  | `packages/core/grammars/genres/<género>/`   | `genres/detective/g0.grammar` y `g1.grammar` |
+| Su alfabeto de etiquetas   | `packages/core/src/genres/<género>-tags.ts` | `detective-tags.ts` (las 14 etiquetas)       |
+| Una entrada en el catálogo | `packages/core/src/genres/catalog.ts`       | la entrada `detective`                       |
+
+---
+
+## El anteproyecto en resumen
+
+El documento completo está en el [**anteproyecto (PDF)**](Romero%20Julio%20-%20Ante%20proyecto%20Fundamentos%20Te%C3%B3ricos%20de%20la%20informatica.pdf).
+
+| Tema                 | Resumen                                                                                                                                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Problema**         | El policial de enigma tiene una estructura muy estable (crimen, investigación, revelación), descripta por la narratología estructural (Propp, Todorov). Eso lo vuelve un buen dominio para las gramáticas libres de contexto. |
+| **Objetivo**         | Un analizador que decida si una secuencia de etiquetas respeta esa estructura, y que muestre de forma comprensible cómo llega a la decisión.                                                                                  |
+| **Alfabeto**         | 14 etiquetas narrativas, de `CTX` (contexto) a `EPI` (epílogo): `CRI` crimen, `PIS` pista, `SOS` sospecha, `REV` revelación, etc.                                                                                             |
+| **Gramática**        | Dos versiones: **G0**, natural y ambigua a propósito, y **G1**, rediseñada sin ambigüedad. Compararlas es el análisis de ambigüedad que pide el enunciado.                                                                    |
+| **Algoritmo**        | **Earley**, implementado desde cero: acepta cualquier gramática libre de contexto, incluso ambigua, y trabaja sobre la gramática tal como se diseñó.                                                                          |
+| **Alcance**          | Un **núcleo comprometido** (carga manual de etiquetas) que cubre todo el enunciado, y una **ampliación opcional**: escribir el relato en español controlado y traducirlo a etiquetas automáticamente.                         |
+| **Fuera de alcance** | Comprensión de texto libre, aprendizaje automático y otros subgéneros policiales.                                                                                                                                             |
+
+Contenidos de la materia que aplica: gramáticas libres de contexto, derivaciones y árboles, ambigüedad, formas normales (FNC y CYK), autómatas de pila, jerarquía de Chomsky, decidibilidad y autómatas finitos.
+
+---
+
+## Cómo funciona
+
+Hay dos entradas: la **gramática** (un archivo `.grammar`) y el **relato** (una secuencia de etiquetas). Cada etapa transforma la salida de la anterior, y cada una corresponde a un concepto de la materia.
+
+```mermaid
+flowchart LR
+  A[".grammar<br/>(texto)"] --> B["Lexer<br/>AFD"]
+  B --> C["Parser<br/>LL(1)"]
+  C --> D["Gramática<br/>G = (N, Σ, P, S)"]
+  D --> E["Análisis<br/>anulables, FIRST/FOLLOW, LL(1)"]
+  R["Relato<br/>CRI PIS REV"] --> T["Tokens<br/>¿están en Σ?"]
+  D --> F
+  T --> F["Earley<br/>chart S0 … Sn"]
+  F --> G["Veredicto<br/>y diagnóstico"]
+  F --> H["Árboles, conteo<br/>y derivación"]
+  D --> I["FNC<br/>6 pasos"]
+  I --> J["CYK<br/>(comparación)"]
 ```
 
-El recorrido completo está en [`docs/console-demo.md`](docs/console-demo.md).
+| Etapa     | Entrada              | Salida                                    | Concepto                     |
+| --------- | -------------------- | ----------------------------------------- | ---------------------------- |
+| Lexer     | texto del `.grammar` | tokens                                    | autómata finito determinista |
+| Parser    | tokens               | reglas                                    | análisis descendente LL(1)   |
+| Gramática | reglas               | G = (N, Σ, P, S)                          | gramática libre de contexto  |
+| Análisis  | G                    | anulables, inútiles, ciclos, FIRST/FOLLOW | algoritmos de punto fijo     |
+| Earley    | G y el relato        | aceptado o rechazado, con diagnóstico     | pertenencia en una GLC       |
+| Árboles   | el chart de Earley   | árboles, cantidad y derivación            | árboles de derivación        |
+| FNC y CYK | G                    | la misma L(G) en FNC, y otro reconocedor  | formas normales              |
 
-## Requisitos
+El detalle de cada pieza, con sus funciones clave, está en la [documentación del núcleo](docs/documentation/sabueso-es.md).
 
-- Node.js 24 (la versión fijada en `.nvmrc`). La mínima soportada es 20.19.
-- npm, que viene con Node.
+---
+
+## Decisiones de diseño
+
+- **Earley como analizador principal.** Acepta cualquier gramática libre de contexto, incluida G0, que es ambigua, y sus árboles tienen la forma de la gramática diseñada.
+- **CYK solo como comparación.** Exige pasar la gramática a Forma Normal de Chomsky, y eso deforma los árboles: aparecen símbolos como `T_a` y `X1` que nadie diseñó. Se implementa igual, para mostrar esa diferencia y para validar Earley.
+- **Ningún analizador determinista para el relato.** LL y LR no sirven porque G0 es ambigua por diseño.
+- **Desde cero.** No se usan bibliotecas de análisis sintáctico ni de procesamiento de lenguaje natural.
+- **Las gramáticas son datos.** Se escriben en un formato propio, `.grammar`, que se lee con un lexer AFD y un parser LL(1) hechos para el proyecto. El propio formato está descripto por una gramática (`meta.grammar`).
+- **G1 es LL(1).** Su tabla predictiva no tiene conflictos, y eso demuestra por construcción que no es ambigua. G0 tiene 13 conflictos.
+- **El arreglo de ε de Aycock y Horspool.** El Earley clásico falla con producciones vacías. El motor incluye el arreglo, y la consola puede mostrar el error original (`--no-epsilon-fix`).
+- **Resultados como datos, no callbacks.** Las trazas (del AFD, del parser y de Earley) y las rondas de los puntos fijos se devuelven como listas, listas para mostrar en la consola o en la web.
+- **Un núcleo independiente de la interfaz.** Solo la entrada de la consola usa APIs de Node, así que el mismo código corre en el navegador.
+- **Cada concepto tiene su comando y su prueba.** Todo lo que hace el motor se puede ver por consola.
+- **Código en inglés, documentación en español.**
+
+---
+
+## Estado
+
+**SPEC 02: pasos 1 a 25 de 30 terminados.** El núcleo ya:
+
+- lee gramáticas `.grammar` y trae las del policial: G0 y G1;
+- analiza la gramática: anulables, longitud mínima, símbolos inútiles, ciclos, FIRST/FOLLOW y tabla LL(1);
+- decide con Earley si un relato pertenece al lenguaje, explica el rechazo, cuenta y dibuja los árboles y escribe la derivación;
+- convierte cualquier gramática a Forma Normal de Chomsky en seis pasos;
+- reconoce con CYK sobre la FNC y compara su árbol con el de Earley.
+
+**Sigue:** autómata de pila (paso 26). **Después:** búsquedas acotadas y pruebas diferenciales y de rendimiento.
+
+El proyecto avanza por specs, en orden:
+
+| Spec                                                            | Contenido                                                                      | Estado                      |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------- |
+| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Terminado                   |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | En curso (pasos 1–25 de 30) |
+| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                    |
+| [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                    |
+
+---
 
 ## Primeros pasos
 
+**Requisitos:** Node.js 24 (la versión de `.nvmrc`; la mínima soportada es 20.19) y npm.
+
 ```sh
-nvm use          # Node 24, según .nvmrc (sin nvm: instala Node 24 a mano)
+git clone https://github.com/julioale21/sabueso.git
+cd sabueso
+nvm use          # Node 24, según .nvmrc
 npm install      # instala dependencias y activa los hooks de git
+npm test         # corre todas las pruebas
 ```
 
-`npm install` también activa los hooks de git (script `prepare`: `git config core.hooksPath .githooks`). Si creaste el repositorio con `git init` después de instalar, vuelve a correr `npm install`.
+`npm install` activa los hooks de git con el script `prepare`. Si creaste el repositorio con `git init` después de instalar, vuelve a correr `npm install`.
 
-## Estructura
+---
 
-| Carpeta         | Paquete         | Qué contiene                                                                                                                                                                                 |
-| --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core` | `@sabueso/core` | El núcleo: gramáticas (`packages/core/grammars/`), lector de `.grammar`, análisis, motor de Earley, FNC (en curso) y la CLI `sabueso`                                                        |
-| `apps/web`      | `@sabueso/web`  | La interfaz web (Vite + React)                                                                                                                                                               |
-| `docs/`         | —               | Fichas de conceptos (`docs/concepts/`), guías de estudio por paso (`docs/guides/`), [documentación](docs/documentation/sabueso-es.md) y [guion de la demo por consola](docs/console-demo.md) |
-| `specs/`        | —               | Los specs del proyecto, uno por etapa (ver abajo)                                                                                                                                            |
+## Uso
 
-## Comandos
+Todo el motor se usa por consola con `npm run sabueso -- <comando>`. `npm run sabueso -- help` lista los comandos.
 
-| Comando                                   | Qué hace                                                                          |
-| ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `npm run sabueso -- <comando>`            | Compila el núcleo y ejecuta su CLI (`npm run sabueso -- help` lista los comandos) |
-| `npm run dev -w @sabueso/web`             | Servidor de desarrollo de la interfaz web                                         |
-| `npm test`                                | Pruebas del núcleo y de la web                                                    |
-| `npm run build`                           | Compila `core` y genera `apps/web/dist`                                           |
-| `npm run typecheck`                       | Verifica los tipos del núcleo y de la web                                         |
-| `npm run lint`                            | ESLint                                                                            |
-| `npm run format` / `npm run format:check` | Aplica o verifica el formato de Prettier                                          |
+```sh
+npm run sabueso -- genres                                     # el policial de enigma y sus 14 etiquetas
+npm run sabueso -- grammar g1                                 # G1 completa: G = (N, Σ, P, S)
+npm run sabueso -- analyze --grammar g1                       # todos los análisis de G1
+npm run sabueso -- parse --grammar g1 "CRI PIS REV"           # veredicto, árbol y derivación
+npm run sabueso -- parse --grammar g1 "CRI REV"               # rechazo: posición y esperados
+npm run sabueso -- earley --grammar g1 --chart "CRI PIS REV"  # los conjuntos de Earley S0 … S3
+npm run sabueso -- count --grammar g0 "CRI SOS PIS INT REV"   # 4 árboles: G0 es ambigua
+npm run sabueso -- count --grammar g1 "CRI SOS PIS INT REV"   # 1 árbol: G1 no lo es
+npm run sabueso -- chomsky-normal-form --grammar g1           # los 6 pasos de la FNC
+npm run sabueso -- cocke-younger-kasami --grammar g1 --compare "CRI PIS REV"   # CYK junto a Earley
+```
+
+Las gramáticas incluidas son las del género (`g0` y `g1`), la del formato (`meta`) y siete de prueba (`arithmetic`, `parentheses`, `epsilon-trap`, …). `npm run sabueso -- grammars` las lista. Para usar una gramática propia: `--grammar-file <ruta>`.
+
+El recorrido completo de la demo está en [`docs/console-demo.md`](docs/console-demo.md).
+
+---
+
+## Estructura del repositorio
+
+| Carpeta                   | Qué contiene                                                                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/`          | `@sabueso/core`: el motor, sus pruebas y la consola `sabueso`                                                                                             |
+| `packages/core/src/`      | Una carpeta por pieza: `grammar-format` (lexer y parser), `analysis`, `earley`, `trees`, `chomsky-normal-form`, `cocke-younger-kasami`, `command-line`, … |
+| `packages/core/grammars/` | Las gramáticas: `genres/detective/` (G0 y G1), `meta.grammar` (el formato) y las de prueba                                                                |
+| `apps/web/`               | `@sabueso/web`: la interfaz web (Vite + React)                                                                                                            |
+| `docs/documentation/`     | La documentación del núcleo: arquitectura, piezas y cómo se conectan (también en PDF)                                                                     |
+| `docs/guides/`            | Una guía de estudio por paso del SPEC 02, con el código explicado                                                                                         |
+| `docs/concepts/`          | Fichas teóricas, una por concepto de la materia                                                                                                           |
+| `docs/interactive/`       | Páginas interactivas: Earley paso a paso y el autómata de pila                                                                                            |
+| `examples/grammars/`      | Gramáticas chicas para mostrar casos puntuales por consola                                                                                                |
+| `specs/`                  | Los specs del proyecto, uno por etapa                                                                                                                     |
+
+---
+
+## Comandos npm
+
+| Comando                                   | Qué hace                                  |
+| ----------------------------------------- | ----------------------------------------- |
+| `npm run sabueso -- <comando>`            | Compila el núcleo y ejecuta su consola    |
+| `npm run dev -w @sabueso/web`             | Servidor de desarrollo de la interfaz web |
+| `npm test`                                | Pruebas del núcleo y de la web (Vitest)   |
+| `npm run build`                           | Compila `core` y genera `apps/web/dist`   |
+| `npm run typecheck`                       | Verifica los tipos del núcleo y de la web |
+| `npm run lint`                            | ESLint                                    |
+| `npm run format` / `npm run format:check` | Aplica o verifica el formato de Prettier  |
+
+---
 
 ## Calidad
 
+- **Pruebas:** más de 800 pruebas con Vitest, con valores calculados a mano. Cada comando de consola tiene la suya, y una prueba verifica que el guion de la demo sigue funcionando.
 - **Hooks de git** (`.githooks/`): `pre-commit` corre `format:check` y `lint`; `pre-push` corre `npm test`.
-- **CI** (`.github/workflows/ci.yml`): en cada push y pull request corre `npm ci`, `format:check`, `lint`, `typecheck`, `build` y `test`.
+- **Integración continua** (`.github/workflows/ci.yml`): en cada push y pull request corre `npm ci`, `format:check`, `lint`, `typecheck`, `build` y `test`.
+- **TypeScript estricto**, con `exactOptionalPropertyTypes`.
 
-## Specs
+---
 
-El proyecto se implementa por specs, en este orden:
+## Documentación
 
-| Spec                                                            | Contenido                                                                      | Estado                                |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------- |
-| [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Aprobado, terminado                   |
-| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Aprobado, en curso (pasos 1–24 de 30) |
-| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                              |
-| [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                              |
+| Documento                                                                                                      | Para qué                                                   |
+| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [Documentación del núcleo](docs/documentation/sabueso-es.md)                                                   | Arquitectura, piezas, funciones clave y cómo se conectan   |
+| [Guías de estudio](docs/guides/)                                                                               | El código de cada paso, función por función                |
+| [Fichas teóricas](docs/concepts/)                                                                              | La teoría de cada concepto, con referencias bibliográficas |
+| [Demo por consola](docs/console-demo.md)                                                                       | Los comandos de la exposición, en orden                    |
+| [Specs](specs/)                                                                                                | Qué se construye en cada etapa y por qué                   |
+| [Anteproyecto](Romero%20Julio%20-%20Ante%20proyecto%20Fundamentos%20Te%C3%B3ricos%20de%20la%20informatica.pdf) | La propuesta original del trabajo                          |
 
-La documentación del proyecto (arquitectura, piezas y cómo se conectan) está en [`docs/documentation/sabueso-es.md`](docs/documentation/sabueso-es.md).
+---
+
+## Autor
+
+**Julio Alejandro Romero**
+
+- Asignatura: Fundamentos Teóricos de Informática, 2026
+- Carrera: Licenciatura en Informática, Facultad de Ingeniería, UNPSJB
+- Docente: Lic. Daniel Isaías Arza
+- Modalidad: individual

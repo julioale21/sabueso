@@ -64,6 +64,10 @@ export type {
   ChomskyNormalFormStepName,
 } from './chomsky-normal-form/index.js';
 
+// CYK, on a grammar in Chomsky normal form (step 25).
+export { recognizeCockeYoungerKasami } from './cocke-younger-kasami/recognizer.js';
+export type { CockeYoungerKasamiResult } from './cocke-younger-kasami/recognizer.js';
+
 // The catalog of genres.
 export { genres } from './genres/catalog.js';
 export type { Genre, TagInfo } from './genres/types.js';

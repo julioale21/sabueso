@@ -53,7 +53,7 @@ Dos formas posibles, según `accepted` (una **unión discriminada**: TypeScript 
 
 | Opción           | Por defecto | Qué hace                                                      |
 | ---------------- | ----------- | ------------------------------------------------------------- |
-| `maxTrees`       | 50          | cuántos árboles construir                                     |
+| `maxTrees`       | 3           | cuántos árboles construir (la cantidad total la da el conteo) |
 | `trace`          | `false`     | registrar la traza (para el reproductor de la web)            |
 | `countTrees`     | `true`      | contar todos los árboles; con `false`, `treeCount` es `null`  |
 | `classicEpsilon` | `false`     | el algoritmo clásico, sin el arreglo de ε (solo para enseñar) |

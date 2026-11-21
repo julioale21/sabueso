@@ -215,7 +215,7 @@ Esta sección es la referencia teórica del spec. Cada subsección corresponde a
 ### 3.21 Enumeración acotada
 
 - Un generador `function*` recorre los enlaces en orden de inserción, lo que hace el orden determinista.
-- Produce árboles hasta un límite (por defecto 50).
+- Produce árboles hasta un límite (por defecto 3; era 50, cambio del 2026-11-21 en el paso 19).
 - Referencia: el riesgo "cantidad excesiva de árboles" del anteproyecto.
 
 ### 3.22 Derivación más a la izquierda
@@ -1006,11 +1006,12 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
 19. **Enumeración y render de árboles.**
     - `trees/tree.ts`, `trees/enumerate.ts` (`function*` con límite) y `trees/render.ts` (árbol ASCII con `├─` y `└─`).
     - Pruebas: A1 con G0 da 4 árboles distintos. Con límite 2 da 2. El render de un árbol chico coincide con un texto esperado. Fichas 18 y 21 (borrador).
-    - **Consola:** `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV" [--max 50]` imprime cada árbol numerado.
+    - **Consola:** `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV" [--max 3]` imprime cada árbol numerado.
     - **Decisiones (2026-11-20):**
       - `enumerateTrees({ grammar, recognition })` es un generador que sigue los enlaces desde ($S → S •, 0); `parseTrees(grammar, recognition, limit = 50)` junta hasta el límite. El árbol que se entrega es el de S (sin la raíz $S).
       - Ciclos: se lleva el conjunto de ítems del camino y se saltea la rama que vuelve a uno; así la enumeración siempre termina (el conteo del paso 20 dirá `'infinite'`).
       - El comando avisa si `--max` cortó la lista (pide un árbol más que el límite para saberlo) y, si hay más de uno, que la gramática es ambigua para esa entrada.
+      - **Límite por defecto 3 (cambio, 2026-11-21):** `DEFAULT_TREE_LIMIT` pasa de 50 a 3, para `trees` y para `parse()` de la API: dos o tres árboles alcanzan para mostrar la ambigüedad, y la cantidad la da el conteo sin armar árboles. `trees` ahora llama a `countTrees` y dice el total (`The first 3 of 4 trees: …`); con un ciclo dice que son infinitos y que dibuja los que no repiten el ciclo. La web (SPEC 03) puede pedir más con `maxTrees`.
       - La ficha 21 queda en borrador; se completa en el paso 27.
 
 20. **Conteo.**
@@ -1077,6 +1078,13 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - `cocke-younger-kasami/recognizer.ts`: tabla y extracción de un árbol.
     - Pruebas: la tabla de `( ) ( )` con `parentheses` y el árbol de `CRI PIS REV` con G0, que contiene nodos `T_`/`X` o pierde los unitarios. Ficha 23.
     - **Consola:** `npm run sabueso -- cocke-younger-kasami --grammar parentheses "( ) ( )"` imprime la tabla triangular, `ACEPTA` y el árbol FNC. Con `--compare`, imprime al lado el árbol de Earley para la misma entrada.
+    - **Decisiones (2026-11-21):**
+      - `recognizeCockeYoungerKasami({ grammar, tokens })` recibe la gramática **ya** en FNC y lanza un `Error` si no lo está (error de programación: seguir daría resultados falsos). El comando convierte antes con `toChomskyNormalForm`.
+      - La tabla es `table[i][l]` (inicio i, largo l), como en la sección 3.23; `table[i][0]` queda vacío. La entrada vacía se acepta solo con S → ε.
+      - El árbol se reconstruye desde la tabla, sin punteros: la primera producción y la primera división que explican cada celda, con la misma regla (`explainsSplit`) que llenó la tabla. Es un `ParseTree`, así que se dibuja con `renderTree`.
+      - La consola está en inglés: `ACCEPTED: S0 ∈ T[0][4]` / `REJECTED: Relato ∉ T[0][2]` (en vez de `ACEPTA`). La tabla se dibuja con los largos de arriba (l = n) hacia abajo, y ∅ para una celda vacía. `--compare` pone los dos árboles en dos columnas y lista los no terminales que aparecen en uno solo (en G1 con `CRI PIS REV`: `X1` contra diez categorías del género).
+      - Además de lo pedido, las pruebas ya comparan CYK sobre FNC(G) con Earley sobre G en todas las cadenas cortas (G0 y G1 hasta largo 3, `parentheses` hasta 6). El paso 28 suma el AP y el comando `differential`.
+      - `index.ts` exporta `recognizeCockeYoungerKasami` y `CockeYoungerKasamiResult`.
 
 26. **Autómata de pila.**
     - `pushdown-automaton/build.ts` y `pushdown-automaton/simulate.ts`.

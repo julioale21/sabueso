@@ -30,7 +30,7 @@ G0, A1 = `CRI SOS PIS INT REV`. Planteo y Desenlace son iguales en todos los ár
 | Árbol              | el tipo `ParseTree` en `trees/tree.ts`                                                   |
 | Enumeración        | `enumerateTrees` y `parseTrees({ grammar, recognition, limit })` en `trees/enumerate.ts` |
 | Dibujo             | `renderTree` en `trees/render.ts`                                                        |
-| Comando de consola | `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV" [--max 50]`                 |
+| Comando de consola | `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV" [--max 3]`                  |
 
 ## 4. Qué prueba lo verifica
 

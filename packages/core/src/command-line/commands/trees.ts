@@ -7,8 +7,10 @@
 import { diagnose } from '../../earley/diagnostics.js';
 import { recognize } from '../../earley/recognizer.js';
 import { checkAlphabet, tokenizeSequence } from '../../input/sequence.js';
+import { countTrees } from '../../trees/count.js';
 import { DEFAULT_TREE_LIMIT, parseTrees } from '../../trees/enumerate.js';
 import { renderTree } from '../../trees/render.js';
+import type { TreeCount } from '../../trees/tree.js';
 import { parseArguments } from '../arguments.js';
 import {
   GRAMMAR_FILE_OPTION,
@@ -66,13 +68,11 @@ export const treesCommand: Command = {
       );
       return EXIT_CODES.rejected;
     }
-    // One more than the limit, only to know whether the limit cut the list.
-    const trees = parseTrees({ grammar, recognition, limit: limit + 1 });
-    const shown = trees.slice(0, limit);
-    const summary =
-      trees.length > limit
-        ? `The first ${limit} trees (there are more; \`sabueso count\` gives how many)`
-        : `${shown.length} ${shown.length === 1 ? 'tree' : 'trees'}${shown.length > 1 ? ': the grammar is ambiguous for this input' : ''}`;
+    // Counting is cheap (dynamic programming, no trees built), so the summary always says
+    // how many there are, even when only the first few are drawn.
+    const count = countTrees({ grammar, recognition });
+    const shown = parseTrees({ grammar, recognition, limit });
+    const summary = formatSummary({ count, shown: shown.length });
     const drawn = shown.map((tree, index) => `Tree ${index + 1}:\n${renderTree(tree)}`);
     environment.writeOutput(`${[title, summary, ...drawn].join('\n\n')}\n`);
     return EXIT_CODES.ok;
@@ -86,4 +86,24 @@ function parseLimit(value: string | undefined): number | undefined {
   }
   const limit = Number(value);
   return Number.isInteger(limit) && limit > 0 ? limit : undefined;
+}
+
+/**
+ * '1 tree', '4 trees: the grammar is ambiguous for this input', or, when the limit cut the
+ * list, 'The first 3 of 4 trees: … (--max n draws more)'. With a cycle there are infinitely
+ * many, and only the ones that go around no cycle are drawn.
+ */
+function formatSummary({ count, shown }: { count: TreeCount; shown: number }): string {
+  if (count === 1n) {
+    return '1 tree';
+  }
+  const ambiguity = 'the grammar is ambiguous for this input';
+  if (count === 'infinite') {
+    // The enumeration skips the branches that go around a cycle, so it never builds more.
+    return `Infinitely many trees (a cycle A ⇒+ A): ${ambiguity}. Drawn: ${shown}, the ones that go around no cycle`;
+  }
+  if (BigInt(shown) === count) {
+    return `${count} trees: ${ambiguity}`;
+  }
+  return `The first ${shown} of ${count} trees: ${ambiguity} (${MAX_OPTION} n draws more)`;
 }

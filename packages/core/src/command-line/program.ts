@@ -2,6 +2,7 @@
 // tests can run it in memory, without starting a Node process.
 import { analyzeCommand } from './commands/analyze.js';
 import { chomskyNormalFormCommand } from './commands/chomsky-normal-form.js';
+import { cockeYoungerKasamiCommand } from './commands/cocke-younger-kasami.js';
 import { countCommand } from './commands/count.js';
 import { cyclesCommand } from './commands/cycles.js';
 import { deriveCommand } from './commands/derive.js';
@@ -47,6 +48,7 @@ export const runCommandLine = createCommandLineProgram({
     deriveCommand,
     parseCommand,
     chomskyNormalFormCommand,
+    cockeYoungerKasamiCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

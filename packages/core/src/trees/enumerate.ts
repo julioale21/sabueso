@@ -11,8 +11,8 @@ import type { Grammar, SymbolName } from '../grammar/types.js';
 import { epsilonTrees } from './epsilon.js';
 import type { ParseTree } from './tree.js';
 
-/** By default, at most this many trees: G0 can have C(197) of them for a single story. */
-export const DEFAULT_TREE_LIMIT = 50;
+/** By default, at most this many trees: enough to show an ambiguity (G0 can have C(197) of them for one story). */
+export const DEFAULT_TREE_LIMIT = 3;
 
 /** The trees of an accepted input, up to the limit, in a fixed order. None if it was rejected. */
 export function parseTrees({

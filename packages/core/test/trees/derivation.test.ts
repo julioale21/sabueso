@@ -12,6 +12,7 @@ function derivationsOf({ grammarName, input }: { grammarName: string; input: str
   return parseTrees({
     grammar,
     recognition: recognize({ grammar, tokens: tokenizeSequence(input) }),
+    limit: 10,
   }).map(leftmostDerivation);
 }
 

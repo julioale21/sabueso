@@ -169,7 +169,7 @@ npm run sabueso -- epsilon-trees --grammar-file examples/grammars/epsilon-choice
 
 ## Los árboles de un relato
 
-Paso 19. Los árboles de derivación, reconstruidos desde los enlaces del chart y dibujados. A1 tiene 4 árboles en G0 (es ambigua) y 1 en G1.
+Paso 19. Los árboles de derivación, reconstruidos desde los enlaces del chart y dibujados. A1 tiene 4 árboles en G0 (es ambigua) y 1 en G1. Por defecto se dibujan los primeros 3, que alcanzan para mostrar la ambigüedad, y el resumen dice el total (`The first 3 of 4 trees`); `--max 10` los dibuja todos.
 
 ```sh
 npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV"
@@ -214,4 +214,14 @@ npm run sabueso -- chomsky-normal-form --grammar g1
 npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT
 npm run sabueso -- chomsky-normal-form --grammar parentheses
 npm run sabueso -- chomsky-normal-form --grammar test-useless
+```
+
+## CYK
+
+Paso 25. CYK decide lo mismo que Earley, pero sobre la gramática en FNC: llena la tabla triangular T[i][l] (los no terminales que derivan las l etiquetas desde la posición i) y acepta si el inicial está en T[0][n]. Con `--compare`, el árbol de CYK queda al lado del de Earley: el de CYK tiene `X1` y pierde las categorías del género (`Hecho`, `MarcoOpc`, `Pasos`…). Es la comparación que justifica usar Earley.
+
+```sh
+npm run sabueso -- cocke-younger-kasami --grammar parentheses "( ) ( )"
+npm run sabueso -- cocke-younger-kasami --grammar g1 --compare "CRI PIS REV"
+npm run sabueso -- cocke-younger-kasami --grammar g0 "CRI REV"
 ```

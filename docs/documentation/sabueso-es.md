@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo hasta el paso 24 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo hasta el paso 25 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -48,6 +48,7 @@ Cada etapa transforma la salida de la anterior, y cada una corresponde a un conc
 | Árboles                | el chart               | árboles, su cantidad, la derivación  | árboles de derivación, ambigüedad | `trees/`                               | 8       |
 | API pública            | G y el relato          | un resultado completo                | (encadena las etapas)             | `parse.ts`, `index.ts`                 | 9       |
 | FNC                    | G                      | una gramática equivalente, por pasos | formas normales                   | `chomsky-normal-form/`                 | 10      |
+| CYK                    | FNC(G) y el relato     | sí o no, la tabla y un árbol FNC     | programación dinámica             | `cocke-younger-kasami/`                | 10      |
 
 Los módulos están en `packages/core/src/`. Además están `genres/` (el catálogo de géneros) y `command-line/` (la consola, sección 11).
 
@@ -334,12 +335,13 @@ Las demás exportaciones, por área:
 | Análisis           | `analyzeGrammar` y `GrammarAnalysis`                                                                 |
 | Mostrar resultados | `label`, `dottedRule`, `renderTree`, `renderDerivation`                                              |
 | FNC                | `toChomskyNormalForm`, `isChomskyNormalForm` y cada paso por separado (`addNewStart`, …, `binarize`) |
+| CYK                | `recognizeCockeYoungerKasami` y `CockeYoungerKasamiResult`                                           |
 | Catálogo           | `genres`                                                                                             |
 | Consola            | `createCommandLineProgram`, `formatTable`, `formatSet` (para sumar los comandos del SPEC 04)         |
 
 **Detalle:** guía 22.
 
-# 10. Forma Normal de Chomsky
+# 10. Forma Normal de Chomsky y CYK
 
 **Qué hace:** convierte una gramática a FNC (cada producción es A → BC o A → a, y S → ε solo si ε ∈ L(G) y S no aparece a la derecha; Hopcroft 7.1), sin cambiar su lenguaje.
 
@@ -361,32 +363,39 @@ La conversión tiene seis transformaciones. Cada una es una función que recibe 
 - **Cada paso arma la gramática nueva con `rewriteGrammar`, no con `buildGrammar`,** porque conserva N: un no terminal que se queda sin producciones (A en `epsilon-trap`) no debe pasar a ser terminal.
 - Las pruebas verifican que el lenguaje se preserva después de cada paso y que las 10 gramáticas terminan en FNC.
 
-**Pendiente:** el algoritmo CYK y el autómata de pila (pasos 25 y 26 del SPEC 02).
+## 10.1 CYK
 
-**Detalle:** guías 23 y 24 · ficha 22.
+**Qué hace:** `recognizeCockeYoungerKasami({ grammar, tokens })` decide w ∈ L(G) sobre una gramática **ya** en FNC (Hopcroft 7.4.4). Llena la tabla T[i][l], los no terminales que derivan las l etiquetas desde la posición i: las celdas de largo 1 salen de A → a, y las de largo l ≥ 2 de A → B C, probando cada división en dos partes más cortas. Acepta si el inicial está en T[0][n]. Cuesta O(n³·|G|) siempre.
+
+**Se conecta con:** recibe la salida de `toChomskyNormalForm` y devuelve un `ParseTree`, el mismo tipo que Earley, reconstruido desde la tabla. Así el comando `cocke-younger-kasami --compare` dibuja los dos árboles lado a lado: con `CRI PIS REV` y G1, el de CYK tiene `X1` y pierde diez categorías del género (`Hecho`, `MarcoOpc`, `Pasos`…). Es la comparación que justifica usar Earley. Las pruebas verifican que CYK sobre FNC(G) y Earley sobre G aceptan exactamente las mismas cadenas cortas.
+
+**Pendiente:** el autómata de pila y las búsquedas acotadas (pasos 26 y 27 del SPEC 02).
+
+**Detalle:** guías 23, 24 y 25 · fichas 22 y 23.
 
 # 11. La consola
 
 La consola `sabueso` muestra cada pieza del motor por separado: cada comando llama al motor y formatea el resultado, sin lógica propia. Se ejecuta con `npm run sabueso -- <comando>`, y la gramática se elige con `--grammar <nombre>` o `--grammar-file <ruta>`.
 
-| Comando                                                                                    | Qué muestra                                                               | Sección |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | ------- |
-| `genres`, `grammars`                                                                       | el catálogo y las gramáticas incluidas                                    | 3       |
-| `lex`, `grammar`                                                                           | los tokens y las transiciones del AFD; la gramática y la traza del parser | 4       |
-| `tokens`                                                                                   | un relato separado en etiquetas y verificado contra Σ                     | 5       |
-| `nullable`, `min-yield`, `useful`, `cycles`, `first-follow`, `predictive-table`, `analyze` | cada análisis; con `--steps`, las rondas del punto fijo                   | 6       |
-| `items`, `earley`, `trace`                                                                 | las reglas punteadas, el chart y cada paso de Earley                      | 7       |
-| `epsilon-trees`, `trees`, `count`, `derive`                                                | los árboles, su cantidad y la derivación                                  | 8       |
-| `parse`                                                                                    | el análisis completo de un relato                                         | 9       |
-| `chomsky-normal-form`                                                                      | la gramática después de cada paso de la FNC                               | 10      |
+| Comando                                                                                    | Qué muestra                                                                | Sección |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- | ------- |
+| `genres`, `grammars`                                                                       | el catálogo y las gramáticas incluidas                                     | 3       |
+| `lex`, `grammar`                                                                           | los tokens y las transiciones del AFD; la gramática y la traza del parser  | 4       |
+| `tokens`                                                                                   | un relato separado en etiquetas y verificado contra Σ                      | 5       |
+| `nullable`, `min-yield`, `useful`, `cycles`, `first-follow`, `predictive-table`, `analyze` | cada análisis; con `--steps`, las rondas del punto fijo                    | 6       |
+| `items`, `earley`, `trace`                                                                 | las reglas punteadas, el chart y cada paso de Earley                       | 7       |
+| `epsilon-trees`, `trees`, `count`, `derive`                                                | los árboles, su cantidad y la derivación                                   | 8       |
+| `parse`                                                                                    | el análisis completo de un relato                                          | 9       |
+| `chomsky-normal-form`                                                                      | la gramática después de cada paso de la FNC                                | 10      |
+| `cocke-younger-kasami`                                                                     | la tabla CYK, el veredicto y el árbol FNC; con `--compare`, junto a Earley | 10.1    |
 
 El recorrido completo, con la salida de cada comando, está en `docs/console-demo.md`. Una prueba verifica que cada comando de ese documento siga siendo válido.
 
 # 12. Pruebas y calidad
 
-- **765 pruebas** (Vitest), organizadas como el código, más una prueba de integración de la API pública.
+- **831 pruebas** (Vitest), organizadas como el código, más una prueba de integración de la API pública.
 - **Contra cálculos hechos a mano:** el chart de `CRI PIS REV` con G1 coincide ítem por ítem con el del spec, y la derivación de A1 tiene sus mismos 18 pasos.
-- **Propiedades del lenguaje:** después de cada paso de la FNC, las oraciones cortas de G1 se siguen aceptando, y G0 y G1 aceptan y rechazan lo mismo hasta largo 3.
+- **Propiedades del lenguaje:** después de cada paso de la FNC, las oraciones cortas de G1 se siguen aceptando, y G0 y G1 aceptan y rechazan lo mismo hasta largo 3. CYK sobre FNC(G) y Earley sobre G aceptan las mismas cadenas.
 - **Casos borde:** gramáticas con ε, con símbolos inútiles, con lenguaje vacío y con ciclos.
 - **Calidad del código:** TypeScript estricto, ESLint y Prettier. Los hooks de git verifican formato y lint antes de cada commit y corren las pruebas antes de cada push. La integración continua repite todo en cada push.
 
