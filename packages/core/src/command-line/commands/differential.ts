@@ -1,7 +1,6 @@
 /**
  * Concept: the three recognizers on every string up to a length k: how many strings, how
  * many sentences, and the disagreements (there must be none).
- * Reference: SPEC 02, section 9.4.
  * Card: docs/concepts/23-cocke-younger-kasami.md
  */
 import { runDifferential, type Discrepancy } from '../../differential/differential.js';

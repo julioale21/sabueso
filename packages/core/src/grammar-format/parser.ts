@@ -1,7 +1,6 @@
 /**
  * Concept: predictive recursive-descent parser for an LL(1) grammar (meta.grammar), one
  * function per nonterminal, each choosing its alternative by looking at one token.
- * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.
  * Card: docs/concepts/04-predictive-recursive-descent-parser.md
  *
  * The grammar of the .grammar format (meta.grammar), whose terminals are the token kinds:

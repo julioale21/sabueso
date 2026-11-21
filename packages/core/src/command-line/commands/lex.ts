@@ -1,6 +1,5 @@
 /**
  * Concept: the DFA lexer shown on a real grammar file: its tokens and, with --states, δ step by step.
- * Reference: Hopcroft 2.2; Augusto 1.3.
  * Card: docs/concepts/03-finite-automaton-lexer.md
  */
 import {

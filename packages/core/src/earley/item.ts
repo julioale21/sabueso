@@ -1,7 +1,6 @@
 /**
  * Concept: the Earley item (A → α • β, j), a dotted rule with an origin: "I am recognizing
  * A, I already recognized α starting at position j, and β is still missing".
- * Reference: Earley (1970); SPEC 02, sections 3.11 and 3.18.
  * Card: docs/concepts/11-earley-item.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

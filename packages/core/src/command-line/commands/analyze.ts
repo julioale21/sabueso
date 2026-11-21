@@ -1,7 +1,6 @@
 /**
  * Concept: the full report of a grammar, steps 7 to 12 together: nullable symbols, minimum
  * yield, useless symbols and emptiness, cycles and LL(1).
- * Reference: SPEC 02, sections 3.5 to 3.10.
  */
 import { analyzeGrammar, type GrammarAnalysis } from '../../analysis/index.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';

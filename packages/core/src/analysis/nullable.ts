@@ -1,6 +1,5 @@
 /**
  * Concept: nullable symbols, A ⇒* ε, computed as a least fixed point.
- * Reference: Hopcroft 7.1.3; Augusto 2.3; SPEC 02, section 3.7.
  * Card: docs/concepts/07-nullable-symbols.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

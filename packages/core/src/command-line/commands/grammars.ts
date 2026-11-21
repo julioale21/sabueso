@@ -1,7 +1,6 @@
 /**
  * Concept: every built-in grammar, read with the whole chain (lexer → parser → buildGrammar)
  * and summarized by the sizes of its 4-tuple: |N|, |Σ| and |P|.
- * Reference: SPEC 02, sections 4 and 8.2.
  */
 import { parseGrammarText } from '../../grammar-format/parser.js';
 import type { Grammar } from '../../grammar/types.js';

@@ -1,7 +1,6 @@
 /**
  * Concept: FIRST and FOLLOW of each nonterminal and, with --steps, how both fixed points
  * grow round by round.
- * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.2.
  * Card: docs/concepts/05-first-follow.md
  */
 import { computeFirstFollow } from '../../analysis/first-follow.js';

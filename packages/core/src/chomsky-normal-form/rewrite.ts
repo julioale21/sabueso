@@ -1,7 +1,6 @@
 /**
  * Concept: the grammar G' that each step of the Chomsky normal form builds from G. Σ never
  * changes; N only grows (S0, and later T_a and Xi), and P is rewritten.
- * Reference: Hopcroft 7.1; SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

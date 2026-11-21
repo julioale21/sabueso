@@ -1,7 +1,6 @@
 /**
  * Concept: the CYK algorithm (Cocke–Younger–Kasami): membership in L(G) for a grammar in
  * Chomsky normal form, by dynamic programming over the substrings of the input, in O(n³·|G|).
- * Reference: Hopcroft 7.4.4; SPEC 02, section 3.23.
  * Card: docs/concepts/23-cocke-younger-kasami.md
  */
 import { productionsOutsideChomskyNormalForm } from '../chomsky-normal-form/index.js';

@@ -1,7 +1,6 @@
 /**
  * Concept: the parse trees of an accepted input, rebuilt by following the links of the
  * Earley items (backpointers), one tree at a time and up to a limit.
- * Reference: Hopcroft 5.2; SPEC 02, sections 3.18 and 3.21.
  * Card: docs/concepts/18-backpointers-and-trees.md
  */
 import { computeNullable } from '../analysis/nullable.js';

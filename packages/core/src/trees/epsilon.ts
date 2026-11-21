@@ -2,7 +2,6 @@
  * Concept: the ε-trees of a nullable symbol, the subtrees that derive the empty string.
  * A nullable link of Earley (step 15) points to no item, so these subtrees are built from
  * the grammar instead.
- * Reference: SPEC 02, section 3.19.
  * Card: docs/concepts/18-backpointers-and-trees.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

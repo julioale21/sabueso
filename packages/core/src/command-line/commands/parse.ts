@@ -2,7 +2,6 @@
  * Concept: the full analysis of a story in one command, through the public parse():
  * accepted or rejected (with the diagnosis), how many trees, the first trees drawn, and the
  * leftmost derivation of the first one. With --trace, every step of Earley.
- * Reference: SPEC 02, step 22.
  */
 import { parse, type ParseResult } from '../../parse.js';
 import { renderDerivation } from '../../trees/derivation.js';

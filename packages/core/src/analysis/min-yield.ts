@@ -1,7 +1,6 @@
 /**
  * Concept: the minimum yield of a symbol, the length of the shortest string of terminals it
  * derives. Computed as a fixed point, like the nullable symbols.
- * Reference: SPEC 02, section 3.10.
  * Card: docs/concepts/10-minimum-yield.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

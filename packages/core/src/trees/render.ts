@@ -1,6 +1,5 @@
 /**
  * Concept: a parse tree drawn as text, one node per line, with ├─ and └─ for the branches.
- * Reference: SPEC 02, section 3.21 (render) and step 19.
  * Card: docs/concepts/18-backpointers-and-trees.md
  */
 import type { ParseTree } from './tree.js';

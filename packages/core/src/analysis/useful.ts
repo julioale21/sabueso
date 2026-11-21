@@ -1,6 +1,5 @@
 /**
  * Concept: productive, reachable and useless symbols, and the emptiness of L(G).
- * Reference: Hopcroft 7.1.1, 7.1.2 and 7.4.3; SPEC 02, section 3.8.
  * Card: docs/concepts/08-useless-symbols-and-emptiness.md
  */
 import { buildGrammar } from '../grammar/build.js';

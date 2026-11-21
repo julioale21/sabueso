@@ -32,6 +32,7 @@ Los arreglos de la web (W1 a W5) van en un spec aparte. Este solo toca la web en
 - **N8 · Código muerto.** Se borran `computeProductive`, `computeFirst` y `computeFollow`. Las pruebas pasan a usar las funciones que quedan.
 - **N9 · Inicio común de los comandos.** Un ayudante en `command-line/grammar-source.ts` reemplaza el inicio repetido de unos 23 comandos.
 - **N10 · `formatRounds` en un solo lugar,** y el comando `chomsky-normal-form` usa los pasos de `toChomskyNormalForm`.
+- **N11 · Sin referencias en las cabeceras del código** (sumado el 2026-11-21). Se borra la línea `Reference:` de las cabeceras de `packages/core/src`. La bibliografía vive solo en las fichas (`docs/concepts/`), a las que cada cabecera ya apunta con `Card:`. Antes de borrar, cada cita de un libro o artículo que falte en su ficha se pasa a la ficha.
 - **Documentación afectada:** las fichas, las guías, el documento oficial (español e inglés), `docs/console-demo.md` y el guion privado que nombren algo de lo que cambia. Sin guía nueva.
 - **Validación final:** se comprueba que todo funciona igual, con una comparación de la salida de la consola antes y después.
 
@@ -118,6 +119,11 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
    - N3: corregir el comentario de `cycles` en `analysis/index.ts`, y revisar la ficha y la guía de ciclos. Agregar una prueba con A→B, B→C, C→A, A→C que documente que se informa un ciclo por arista de retroceso.
    - N4: corregir el comentario de `nonterminals` en `grammar/types.ts`.
    - Verificación: la salida de la consola es idéntica a la línea de base.
+     1b. **Referencias, solo en las fichas (N11).**
+   - Comparar cada línea `Reference:` de `packages/core/src` con la ficha de su `Card:`. Toda cita de un libro o un artículo (Hopcroft, Sipser, Augusto, Aho, Earley, Aycock y Horspool…) que falte en la ficha se agrega a su sección "Referencia bibliográfica".
+   - Las referencias a secciones de los specs (SPEC 02, sección 3.x) se borran sin pasarlas: son historia del desarrollo, no teoría.
+   - Borrar la línea `Reference:` de todas las cabeceras. Quedan `Concept:` y `Card:`.
+   - Verificación: ningún archivo de `packages/core/src` tiene `Reference:`, ninguna cita de libro se perdió (comparando la lista de citas antes y después) y la consola es idéntica a la línea de base.
 2. **Código muerto (N8).**
    - Borrar `computeProductive` (`analysis/useful.ts`), `computeFirst` y `computeFollow` (`analysis/first-follow.ts`).
    - Pasar sus pruebas a `analyzeUsefulSymbols`, `productiveRounds`, `computeFirstFollow`, `firstRounds` o `followRounds`, con los mismos valores esperados.
@@ -173,6 +179,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
 - [ ] `productionKey` y `groupByLeftSide` existen una sola vez, en `grammar/`.
 - [ ] La función pública de `trees/epsilon.ts` no recibe `inProgress`.
 - [ ] `computeProductive`, `computeFirst` y `computeFollow` no existen, y ninguna guía ni ficha los nombra.
+- [ ] Ningún archivo de `packages/core/src` tiene una línea `Reference:`, y cada cita de libro que tenían está en la ficha de su concepto.
 - [ ] `formatRounds` existe una sola vez, y el comando `chomsky-normal-form` usa `toChomskyNormalForm(grammar).steps`.
 - [ ] Los comandos que leen una gramática usan `readGrammarCommandInput`.
 - [ ] El `diff` contra la línea de base del paso 0 no muestra diferencias, salvo `parse` con relatos rechazados.
@@ -190,6 +197,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
 - **Sí:** solo se corrige la documentación afectada, sin guía nueva. Es un refactor sin conceptos nuevos.
 - **Sí:** N9 entra como último paso de código. Es el más grande y no toca teoría; si se complica, se puede cortar ahí sin perder lo demás.
 - **Sí:** línea de base al principio y `diff` al final. "Todo funciona igual" tiene que ser verificable, no una impresión.
+- **Sí:** las referencias bibliográficas viven solo en las fichas (N11, sumado el 2026-11-21 durante el paso 2). El error de la cita de START estaba repetido en el código, la ficha y la guía; con una sola fuente se corrige una vez, y la cabecera del código queda en qué concepto implementa (`Concept:`) y dónde se explica (`Card:`).
 - **No:** el pulido opcional de la revisión (sección 2). Se puede retomar después.
 
 ---

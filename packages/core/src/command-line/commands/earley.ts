@@ -1,7 +1,6 @@
 /**
  * Concept: Earley deciding whether a story is a sentence of L(G) and, with --chart, the sets
  * S0 … Sn with every item and how it got there (Predictor, Scanner or Completer).
- * Reference: Earley (1970); SPEC 02, sections 3.12 to 3.15.
  * Cards: docs/concepts/13-predictor.md, 14-scanner.md, 15-completer.md
  */
 import type { Chart, EarleySet } from '../../earley/chart.js';

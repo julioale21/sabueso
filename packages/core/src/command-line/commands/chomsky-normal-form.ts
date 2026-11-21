@@ -1,7 +1,6 @@
 /**
  * Concept: the conversion to Chomsky normal form, step by step: the grammar after each step,
  * with the productions that step added and removed. With --until, it stops at that step.
- * Reference: Hopcroft 7.1; Augusto 2.4.3.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import {

@@ -2,7 +2,6 @@
  * Concept: from a context-free grammar to a pushdown automaton that accepts the same
  * language by empty stack, with a single state: expand a nonterminal on top of the stack,
  * or match a terminal on top with the next token.
- * Reference: Hopcroft 6.3.1; SPEC 02, section 3.24.
  * Card: docs/concepts/24-pushdown-automaton.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

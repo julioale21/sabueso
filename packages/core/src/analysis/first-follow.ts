@@ -1,7 +1,6 @@
 /**
  * Concept: FIRST and FOLLOW, the sets an LL(1) parser looks at to choose a production
  * with one token of lookahead.
- * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.2; SPEC 02, section 3.5.
  * Card: docs/concepts/05-first-follow.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';

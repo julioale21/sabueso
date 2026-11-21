@@ -1,7 +1,6 @@
 /**
  * Concept: productive, reachable and useless symbols, and whether L(G) = ∅. With --steps,
  * the rounds of both fixed points; at the end, the grammar without useless symbols.
- * Reference: Hopcroft 7.1.1, 7.1.2 and 7.4.3.
  * Card: docs/concepts/08-useless-symbols-and-emptiness.md
  */
 import { analyzeUsefulSymbols, type UsefulSymbolsAnalysis } from '../../analysis/useful.js';

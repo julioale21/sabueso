@@ -1,7 +1,6 @@
 /**
  * Concept: where a command takes the story from: the words on the command line, or a text
  * file given with --file (L1 has 200 events, too many to type).
- * Reference: SPEC 02, section 8.2.
  */
 import type { SymbolName } from '../grammar/types.js';
 import { tokenizeSequence } from '../input/sequence.js';

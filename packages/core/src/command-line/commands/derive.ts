@@ -2,7 +2,6 @@
  * Concept: the leftmost derivation of a story, S ⇒ … ⇒ w, one numbered sentential form per
  * step with the production applied. With --tree, the derivation of another tree: two
  * different leftmost derivations of the same story mean the grammar is ambiguous.
- * Reference: Hopcroft 5.2.5; SPEC 02, section 3.22.
  * Card: docs/concepts/20-leftmost-derivation.md
  */
 import { recognize } from '../../earley/recognizer.js';

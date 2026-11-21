@@ -1,8 +1,6 @@
 /**
  * Concept: START, the first step of the Chomsky normal form: a new start symbol S0 → S, only
  * when S appears on some right side.
- * Reference: Sipser 2.1 (Theorem 2.9): Hopcroft 7.1 converts L − {ε} and has no START step;
- * Augusto 2.4.3; SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import type { Grammar } from '../grammar/types.js';

@@ -1,6 +1,5 @@
 /**
  * Concept: a genre is a language L(G) over its own alphabet of narrative tags.
- * Reference: SPEC 02, section 4.6.
  * Card: docs/concepts/01-alphabet-and-language.md
  */
 

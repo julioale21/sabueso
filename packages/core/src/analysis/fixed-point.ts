@@ -1,7 +1,6 @@
 /**
  * Concept: the least fixed point, the scheme behind most grammar analyses (nullable,
  * productive, reachable…): start from a set and apply a rule until nothing changes.
- * Reference: Hopcroft 7.1; SPEC 02, sections 3.7 and 3.8.
  * Card: docs/concepts/07-nullable-symbols.md
  */
 import type { SymbolName } from '../grammar/types.js';

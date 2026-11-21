@@ -1,6 +1,5 @@
 /**
  * Concept: the sentences of L(G) up to a length k, one per line, shortest first.
- * Reference: SPEC 02, section 3.25.
  * Card: docs/concepts/25-bounded-searches.md
  */
 import { generateSentences } from '../../bounded/generate.js';

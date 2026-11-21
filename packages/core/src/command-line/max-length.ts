@@ -1,7 +1,6 @@
 /**
  * Concept: the --max-length option of the bounded searches (step 27): k, the longest sentence
  * they look at.
- * Reference: SPEC 02, section 3.25.
  */
 export const MAX_LENGTH_OPTION = '--max-length';
 

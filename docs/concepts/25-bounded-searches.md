@@ -42,3 +42,4 @@
 ## 5. Referencia bibliográfica
 
 - Hopcroft, Motwani y Ullman, _Introducción a la teoría de autómatas, lenguajes y computación_, secciones 9.5.2 (la ambigüedad es indecidible) y 9.5.3 (otros problemas indecidibles sobre GLC), y 9.2 (lenguajes recursivamente enumerables: semidecisión).
+- Hopcroft, Motwani y Ullman, misma obra, secciones 5.1 (gramáticas y derivaciones, de donde sale la generación de oraciones por derivaciones más a la izquierda) y 7.4.3 (vacuidad de una GLC, la misma idea de "producir algo" que usa la poda por longitud mínima).

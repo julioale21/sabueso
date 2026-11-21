@@ -1,7 +1,6 @@
 /**
  * Concept: the minimum yield of each nonterminal: how many terminals, at least, any string
  * it derives has. For the start symbol, the length of the shortest sentence of L(G).
- * Reference: SPEC 02, section 3.10.
  * Card: docs/concepts/10-minimum-yield.md
  */
 import { computeMinYield } from '../../analysis/min-yield.js';

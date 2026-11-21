@@ -1,7 +1,6 @@
 /**
  * Concept: the leftmost derivation of a parse tree: the sentential forms S ⇒ … ⇒ w, each
  * one replacing the leftmost nonterminal. Tree and leftmost derivation say the same thing.
- * Reference: Hopcroft 5.2.5; SPEC 02, section 3.22.
  * Card: docs/concepts/20-leftmost-derivation.md
  */
 import type { Production, SymbolName } from '../grammar/types.js';

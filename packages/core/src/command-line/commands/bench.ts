@@ -1,7 +1,6 @@
 /**
  * Concept: how long each stage of the analysis of one story takes: recognition, one tree, its
  * derivation and the tree count. The criterion of the proposal: G1 with L1 in under a second.
- * Reference: SPEC 02, section 9.5.
  * Card: docs/concepts/19-tree-count-catalan.md
  */
 import { checkAlphabet } from '../../input/sequence.js';

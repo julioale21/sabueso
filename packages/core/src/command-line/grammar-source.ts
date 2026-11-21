@@ -1,7 +1,6 @@
 /**
  * Concept: where a command takes its grammar from: a built-in grammar by name, or a .grammar
  * file given with --grammar-file (to try the generic engine on any grammar).
- * Reference: SPEC 02, section 8.2.
  */
 import { parseGrammarText } from '../grammar-format/parser.js';
 import type { Grammar } from '../grammar/types.js';

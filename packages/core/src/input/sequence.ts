@@ -1,6 +1,5 @@
 /**
  * Concept: a story is a string w ∈ Σ*: a sequence of tags separated by spaces.
- * Reference: Hopcroft 1.5; SPEC 02, sections 3.1 and 3.17.
  * Card: docs/concepts/01-alphabet-and-language.md
  *
  * Unlike a grammar file, a story needs no automaton: its only separator is the space, so

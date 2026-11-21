@@ -1,7 +1,6 @@
 /**
  * Concept: a .grammar file read by the whole chain (DFA lexer → LL(1) parser → buildGrammar)
  * and shown as G = (N, Σ, P, S); with --parser-trace, every decision of the parser.
- * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.
  * Card: docs/concepts/04-predictive-recursive-descent-parser.md
  */
 import { tokenizeGrammar } from '../../grammar-format/lexer.js';

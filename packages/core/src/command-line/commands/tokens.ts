@@ -1,7 +1,6 @@
 /**
  * Concept: a story as a string w ∈ Σ*: its tokens with their position, and the check that
  * every one of them is in Σ of the grammar (the unknown-symbol error of case I6).
- * Reference: Hopcroft 1.5; SPEC 02, section 3.17.
  * Card: docs/concepts/01-alphabet-and-language.md
  */
 import type { ParseError } from '../../earley/diagnostics.js';

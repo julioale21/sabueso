@@ -1,7 +1,6 @@
 /**
  * Concept: the nullable symbols of a grammar (A ⇒* ε) and, with --steps, how the fixed
  * point grows round by round until it stops changing.
- * Reference: Hopcroft 7.1.3; Augusto 2.3.
  * Card: docs/concepts/07-nullable-symbols.md
  */
 import { lastRound } from '../../analysis/fixed-point.js';

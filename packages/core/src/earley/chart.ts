@@ -2,7 +2,6 @@
  * Concept: the Earley sets S0 … Sn (the chart), one per position between tokens. Each set
  * is an append-only list with an index by key; walking it with a growing index is the
  * work queue of the algorithm.
- * Reference: Earley (1970); SPEC 02, sections 3.12 and 3.18.
  * Card: docs/concepts/12-earley-sets.md
  */
 import type { Production } from '../grammar/types.js';

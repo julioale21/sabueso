@@ -2,7 +2,6 @@
  * Concept: comparing two languages up to a length k: the sentences that only one of the two
  * grammars generates. The equivalence of two CFGs is undecidable; a difference found up to k
  * proves L(G) ≠ L(H), but finding none proves nothing.
- * Reference: Hopcroft 9.5.3; SPEC 02, section 3.25.
  * Card: docs/concepts/25-bounded-searches.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';

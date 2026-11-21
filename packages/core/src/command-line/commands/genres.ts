@@ -1,6 +1,5 @@
 /**
  * Concept: the genres the program can identify, each one a language over its own tags.
- * Reference: SPEC 02, section 4.6.
  * Card: docs/concepts/01-alphabet-and-language.md
  */
 import { genres } from '../../genres/catalog.js';

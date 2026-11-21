@@ -1,7 +1,6 @@
 /**
  * Concept: the parse tree (derivation tree) of a sentence, and the arithmetic to count
  * trees, which can be infinite when the grammar has cycles.
- * Reference: Hopcroft 5.2; SPEC 02, sections 3.18 to 3.21.
  * Card: docs/concepts/18-backpointers-and-trees.md
  */
 import type { Production, SymbolName } from '../grammar/types.js';

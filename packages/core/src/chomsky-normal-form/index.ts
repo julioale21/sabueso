@@ -1,8 +1,6 @@
 /**
  * Concept: the Chomsky normal form (FNC): every production is A → B C or A → a, plus S → ε
  * for the start symbol S when ε ∈ L(G). The conversion chains the six steps in order.
- * Reference: Hopcroft 7.1 (7.1.1 to 7.1.5); Sipser 2.1 (Theorem 2.9) for START; Augusto 2.4.3;
- * SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import type { Grammar, Production } from '../grammar/types.js';

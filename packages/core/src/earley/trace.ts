@@ -2,7 +2,6 @@
  * Concept: the trace of Earley, every item the algorithm adds, in order, with the operation
  * that added it and its cause. The same story as the chart, told as a sequence of events:
  * it is what the step-by-step player of the web shows.
- * Reference: SPEC 02, sections 3.12 to 3.16 and step 17.
  */
 
 import type { SymbolName } from '../grammar/types.js';

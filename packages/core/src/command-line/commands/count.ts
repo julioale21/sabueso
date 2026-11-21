@@ -1,7 +1,6 @@
 /**
  * Concept: how many parse trees a story has, counted without building them. In G0 the
  * number grows like the Catalan numbers; in G1 it is always 1.
- * Reference: SPEC 02, section 3.20.
  * Card: docs/concepts/19-tree-count-catalan.md
  */
 import { recognize } from '../../earley/recognizer.js';

@@ -1,6 +1,5 @@
 /**
  * Concept: the lexer of the .grammar format as an explicit DFA table (states q0…q12).
- * Reference: Hopcroft 2.2; Augusto 1.3.
  * Card: docs/concepts/03-finite-automaton-lexer.md
  * Guide (state graph and δ table): docs/guides/03-finite-automaton-lexer.md
  */

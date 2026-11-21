@@ -1,7 +1,6 @@
 /**
  * Concept: the LL(1) table M[A, a] of a grammar, its conflicts, and the verdict: with no
  * conflicts the grammar is LL(1), and therefore unambiguous.
- * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.3.
  * Card: docs/concepts/06-predictive-table-and-unambiguity.md
  */
 import {

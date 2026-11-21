@@ -1,6 +1,5 @@
 /**
  * Concept: deterministic finite automaton M = (Q, Σ, δ, q0, F) run as a lexer, with maximal munch.
- * Reference: Hopcroft 2.2; Augusto 1.3.
  * Card: docs/concepts/03-finite-automaton-lexer.md
  */
 

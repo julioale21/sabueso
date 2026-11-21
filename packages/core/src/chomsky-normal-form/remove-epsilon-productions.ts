@@ -1,6 +1,5 @@
 /**
  * Concept: DEL, the step of the Chomsky normal form that removes the ε-productions A → ε.
- * Reference: Hopcroft 7.1.3; SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import { computeNullable } from '../analysis/nullable.js';

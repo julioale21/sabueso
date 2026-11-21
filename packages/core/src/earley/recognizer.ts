@@ -1,8 +1,6 @@
 /**
  * Concept: the Earley recognizer: Predictor, Scanner and Completer over the sets S0 … Sn,
  * deciding w ∈ L(G) for any context-free grammar, with the ε fix of Aycock and Horspool.
- * Reference: Earley (1970); Aycock and Horspool, "Practical Earley Parsing" (2002);
- * SPEC 02, sections 3.12 to 3.16.
  * Cards: docs/concepts/13-predictor.md, 14-scanner.md, 15-completer.md,
  * 16-epsilon-aycock-horspool.md
  */

@@ -2,7 +2,6 @@
  * Concept: the whole analysis of a story in one call: the alphabet check, Earley, the
  * diagnosis, the trees, their count and the leftmost derivation of the first one. It is
  * what the web (SPEC 03) calls.
- * Reference: SPEC 02, sections 3.17 to 3.22 and section 5.
  */
 import type { ParseError } from './earley/diagnostics.js';
 import { diagnose } from './earley/diagnostics.js';

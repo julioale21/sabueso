@@ -1,7 +1,6 @@
 /**
  * Concept: UNIT, the step of the Chomsky normal form that removes the unit productions
  * A → B, using the unit pairs.
- * Reference: Hopcroft 7.1.4; SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import { lastRound, repeatRuleUntilNoChange } from '../analysis/fixed-point.js';

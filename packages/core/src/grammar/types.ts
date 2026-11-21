@@ -1,6 +1,5 @@
 /**
  * Concept: context-free grammar G = (N, Σ, P, S).
- * Reference: Hopcroft 5.1; Augusto 2.4.
  * Card: docs/concepts/02-context-free-grammar.md
  */
 

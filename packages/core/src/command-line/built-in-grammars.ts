@@ -2,7 +2,6 @@
  * Concept: the built-in grammars of the program, in two groups: the grammars of each genre
  * (read from the catalog, so a new genre needs no change here) and the internal grammars for
  * development (the format itself, textbook grammars and analysis cases).
- * Reference: SPEC 02, section 8.2.
  */
 import { genres } from '../genres/catalog.js';
 import type { Genre } from '../genres/types.js';

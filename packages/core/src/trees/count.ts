@@ -2,7 +2,6 @@
  * Concept: counting the parse trees of an input without building them, by dynamic
  * programming over the links of the Earley items. With Pasos → Pasos Pasos, the count of G0
  * grows exponentially with the number of steps.
- * Reference: SPEC 02, section 3.20.
  * Card: docs/concepts/19-tree-count-catalan.md
  */
 import { computeNullable } from '../analysis/nullable.js';

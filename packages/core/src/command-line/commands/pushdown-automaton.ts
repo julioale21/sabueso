@@ -2,7 +2,6 @@
  * Concept: the pushdown automaton of a grammar, run on a story: the result, how many
  * configurations the search explored, and the accepting path as a table of instantaneous
  * descriptions (input left, stack). With --transitions, δ itself.
- * Reference: Hopcroft 6.1–6.3; SPEC 02, section 3.24.
  * Card: docs/concepts/24-pushdown-automaton.md
  */
 import { formatProduction } from '../../grammar/build.js';

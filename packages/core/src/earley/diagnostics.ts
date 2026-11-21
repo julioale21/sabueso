@@ -1,7 +1,6 @@
 /**
  * Concept: why a story is rejected, as data: where it fails, what was found and what was
  * expected. Read straight from the Earley chart.
- * Reference: SPEC 02, section 3.17.
  * Card: docs/concepts/17-acceptance-and-errors.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';

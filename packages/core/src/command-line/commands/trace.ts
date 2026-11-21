@@ -2,7 +2,6 @@
  * Concept: the trace of Earley: every item the algorithm adds, numbered in order, with the
  * operation that added it and its cause. The same information as the step-by-step player
  * of the web, as text.
- * Reference: SPEC 02, step 17.
  */
 import { diagnose } from '../../earley/diagnostics.js';
 import { recognize } from '../../earley/recognizer.js';

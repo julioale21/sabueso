@@ -1,6 +1,5 @@
 /**
  * Concept: cycles A ⇒+ A, the grammars with infinitely many trees for some string.
- * Reference: SPEC 02, section 3.9.
  * Card: docs/concepts/09-cycles.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
