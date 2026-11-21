@@ -374,6 +374,7 @@ sabueso/
 | [Guías de estudio](docs/guides/)                                                                               | El código de cada paso, función por función                |
 | [Fichas teóricas](docs/concepts/)                                                                              | La teoría de cada concepto, con referencias bibliográficas |
 | [Demo por consola](docs/console-demo.md)                                                                       | Los comandos de la exposición, en orden                    |
+| [Verificación manual de la web](docs/web-manual-check.md)                                                      | La lista para revisar la web a mano, vista por vista       |
 | [Specs](specs/)                                                                                                | Qué se construye en cada etapa y por qué                   |
 | [Anteproyecto](Romero%20Julio%20-%20Ante%20proyecto%20Fundamentos%20Te%C3%B3ricos%20de%20la%20informatica.pdf) | La propuesta original del trabajo                          |
 

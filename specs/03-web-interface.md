@@ -396,6 +396,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - Hecho: `.github/workflows/deploy-pages.yml` (también se puede lanzar a mano, con `workflow_dispatch`). Un deploy por vez, sin cancelar uno en curso. Se probó en local: con `VITE_BASE=/sabueso/` los recursos apuntan a `/sabueso/assets/…`, y `vite preview` en `/sabueso/` analiza A1 sin errores en la consola. La sección "La interfaz web" del README tiene el enlace y los pasos manuales.
 17. **Verificación manual.**
     - `docs/web-manual-check.md` con los casos de la sección 8, marcados después de revisarlos en el navegador.
+    - Hecho: `docs/web-manual-check.md`, una lista por vista con los valores exactos, tomados de las pruebas de `apps/web/test` y de los comandos de la consola. Falta marcar cada caso en el navegador.
 18. **Mejoras de la UI (versión 2).**
     - Se encara con las fases A a C terminadas, en su propia rama. No cambia la estructura: las vistas siguen pasando por el `AnalysisService` y las primitivas de `components/ui/`.
     - **El árbol se construye paso a paso, al ritmo de la derivación.** Un reproductor (⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad) recorre la derivación más a la izquierda: en el paso k aparecen los hijos del nodo de la expansión k − 1, con una animación de entrada, y la forma sentencial k se resalta en la lista. Así se ve que la derivación más a la izquierda recorre el árbol en preorden. Usa el número de expansión que ya calcula `layoutTree` (paso 7): no hace falta nada nuevo del núcleo.
