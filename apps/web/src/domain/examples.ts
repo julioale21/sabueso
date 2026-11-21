@@ -39,8 +39,8 @@ export const EXAMPLES: readonly Example[] = [
   },
   {
     id: 'A1',
-    title: 'Un relato ambiguo',
-    description: '4 árboles en G0 y 1 en G1.',
+    title: 'Ambiguo con G0',
+    description: 'Válido con las dos: 4 árboles en G0 y 1 en G1.',
     input: 'CRI SOS PIS INT REV',
     narrative: [
       { tags: 'CRI', text: 'Alguien envenenó al banquero Ferrer en su despacho.' },

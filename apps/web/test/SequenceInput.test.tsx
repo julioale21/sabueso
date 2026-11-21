@@ -71,7 +71,7 @@ describe('SequenceInput', () => {
     const cards = screen.getByRole('list', { name: 'Ejemplos' }).querySelectorAll('button');
     expect(cards).toHaveLength(5);
     expect(cards[1]).toHaveTextContent(
-      'A1Un relato ambiguo4 árboles en G0 y 1 en G1.CRI SOS PIS INT REV',
+      'A1Ambiguo con G0Válido con las dos: 4 árboles en G0 y 1 en G1.CRI SOS PIS INT REV',
     );
     expect(cards[4]).toHaveTextContent('CRI PIS PIS … PIS REV (200 etiquetas)');
   });
