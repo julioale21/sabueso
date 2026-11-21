@@ -111,33 +111,44 @@ export function multiplyCounts(first: TreeCount, second: TreeCount): TreeCount {
 - **Infinito absorbe:** infinitas formas más algo, o por algo, siguen siendo infinitas.
 - **Salvo el cero en un producto:** si una parte no se puede armar de ninguna forma (0), no hay árbol, aunque la otra parte tenga infinitas formas. Por eso el `if` del cero va primero.
 
-### 5.3 `countEpsilonTrees({ grammar, nullableSymbols, symbol, known, inProgress })`
+### 5.3 `countEpsilonTrees({ grammar, nullableSymbols, symbol, known })` y `countWithMemory`
+
+La función pública recibe solo lo que necesita: la gramática, sus anulables, el símbolo y, opcionalmente, una memoria `known` para compartir resultados entre llamadas (el conteo de árboles la reutiliza). El estado de la recursión, `inProgress`, no aparece en su firma: lo crea ella y se lo pasa a un ayudante privado, `countWithMemory`, que hace el trabajo.
 
 ```ts
-const remembered = known.get(symbol);
-if (remembered !== undefined) {
-  return remembered;
+export function countEpsilonTrees({ grammar, nullableSymbols, symbol, known = new Map() }) {
+  return countWithMemory({
+    context: { grammar, nullableSymbols, known, inProgress: new Set() },
+    symbol,
+  });
 }
-if (inProgress.has(symbol)) {
-  return 'infinite';
+
+function countWithMemory({ context, symbol }) {
+  const { grammar, nullableSymbols, known, inProgress } = context;
+  const remembered = known.get(symbol);
+  if (remembered !== undefined) {
+    return remembered;
+  }
+  if (inProgress.has(symbol)) {
+    return 'infinite';
+  }
+  inProgress.add(symbol);
+  let total: TreeCount = 0n;
+  for (const production of emptyProductionsOf({ grammar, nullableSymbols, symbol })) {
+    const ways = production.rightSide.reduce<TreeCount>(
+      (product, child) =>
+        multiplyCounts({ first: product, second: countWithMemory({ context, symbol: child }) }),
+      1n,
+    );
+    total = addCounts({ first: total, second: ways });
+  }
+  inProgress.delete(symbol);
+  known.set(symbol, total);
+  return total;
 }
-inProgress.add(symbol);
-let total: TreeCount = 0n;
-for (const production of emptyProductionsOf({ grammar, nullableSymbols, symbol })) {
-  const ways = production.rightSide.reduce<TreeCount>(
-    (product, child) =>
-      multiplyCounts({
-        first: product,
-        second: countEpsilonTrees({ grammar, nullableSymbols, symbol: child, known, inProgress }),
-      }),
-    1n,
-  );
-  total = addCounts({ first: total, second: ways });
-}
-inProgress.delete(symbol);
-known.set(symbol, total);
-return total;
 ```
+
+(Los tipos de los parámetros están en el código; acá se omiten para leer mejor.)
 
 - **`known` (la memoria):** si el símbolo ya se contó, se devuelve el resultado guardado. Sin esto, símbolos compartidos se contarían muchas veces.
 - **`inProgress` (los que se están contando ahora):** si aparece un símbolo que todavía se está contando, se llegó a él desde sí mismo: hay un ciclo, y la respuesta es `'infinite'`.

@@ -17,18 +17,41 @@ export function countEpsilonTrees({
   nullableSymbols,
   symbol,
   known = new Map(),
-  inProgress = new Set(),
 }: {
   grammar: Grammar;
   nullableSymbols: ReadonlySet<SymbolName>;
   symbol: SymbolName;
+  /** Counts already known, to share between calls (the tree count reuses them). */
   known?: Map<SymbolName, TreeCount> | undefined;
-  inProgress?: Set<SymbolName> | undefined;
+}): TreeCount {
+  return countWithMemory({
+    context: { grammar, nullableSymbols, known, inProgress: new Set() },
+    symbol,
+  });
+}
+
+/** What the recursion of the ε-tree count carries: the grammar and its memory. */
+interface EpsilonCountContext {
+  grammar: Grammar;
+  nullableSymbols: ReadonlySet<SymbolName>;
+  /** The counts already computed (memoization). */
+  known: Map<SymbolName, TreeCount>;
+  /** The symbols being counted right now, deeper in the recursion. */
+  inProgress: Set<SymbolName>;
+}
+
+function countWithMemory({
+  context,
+  symbol,
+}: {
+  context: EpsilonCountContext;
+  symbol: SymbolName;
 }): TreeCount {
   // A count depends on the counts of the symbols of its productions, so it is computed
   // depth-first and remembered (memoization). Meeting a symbol that is still being
   // counted means it derives ε through itself: S ⇒+ S with nothing produced, so the
   // derivation can loop as many times as wanted and there are infinitely many trees.
+  const { grammar, nullableSymbols, known, inProgress } = context;
   const remembered = known.get(symbol);
   if (remembered !== undefined) {
     return remembered;
@@ -41,10 +64,7 @@ export function countEpsilonTrees({
   for (const production of emptyProductionsOf({ grammar, nullableSymbols, symbol })) {
     const ways = production.rightSide.reduce<TreeCount>(
       (product, child) =>
-        multiplyCounts({
-          first: product,
-          second: countEpsilonTrees({ grammar, nullableSymbols, symbol: child, known, inProgress }),
-        }),
+        multiplyCounts({ first: product, second: countWithMemory({ context, symbol: child }) }),
       1n,
     );
     total = addCounts({ first: total, second: ways });
