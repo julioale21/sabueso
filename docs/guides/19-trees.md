@@ -91,10 +91,8 @@ return trees;
 ### 5.2 `enumerateTrees({ grammar, recognition })`
 
 ```ts
-const accepting = recognition.chart
-  .at(-1)
-  ?.items.find((item) => item.production === recognition.startProduction && item.dot === 1);
-if (!recognition.accepted || accepting === undefined) {
+const accepting = recognition.acceptingItem;
+if (accepting === null) {
   return;
 }
 const context: TreeContext = {

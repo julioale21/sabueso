@@ -224,7 +224,7 @@ for (const set of chart) {
     processItem({ context, item: set.items[position] });
   }
 }
-const accepted = chart[tokens.length].byKey.has(
+const acceptingItem = chart[tokens.length].byKey.get(
   itemKey({ production: startProduction, dot: 1, origin: 0 }),
 );
 ```

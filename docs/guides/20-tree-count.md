@@ -93,10 +93,8 @@ Si el recorrido llega a un ítem que **todavía se está contando**, ese ítem d
 ### 5.1 `countTrees({ grammar, recognition })`
 
 ```ts
-const accepting = recognition.chart
-  .at(-1)
-  ?.items.find((item) => item.production === recognition.startProduction && item.dot === 1);
-if (!recognition.accepted || accepting === undefined) {
+const accepting = recognition.acceptingItem;
+if (accepting === null) {
   return 0n;
 }
 const context: CountContext = {
@@ -109,7 +107,7 @@ const context: CountContext = {
 return countItem({ context, item: accepting });
 ```
 
-- Busca el ítem de aceptación, como la enumeración. Si la entrada se rechazó, hay 0 árboles.
+- Parte del ítem de aceptación, ($S → S •, 0), que `recognize` ya devuelve en `acceptingItem` (lo mismo hace la enumeración). Si la entrada se rechazó, es `null` y hay 0 árboles.
 - El contexto lleva la **memoria** (`known`), los ítems **en curso** (`inProgress`) y la memoria de los árboles ε (`epsilonCounts`), compartida por todos los enlaces `nullable`.
 - La cuenta del ítem `$S → S •` es la del relato: `$S` tiene un solo hijo, así que no cambia el número.
 

@@ -37,7 +37,7 @@ Además, los conjuntos de Earley dejan registrado **dónde** se trabó la entrad
 | traza (paso 17)            | `recognize` | cada operación, en orden             |
 | árboles y conteo (18 a 21) | `recognize` | los enlaces de los ítems             |
 
-`recognize({ grammar, tokens })` devuelve `{ accepted, chart, startProduction }`. Los tokens tienen que estar en Σ: el comando llama antes a `checkAlphabet` (paso 6).
+`recognize({ grammar, tokens })` devuelve `{ acceptingItem, accepted, chart, startProduction }`. Los tokens tienen que estar en Σ: el comando llama antes a `checkAlphabet` (paso 6).
 
 ---
 
@@ -104,17 +104,18 @@ for (const set of chart) {
     }
   }
 }
-const lastSet = chart[tokens.length];
-const accepted =
-  lastSet?.byKey.has(itemKey({ production: startProduction, dot: 1, origin: 0 })) ?? false;
-return { accepted, chart, startProduction };
+// Acceptance: S was recognized from position 0 to the end, that is, ($S → S •, 0) is in Sn.
+const acceptingItem =
+  chart[tokens.length]?.byKey.get(itemKey({ production: startProduction, dot: 1, origin: 0 })) ??
+  null;
+return { acceptingItem, accepted: acceptingItem !== null, chart, startProduction };
 ```
 
 - `addItem(firstSet, startProduction, 0, 0)`: siembra S0 con ($S → • S, 0), sin enlace.
 - **El corazón del algoritmo son los dos `for`.** El de afuera recorre los conjuntos en orden. El de adentro usa `position < set.items.length`, que se vuelve a evaluar en cada vuelta: si `processItem` agrega ítems a este mismo conjunto (Predictor, Completer), la lista crece y el ciclo también los procesa. Así la lista hace de cola de trabajo sin una estructura extra.
 - Un `for...of` sobre `set.items` haría lo mismo en JavaScript, pero el índice explícito deja a la vista que la lista crece mientras se recorre.
 - Cuando se llega a un conjunto, ya está completo de lo que le agregó el Scanner desde el anterior; lo demás lo agregan sus propios ítems.
-- `itemKey(startProduction, 1, 0)` es la clave de ($S → S •, 0): S reconocido desde el principio hasta el final. Si está en el último conjunto, se acepta.
+- `itemKey(startProduction, 1, 0)` es la clave de ($S → S •, 0): S reconocido desde el principio hasta el final. Si está en el último conjunto, se acepta. `recognize` devuelve ese ítem en `acceptingItem` (o `null`), porque los árboles y su conteo parten de él (pasos 19 y 20); `accepted` es solo si existe.
 
 ### 5.2 `augmentedStartProduction(grammar)`
 
