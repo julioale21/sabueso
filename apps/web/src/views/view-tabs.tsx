@@ -6,6 +6,7 @@ import { PendingView } from '../components/PendingView';
 import type { TabItem } from '../components/ui/Tabs';
 import type { TabId, ViewProps } from '../state/app-state';
 import { AnalysisView } from './AnalysisView';
+import { EarleyPlayerView } from './EarleyPlayerView';
 
 export function viewTabs(props: ViewProps): readonly TabItem<TabId>[] {
   return [
@@ -13,7 +14,7 @@ export function viewTabs(props: ViewProps): readonly TabItem<TabId>[] {
     {
       id: 'earley',
       label: 'Earley paso a paso',
-      panel: <PendingView concept="Earley paso a paso" step={10} />,
+      panel: <EarleyPlayerView {...props} />,
     },
     {
       id: 'll1',

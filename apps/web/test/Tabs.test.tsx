@@ -28,7 +28,7 @@ describe('the tabs of the page', () => {
       'aria-selected',
       'true',
     );
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('Earley paso a paso');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'tab-earley');
     press('End');
     expect(screen.getByRole('tab', { name: 'G0 vs G1' })).toHaveFocus();
     press('ArrowRight');

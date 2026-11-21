@@ -288,6 +288,10 @@ apps/web/
     views/view-tabs.tsx          # una pestaña por vista, en el orden del análisis
     views/AnalysisView.tsx
     views/EarleyPlayerView.tsx
+    components/earley-player/    # EarleySetColumn, ChartItem, EventDescription
+    components/player/           # PlayerControls (⏮ ◀ ▶ ⏭, velocidad), compartidos con el paso 18
+    player/use-player.ts         # el estado de un reproductor paso a paso
+    domain/earley-events.ts      # agrupa la traza por conjunto
     views/Ll1View.tsx
     views/CnfCykView.tsx
     views/PdaView.tsx

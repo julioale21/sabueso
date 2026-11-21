@@ -30,6 +30,8 @@ export interface LoadedGrammar {
   id: GrammarId;
   /** The .grammar file as written, for the read-only panel. */
   text: string;
+  /** S, the start symbol: the Earley player shows the initial item $S → • S. */
+  start: string;
   /** Σ, to mark unknown tags while the user types. */
   alphabet: string[];
   analysis: GrammarAnalysis;

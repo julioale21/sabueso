@@ -59,7 +59,13 @@ function loadGrammar({ id, text }: { id: GrammarId; text: string }): {
   const grammar = parseGrammarText({ text, name: id });
   return {
     grammar,
-    loaded: { id, text, alphabet: [...grammar.terminals], analysis: analyzeGrammar(grammar) },
+    loaded: {
+      id,
+      text,
+      start: grammar.start,
+      alphabet: [...grammar.terminals],
+      analysis: analyzeGrammar(grammar),
+    },
   };
 }
 
