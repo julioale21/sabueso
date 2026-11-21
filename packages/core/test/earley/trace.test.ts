@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { label } from '../../src/earley/item.js';
 import { recognize } from '../../src/earley/recognizer.js';
+import { describeCause } from '../../src/earley/trace.js';
 import { tokenizeSequence } from '../../src/input/sequence.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
@@ -84,5 +85,18 @@ describe('the trace in other cases', () => {
   it('without the trace option, there are no events', () => {
     const grammar = loadBuiltInGrammar('g1');
     expect(recognize({ grammar, tokens: ['CRI', 'PIS', 'REV'] }).trace).toEqual([]);
+  });
+});
+
+describe('describeCause', () => {
+  it('writes each kind of cause as the trace shows it', () => {
+    const recognition = recognize({ grammar: loadBuiltInGrammar('g1'), tokens: ['CRI'] });
+    const firstItem = recognition.chart[0]?.items[0];
+    if (firstItem === undefined) {
+      throw new Error('S0 is never empty');
+    }
+    expect(describeCause({ kind: 'item', item: firstItem })).toBe(label(firstItem));
+    expect(describeCause({ kind: 'token', tokenIndex: 0, terminal: 'CRI' })).toBe('token 0 CRI');
+    expect(describeCause({ kind: 'nullable', symbol: 'MarcoOpc' })).toBe('MarcoOpc ⇒* ε');
   });
 });

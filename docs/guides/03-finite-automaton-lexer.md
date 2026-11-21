@@ -35,7 +35,7 @@ Los espacios y los comentarios no producen tokens. Después, el parser (paso 4) 
 | 2   | Parser (LL(1))  | tokens                   | `GrammarRule[]` | 4     | ✅ hecho      |
 | 3   | `buildGrammar`  | `GrammarRule[]`          | `Grammar`       | 2     | ✅ hecho      |
 
-`tokenizeGrammar({ text, onEvent })` es la única función pública del lexer (`onEvent` es opcional). La llaman `parseGrammarText` (el parser del paso 4, antes de leer las reglas) y el comando `lex`, que solo muestra los tokens.
+`tokenizeGrammar(text)` es la función principal del lexer. La llaman `parseGrammarText` (el parser del paso 4, antes de leer las reglas) y el comando `lex`, que muestra los tokens. Para `lex --states` hay una segunda función, `lexerEvents(text)`, que devuelve cada paso del AFD.
 
 ---
 
@@ -373,7 +373,7 @@ type AutomatonEvent<State, TokenKind> =
   | { type: 'accept'; state: State; text: string; kind: TokenKind | null };
 ```
 
-Lo que el autómata hace, paso a paso: cada transición δ(from, clase(character)) = to, y cada token que termina. El ejecutor se los avisa a un observador opcional (`onEvent`). Así funciona `lex --states` sin que el ejecutor sepa nada de la consola.
+Lo que el autómata hace, paso a paso: cada transición δ(from, clase(character)) = to, y cada token que termina. El ejecutor los **devuelve** en una lista (`events`), junto con los tokens. Así funciona `lex --states` sin que el ejecutor sepa nada de la consola.
 
 #### `AutomatonStoppedError<State>`
 
@@ -386,13 +386,17 @@ Error que se lanza cuando el autómata **se detiene en un estado que no acepta**
 
 El ejecutor no sabe qué significa cada estado, así que no puede escribir un mensaje útil. Por eso devuelve el **estado**, y el lexer lo traduce ("detenido en `q6ReadingLiteral`" = "literal sin cerrar").
 
-#### `runDeterministicAutomaton({ automaton, text, onEvent })`
+#### `runDeterministicAutomaton({ automaton, text })`
+
+Devuelve `{ tokens, events }`: los tokens y cada paso que dio el autómata para encontrarlos (tipo `AutomatonRun`).
 
 ```ts
 const tokens: AutomatonToken<TokenKind>[] = [];
+const events: AutomatonEvent<State, TokenKind>[] = [];
 let cursor: Cursor = { index: 0, line: 1, column: 1 };
 while (cursor.index < text.length) {
-  const end = readLongestToken({ automaton, text, tokenStart: cursor, onEvent });
+  const end = readLongestToken({ automaton, text, tokenStart: cursor });
+  events.push(...end.transitions);
   const lexeme = text.slice(cursor.index, end.index);
   const kind = tokenKindOfFinalState({
     automaton,
@@ -400,22 +404,22 @@ while (cursor.index < text.length) {
     end,
     blockingCharacter: text[end.index],
   });
-  onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
+  events.push({ type: 'accept', state: end.state, text: lexeme, kind });
   if (kind !== null) {
     tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
   }
   cursor = end;
 }
-return tokens;
+return { tokens, events };
 ```
 
 - Un AFD solo dice "acepto" o "rechazo" una cadena. Para usarlo como lexer, se corre **muchas veces**: una corrida desde q₀ por token. Es el ciclo de la sección 4.3.
 - `cursor` empieza en `{ index: 0, line: 1, column: 1 }`: el índice recorre el texto y la línea y la columna (desde 1) son para los mensajes de error.
 - `while (cursor.index < text.length)`: una vuelta por token, hasta consumir todo el texto.
-- `readLongestToken(...)` devuelve `end`: dónde terminó el token y en qué estado quedó el autómata.
+- `readLongestToken(...)` devuelve `end`: dónde terminó el token, en qué estado quedó el autómata y las transiciones que hizo (`end.transitions`), que se agregan a `events`.
 - `text.slice(cursor.index, end.index)` es el **lexema**: el texto exacto entre el comienzo y el final del token.
 - `text[end.index]` es el carácter que frenó al autómata (o `undefined` al final del texto). Se le pasa a `tokenKindOfFinalState` solo para el mensaje de error.
-- `if (kind !== null)`: `null` significa "acepta y se descarta" (espacios y comentarios). El evento `accept` se emite igual, para que `lex --states` muestre también lo descartado.
+- `if (kind !== null)`: `null` significa "acepta y se descarta" (espacios y comentarios). El evento `accept` se guarda igual, para que `lex --states` muestre también lo descartado.
 - `cursor = end`: el próximo token empieza en el primer carácter que este no consumió. No se retrocede nunca.
 
 #### `readLongestToken` (interna): el _maximal munch_
@@ -423,6 +427,7 @@ return tokens;
 ```ts
 let state = automaton.initialState;
 let cursor = tokenStart;
+const transitions: AutomatonEvent<State, TokenKind>[] = [];
 for (;;) {
   const character = text[cursor.index];
   const next =
@@ -430,9 +435,9 @@ for (;;) {
       ? undefined
       : automaton.transitions[state][automaton.classifyCharacter(character)];
   if (character === undefined || next === undefined) {
-    return { ...cursor, state };
+    return { ...cursor, state, transitions };
   }
-  onEvent?.({ type: 'transition', from: state, character, to: next });
+  transitions.push({ type: 'transition', from: state, character, to: next });
   state = next;
   cursor = moveCursorPast({ cursor, character });
 }
@@ -598,26 +603,26 @@ acceptingStates: { q1ReadingIdentifier: 'IDENTIFIER', q3ArrowRead: 'ARROW', …,
 
 Un estado sin transiciones (`q3ArrowRead: {}`) es un estado donde el token ya terminó. La prueba `the automaton of the guide` compara con esta guía los estados, F y la fila de q₀.
 
-#### `tokenizeGrammar({ text, onEvent })`
+#### `tokenizeGrammar(text)`
 
 ```ts
-export function tokenizeGrammar({ text, onEvent }) {
-  const tokens = readLexemes({ text, onEvent }).map(toToken);
+export function tokenizeGrammar(text: string): Token[] {
+  const tokens = runLexerAutomaton(text).tokens.map(toToken);
   return [...tokens, ...closingTokens({ text, tokens })];
 }
 ```
 
 La función pública del lexer, en tres pasos:
 
-1. `readLexemes`: el AFD corta el texto en lexemas.
+1. `runLexerAutomaton`: el AFD corta el texto en lexemas.
 2. `toToken`: cada lexema se convierte en un token del formato.
 3. `closingTokens`: agrega el `NEWLINE` final (si falta) y `END_OF_FILE`.
 
-#### `readLexemes` (interna)
+#### `runLexerAutomaton(text)` (interna) y `lexerEvents(text)`
 
 ```ts
 try {
-  return runDeterministicAutomaton({ automaton: grammarLexerAutomaton, text, onEvent });
+  return runDeterministicAutomaton({ automaton: grammarLexerAutomaton, text });
 } catch (error) {
   if (error instanceof AutomatonStoppedError) {
     throw toSyntaxError(error as AutomatonStoppedError<LexerState>);
@@ -628,6 +633,7 @@ try {
 
 - Corre el ejecutor genérico con la tabla del formato.
 - Si el autómata se detiene fuera de F, el error genérico se traduce a un `GrammarSyntaxError` del formato con `toSyntaxError`.
+- `lexerEvents(text)` devuelve `runLexerAutomaton(text).events`: los pasos del AFD, para la traza de `lex --states`.
 - `as AutomatonStoppedError<LexerState>`: `instanceof` no conoce el parámetro de tipo, así que hay que decirle a TypeScript que el estado es un `LexerState`. Es seguro: el autómata es `grammarLexerAutomaton`.
 - `throw error` al final: cualquier otro error (por ejemplo, un error de programación) sigue de largo sin disfrazarse de error léxico.
 
@@ -752,7 +758,7 @@ La ruta relativa de `--grammar-file` se resuelve en `command-line.ts`, el único
 | `formatTokens`          | la tabla Token / Text / Line:column, armada con `formatTable` de `format.ts`                                                                                                                                                                                                                          |
 | `formatFirstLineStates` | traza la primera línea con contenido: la primera que no está en blanco ni es un comentario. Puede ser una regla o una directiva, como en `story.grammar`. Si el archivo solo tiene comentarios y líneas en blanco, escribe `DFA states: the file has no line to trace, only blank lines and comments` |
 | `isContentLine`         | dice si una línea tiene contenido (una regla o una directiva): no está en blanco y no empieza con `#`                                                                                                                                                                                                 |
-| `traceLine`             | corre el lexer sobre esa línea con un observador: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                                                                                                                                                                    |
+| `traceLine`             | recorre los eventos de `lexerEvents` sobre esa línea: acumula las transiciones de cada lexema y arma una fila cuando el lexema termina                                                                                                                                                                |
 | `stateName`             | `q3` para `q3ArrowRead`: toma el número con que empieza el nombre (`/^q\d+/`)                                                                                                                                                                                                                         |
 | `visible`               | muestra el espacio como `␣`, el salto como `⏎` y el tabulador como `⇥`                                                                                                                                                                                                                                |
 
@@ -841,7 +847,7 @@ Usa un AFD **de juguete** que no sabe nada de gramáticas (enteros, con signo op
 | texto vacío         | cero tokens                                                     |
 | detenido en q₀      | `12a`: estado `start`, carácter `a`, posición 1:3               |
 | detenido fuera de F | `3 -`: se termina el texto en `minus`; el token empezaba en 1:3 |
-| observador          | la secuencia exacta de eventos `transition` y `accept`          |
+| eventos             | la lista exacta de eventos `transition` y `accept`              |
 
 ### 9.2 Suite de casos del lexer: `test/grammar-format/lexer.test.ts`
 

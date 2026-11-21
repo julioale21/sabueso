@@ -92,15 +92,15 @@ El archivo `meta.grammar` se escribe en el paso 5. En el paso 12, el propio prog
 
 ## 3. Cómo se usa en el programa
 
-| Quién                                                           | Llama a                                     | Para qué                                            |
-| --------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------- |
-| comando `grammar`                                               | `parseGrammarText({ text, name, onTrace })` | mostrar G = (N, Σ, P, S) de un archivo              |
-| (paso 5 en adelante) carga de G0, G1 y las gramáticas de prueba | `parseGrammarText`                          | toda gramática del programa se lee con esta función |
+| Quién                                                           | Llama a                                                                        | Para qué                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------- |
+| comando `grammar`                                               | `parseGrammarText({ text, name })` y, con `--parser-trace`, `parseGrammarFile` | mostrar G = (N, Σ, P, S) de un archivo              |
+| (paso 5 en adelante) carga de G0, G1 y las gramáticas de prueba | `parseGrammarText`                                                             | toda gramática del programa se lee con esta función |
 
 `parseGrammarText` encadena las tres etapas:
 
-1. `tokenizeGrammar({ text })`: el lexer del paso 3.
-2. `parseGrammarFile({ tokens, onTrace })`: el parser de este paso. Devuelve las reglas, `%start` y `%terminals`.
+1. `tokenizeGrammar(text)`: el lexer del paso 3.
+2. `parseGrammarFile(tokens)`: el parser de este paso. Devuelve las reglas, `%start`, `%terminals` y la traza de sus decisiones.
 3. `buildGrammar({ name, rules, start, declaredTerminals })`: la construcción del paso 2, que valida.
 
 ---
@@ -117,10 +117,10 @@ Cada no terminal de `meta.grammar` es un método del parser (`parseFile`, `parse
 
 Si el lookahead no corresponde a ninguna alternativa, es un **error de sintaxis**, con línea, columna y la lista de tokens que se esperaban.
 
-Por ejemplo, `Rule -> IDENTIFIER ARROW Alternatives NEWLINE` se traduce casi literalmente. Este fragmento está simplificado: el código real además avisa la decisión (`this.trace(...)`) y hace la llamada con `this.nested(...)`, para la sangría de la traza.
+Por ejemplo, `Rule -> IDENTIFIER ARROW Alternatives NEWLINE` se traduce casi literalmente. Este fragmento está simplificado: el código real además recibe la profundidad (`depth`), guarda la decisión en la traza (`this.record(...)`) y llama a los hijos con `depth + 1`, para la sangría de la traza.
 
 ```ts
-private parseRule(): void {
+private parseRule(depth: number): void {
   const leftSide = this.expect('IDENTIFIER').text;   // IDENTIFIER
   this.expect('ARROW');                               // ARROW
   const alternatives = this.parseAlternatives();     // Alternatives
@@ -242,7 +242,7 @@ P:
 
 La prueba `the parser trace` (en `parser.test.ts`) compara estas 12 líneas una por una.
 
-La sangría muestra la recursión: cada nivel es una llamada dentro de la anterior. Hay una excepción a propósito: `File` siempre queda en el nivel 0, porque `parseFile` se llama a sí mismo para el resto del archivo **sin** `nested`. Así la traza no se corre un nivel a la derecha por cada línea. Es una decisión de presentación: en el árbol de derivación, cada `File` sí es hijo del anterior.
+La sangría muestra la recursión: cada nivel es una llamada dentro de la anterior. Hay una excepción a propósito: `File` siempre queda en el nivel 0, porque `parseFile` se llama a sí mismo para el resto del archivo con la **misma** profundidad (`depth`, no `depth + 1`). Así la traza no se corre un nivel a la derecha por cada línea. Es una decisión de presentación: en el árbol de derivación, cada `File` sí es hijo del anterior.
 
 ---
 
@@ -276,58 +276,58 @@ Todos son `GrammarSyntaxError`, el mismo error del lexer. Los errores de **const
 
 ### 7.1 Funciones públicas
 
-| Función                                     | Qué hace                                                                                            |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `parseGrammarText({ text, name, onTrace })` | la cadena completa: lexer → parser → `buildGrammar`. Devuelve un `Grammar`                          |
-| `parseGrammarFile({ tokens, onTrace })`     | solo el parser: recibe tokens y devuelve `ParsedGrammarFile` (reglas, `start`, `declaredTerminals`) |
+| Función                            | Qué hace                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `parseGrammarText({ text, name })` | la cadena completa: lexer → parser → `buildGrammar`. Devuelve un `Grammar`                                   |
+| `parseGrammarFile(tokens)`         | solo el parser: recibe tokens y devuelve `ParsedGrammarFile` (reglas, `start`, `declaredTerminals`, `trace`) |
 
 **`ParsedGrammarFile`**: lo que dice el archivo antes de construir la gramática. `start` y `declaredTerminals` son `undefined` si el archivo no tiene esas directivas.
 
-**`ParserTraceStep`**: una decisión del parser, para `--parser-trace`: la profundidad de la llamada, el no terminal, el token que decidió y la alternativa elegida. El parser se la avisa a un observador opcional (`onTrace`), igual que el ejecutor del AFD con `onEvent`: el parser no imprime nada.
+**`ParserTraceStep`**: una decisión del parser, para `--parser-trace`: la profundidad de la llamada, el no terminal, el token que decidió y la alternativa elegida. El parser guarda todas sus decisiones, en orden, en el campo `trace` del resultado, igual que el ejecutor del AFD devuelve sus `events`: el parser no imprime nada.
 
 ### 7.2 La clase `GrammarFileParser` (interna)
 
-Guarda el estado del recorrido: la lista de tokens, la **posición** del token actual, la **profundidad** (para la traza) y lo que va reconociendo (`file`: reglas y directivas).
+Guarda el estado del recorrido: la lista de tokens, la **posición** del token actual, y lo que va reconociendo (`file`: reglas, directivas y la traza). La **profundidad** no se guarda en la clase: cada método la recibe como parámetro (`depth`).
 
 Los métodos devuelven los datos que necesita `buildGrammar` (`RightSideSymbol`, del paso 2), así que el parser no clasifica terminales ni no terminales: eso sigue siendo trabajo de la construcción.
 
 ### 7.3 Los métodos de los no terminales
 
-Uno por regla de `meta.grammar`. Todos siguen el mismo patrón: miran `lookahead()`, eligen una fila de la tabla de la sección 4.2, avisan la decisión con `trace` y recorren la alternativa.
+Uno por regla de `meta.grammar`. Todos siguen el mismo patrón: miran `lookahead()`, eligen una fila de la tabla de la sección 4.2, guardan la decisión con `record` y recorren la alternativa, llamando a cada hijo con `depth + 1`.
 
-#### `parseFile()`: File → Element File | END_OF_FILE
+#### `parseFile(depth)`: File → Element File | END_OF_FILE
 
 ```ts
 if (this.lookahead().kind === 'END_OF_FILE') {
-  this.trace({ nonterminal: 'File', alternative: 'END_OF_FILE' });
+  this.record({ depth, nonterminal: 'File', alternative: 'END_OF_FILE' });
   return this.file;
 }
-this.trace({ nonterminal: 'File', alternative: 'Element File' });
-this.nested(() => this.parseElement());
-return this.parseFile();
+this.record({ depth, nonterminal: 'File', alternative: 'Element File' });
+this.parseElement(depth + 1);
+return this.parseFile(depth);
 ```
 
 - `END_OF_FILE` es la única salida. El lexer siempre lo pone al final, así que el parser nunca pregunta "¿quedan tokens?".
 - `return this.file`: el resultado no se arma con los valores de retorno. Se va llenando en el campo `file` desde `parseDirective` y `parseRule`.
 - Cualquier otro token elige `Element File` sin verificarlo: si no sirve, `parseElement` lanza el error con todo FIRST(Element).
-- `return this.parseFile()` es la regla `File → Element File` tal cual. Va fuera de `nested`: por eso todos los `Element` salen en la traza con la misma sangría, y no en escalera.
+- `return this.parseFile(depth)` es la regla `File → Element File` tal cual. Usa la misma profundidad, no `depth + 1`: por eso todos los `Element` salen en la traza con la misma sangría, y no en escalera.
 
-#### `parseElement()`: Element → NEWLINE | Directive | Rule
+#### `parseElement(depth)`: Element → NEWLINE | Directive | Rule
 
 ```ts
 switch (this.lookahead().kind) {
   case 'NEWLINE':
-    this.trace({ nonterminal: 'Element', alternative: 'NEWLINE' });
+    this.record({ depth, nonterminal: 'Element', alternative: 'NEWLINE' });
     this.expect('NEWLINE');
     return;
   case 'START':
   case 'TERMINALS':
-    this.trace({ nonterminal: 'Element', alternative: 'Directive' });
-    this.nested(() => this.parseDirective());
+    this.record({ depth, nonterminal: 'Element', alternative: 'Directive' });
+    this.parseDirective(depth + 1);
     return;
   case 'IDENTIFIER':
-    this.trace({ nonterminal: 'Element', alternative: 'Rule' });
-    this.nested(() => this.parseRule());
+    this.record({ depth, nonterminal: 'Element', alternative: 'Rule' });
+    this.parseRule(depth + 1);
     return;
   default:
     throw this.unexpected(['IDENTIFIER', 'START', 'TERMINALS', 'NEWLINE']);
@@ -339,21 +339,21 @@ switch (this.lookahead().kind) {
 - Una línea vacía (`NEWLINE`) se consume y no produce nada.
 - `default`: el token no está en FIRST(Element). El error lista los cuatro válidos. `END_OF_FILE` nunca llega aquí: `parseFile` ya lo atendió.
 
-#### `parseDirective()` y `onlyOnce`: Directive → START IDENTIFIER NEWLINE | TERMINALS Symbols NEWLINE
+#### `parseDirective(depth)` y `onlyOnce`: Directive → START IDENTIFIER NEWLINE | TERMINALS Symbols NEWLINE
 
 ```ts
 const directive = this.lookahead();
 if (directive.kind === 'START') {
-  this.trace({ nonterminal: 'Directive', alternative: 'START IDENTIFIER NEWLINE' });
+  this.record({ depth, nonterminal: 'Directive', alternative: 'START IDENTIFIER NEWLINE' });
   this.expect('START');
   const start = this.expect('IDENTIFIER').text;
   this.expect('NEWLINE');
   this.file.start = this.onlyOnce({ directive, previous: this.file.start, value: start });
   return;
 }
-this.trace({ nonterminal: 'Directive', alternative: 'TERMINALS Symbols NEWLINE' });
+this.record({ depth, nonterminal: 'Directive', alternative: 'TERMINALS Symbols NEWLINE' });
 this.expect('TERMINALS');
-const terminals = this.nested(() => this.parseSymbols()).map(symbolName);
+const terminals = this.parseSymbols(depth + 1).map(symbolName);
 this.expect('NEWLINE');
 this.file.declaredTerminals = this.onlyOnce({
   directive,
@@ -387,13 +387,13 @@ private onlyOnce<T>({
 - `onlyOnce`: si `previous` ya tiene valor, la directiva apareció antes y es error. Si no, devuelve `value` para guardarlo.
 - `onlyOnce` es genérica (`<T>`) porque sirve para `start` (un texto) y para `declaredTerminals` (una lista).
 
-#### `parseRule()`: Rule → IDENTIFIER ARROW Alternatives NEWLINE
+#### `parseRule(depth)`: Rule → IDENTIFIER ARROW Alternatives NEWLINE
 
 ```ts
-this.trace({ nonterminal: 'Rule', alternative: 'IDENTIFIER ARROW Alternatives NEWLINE' });
+this.record({ depth, nonterminal: 'Rule', alternative: 'IDENTIFIER ARROW Alternatives NEWLINE' });
 const leftSide = this.expect('IDENTIFIER').text;
 this.expect('ARROW');
-const alternatives = this.nested(() => this.parseAlternatives());
+const alternatives = this.parseAlternatives(depth + 1);
 this.expect('NEWLINE');
 for (const rightSide of alternatives) {
   this.file.rules.push({ leftSide, rightSide });
@@ -404,26 +404,30 @@ for (const rightSide of alternatives) {
 - Las cuatro líneas del medio son la regla, símbolo por símbolo: terminal (`expect`), terminal, no terminal (`parseAlternatives`), terminal.
 - El `for`: `E -> E '+' T | T` da **dos** `GrammarRule`, una por alternativa. Así P tiene una producción por cada lado derecho.
 
-#### `parseAlternatives()`: Alternatives → Sequence MoreAlternatives
+#### `parseAlternatives(depth)`: Alternatives → Sequence MoreAlternatives
 
 Una sola alternativa: lee una `Sequence`, después las demás (`parseMoreAlternatives`) y las junta en una lista (`[first, ...rest]`).
 
-#### `parseMoreAlternatives()`: MoreAlternatives → BAR Sequence MoreAlternatives | ε
+#### `parseMoreAlternatives(depth)`: MoreAlternatives → BAR Sequence MoreAlternatives | ε
 
 ```ts
 const kind = this.lookahead().kind;
 if (kind === 'NEWLINE') {
   // ε is chosen when the lookahead is in FOLLOW(MoreAlternatives) = {NEWLINE}.
-  this.trace({ nonterminal: 'MoreAlternatives', alternative: 'ε' });
+  this.record({ depth, nonterminal: 'MoreAlternatives', alternative: 'ε' });
   return [];
 }
 if (kind !== 'BAR') {
   throw this.unexpected(['BAR', 'NEWLINE']);
 }
-this.trace({ nonterminal: 'MoreAlternatives', alternative: 'BAR Sequence MoreAlternatives' });
+this.record({
+  depth,
+  nonterminal: 'MoreAlternatives',
+  alternative: 'BAR Sequence MoreAlternatives',
+});
 this.expect('BAR');
-const sequence = this.nested(() => this.parseSequence());
-const rest = this.nested(() => this.parseMoreAlternatives());
+const sequence = this.parseSequence(depth + 1);
+const rest = this.parseMoreAlternatives(depth + 1);
 return [sequence, ...rest];
 ```
 
@@ -432,12 +436,12 @@ return [sequence, ...rest];
 - `kind !== 'BAR'`: el token no está ni en FIRST ni en FOLLOW. El error sale aquí mismo y lista los dos.
 - La llamada a sí misma reemplaza un ciclo: cada `|` es una vuelta más.
 
-#### `parseSequence()`: Sequence → EPSILON | Symbols
+#### `parseSequence(depth)`: Sequence → EPSILON | Symbols
 
 ```ts
 const kind = this.lookahead().kind;
 if (kind === 'EPSILON') {
-  this.trace({ nonterminal: 'Sequence', alternative: 'EPSILON' });
+  this.record({ depth, nonterminal: 'Sequence', alternative: 'EPSILON' });
   this.expect('EPSILON');
   return [];
 }
@@ -445,8 +449,8 @@ if (kind === 'EPSILON') {
 if (!symbolsOrSequenceEnd.includes(kind)) {
   throw this.unexpected(['EPSILON', ...symbolsOrSequenceEnd]);
 }
-this.trace({ nonterminal: 'Sequence', alternative: 'Symbols' });
-return this.nested(() => this.parseSymbols());
+this.record({ depth, nonterminal: 'Sequence', alternative: 'Symbols' });
+return this.parseSymbols(depth + 1);
 ```
 
 - `EPSILON` es la `ε` escrita en el archivo. Se consume y da la lista vacía.
@@ -455,21 +459,21 @@ return this.nested(() => this.parseSymbols());
 - FOLLOW(Sequence) = FOLLOW(Symbols) = {BAR, NEWLINE}: por eso una sola constante sirve a `parseSequence` y a `parseSymbols`.
 - El error agrega `EPSILON` a la lista: son todos los tokens de la fila Sequence de la tabla.
 
-#### `parseSymbols()`: Symbols → Symbol Symbols | ε
+#### `parseSymbols(depth)`: Symbols → Symbol Symbols | ε
 
 ```ts
 const kind = this.lookahead().kind;
 if (kind === 'BAR' || kind === 'NEWLINE') {
   // ε is chosen when the lookahead is in FOLLOW(Symbols) = {BAR, NEWLINE}.
-  this.trace({ nonterminal: 'Symbols', alternative: 'ε' });
+  this.record({ depth, nonterminal: 'Symbols', alternative: 'ε' });
   return [];
 }
 if (kind !== 'IDENTIFIER' && kind !== 'LITERAL') {
   throw this.unexpected(symbolsOrSequenceEnd);
 }
-this.trace({ nonterminal: 'Symbols', alternative: 'Symbol Symbols' });
-const symbol = this.nested(() => this.parseSymbol());
-const rest = this.nested(() => this.parseSymbols());
+this.record({ depth, nonterminal: 'Symbols', alternative: 'Symbol Symbols' });
+const symbol = this.parseSymbol(depth + 1);
+const rest = this.parseSymbols(depth + 1);
 return [symbol, ...rest];
 ```
 
@@ -477,16 +481,16 @@ return [symbol, ...rest];
 - `kind !== 'IDENTIFIER' && kind !== 'LITERAL'`: el token no está ni en FIRST ni en FOLLOW. Error inmediato, y `symbolsOrSequenceEnd` (FIRST ∪ FOLLOW) es la lista de esperados. Ejemplo: `S -> a ε` falla en la `ε`.
 - `[symbol, ...rest]`: un símbolo y, por recursión, los demás. Termina cuando llega `|` o el fin de línea.
 
-#### `parseSymbol()`: Symbol → IDENTIFIER | LITERAL
+#### `parseSymbol(depth)`: Symbol → IDENTIFIER | LITERAL
 
 ```ts
 const token = this.lookahead();
 if (token.kind === 'LITERAL') {
-  this.trace({ nonterminal: 'Symbol', alternative: 'LITERAL' });
+  this.record({ depth, nonterminal: 'Symbol', alternative: 'LITERAL' });
   this.expect('LITERAL');
   return { literal: token.text };
 }
-this.trace({ nonterminal: 'Symbol', alternative: 'IDENTIFIER' });
+this.record({ depth, nonterminal: 'Symbol', alternative: 'IDENTIFIER' });
 return this.expect('IDENTIFIER').text;
 ```
 
@@ -558,25 +562,20 @@ return token.kind === 'IDENTIFIER' || token.kind === 'LITERAL'
 - `listWithOr`: con 0 o 1 elementos devuelve ese único (o `''`). Si hay más, une todos menos el último con comas y agrega `or` y el último. Los `?? ''` son para TypeScript: `items[0]` y `at(-1)` pueden ser `undefined` en el tipo.
 - `describeToken` agrega el texto solo a `IDENTIFIER` y `LITERAL`. En los demás tipos el texto no aporta: `'->'` siempre es `->`.
 
-#### `nested(parse)`
+#### La profundidad, `depth`
+
+Cada método recibe `depth`, qué tan profunda es la llamada: `parseFile(0)` es el nivel 0, y cada método llama a sus hijos con `depth + 1`. Esa profundidad es la sangría de `--parser-trace`.
+
+- Es un **parámetro**, no un campo de la clase: cada llamada tiene el suyo, así que no hay nada que "deshacer" al volver de un hijo, ni siquiera si el hijo lanza un error.
+- Es la forma clásica de llevar el nivel en una función recursiva.
+
+#### `record({ depth, nonterminal, alternative })`
 
 ```ts
-this.depth++;
-try {
-  return parse();
-} finally {
-  this.depth--;
-}
+this.file.trace.push({ depth, nonterminal, lookahead: this.lookahead(), alternative });
 ```
 
-- Sube la profundidad, corre la llamada y la baja. Esa profundidad es la sangría de `--parser-trace`.
-- Recibe una función (`() => this.parseElement()`) y no un resultado, porque la profundidad tiene que subir **antes** de que la llamada empiece.
-- `finally` baja la profundidad salga como salga `parse()`: con `return` o con un error. Es la forma segura de deshacer un cambio de estado.
-- Es genérica (`<T>`): devuelve lo mismo que la llamada.
-
-#### `trace({ nonterminal, alternative })`
-
-Avisa la decisión al observador con `this.onTrace?.(...)`: si no hay observador, no hace nada. Se llama antes de consumir, así `lookahead()` es el token que decidió.
+Guarda la decisión en la traza del resultado. Se llama antes de consumir, así `lookahead()` es el token que decidió.
 
 ### 7.5 Fuera de la clase
 
@@ -595,7 +594,7 @@ Avisa la decisión al observador con `this.onTrace?.(...)`: si no hay observador
 | Función              | Qué hace                                                                                                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `grammarCommand.run` | interpreta los argumentos, lee la gramática (con `resolveGrammarSource` y `readGrammarSource`, de `grammar-source.ts`) e imprime. Error de uso: `reportUsageError`, código 2 |
-| `printGrammar`       | corre `parseGrammarText` con un observador (si se pidió la traza), imprime la traza y después la gramática con `formatGrammar`                                               |
+| `printGrammar`       | corre `parseGrammarText`; si se pidió la traza, la toma de `parseGrammarFile(...).trace` y la imprime; después imprime la gramática con `formatGrammar`                      |
 | `formatTraceStep`    | una línea de la traza: `Sequence [IDENTIFIER] → Symbols`, con sangría según la profundidad                                                                                   |
 
 ---
@@ -737,4 +736,4 @@ No. LL(1) es `meta.grammar`, la gramática del formato. `arithmetic` (recursiva 
 No. `parseGrammarFile` devuelve un `ParsedGrammarFile`: las reglas (una por alternativa), `start` y `declaredTerminals`, sin clasificar terminales y no terminales. Eso lo hace `buildGrammar`, que además valida.
 
 **¿Por qué el parser no imprime la traza?**
-Avisa cada decisión a un observador opcional (`onTrace`). El comando decide si imprime o no. Es el mismo patrón que `onEvent` en el AFD: el núcleo no depende de la consola, y la prueba puede capturar la traza.
+Devuelve cada decisión como dato, en el campo `trace` del resultado. El comando decide si la imprime o no. Es el mismo patrón que los `events` del AFD: el núcleo no depende de la consola, y la prueba puede leer la traza directamente.

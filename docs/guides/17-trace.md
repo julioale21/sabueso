@@ -117,24 +117,41 @@ recorder: options.trace === true ? new TraceRecorder() : undefined,
 ```ts
 const { item, isNew } = addItem({ set, production, dot, origin, link });
 if (context.recorder !== undefined && (isNew || link !== undefined)) {
-  context.recorder.record({ set: set.index, op, item: label(item), cause: cause(), isNew });
+  context.recorder.record({
+    set: set.index,
+    op,
+    item: label(item),
+    cause: describeCause(cause),
+    isNew,
+  });
 }
 ```
 
 - Las tres operaciones ya no llaman a `addItem` directamente: llaman a `addAndTrace`, que agrega igual y además avisa al registro.
 - **`context.recorder !== undefined`:** sin traza, termina acá. No se arma ningún texto.
 - **`isNew || link !== undefined`:** se registra si el ítem es nuevo o si llegó con un enlace (otro camino). Una predicción repetida (ítem que ya estaba, sin enlace) no cambia nada y no se registra.
-- **`cause` es una función** (`() => string`), no un texto: solo se llama si hay que registrar. Así, sin traza, nunca se construye el texto de la causa (por ejemplo, `label(item)`, que arma una cadena).
+- **`cause` es un dato** (`TraceCause`), no un texto: `describeCause(cause)` lo convierte en texto solo si hay que registrar. Así, sin traza, nunca se construye el texto de la causa (por ejemplo, `label(item)`, que arma una cadena).
 - `label(item)` escribe el ítem como `Hecho → CRI • HallazgoOpc, 0`.
 
-### 5.4 Las operaciones, con su causa
+### 5.4 Las operaciones, con su causa (`TraceCause` y `describeCause`, en `trace.ts`)
 
-| Operación | Llamada                                                                                            |
-| --------- | -------------------------------------------------------------------------------------------------- |
-| Predictor | `addAndTrace(context, set, production, 0, item.setIndex, undefined, 'predict', () => label(item))` |
-| avance ε  | `addAndTrace(…, link, 'nullable', () => \`${symbol} ⇒* ε\`)`                                       |
-| Scanner   | `addAndTrace(…, link, 'scan', () => \`token ${tokenIndex} ${terminal}\`)`                          |
-| Completer | `addAndTrace(…, link, 'complete', () => label(item))` (el ítem completado)                         |
+La causa es un dato con tres formas posibles:
+
+```ts
+type TraceCause =
+  | { kind: 'item'; item: EarleyItem } // predict and complete
+  | { kind: 'token'; tokenIndex: number; terminal: SymbolName } // scan
+  | { kind: 'nullable'; symbol: SymbolName }; // the ε advance
+```
+
+| Operación | Causa que pasa a `addAndTrace`                 | Texto en la traza (`describeCause`) |
+| --------- | ---------------------------------------------- | ----------------------------------- |
+| Predictor | `{ kind: 'item', item }` (el ítem que predijo) | `Relato → • Planteo …, 0`           |
+| avance ε  | `{ kind: 'nullable', symbol }`                 | `MarcoOpc ⇒* ε`                     |
+| Scanner   | `{ kind: 'token', tokenIndex, terminal }`      | `token 0 CRI`                       |
+| Completer | `{ kind: 'item', item }` (el ítem completado)  | `Hecho → CRI •, 0`                  |
+
+- `describeCause` es un `switch` sobre `kind`: cada forma se escribe a su manera. TypeScript sabe qué campos hay en cada caso, porque `kind` distingue las tres formas (una unión discriminada, como `ParseResult` en la guía 22).
 
 ### 5.5 El comando `trace`
 
