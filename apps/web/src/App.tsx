@@ -2,16 +2,14 @@
  * The page: a header and one tab per view, in the order of the analysis (SPEC 03, section 3.1).
  * The views arrive step by step; until then each tab says which step brings it.
  */
-import { useState } from 'react';
+import { useReducer } from 'react';
 import { AnalysisServiceProvider } from './analysis/context';
 import { createLocalAnalysisService } from './analysis/local-service';
 import { Tabs, type TabItem } from './components/ui/Tabs';
+import { appReducer, createInitialState, type TabId } from './state/app-state';
 
 /** The only place that chooses how the core runs: here, in the browser (SPEC 03, section 3.2). */
 const analysisService = createLocalAnalysisService();
-
-/** The views of the page (SPEC 03, section 4). */
-export type TabId = 'analysis' | 'earley' | 'll1' | 'cnf-cyk' | 'pda' | 'compare';
 
 /** A placeholder for a view that a later step builds. */
 function Pending({ concept, step }: { concept: string; step: number }) {
@@ -52,7 +50,8 @@ const TABS: readonly TabItem<TabId>[] = [
 ];
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('analysis');
+  // Saved grammar and story are connected in step 15 (SPEC 03); until then, the defaults.
+  const [state, dispatch] = useReducer(appReducer, null, createInitialState);
   return (
     <AnalysisServiceProvider value={analysisService}>
       <div className="mx-auto max-w-7xl px-4 py-6">
@@ -64,7 +63,14 @@ export function App() {
           </p>
         </header>
         <main>
-          <Tabs label="Vistas" items={TABS} activeId={activeTab} onChange={setActiveTab} />
+          <Tabs
+            label="Vistas"
+            items={TABS}
+            activeId={state.activeTab}
+            onChange={(tab) => {
+              dispatch({ type: 'select-tab', tab });
+            }}
+          />
         </main>
       </div>
     </AnalysisServiceProvider>
