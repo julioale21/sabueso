@@ -61,13 +61,9 @@ export function analyzeUsefulSymbols(grammar: Grammar): UsefulSymbolsAnalysis {
 
 /**
  * The productive nonterminals, by least fixed point: A is productive if some production
- * A → X1…Xk has every Xi a terminal or a productive nonterminal.
+ * A → X1…Xk has every Xi a terminal or a productive nonterminal. Returns every round; the
+ * last one is the set of productive nonterminals.
  */
-export function computeProductive(grammar: Grammar): Set<SymbolName> {
-  return lastRound(productiveRounds(grammar));
-}
-
-/** Every round of the productive fixed point; the last one is the result. */
 export function productiveRounds(grammar: Grammar): Set<SymbolName>[] {
   // Like nullable, with another base: a terminal already "produces" (it is a string of Σ*).
   // Round 1: the A with a right side of only terminals (or ε).

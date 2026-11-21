@@ -88,7 +88,7 @@ const useless = new Set(
 - `productiveRounds` y `reachableRounds` devuelven todas las rondas de cada fase; `lastRound` toma el resultado. El análisis las devuelve en los campos `productiveRounds` y `reachableRounds`, y con eso `--steps` arma dos tablas.
 - Devuelve también `usefulGrammar`: `null` si L(G) = ∅; si no, el resultado de `buildUsefulGrammar` (sección 5.5).
 
-### 5.2 `productiveRounds(grammar)` y `computeProductive(grammar)`
+### 5.2 `productiveRounds(grammar)`
 
 ```ts
 return repeatRuleUntilNoChange({
@@ -97,7 +97,7 @@ return repeatRuleUntilNoChange({
 });
 ```
 
-- `productiveRounds` devuelve todas las rondas; `computeProductive` es `lastRound(productiveRounds(grammar))`, solo el resultado.
+- `productiveRounds` devuelve todas las rondas; la última es el conjunto de los productivos. `analyzeUsefulSymbols` la toma con `lastRound`. (Hasta el SPEC 05 existía también `computeProductive`, que devolvía solo la última ronda; nadie la usaba y se borró.)
 
 - Usa el mismo `repeatRuleUntilNoChange` que los anulables (guía 07, sección 5.1). Parte de `start: []`, es decir, de ∅.
 - La regla de cada ronda es `newProductiveSymbols`, definida justo debajo:

@@ -33,12 +33,12 @@
 
 ## 3. Dónde está en el código
 
-| Qué                | Dónde                                                                                                                                     |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Archivo            | `packages/core/src/analysis/useful.ts`                                                                                                    |
-| Funciones          | `analyzeUsefulSymbols(grammar)`, `computeProductive`, `computeReachable` (y `productiveRounds` y `reachableRounds`, con todas las rondas) |
-| Comando de consola | `npm run sabueso -- useful --grammar test-useless --steps`                                                                                |
-| Quién lo usa       | el informe `analyze` (paso 12) y la Forma Normal de Chomsky, paso USELESS (paso 24)                                                       |
+| Qué                | Dónde                                                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Archivo            | `packages/core/src/analysis/useful.ts`                                                                               |
+| Funciones          | `analyzeUsefulSymbols(grammar)`, `computeReachable` (y `productiveRounds` y `reachableRounds`, con todas las rondas) |
+| Comando de consola | `npm run sabueso -- useful --grammar test-useless --steps`                                                           |
+| Quién lo usa       | el informe `analyze` (paso 12) y la Forma Normal de Chomsky, paso USELESS (paso 24)                                  |
 
 ## 4. Qué prueba lo verifica
 

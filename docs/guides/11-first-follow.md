@@ -163,7 +163,7 @@ return result;
 - Si el ciclo termina sin `return`, todos pudieron ser ε (o la secuencia estaba vacía): se agrega ε.
 - Es exportada porque el paso 12 la usa para FIRST(α) de cada lado derecho.
 
-### 5.3 `firstRounds(grammar)` y `computeFirst(grammar)`
+### 5.3 `firstRounds(grammar)`
 
 ```ts
 return repeatRuleOnSetsUntilNoChange({
@@ -172,7 +172,7 @@ return repeatRuleOnSetsUntilNoChange({
 });
 ```
 
-- `firstRounds` devuelve todas las rondas; `computeFirst` es `lastRound(firstRounds(grammar))`, solo el resultado.
+- `firstRounds` devuelve todas las rondas; la última es FIRST. `computeFirstFollow` la toma con `lastRound`. (Hasta el SPEC 05 existían también `computeFirst` y `computeFollow`, que devolvían solo la última ronda; solo las usaban las pruebas y se borraron.)
 
 - `start: emptySetFor(grammar.nonterminals)`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
 - La regla de cada ronda es `newFirstMembers`, definida justo debajo:
@@ -191,7 +191,7 @@ return pairs;
 - Cada elemento se guarda como un par `[A, elemento]`: "este elemento entra en FIRST(A)". Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
 - ε entra en FIRST(A) solo si `firstOfSequence` lo devuelve, es decir, si todo α puede desaparecer.
 
-### 5.4 `followRounds({ grammar, first })` y `computeFollow({ grammar, first })`
+### 5.4 `followRounds({ grammar, first })`
 
 ```ts
 const start = emptySetFor(grammar.nonterminals);
@@ -207,7 +207,7 @@ return repeatRuleOnSetsUntilNoChange({
 - `start.get(grammar.start)?.add(END_OF_INPUT)`: `$` va en FOLLOW(S) desde el principio. Es la primera regla de FOLLOW: después de una oración completa viene el fin de la entrada.
 - Por eso el punto fijo no parte de conjuntos todos vacíos. Ese `$` se propaga a otros no terminales por la regla de `followPairs`.
 - `first` es fijo: ya se calculó entero antes. Lo que cambia entre rondas es `follow`.
-- `flatMap` junta los pares de todas las producciones, igual que en `computeFirst`.
+- `flatMap` junta los pares de todas las producciones, igual que la regla de FIRST (`newFirstMembers`).
 
 ### 5.5 `followPairs({ production, first, follow })`
 

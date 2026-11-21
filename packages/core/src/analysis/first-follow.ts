@@ -43,13 +43,8 @@ export function computeFirstFollow(grammar: Grammar): FirstFollowWithRounds {
 
 /**
  * FIRST(A) for every nonterminal A, by least fixed point: for each A → α, everything that
- * FIRST(α) has so far goes into FIRST(A).
+ * FIRST(α) has so far goes into FIRST(A). Returns every round; the last one is FIRST.
  */
-export function computeFirst(grammar: Grammar): SetsBySymbol {
-  return lastRound(firstRounds(grammar));
-}
-
-/** Every round of the FIRST fixed point; the last one is the result. */
 export function firstRounds(grammar: Grammar): SetsBySymbol[] {
   // Each round, for every production A → X1…Xk: a sequence starts with what X1 starts
   // with; if X1 can vanish (ε ∈ FIRST(X1)), also with what X2 starts with, and so on.
@@ -81,20 +76,8 @@ function newFirstMembers({
 /**
  * FOLLOW(A) for every nonterminal A, by least fixed point. $ follows the start symbol, and
  * for each production A → α B β: FIRST(β) without ε follows B; if β can vanish, so does
- * everything that follows A.
+ * everything that follows A. Returns every round; the last one is FOLLOW.
  */
-export function computeFollow({
-  grammar,
-  first,
-}: {
-  grammar: Grammar;
-  /** FIRST of every nonterminal, already computed. */
-  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
-}): SetsBySymbol {
-  return lastRound(followRounds({ grammar, first }));
-}
-
-/** Every round of the FOLLOW fixed point; the last one is the result. */
 export function followRounds({
   grammar,
   first,

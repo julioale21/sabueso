@@ -1,12 +1,7 @@
 // FIRST and FOLLOW by least fixed point (step 11, Aho et al. 4.4.2).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import {
-  computeFirst,
-  computeFirstFollow,
-  computeFollow,
-  firstOfSequence,
-} from '../../src/analysis/first-follow.js';
+import { computeFirstFollow, firstOfSequence } from '../../src/analysis/first-follow.js';
 import { computeNullable } from '../../src/analysis/nullable.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
@@ -115,7 +110,7 @@ describe('ε in FIRST', () => {
     '%s: ε ∈ FIRST(A) exactly for the nullable symbols of step 7',
     (name) => {
       const grammar = loadBuiltInGrammar(name);
-      const first = computeFirst(grammar);
+      const { first } = computeFirstFollow(grammar);
       const withEmpty = [...grammar.nonterminals].filter((symbol) => first.get(symbol)?.has('ε'));
       expect(new Set(withEmpty)).toEqual(computeNullable(grammar));
     },
@@ -123,7 +118,7 @@ describe('ε in FIRST', () => {
 });
 
 describe('firstOfSequence', () => {
-  const first = computeFirst(miniDetective);
+  const { first } = computeFirstFollow(miniDetective);
 
   it('a terminal is its own FIRST', () => {
     expect([...firstOfSequence({ symbols: ['REV'], first })]).toEqual(['REV']);
@@ -155,20 +150,14 @@ describe('the rounds of the fixed points', () => {
     expect(sets.firstRounds.at(-1)).toEqual(sets.first);
   });
 
-  it('computeFollow starts with $ in FOLLOW(S)', () => {
+  it('FOLLOW starts with $ in FOLLOW(S)', () => {
     const grammar = parseGrammarText({ text: "S -> 'a'\n", name: 'one' });
-    expect(
-      sorted({
-        sets: computeFollow({ grammar, first: computeFirst(grammar) }),
-        symbol: 'S',
-      }),
-    ).toEqual(['$']);
+    expect(sorted({ sets: computeFirstFollow(grammar).follow, symbol: 'S' })).toEqual(['$']);
   });
 
   it('left recursion is no problem: arithmetic FIRST(E) = {(, id}', () => {
-    expect(sorted({ sets: computeFirst(loadBuiltInGrammar('arithmetic')), symbol: 'E' })).toEqual([
-      '(',
-      'id',
-    ]);
+    expect(
+      sorted({ sets: computeFirstFollow(loadBuiltInGrammar('arithmetic')).first, symbol: 'E' }),
+    ).toEqual(['(', 'id']);
   });
 });
