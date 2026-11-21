@@ -53,7 +53,12 @@ export function parseGrammarText(
   // The whole reading pipeline: text → (DFA, regular language) → tokens →
   // (LL(1), context-free) → rules → (buildGrammar) → G = (N, Σ, P, S).
   const file = parseGrammarFile(tokenizeGrammar(text), onTrace);
-  return buildGrammar(name, file.rules, file.start, file.declaredTerminals);
+  return buildGrammar({
+    name,
+    rules: file.rules,
+    start: file.start,
+    declaredTerminals: file.declaredTerminals,
+  });
 }
 
 /** Parses the tokens of a .grammar file, starting at File, the start symbol of meta.grammar. */

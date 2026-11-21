@@ -815,7 +815,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - Verificación antes de empezar: `npm test`, `npm run lint` y `npm run build` pasan, y `npm run sabueso -- help` lista los comandos.
 
 2. **Tipos de gramática y construcción.**
-   - `grammar/types.ts` y `grammar/build.ts`: `buildGrammar(name, rules, start?, declaredTerminals?)`.
+   - `grammar/types.ts` y `grammar/build.ts`: `buildGrammar(name, rules, start?, declaredTerminals?)`. Desde el paso 23 recibe un objeto: `buildGrammar({ name, rules, start, declaredTerminals })`.
    - Clasifica terminales y no terminales, indexa `productionsByLeftSide`, numera producciones, y valida el inicio inexistente, los terminales no declarados y las producciones duplicadas.
    - Prueba unitaria. Fichas 01 y 02.
    - **Consola:** `npm run sabueso -- demo-grammar` construye en código la gramática de expresiones `E → E + T | T`, `T → id`, e imprime la 4-upla G = (N, Σ, P, S) con las producciones numeradas.

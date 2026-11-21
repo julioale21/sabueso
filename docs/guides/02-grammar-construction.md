@@ -321,35 +321,48 @@ Los dos campos son de solo lectura y la tabla es privada de `build.ts`. Σ **no*
 ### 5.3 `build.ts`: la función principal `buildGrammar`
 
 ```ts
-export function buildGrammar(
-  name: string,
-  rules: readonly GrammarRule[],
-  start?: SymbolName,
-  declaredTerminals?: Iterable<SymbolName>,
-): Grammar {
+export function buildGrammar({
+  name,
+  rules,
+  start,
+  declaredTerminals,
+}: {
+  name: string;
+  /** The rules in order; the first one gives the default start symbol. */
+  rules: readonly GrammarRule[];
+  /** S, if it is not the left side of the first rule (%start). */
+  start?: SymbolName | undefined;
+  /** The %terminals declaration, if the grammar has one. */
+  declaredTerminals?: Iterable<SymbolName> | undefined;
+}): Grammar {
   // Builds the 4-tuple G = (N, Σ, P, S) in an order that matters:
   // 1. N first: the left-hand sides. Without N nothing can be classified.
   // 2. P: with N known, each right-side symbol is a nonterminal (∈ N) or a
   //    terminal (∉ N). Each symbol is checked here, but nothing is changed.
   // 3. Σ: the terminals in P, plus those of %terminals. N ∩ Σ = ∅ by construction.
   // 4. S: must be a nonterminal; otherwise L(G) would have nothing to derive from.
-  const firstRule = requireAtLeastOneRule(name, rules);
-  const symbols = createSymbolTable(rules, declaredTerminals);
-  const productions = createProductions(rules, symbols);
+  const firstRule = requireAtLeastOneRule({ name, rules });
+  const symbols = createSymbolTable({ rules, declaredTerminals });
+  const productions = createProductions({ rules, symbols });
   rejectDuplicateProductions(productions);
 
   return {
     name,
-    start: requireNonterminalStart(start ?? firstRule.leftSide, symbols.nonterminals),
+    start: requireNonterminalStart({
+      start: start ?? firstRule.leftSide,
+      nonterminals: symbols.nonterminals,
+    }),
     nonterminals: symbols.nonterminals,
-    terminals: collectTerminals(productions, symbols),
+    terminals: collectTerminals({ productions, symbols }),
     productions,
-    productionsByLeftSide: groupByLeftSide(symbols.nonterminals, productions),
+    productionsByLeftSide: groupByLeftSide({ nonterminals: symbols.nonterminals, productions }),
   };
 }
 ```
 
 #### Parámetros
+
+Se pasan por nombre, en un solo objeto: `buildGrammar({ name, rules, start, declaredTerminals })`. Los dos opcionales se pueden omitir.
 
 | Parámetro           | Obligatorio | Qué es                                 | En un `.grammar` viene de       |
 | ------------------- | ----------- | -------------------------------------- | ------------------------------- |
@@ -384,10 +397,16 @@ export function formatProduction(production: Production): string {
   - `{ leftSide: 'S', rightSide: [] }` → `'S → ε'`
 - **Por qué vive en el motor y no en la consola:** la notación `A → α` es parte del concepto, no de la presentación. La usan los mensajes de error del propio motor (`Duplicate production: T → id`), y la va a usar la web.
 
-#### 5.4.2 `requireAtLeastOneRule(name, rules)`
+#### 5.4.2 `requireAtLeastOneRule({ name, rules })`
 
 ```ts
-function requireAtLeastOneRule(name: string, rules: readonly GrammarRule[]): GrammarRule {
+function requireAtLeastOneRule({
+  name,
+  rules,
+}: {
+  name: string;
+  rules: readonly GrammarRule[];
+}): GrammarRule {
   const firstRule = rules[0];
   if (firstRule === undefined) {
     throw new GrammarBuildError(`Grammar "${name}" has no rules`);
@@ -401,16 +420,19 @@ function requireAtLeastOneRule(name: string, rules: readonly GrammarRule[]): Gra
 - **Detalle:** `rules[0]` en un array vacío da `undefined`. La configuración estricta del proyecto (`noUncheckedIndexedAccess`) obliga a comprobarlo: TypeScript tipa `rules[0]` como `GrammarRule | undefined`. Después del `if`, TypeScript ya sabe que `firstRule` es una `GrammarRule`.
 - **Error:** `Grammar "X" has no rules`.
 
-#### 5.4.3 `createSymbolTable(rules, declaredTerminals)`
+#### 5.4.3 `createSymbolTable({ rules, declaredTerminals })`
 
 ```ts
-function createSymbolTable(
-  rules: readonly GrammarRule[],
-  declaredTerminals: Iterable<SymbolName> | undefined,
-): SymbolTable {
+function createSymbolTable({
+  rules,
+  declaredTerminals,
+}: {
+  rules: readonly GrammarRule[];
+  declaredTerminals?: Iterable<SymbolName> | undefined;
+}): SymbolTable {
   const nonterminals = collectNonterminals(rules);
   const declared = declaredTerminals === undefined ? undefined : new Set(declaredTerminals);
-  declared?.forEach((terminal) => checkDeclaredTerminal(terminal, nonterminals));
+  declared?.forEach((terminal) => checkDeclaredTerminal({ terminal, nonterminals }));
   return { nonterminals, declaredTerminals: declared };
 }
 ```
@@ -441,10 +463,16 @@ function collectNonterminals(rules: readonly GrammarRule[]): Set<SymbolName> {
 - **El orden se conserva:** un `Set` de JavaScript recuerda el orden de inserción. N sale en el orden de aparición (`E`, `T`), y así la salida es predecible.
 - **Valida** que ningún lado izquierdo use `$`.
 
-#### 5.4.5 `checkDeclaredTerminal(terminal, nonterminals)`
+#### 5.4.5 `checkDeclaredTerminal({ terminal, nonterminals })`
 
 ```ts
-function checkDeclaredTerminal(terminal: SymbolName, nonterminals: ReadonlySet<SymbolName>): void {
+function checkDeclaredTerminal({
+  terminal,
+  nonterminals,
+}: {
+  terminal: SymbolName;
+  nonterminals: ReadonlySet<SymbolName>;
+}): void {
   rejectReservedName(terminal);
   if (nonterminals.has(terminal)) {
     throw new GrammarBuildError(
@@ -459,14 +487,20 @@ function checkDeclaredTerminal(terminal: SymbolName, nonterminals: ReadonlySet<S
 - **Error:** `"E" is declared as a terminal but is the left-hand side of a rule`. También rechaza `$`.
 - **Devuelve `void`:** no calcula nada; si no lanza un error, el terminal es válido.
 
-#### 5.4.6 `createProductions(rules, symbols)`
+#### 5.4.6 `createProductions({ rules, symbols })`
 
 ```ts
-function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable): Production[] {
+function createProductions({
+  rules,
+  symbols,
+}: {
+  rules: readonly GrammarRule[];
+  symbols: SymbolTable;
+}): Production[] {
   return rules.map((rule, index) => ({
     id: index,
     leftSide: rule.leftSide,
-    rightSide: rule.rightSide.map((symbol) => checkRightSideSymbol(symbol, symbols)),
+    rightSide: rule.rightSide.map((symbol) => checkRightSideSymbol({ symbol, symbols })),
   }));
 }
 ```
@@ -479,13 +513,16 @@ function createProductions(rules: readonly GrammarRule[], symbols: SymbolTable):
 - **Es una función pura:** solo lee `symbols` y devuelve P. No agrega nada a Σ ni a ningún otro conjunto. Σ se calcula después, a partir de P, con `collectTerminals` (§5.4.7).
 - **Un lado derecho vacío** (`rightSide: []`) da un `.map` vacío, es decir, la producción ε. No necesita un caso especial.
 
-#### 5.4.7 `collectTerminals(productions, symbols)`
+#### 5.4.7 `collectTerminals({ productions, symbols })`
 
 ```ts
-function collectTerminals(
-  productions: readonly Production[],
-  symbols: SymbolTable,
-): Set<SymbolName> {
+function collectTerminals({
+  productions,
+  symbols,
+}: {
+  productions: readonly Production[];
+  symbols: SymbolTable;
+}): Set<SymbolName> {
   const terminals = new Set(symbols.declaredTerminals);
   for (const symbol of productions.flatMap((production) => production.rightSide)) {
     if (!symbols.nonterminals.has(symbol)) {
@@ -506,13 +543,19 @@ function collectTerminals(
 - **Por qué los declarados entran a Σ aunque ninguna regla los use:** el autor dijo explícitamente "estos son mis terminales". Por ejemplo, una gramática del policial declara las 14 etiquetas aunque una versión simplificada no use todas. Σ es el alfabeto: el usuario puede escribir esas etiquetas en la entrada, y la gramática simplemente no las acepta en ninguna posición.
 - **El orden se conserva:** primero los declarados, después los demás en orden de aparición.
 
-#### 5.4.8 `checkRightSideSymbol(symbol, symbols)`
+#### 5.4.8 `checkRightSideSymbol({ symbol, symbols })`
 
 ```ts
-function checkRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): SymbolName {
+function checkRightSideSymbol({
+  symbol,
+  symbols,
+}: {
+  symbol: RightSideSymbol;
+  symbols: SymbolTable;
+}): SymbolName {
   return typeof symbol === 'string'
-    ? checkIdentifier(symbol, symbols)
-    : checkLiteral(symbol.literal, symbols);
+    ? checkIdentifier({ identifier: symbol, symbols })
+    : checkLiteral({ literal: symbol.literal, symbols });
 }
 ```
 
@@ -523,10 +566,16 @@ function checkRightSideSymbol(symbol: RightSideSymbol, symbols: SymbolTable): Sy
 - **Devuelve** el nombre (`'E'`, `'+'`, `'id'`), que es lo que se guarda en `Production.rightSide`.
 - **No clasifica:** decidir si el nombre es terminal le toca a `collectTerminals` (§5.4.7).
 
-#### 5.4.9 `checkIdentifier(identifier, symbols)`
+#### 5.4.9 `checkIdentifier({ identifier, symbols })`
 
 ```ts
-function checkIdentifier(identifier: SymbolName, symbols: SymbolTable): SymbolName {
+function checkIdentifier({
+  identifier,
+  symbols,
+}: {
+  identifier: SymbolName;
+  symbols: SymbolTable;
+}): SymbolName {
   rejectReservedName(identifier);
   const isTerminal = !symbols.nonterminals.has(identifier);
   const isUndeclared =
@@ -556,10 +605,10 @@ function checkIdentifier(identifier: SymbolName, symbols: SymbolTable): SymbolNa
 
 - **Sin `%terminals`** (`declaredTerminals === undefined`), `isUndeclared` es siempre `false` y la convención se aplica libremente. Es cómodo para gramáticas chicas de prueba como `E → E + T | T`.
 
-#### 5.4.10 `checkLiteral(literal, symbols)`
+#### 5.4.10 `checkLiteral({ literal, symbols })`
 
 ```ts
-function checkLiteral(literal: string, symbols: SymbolTable): SymbolName {
+function checkLiteral({ literal, symbols }: { literal: string; symbols: SymbolTable }): SymbolName {
   if (literal === '') {
     throw new GrammarBuildError('Empty literal: write ε for the empty string');
   }
@@ -600,13 +649,16 @@ function rejectDuplicateProductions(productions: readonly Production[]): void {
 - **Por qué compara después de validar:** compara `Production` y no `GrammarRule`, así que `S → 'a'` y `S → a` (un literal y un identificador terminal con el mismo nombre) se detectan como la misma producción. En la gramática resultante lo son.
 - **Error:** `Duplicate production: T → id`.
 
-#### 5.4.12 `requireNonterminalStart(start, nonterminals)`
+#### 5.4.12 `requireNonterminalStart({ start, nonterminals })`
 
 ```ts
-function requireNonterminalStart(
-  start: SymbolName,
-  nonterminals: ReadonlySet<SymbolName>,
-): SymbolName {
+function requireNonterminalStart({
+  start,
+  nonterminals,
+}: {
+  start: SymbolName;
+  nonterminals: ReadonlySet<SymbolName>;
+}): SymbolName {
   if (!nonterminals.has(start)) {
     throw new GrammarBuildError(`Start symbol "${start}" is not the left-hand side of any rule`);
   }
@@ -619,13 +671,16 @@ function requireNonterminalStart(
 - **Cuándo puede fallar:** solo con un `%start` explícito. El inicio por defecto (el lado izquierdo de la primera regla) siempre pertenece a N.
 - **Error:** `Start symbol "X" is not the left-hand side of any rule`.
 
-#### 5.4.13 `groupByLeftSide(nonterminals, productions)`
+#### 5.4.13 `groupByLeftSide({ nonterminals, productions })`
 
 ```ts
-function groupByLeftSide(
-  nonterminals: ReadonlySet<SymbolName>,
-  productions: readonly Production[],
-): Map<SymbolName, Production[]> {
+function groupByLeftSide({
+  nonterminals,
+  productions,
+}: {
+  nonterminals: ReadonlySet<SymbolName>;
+  productions: readonly Production[];
+}): Map<SymbolName, Production[]> {
   const productionsByLeftSide = new Map<SymbolName, Production[]>();
   for (const nonterminal of nonterminals) {
     productionsByLeftSide.set(nonterminal, []);
@@ -667,12 +722,15 @@ function rejectReservedName(symbol: SymbolName): void {
 **Entrada** (escrita en código; con un archivo `.grammar`, la misma lista la produce el parser del paso 4):
 
 ```ts
-buildGrammar('expressions', [
-  { leftSide: 'E', rightSide: ['E', '+', 'T'] },
-  { leftSide: 'E', rightSide: ['T'] },
-  { leftSide: 'T', rightSide: ['id'] },
-]);
-// start: undefined, declaredTerminals: undefined
+buildGrammar({
+  name: 'expressions',
+  rules: [
+    { leftSide: 'E', rightSide: ['E', '+', 'T'] },
+    { leftSide: 'E', rightSide: ['T'] },
+    { leftSide: 'T', rightSide: ['id'] },
+  ],
+});
+// without start or declaredTerminals
 ```
 
 | Paso | Función                      | Resultado                                                                              |
@@ -708,15 +766,14 @@ buildGrammar('expressions', [
 ### Variante con `%terminals` y un error de tipeo
 
 ```ts
-buildGrammar(
-  'story',
-  [
+buildGrammar({
+  name: 'story',
+  rules: [
     { leftSide: 'Relato', rightSide: ['CRI', 'Pistass', 'REV'] },
     { leftSide: 'Pistas', rightSide: ['PIS'] },
   ],
-  undefined,
-  ['CRI', 'PIS', 'REV'],
-);
+  declaredTerminals: ['CRI', 'PIS', 'REV'],
+});
 ```
 
 1. N = {Relato, Pistas}. Los declarados son {CRI, PIS, REV} y ninguno es lado izquierdo ✓.
@@ -741,7 +798,7 @@ Error: Undeclared symbol "Pistass": it is not the left-hand side of any rule and
 
 | Mensaje                                                             | Función                      | Qué regla de la teoría protege   | Ejemplo que lo provoca                    |
 | ------------------------------------------------------------------- | ---------------------------- | -------------------------------- | ----------------------------------------- |
-| `Grammar "X" has no rules`                                          | `requireAtLeastOneRule`      | P ≠ ∅ (si no, no hay S ∈ N)      | `buildGrammar('x', [])`                   |
+| `Grammar "X" has no rules`                                          | `requireAtLeastOneRule`      | P ≠ ∅ (si no, no hay S ∈ N)      | `buildGrammar({ name: 'x', rules: [] })`  |
 | `"E" is declared as a terminal but is the left-hand side of a rule` | `checkDeclaredTerminal`      | N ∩ Σ = ∅                        | `%terminals E` y una regla `E → …`        |
 | `Undeclared symbol "X": …`                                          | `checkIdentifier`            | evitar terminales "accidentales" | `%terminals a` y `S → X` sin regla para X |
 | `Empty literal: write ε for the empty string`                       | `checkLiteral`               | ε ∉ Σ                            | `S → ''`                                  |

@@ -13,7 +13,12 @@ import {
 } from './fixtures/grammar-build-cases.js';
 
 function buildCase(testCase: ValidCase | ErrorCase): Grammar {
-  return buildGrammar(testCase.name, testCase.rules, testCase.start, testCase.declaredTerminals);
+  return buildGrammar({
+    name: testCase.name,
+    rules: testCase.rules,
+    start: testCase.start,
+    declaredTerminals: testCase.declaredTerminals,
+  });
 }
 
 /** The grammar as plain values, in the shape of ExpectedGrammar. */
@@ -109,7 +114,7 @@ describe('formatGrammar', () => {
       leftSide: 'D',
       rightSide: [{ literal: `d${digit}` }],
     }));
-    const lines = formatGrammar(buildGrammar('digits', digits)).split('\n');
+    const lines = formatGrammar(buildGrammar({ name: 'digits', rules: digits })).split('\n');
     expect(lines.at(-2)).toBe('   9  D → d9');
     expect(lines.at(-1)).toBe('  10  D → d10');
   });

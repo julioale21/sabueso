@@ -91,10 +91,13 @@ describe('the public API', () => {
   });
 
   it('a grammar built in code works the same as one read from a file', () => {
-    const grammar = buildGrammar('tiny', [
-      { leftSide: 'S', rightSide: ['a', 'S'] },
-      { leftSide: 'S', rightSide: [] },
-    ]);
+    const grammar = buildGrammar({
+      name: 'tiny',
+      rules: [
+        { leftSide: 'S', rightSide: ['a', 'S'] },
+        { leftSide: 'S', rightSide: [] },
+      ],
+    });
     expect(parse(grammar, 'a a').accepted).toBe(true);
   });
 

@@ -160,7 +160,11 @@ return productions
 const rules = productiveProductions
   .filter((production) => reachable.has(production.leftSide))
   .map(({ leftSide, rightSide }) => ({ leftSide, rightSide }));
-return buildGrammar(`${grammar.name} without useless symbols`, rules, grammar.start);
+return buildGrammar({
+  name: `${grammar.name} without useless symbols`,
+  rules,
+  start: grammar.start,
+});
 ```
 
 - Parte de las producciones productivas y se queda con las de lado izquierdo alcanzable.

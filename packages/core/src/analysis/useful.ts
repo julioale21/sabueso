@@ -181,5 +181,9 @@ function buildUsefulGrammar({
   const rules = productiveProductions
     .filter((production) => reachable.has(production.leftSide))
     .map(({ leftSide, rightSide }) => ({ leftSide, rightSide }));
-  return buildGrammar(`${grammar.name} without useless symbols`, rules, grammar.start);
+  return buildGrammar({
+    name: `${grammar.name} without useless symbols`,
+    rules,
+    start: grammar.start,
+  });
 }

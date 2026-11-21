@@ -101,7 +101,7 @@ El archivo `meta.grammar` se escribe en el paso 5. En el paso 12, el propio prog
 
 1. `tokenizeGrammar(texto)`: el lexer del paso 3.
 2. `parseGrammarFile(tokens)`: el parser de este paso. Devuelve las reglas, `%start` y `%terminals`.
-3. `buildGrammar(nombre, reglas, inicio, terminales)`: la construcción del paso 2, que valida.
+3. `buildGrammar({ name, rules, start, declaredTerminals })`: la construcción del paso 2, que valida.
 
 ---
 
