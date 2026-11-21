@@ -95,9 +95,9 @@ Los conjuntos son `Map<SymbolName, Set<SymbolName>>`. ε y `$` se guardan como l
 
 ## 5. El código, función por función
 
-### 5.1 `repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound, onIteration })` (`fixed-point.ts`)
+### 5.1 `repeatRuleOnSetsUntilNoChange({ start, newMembersOfRound, onRound })` (`fixed-point.ts`)
 
-La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo: repite la regla hasta que ningún conjunto cambia. Recibe un objeto con tres campos: `start` (el conjunto de cada símbolo antes de la primera ronda), `newMembersOfRound` (la regla) y `onIteration` (opcional).
+La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo: repite la regla hasta que ningún conjunto cambia. Recibe un objeto con tres campos: `start` (el conjunto de cada símbolo antes de la primera ronda), `newMembersOfRound` (la regla) y `onRound` (opcional).
 
 ```ts
 let knownBefore = copySets(start);
@@ -106,7 +106,7 @@ for (let round = 1; ; round++) {
   for (const [symbol, member] of newMembersOfRound(knownBefore)) {
     knownAfter.get(symbol)?.add(member);
   }
-  onIteration?.(round, knownAfter);
+  onRound?.({ round, setsSoFar: knownAfter });
   if (totalSize(knownAfter) === totalSize(knownBefore)) {
     return knownAfter;
   }
@@ -127,7 +127,7 @@ return new Map([...sets].map(([symbol, members]) => [symbol, new Set(members)]))
 ```
 
 - `new Map(...)` solo copiaría el mapa: los dos mapas compartirían los mismos `Set`. Agregar a `knownAfter` cambiaría también `knownBefore`.
-- `new Set(members)` crea un conjunto nuevo por símbolo. Así la ronda actual nunca cambia la anterior, y la comparación de tamaños tiene sentido. Además, lo que recibió `onIteration` en una ronda no cambia después.
+- `new Set(members)` crea un conjunto nuevo por símbolo. Así la ronda actual nunca cambia la anterior, y la comparación de tamaños tiene sentido. Además, lo que recibió `onRound` en una ronda no cambia después.
 
 `totalSize` suma los tamaños de todos los conjuntos:
 
@@ -162,7 +162,7 @@ return result;
 - Si el ciclo termina sin `return`, todos pudieron ser ε (o la secuencia estaba vacía): se agrega ε.
 - Es exportada porque el paso 12 la usa para FIRST(α) de cada lado derecho.
 
-### 5.3 `computeFirst(grammar, onIteration?)`
+### 5.3 `computeFirst(grammar, onRound?)`
 
 ```ts
 return repeatRuleOnSetsUntilNoChange({
@@ -174,7 +174,7 @@ return repeatRuleOnSetsUntilNoChange({
         member,
       ]),
     ),
-  onIteration,
+  onRound,
 });
 ```
 
@@ -184,7 +184,7 @@ return repeatRuleOnSetsUntilNoChange({
 - `flatMap` junta los pares de todas las producciones en una sola lista. Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
 - ε entra en FIRST(A) solo si `firstOfSequence` lo devuelve, es decir, si todo α puede desaparecer.
 
-### 5.4 `computeFollow(grammar, first, onIteration?)`
+### 5.4 `computeFollow(grammar, first, onRound?)`
 
 ```ts
 const start = emptySetFor(grammar.nonterminals);
@@ -193,7 +193,7 @@ return repeatRuleOnSetsUntilNoChange({
   start,
   newMembersOfRound: (follow) =>
     grammar.productions.flatMap((production) => followPairs(production, first, follow)),
-  onIteration,
+  onRound,
 });
 ```
 
@@ -231,9 +231,9 @@ production.rightSide.forEach((symbol, position) => {
 - `rest.has(EMPTY_STRING)`: si β puede desaparecer (o está vacío), Xᵢ puede ser lo último de A. Entonces lo que sigue a A sigue también a Xᵢ: todo FOLLOW(A) entra en FOLLOW(Xᵢ).
 - `follow.get(production.leftSide) ?? []`: lee FOLLOW(A) de la ronda anterior. Por eso hace falta un punto fijo: FOLLOW(A) puede seguir creciendo.
 
-### 5.6 `computeFirstFollow(grammar, onIteration?)`
+### 5.6 `computeFirstFollow(grammar, onRound?)`
 
-Corre los dos en orden (FOLLOW necesita FIRST) y le pasa a `onIteration` la fase (`'first'` o `'follow'`), para que `--steps` muestre las dos tablas.
+Corre los dos en orden (FOLLOW necesita FIRST) y le pasa a `onRound` la fase (`'first'` o `'follow'`), para que `--steps` muestre las dos tablas.
 
 ### 5.7 El comando `first-follow`
 

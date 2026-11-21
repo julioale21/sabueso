@@ -804,7 +804,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
   - `0`: éxito, o entrada aceptada.
   - `1`: entrada rechazada o error del usuario (gramática inválida, símbolo desconocido).
   - `2`: uso incorrecto del comando (opciones faltantes).
-- `--steps` muestra las iteraciones de los algoritmos de punto fijo. Las funciones de análisis aceptan un callback opcional, `onIteration(iteration, snapshot)`, que no cuesta nada si no se pasa. Sirve para explicar en la exposición cómo converge cada punto fijo.
+- `--steps` muestra las iteraciones de los algoritmos de punto fijo. Las funciones de análisis aceptan un callback opcional, `onRound({ round, symbolsSoFar })` (de tipo `RoundListener`; `setsSoFar` en FIRST y FOLLOW), que no cuesta nada si no se pasa. Hasta el paso 23 se llamaba `onIteration(iteration, snapshot)`. Sirve para explicar en la exposición cómo converge cada punto fijo.
 - `--file <ruta>` lee la secuencia de un archivo en lugar del argumento. Hace falta para L1 (200 eventos), que vive en `test/fixtures/l1.txt`.
 - Pruebas de la CLI en `test/command-line/<comando>.test.ts`. Llaman a `runCommandLine` con un `environment` en memoria.
 

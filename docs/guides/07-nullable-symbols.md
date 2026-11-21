@@ -58,7 +58,7 @@ Costo: cada ronda recorre P una vez (O(|P|·k), con k el largo máximo de un lad
 
 ## 5. El código, función por función
 
-### 5.1 `repeatRuleUntilNoChange({ start, newSymbolsOfRound, onIteration })` (`src/analysis/fixed-point.ts`)
+### 5.1 `repeatRuleUntilNoChange({ start, newSymbolsOfRound, onRound })` (`src/analysis/fixed-point.ts`)
 
 El esquema de punto fijo se escribe **una sola vez**, con nombre propio: repite la regla hasta que no cambia nada. En la teoría se llama **menor punto fijo** (_least fixed point_). Lo usan los anulables y, en el paso 9, los productivos y los alcanzables. Cada análisis solo aporta su regla.
 
@@ -66,16 +66,16 @@ El esquema de punto fijo se escribe **una sola vez**, con nombre propio: repite 
 export function repeatRuleUntilNoChange({
   start,
   newSymbolsOfRound,
-  onIteration,
+  onRound,
 }: {
   start: Iterable<SymbolName>;
   newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>;
-  onIteration?: FixedPointObserver | undefined;
+  onRound?: RoundListener | undefined;
 }): Set<SymbolName> {
   let knownBefore = new Set(start);
   for (let round = 1; ; round++) {
     const knownAfter = new Set([...knownBefore, ...newSymbolsOfRound(knownBefore)]);
-    onIteration?.(round, knownAfter);
+    onRound?.({ round, symbolsSoFar: knownAfter });
     if (knownAfter.size === knownBefore.size) {
       return knownAfter; // nothing new: fixed point
     }
@@ -84,31 +84,28 @@ export function repeatRuleUntilNoChange({
 }
 ```
 
-| Parámetro           | Qué es                                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `start`             | el conjunto inicial: ∅ para anulables y productivos, {S} para alcanzables                                           |
-| `newSymbolsOfRound` | **la regla**: dado lo que se sabía antes de la ronda, qué símbolos encuentra                                        |
-| `onIteration`       | opcional: recibe el número de ronda (desde 1) y el conjunto. Lo usa `--steps`; si no se pasa, no cuesta nada (`?.`) |
+| Parámetro           | Qué es                                                                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `start`             | el conjunto inicial: ∅ para anulables y productivos, {S} para alcanzables                                                                                                                        |
+| `newSymbolsOfRound` | **la regla**: dado lo que se sabía antes de la ronda, qué símbolos encuentra                                                                                                                     |
+| `onRound`           | opcional, de tipo `RoundListener`: recibe `{ round, symbolsSoFar }`, el número de ronda (desde 1) y los símbolos encontrados hasta ahora. Lo usa `--steps`; si no se pasa, no cuesta nada (`?.`) |
 
 - **Dos conjuntos por ronda:** la regla lee `knownBefore` (lo que se sabía al terminar la ronda anterior) y lo nuevo va a `knownAfter`. Así, un símbolo descubierto en esta ronda recién cuenta en la siguiente, y la ronda i tiene significado: los símbolos que necesitan i aplicaciones de la regla.
 - **`new Set([...knownBefore, ...nuevos])`** arma un conjunto con los elementos de los dos: no es un conjunto de conjuntos. Los repetidos se descartan solos.
 - **Comparar tamaños alcanza:** `knownAfter` contiene a `knownBefore` y nunca pierde elementos. Si el tamaño no cambió, la ronda no agregó nada: es el punto fijo.
 - **Por qué termina:** el conjunto solo crece y no puede tener más símbolos que N. Hay a lo sumo |N| + 1 rondas.
 
-### 5.2 `computeNullable(grammar, onIteration?)`
+### 5.2 `computeNullable(grammar, onRound?)`
 
 ```ts
-export function computeNullable(
-  grammar: Grammar,
-  onIteration?: FixedPointObserver,
-): Set<SymbolName> {
+export function computeNullable(grammar: Grammar, onRound?: RoundListener): Set<SymbolName> {
   return repeatRuleUntilNoChange({
     start: [],
     newSymbolsOfRound: (nullable) =>
       nonterminalsWithProductionThat(grammar.productions, (production) =>
         derivesEmptyString(production, nullable),
       ),
-    onIteration,
+    onRound,
   });
 }
 ```
@@ -201,7 +198,7 @@ En G1 todo entra en la ronda 1, porque cada parte opcional tiene su propia produ
 | la cadena                             | un símbolo entra una ronda después que los suyos                                                    |
 | terminales                            | `S → A x` con A anulable: S no es anulable                                                          |
 | ciclo sin salida                      | `test-cyclic` (S ⇒ A ⇒ S, sin ε) da ∅                                                               |
-| `onIteration`                         | las rondas de la cadena, las dos de G1 y la única de G0; los conjuntos recibidos no cambian después |
+| `onRound`                             | las rondas de la cadena, las dos de G1 y la única de G0; los conjuntos recibidos no cambian después |
 
 **`test/command-line/nullable.test.ts`:** el resultado de G1, las rondas con `--steps`, ∅ para G0, la cadena con `--grammar-file` y los errores de uso.
 

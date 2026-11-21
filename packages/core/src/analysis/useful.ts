@@ -8,7 +8,7 @@ import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {
   repeatRuleUntilNoChange,
   nonterminalsWithProductionThat,
-  type FixedPointObserver,
+  type RoundListener,
 } from './fixed-point.js';
 
 /** The two fixed points, in the order they run. */
@@ -41,14 +41,14 @@ export interface UsefulSymbolsAnalysis {
  */
 export function analyzeUsefulSymbols(
   grammar: Grammar,
-  onIteration?: UsefulIterationObserver,
+  onRound?: UsefulIterationObserver,
 ): UsefulSymbolsAnalysis {
   // A symbol is useful if it appears in some derivation S ⇒* … ⇒* w of a sentence.
   // Both conditions are needed: deriving terminals AND being reachable from S.
   // Order matters: removing the non-productive symbols drops productions, which can
   // leave another symbol unreachable. So "reachable" is computed on what is left.
-  const productive = computeProductive(grammar, (iteration, symbols) =>
-    onIteration?.('productive', iteration, symbols),
+  const productive = computeProductive(grammar, ({ round, symbolsSoFar }) =>
+    onRound?.('productive', round, symbolsSoFar),
   );
   // Emptiness (decidable): L(G) = ∅ ⇔ S is not productive. No sentences, nothing useful.
   const isEmpty = !productive.has(grammar.start);
@@ -57,8 +57,8 @@ export function analyzeUsefulSymbols(
   );
   const reachable = isEmpty
     ? new Set<SymbolName>()
-    : computeReachable(grammar.start, productions, (iteration, symbols) =>
-        onIteration?.('reachable', iteration, symbols),
+    : computeReachable(grammar.start, productions, ({ round, symbolsSoFar }) =>
+        onRound?.('reachable', round, symbolsSoFar),
       );
   const useless = new Set(
     [...grammar.nonterminals].filter((symbol) => !productive.has(symbol) || !reachable.has(symbol)),
@@ -76,10 +76,7 @@ export function analyzeUsefulSymbols(
  * The productive nonterminals, by least fixed point: A is productive if some production
  * A → X1…Xk has every Xi a terminal or a productive nonterminal.
  */
-export function computeProductive(
-  grammar: Grammar,
-  onIteration?: FixedPointObserver,
-): Set<SymbolName> {
+export function computeProductive(grammar: Grammar, onRound?: RoundListener): Set<SymbolName> {
   // Like nullable, with another base: a terminal already "produces" (it is a string of Σ*).
   // Round 1: the A with a right side of only terminals (or ε).
   return repeatRuleUntilNoChange({
@@ -88,7 +85,7 @@ export function computeProductive(
       nonterminalsWithProductionThat(grammar.productions, (production) =>
         usesOnly(production, productive, grammar),
       ),
-    onIteration,
+    onRound,
   });
 }
 
@@ -99,7 +96,7 @@ export function computeProductive(
 export function computeReachable(
   start: SymbolName,
   productions: readonly Production[],
-  onIteration?: FixedPointObserver,
+  onRound?: RoundListener,
 ): Set<SymbolName> {
   // The same fixed point, now top-down: start from {S}, and each round adds the
   // nonterminals in the right sides of those already reached (S ⇒* αAβ).
@@ -107,7 +104,7 @@ export function computeReachable(
   return repeatRuleUntilNoChange({
     start: [start],
     newSymbolsOfRound: (reachable) => nonterminalsUsedBy(reachable, productions, nonterminals),
-    onIteration,
+    onRound,
   });
 }
 

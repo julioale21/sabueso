@@ -25,7 +25,7 @@ describe('repeatRuleUntilNoChange', () => {
     repeatRuleUntilNoChange({
       start: ['a'],
       newSymbolsOfRound: followChain,
-      onIteration: (_round, known) => rounds.push([...known].sort()),
+      onRound: ({ symbolsSoFar }) => rounds.push([...symbolsSoFar].sort()),
     });
     expect(rounds).toEqual([
       ['a', 'b'],
@@ -40,7 +40,7 @@ describe('repeatRuleUntilNoChange', () => {
     repeatRuleUntilNoChange({
       start: ['a'],
       newSymbolsOfRound: followChain,
-      onIteration: (round) => numbers.push(round),
+      onRound: ({ round }) => numbers.push(round),
     });
     expect(numbers).toEqual([1, 2, 3, 4]);
   });
@@ -51,7 +51,7 @@ describe('repeatRuleUntilNoChange', () => {
       repeatRuleUntilNoChange({
         start: [],
         newSymbolsOfRound: () => [],
-        onIteration: (round) => rounds.push(round),
+        onRound: ({ round }) => rounds.push(round),
       }),
     ).toEqual(new Set());
     expect(rounds).toEqual([1]);
@@ -63,12 +63,12 @@ describe('repeatRuleUntilNoChange', () => {
     );
   });
 
-  it('the sets given to onIteration do not change in later rounds', () => {
+  it('the sets given to onRound do not change in later rounds', () => {
     const snapshots: ReadonlySet<SymbolName>[] = [];
     repeatRuleUntilNoChange({
       start: ['a'],
       newSymbolsOfRound: followChain,
-      onIteration: (_round, known) => snapshots.push(known),
+      onRound: ({ symbolsSoFar }) => snapshots.push(symbolsSoFar),
     });
     expect(snapshots.map((snapshot) => snapshot.size)).toEqual([2, 3, 4, 4]);
   });
@@ -108,7 +108,7 @@ describe('repeatRuleOnSetsUntilNoChange', () => {
     repeatRuleOnSetsUntilNoChange({
       start,
       newMembersOfRound: copyRule,
-      onIteration: (_round, known) => sizes.push(known.get('a')?.size ?? 0),
+      onRound: ({ setsSoFar }) => sizes.push(setsSoFar.get('a')?.size ?? 0),
     });
     expect(sizes).toEqual([0, 1, 1]);
   });

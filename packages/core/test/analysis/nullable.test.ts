@@ -55,13 +55,13 @@ describe('computeNullable', () => {
   });
 });
 
-describe('computeNullable with onIteration', () => {
+describe('computeNullable with onRound', () => {
   function rounds(grammarName: string | undefined): SymbolName[][] {
     const grammar = grammarName === undefined ? chainGrammar : loadBuiltInGrammar(grammarName);
     const seen: SymbolName[][] = [];
-    computeNullable(grammar, (iteration, nullable) => {
-      expect(iteration).toBe(seen.length + 1);
-      seen.push([...nullable].sort());
+    computeNullable(grammar, ({ round, symbolsSoFar }) => {
+      expect(round).toBe(seen.length + 1);
+      seen.push([...symbolsSoFar].sort());
     });
     return seen;
   }
@@ -83,7 +83,7 @@ describe('computeNullable with onIteration', () => {
 
   it('the snapshots are copies: later rounds do not change them', () => {
     const snapshots: ReadonlySet<SymbolName>[] = [];
-    computeNullable(chainGrammar, (_iteration, nullable) => snapshots.push(nullable));
+    computeNullable(chainGrammar, ({ symbolsSoFar }) => snapshots.push(symbolsSoFar));
     expect(snapshots.map((snapshot) => snapshot.size)).toEqual([1, 2, 3, 3]);
   });
 });

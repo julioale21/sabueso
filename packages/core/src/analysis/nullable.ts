@@ -7,7 +7,7 @@ import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {
   repeatRuleUntilNoChange,
   nonterminalsWithProductionThat,
-  type FixedPointObserver,
+  type RoundListener,
 } from './fixed-point.js';
 
 /**
@@ -17,10 +17,7 @@ import {
  * Round i finds exactly the symbols whose lowest ε-derivation tree has height i. The last
  * round adds nothing: it is the check that the fixed point was reached.
  */
-export function computeNullable(
-  grammar: Grammar,
-  onIteration?: FixedPointObserver,
-): Set<SymbolName> {
+export function computeNullable(grammar: Grammar, onRound?: RoundListener): Set<SymbolName> {
   // Round 1: the A with A → ε. Round i: the A with A → X1…Xk and every Xi already nullable.
   // A terminal is never nullable (it always contributes a symbol), so it never enters.
   return repeatRuleUntilNoChange({
@@ -29,7 +26,7 @@ export function computeNullable(
       nonterminalsWithProductionThat(grammar.productions, (production) =>
         derivesEmptyString(production, nullable),
       ),
-    onIteration,
+    onRound,
   });
 }
 

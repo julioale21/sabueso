@@ -6,8 +6,11 @@
  */
 import type { Production, SymbolName } from '../grammar/types.js';
 
-/** Called after each round with its number (from 1) and every symbol known so far. */
-export type FixedPointObserver = (round: number, known: ReadonlySet<SymbolName>) => void;
+/** Called after each round with its number (from 1) and every symbol found so far. */
+export type RoundListener = (round: {
+  round: number;
+  symbolsSoFar: ReadonlySet<SymbolName>;
+}) => void;
 
 /**
  * Applies the rule round after round until it adds nothing new. Starts from `start` and, each
@@ -20,14 +23,14 @@ export type FixedPointObserver = (round: number, known: ReadonlySet<SymbolName>)
 export function repeatRuleUntilNoChange({
   start,
   newSymbolsOfRound,
-  onIteration,
+  onRound,
 }: {
   /** The symbols known before the first round: the base of the induction (often ∅). */
   start: Iterable<SymbolName>;
   /** The rule of a round: the symbols to add, given what was known before it. */
   newSymbolsOfRound: (knownBefore: ReadonlySet<SymbolName>) => Iterable<SymbolName>;
   /** Called after each round, if given. */
-  onIteration?: FixedPointObserver | undefined;
+  onRound?: RoundListener | undefined;
 }): Set<SymbolName> {
   // Least fixed point: start from `start` (almost always ∅); each round applies the rule
   // to what was known at the end of the previous round (knownBefore). New symbols go to
@@ -37,7 +40,7 @@ export function repeatRuleUntilNoChange({
   let knownBefore = new Set(start);
   for (let round = 1; ; round++) {
     const knownAfter = new Set([...knownBefore, ...newSymbolsOfRound(knownBefore)]);
-    onIteration?.(round, knownAfter);
+    onRound?.({ round, symbolsSoFar: knownAfter });
     if (knownAfter.size === knownBefore.size) {
       return knownAfter; // nothing new: fixed point
     }
@@ -59,11 +62,11 @@ export function nonterminalsWithProductionThat(
 /** One set per symbol, as FIRST and FOLLOW are. */
 export type SetsBySymbol = Map<SymbolName, Set<SymbolName>>;
 
-/** Called after each round with its number (from 1) and every set as known so far. */
-export type SetsFixedPointObserver = (
-  round: number,
-  known: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-) => void;
+/** Called after each round with its number (from 1) and every set as found so far. */
+export type SetsRoundListener = (round: {
+  round: number;
+  setsSoFar: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}) => void;
 
 /**
  * repeatRuleUntilNoChange when there is one set per symbol (FIRST, FOLLOW): starts from
@@ -74,7 +77,7 @@ export type SetsFixedPointObserver = (
 export function repeatRuleOnSetsUntilNoChange({
   start,
   newMembersOfRound,
-  onIteration,
+  onRound,
 }: {
   /** The set of each symbol before the first round (FOLLOW starts with $ in FOLLOW(S)). */
   start: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
@@ -83,7 +86,7 @@ export function repeatRuleOnSetsUntilNoChange({
     knownBefore: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
   ) => Iterable<[SymbolName, SymbolName]>;
   /** Called after each round, if given. */
-  onIteration?: SetsFixedPointObserver | undefined;
+  onRound?: SetsRoundListener | undefined;
 }): SetsBySymbol {
   // Same scheme as repeatRuleUntilNoChange, with one set per symbol growing at once. A round
   // copies every set and adds what the rule finds; if the total size did not change,
@@ -94,7 +97,7 @@ export function repeatRuleOnSetsUntilNoChange({
     for (const [symbol, member] of newMembersOfRound(knownBefore)) {
       knownAfter.get(symbol)?.add(member);
     }
-    onIteration?.(round, knownAfter);
+    onRound?.({ round, setsSoFar: knownAfter });
     if (totalSize(knownAfter) === totalSize(knownBefore)) {
       return knownAfter; // nothing new in any set: fixed point
     }

@@ -63,11 +63,11 @@ Para el proyecto sirve como **validador**: alguien que escribe un `.grammar` con
 
 ## 5. El código, función por función
 
-### 5.1 `analyzeUsefulSymbols(grammar, onIteration?)`
+### 5.1 `analyzeUsefulSymbols(grammar, onRound?)`
 
 ```ts
-const productive = computeProductive(grammar, (iteration, symbols) =>
-  onIteration?.('productive', iteration, symbols),
+const productive = computeProductive(grammar, ({ round, symbolsSoFar }) =>
+  onRound?.('productive', round, symbolsSoFar),
 );
 const isEmpty = !productive.has(grammar.start);
 const productions = grammar.productions.filter((production) =>
@@ -75,8 +75,8 @@ const productions = grammar.productions.filter((production) =>
 );
 const reachable = isEmpty
   ? new Set<SymbolName>()
-  : computeReachable(grammar.start, productions, (iteration, symbols) =>
-      onIteration?.('reachable', iteration, symbols),
+  : computeReachable(grammar.start, productions, ({ round, symbolsSoFar }) =>
+      onRound?.('reachable', round, symbolsSoFar),
     );
 const useless = new Set(
   [...grammar.nonterminals].filter((symbol) => !productive.has(symbol) || !reachable.has(symbol)),
@@ -89,10 +89,10 @@ const useless = new Set(
 - `computeReachable(grammar.start, productions, ...)`: recibe las producciones **filtradas**. Así, un símbolo que solo se alcanzaba a través de una producción descartada queda como no alcanzable.
 - `isEmpty ? new Set<SymbolName>() : ...`: si L(G) = ∅, no corre la fase de alcanzables. Ningún símbolo es útil, y el conjunto vacío hace que todos queden inútiles.
 - `!productive.has(symbol) || !reachable.has(symbol)`: la definición de inútil. Útil exige las dos cosas, así que basta con que falle una.
-- Cada fase llama a `onIteration` con su nombre (`'productive'` o `'reachable'`). Con eso `--steps` arma dos tablas.
+- Cada fase llama a `onRound` con su nombre (`'productive'` o `'reachable'`). Con eso `--steps` arma dos tablas.
 - Devuelve también `usefulGrammar`: `null` si L(G) = ∅; si no, el resultado de `buildUsefulGrammar` (sección 5.5).
 
-### 5.2 `computeProductive(grammar, onIteration?)`
+### 5.2 `computeProductive(grammar, onRound?)`
 
 ```ts
 return repeatRuleUntilNoChange({
@@ -101,7 +101,7 @@ return repeatRuleUntilNoChange({
     nonterminalsWithProductionThat(grammar.productions, (production) =>
       usesOnly(production, productive, grammar),
     ),
-  onIteration,
+  onRound,
 });
 ```
 
@@ -120,14 +120,14 @@ return production.rightSide.every(
 
 ¿Todos los símbolos son terminales o están en el conjunto dado? Con ε (lado derecho vacío), `every` da `true`. Se usa dos veces: para decidir si una producción hace productivo a su lado izquierdo, y para filtrar las producciones antes de los alcanzables.
 
-### 5.4 `computeReachable(start, productions, onIteration?)` y `nonterminalsUsedBy`
+### 5.4 `computeReachable(start, productions, onRound?)` y `nonterminalsUsedBy`
 
 ```ts
 const nonterminals = new Set(productions.map((production) => production.leftSide));
 return repeatRuleUntilNoChange({
   start: [start],
   newSymbolsOfRound: (reachable) => nonterminalsUsedBy(reachable, productions, nonterminals),
-  onIteration,
+  onRound,
 });
 ```
 

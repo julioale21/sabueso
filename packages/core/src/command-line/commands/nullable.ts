@@ -40,7 +40,7 @@ export const nullableCommand: Command = {
     }
     const grammar = await readGrammar(source, environment);
     const rounds: ReadonlySet<SymbolName>[] = [];
-    const nullable = computeNullable(grammar, (_iteration, snapshot) => rounds.push(snapshot));
+    const nullable = computeNullable(grammar, ({ symbolsSoFar }) => rounds.push(symbolsSoFar));
     const sections = [`${grammar.name}: nullable symbols (A ⇒* ε)`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(formatRounds(rounds));

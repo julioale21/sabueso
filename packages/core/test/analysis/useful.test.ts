@@ -68,7 +68,9 @@ describe('analyzeUsefulSymbols', () => {
 describe('the rounds of each fixed point', () => {
   it('productive: round i finds the symbols with a terminal tree of height i (G1: 4 rounds + check)', () => {
     const rounds: SymbolName[][] = [];
-    computeProductive(loadBuiltInGrammar('g1'), (_iteration, symbols) => rounds.push([...symbols]));
+    computeProductive(loadBuiltInGrammar('g1'), ({ symbolsSoFar }) =>
+      rounds.push([...symbolsSoFar]),
+    );
     expect(rounds.map((round) => round.length)).toEqual([12, 18, 20, 21, 21]);
     expect(rounds[3]).toContain('Relato');
   });
@@ -76,8 +78,8 @@ describe('the rounds of each fixed point', () => {
   it('reachable: round i adds the symbols at distance i from S', () => {
     const grammar = loadBuiltInGrammar('g1');
     const rounds: number[] = [];
-    computeReachable(grammar.start, grammar.productions, (_iteration, symbols) =>
-      rounds.push(symbols.size),
+    computeReachable(grammar.start, grammar.productions, ({ symbolsSoFar }) =>
+      rounds.push(symbolsSoFar.size),
     );
     expect(rounds).toEqual([4, 10, 18, 20, 21, 21]);
   });

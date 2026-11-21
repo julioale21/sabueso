@@ -8,7 +8,7 @@ import type { Grammar, SymbolName } from '../grammar/types.js';
 import {
   repeatRuleOnSetsUntilNoChange,
   type SetsBySymbol,
-  type SetsFixedPointObserver,
+  type SetsRoundListener,
 } from './fixed-point.js';
 
 /** The member of a FIRST set that means "this can derive the empty string". */
@@ -30,15 +30,17 @@ export interface FirstFollowSets {
 /** FIRST and FOLLOW of every nonterminal; FIRST first, because FOLLOW is built from it. */
 export function computeFirstFollow(
   grammar: Grammar,
-  onIteration?: (
+  onRound?: (
     phase: FirstFollowPhase,
     round: number,
     sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
   ) => void,
 ): FirstFollowSets {
-  const first = computeFirst(grammar, (round, sets) => onIteration?.('first', round, sets));
-  const follow = computeFollow(grammar, first, (round, sets) =>
-    onIteration?.('follow', round, sets),
+  const first = computeFirst(grammar, ({ round, setsSoFar }) =>
+    onRound?.('first', round, setsSoFar),
+  );
+  const follow = computeFollow(grammar, first, ({ round, setsSoFar }) =>
+    onRound?.('follow', round, setsSoFar),
   );
   return { first, follow };
 }
@@ -47,7 +49,7 @@ export function computeFirstFollow(
  * FIRST(A) for every nonterminal A, by least fixed point: for each A → α, everything that
  * FIRST(α) has so far goes into FIRST(A).
  */
-export function computeFirst(grammar: Grammar, onIteration?: SetsFixedPointObserver): SetsBySymbol {
+export function computeFirst(grammar: Grammar, onRound?: SetsRoundListener): SetsBySymbol {
   // Each round, for every production A → X1…Xk: a sequence starts with what X1 starts
   // with; if X1 can vanish (ε ∈ FIRST(X1)), also with what X2 starts with, and so on.
   // If all of them can vanish, A can too, and ε goes into FIRST(A).
@@ -59,7 +61,7 @@ export function computeFirst(grammar: Grammar, onIteration?: SetsFixedPointObser
           (member): [SymbolName, SymbolName] => [production.leftSide, member],
         ),
       ),
-    onIteration,
+    onRound,
   });
 }
 
@@ -71,7 +73,7 @@ export function computeFirst(grammar: Grammar, onIteration?: SetsFixedPointObser
 export function computeFollow(
   grammar: Grammar,
   first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-  onIteration?: SetsFixedPointObserver,
+  onRound?: SetsRoundListener,
 ): SetsBySymbol {
   // FOLLOW looks to the right: what comes after B is what β starts with. When β can
   // vanish, B can be the last thing of A, so whatever comes after A comes after B too.
@@ -81,7 +83,7 @@ export function computeFollow(
     start,
     newMembersOfRound: (follow) =>
       grammar.productions.flatMap((production) => followPairs(production, first, follow)),
-    onIteration,
+    onRound,
   });
 }
 
