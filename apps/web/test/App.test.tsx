@@ -43,6 +43,18 @@ describe('App', () => {
     expect(tabsOf('Sobre la gramática')).toEqual(['LL(1)', 'G0 vs G1']);
   });
 
+  it('Analizar is busy for a moment, and then the result appears', async () => {
+    render(<App />);
+    fireEvent.change(await screen.findByRole('textbox', { name: /Relato/ }), {
+      target: { value: 'CRI PIS REV' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+    expect(screen.getByRole('button', { name: /Analizando/ })).toBeDisabled();
+    expect(screen.queryByRole('region', { name: 'Resultado' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Resultado' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
+  });
+
   it('A1 with G0: accepted, 4 trees, and the trees 2 and 3 can be browsed', async () => {
     const verdict = await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g0' });
     expect(verdict).toHaveTextContent('✓ Aceptado · 4 árboles (se muestran 3)');

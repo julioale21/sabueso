@@ -26,8 +26,9 @@ export function GrammarPanel({
   const [showsGrammar, setShowsGrammar] = useState(false);
   const grammar = catalog.grammars.find((each) => each.id === grammarId);
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 border-b border-slate-200 pb-4 dark:border-slate-800">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Analizar con</span>
         <GrammarSelect
           genres={catalog.genres}
           genreId={genreId}

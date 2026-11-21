@@ -123,7 +123,7 @@ export function Tabs<Id extends string>({
 
   return (
     <div className="md:flex md:items-start md:gap-6">
-      <nav className="md:sticky md:top-4 md:h-[calc(100dvh-2rem)] md:w-52 md:shrink-0 xl:w-60 2xl:w-64">
+      <nav className="sticky top-0 z-20 -mx-4 bg-white px-4 py-2 md:top-4 md:z-auto md:mx-0 md:bg-transparent md:p-0 dark:bg-slate-950 md:dark:bg-transparent md:h-[calc(100dvh-2rem)] md:w-52 md:shrink-0 xl:w-60 2xl:w-64">
         <TabMenuButton
           label={activeItem?.label ?? ''}
           isOpen={isMenuOpen}

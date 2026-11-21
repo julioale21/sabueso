@@ -17,6 +17,7 @@ function Harness({ onAnalyze = () => undefined }: { onAnalyze?: () => void }) {
       tags={tags}
       value={value}
       examples={EXAMPLES}
+      isAnalyzing={false}
       onChange={setValue}
       onAnalyze={onAnalyze}
       onClear={() => {
@@ -73,6 +74,15 @@ describe('SequenceInput', () => {
       'A1Un relato ambiguo4 árboles en G0 y 1 en G1.CRI SOS PIS INT REV',
     );
     expect(cards[4]).toHaveTextContent('CRI PIS PIS … PIS REV (200 etiquetas)');
+  });
+
+  it('Analizar folds the palette and the examples', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ver las 14 etiquetas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Probar un ejemplo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+    expect(screen.queryByRole('group', { name: 'Etiquetas válidas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Ejemplos' })).not.toBeInTheDocument();
   });
 
   it('Analizar and Ctrl+Enter ask for the analysis', () => {

@@ -20,6 +20,7 @@ export function SequenceInput({
   tags,
   value,
   examples,
+  isAnalyzing,
   onChange,
   onAnalyze,
   onClear,
@@ -28,6 +29,7 @@ export function SequenceInput({
   tags: readonly TagInfo[];
   value: string;
   examples: readonly Example[];
+  isAnalyzing: boolean;
   onChange: (input: string) => void;
   onAnalyze: () => void;
   /** Resets the story and its result. */
@@ -37,14 +39,25 @@ export function SequenceInput({
   const words = splitTags(value);
   const [showsTags, setShowsTags] = useState(false);
   const [showsExamples, setShowsExamples] = useState(false);
+  // Analizar folds the palette and the examples, so the result gets the attention.
+  const analyzeAndFold = () => {
+    setShowsTags(false);
+    setShowsExamples(false);
+    onAnalyze();
+  };
 
   return (
     <div className="space-y-3">
-      <StoryField value={value} onChange={onChange} onSubmit={onAnalyze} />
+      <StoryField value={value} onChange={onChange} onSubmit={analyzeAndFold} />
       <TagSequence words={words} alphabet={alphabet} />
       <UnknownTagsAlert unknown={words.filter((word) => !alphabet.has(word))} />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <AnalyzeActions canClear={value !== ''} onAnalyze={onAnalyze} onClear={onClear} />
+        <AnalyzeActions
+          canClear={value !== ''}
+          isAnalyzing={isAnalyzing}
+          onAnalyze={analyzeAndFold}
+          onClear={onClear}
+        />
         <DisclosureButton
           isOpen={showsTags}
           showLabel={`Ver las ${tags.length} etiquetas`}

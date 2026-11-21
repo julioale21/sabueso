@@ -17,10 +17,10 @@ export function TabMenuButton({
       aria-expanded={isOpen}
       aria-controls={controls}
       onClick={onToggle}
-      className="flex w-full items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium md:hidden dark:border-slate-800"
+      className="flex w-full items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm font-medium text-indigo-900 shadow-sm md:hidden dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-100"
     >
       <span>
-        <span aria-hidden="true" className="mr-2">
+        <span aria-hidden="true" className="mr-2 text-base">
           ☰
         </span>
         <span className="text-slate-500">Vista:</span> {label}
