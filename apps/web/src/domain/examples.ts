@@ -67,8 +67,8 @@ export const EXAMPLES: readonly Example[] = [
   },
   {
     id: 'I5',
-    title: 'G0 sí, G1 no',
-    description: 'Un descarte sin sospecha: G0 lo acepta y G1 no.',
+    title: 'Válido en G0, inválido en G1',
+    description: 'Descarta a alguien de quien nadie sospechó: G0 lo acepta y G1 no.',
     input: 'CRI DSC REV',
     narrative: [
       { tags: 'CRI', text: 'Robaron el collar de la condesa.' },
