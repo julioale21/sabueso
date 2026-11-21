@@ -30,7 +30,7 @@ export type PushdownTransition =
   | { kind: 'expand'; top: SymbolName; push: SymbolName[]; production: Production }
   | { kind: 'match'; terminal: SymbolName };
 
-/** The pushdown automaton of the grammar (Hopcroft 6.3.1): N(P) = L(G). */
+/** The pushdown automaton of the grammar (card 24): N(P) = L(G). */
 export function buildPushdownAutomaton(grammar: Grammar): PushdownAutomaton {
   // The stack is the part of a leftmost sentential form still to be derived: expanding
   // the top is a step of a leftmost derivation, and matching consumes the terminals that

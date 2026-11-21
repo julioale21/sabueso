@@ -44,7 +44,12 @@ export interface RecognizerContext {
 }
 
 export interface Recognition {
-  /** True when ($S → S •, 0) is in the last set: the whole input is a sentence of L(G). */
+  /**
+   * ($S → S •, 0) in the last set, or null: the item that proves the whole input is a sentence
+   * of L(G). The trees and their count start from it.
+   */
+  acceptingItem: EarleyItem | null;
+  /** True exactly when acceptingItem is not null. */
   accepted: boolean;
   /** The sets S0 … Sn, with every item and its links. */
   chart: Chart;
@@ -96,10 +101,17 @@ export function recognize({
       }
     }
   }
-  const lastSet = chart[tokens.length];
-  const accepted =
-    lastSet?.byKey.has(itemKey({ production: startProduction, dot: 1, origin: 0 })) ?? false;
-  return { accepted, chart, startProduction, trace: context.recorder?.events ?? [] };
+  // Acceptance: S was recognized from position 0 to the end, that is, ($S → S •, 0) is in Sn.
+  const acceptingItem =
+    chart[tokens.length]?.byKey.get(itemKey({ production: startProduction, dot: 1, origin: 0 })) ??
+    null;
+  return {
+    acceptingItem,
+    accepted: acceptingItem !== null,
+    chart,
+    startProduction,
+    trace: context.recorder?.events ?? [],
+  };
 }
 
 /**

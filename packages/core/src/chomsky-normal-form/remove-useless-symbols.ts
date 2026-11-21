@@ -33,7 +33,7 @@ export function removeUselessSymbols(grammar: Grammar): Grammar {
 
 /**
  * A production stays when neither its left side nor any symbol of its right side is useless.
- * This is the same as Hopcroft's two removals: if A is useful and every symbol of α is
+ * This is the same as the textbook's two removals: if A is useful and every symbol of α is
  * productive, the symbols of α are reachable through A → α.
  */
 function usesNoUselessSymbol({

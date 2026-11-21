@@ -24,10 +24,8 @@ export function countTrees({
   // count follows the same links as the enumeration of step 19, but multiplies and adds
   // numbers instead of building trees. Remembering the count of each item (memoization)
   // makes every item be counted once: that is what turns C(197) into a fast computation.
-  const accepting = recognition.chart
-    .at(-1)
-    ?.items.find((item) => item.production === recognition.startProduction && item.dot === 1);
-  if (!recognition.accepted || accepting === undefined) {
+  const accepting = recognition.acceptingItem;
+  if (accepting === null) {
     return 0n;
   }
   const context: CountContext = {

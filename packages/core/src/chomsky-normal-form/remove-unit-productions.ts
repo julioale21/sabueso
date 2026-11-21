@@ -13,7 +13,7 @@ import { rewriteGrammar } from './rewrite.js';
  * (after DEL), so that a unit step is exactly a production A → B.
  */
 export function computeUnitPairs(grammar: Grammar): Map<SymbolName, Set<SymbolName>> {
-  // Hopcroft's induction is the same least fixed point as nullable, from {A}:
+  // The textbook induction is the same least fixed point as nullable, from {A}:
   // base (A, A); if (A, B) is a pair and B → C is a production, (A, C) is a pair.
   // It stops because the set only grows and is bounded by |N|.
   const unitPairs = new Map<SymbolName, Set<SymbolName>>();

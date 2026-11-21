@@ -50,10 +50,8 @@ export function* enumerateTrees({
   // a nullable symbol. Following them backwards, from ($S → S •, 0) in the last set, gives
   // the children of each node: that is the parse tree. An item with several links gives
   // several trees: the ambiguity.
-  const accepting = recognition.chart
-    .at(-1)
-    ?.items.find((item) => item.production === recognition.startProduction && item.dot === 1);
-  if (!recognition.accepted || accepting === undefined) {
+  const accepting = recognition.acceptingItem;
+  if (accepting === null) {
     return;
   }
   const context: TreeContext = {

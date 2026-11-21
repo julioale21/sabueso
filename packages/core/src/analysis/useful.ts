@@ -24,7 +24,7 @@ export interface UsefulSymbolsAnalysis {
 }
 
 /**
- * Finds the useless symbols in the order of Hopcroft 7.1.1: first the productive ones, then,
+ * Finds the useless symbols in the textbook order: first the productive ones, then,
  * using only the productions left, the reachable ones. The other order can leave a useless
  * symbol behind.
  */
