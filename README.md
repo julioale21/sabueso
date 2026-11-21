@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/julioale21/sabueso/actions/workflows/ci.yml/badge.svg)](https://github.com/julioale21/sabueso/actions/workflows/ci.yml)
 ![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.0-blue)
-![Estado](https://img.shields.io/badge/SPEC%2002-paso%2026%20de%2030-orange)
+![Estado](https://img.shields.io/badge/SPEC%2002-paso%2027%20de%2030-orange)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520.19-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
 
@@ -141,19 +141,20 @@ flowchart LR
   style UI stroke-dasharray: 6 4,fill:none
 ```
 
-| Etapa                            | Entrada                     | Salida                                              | Concepto                                                  |
-| -------------------------------- | --------------------------- | --------------------------------------------------- | --------------------------------------------------------- |
-| Lexer                            | texto del `.grammar`        | tokens                                              | autómata finito determinista                              |
-| Parser                           | tokens                      | reglas                                              | análisis descendente LL(1)                                |
-| Gramática                        | reglas                      | G = (N, Σ, P, S)                                    | gramática libre de contexto                               |
-| Análisis                         | G                           | anulables, inútiles, minYield, ciclos, FIRST/FOLLOW | algoritmos de punto fijo                                  |
-| Traducción (SPEC 04, ampliación) | texto en español controlado | etiquetas                                           | autómatas finitos y Earley sobre una gramática de oración |
-| Relato                           | etiquetas                   | etiquetas verificadas contra Σ                      | alfabeto y cadena                                         |
-| Earley                           | G y el relato               | aceptado o rechazado, con diagnóstico               | pertenencia en una GLC                                    |
-| Árboles                          | el chart de Earley          | árboles, cantidad y derivación                      | árboles de derivación                                     |
-| FNC                              | G                           | la misma L(G) en Forma Normal de Chomsky            | formas normales                                           |
-| CYK                              | la FNC y el relato          | aceptado o rechazado, y un árbol FNC                | programación dinámica                                     |
-| Autómata de pila                 | G y el relato               | aceptado o rechazado, con el camino de IDs          | equivalencia GLC ↔ AP                                     |
+| Etapa                            | Entrada                     | Salida                                                   | Concepto                                                  |
+| -------------------------------- | --------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
+| Lexer                            | texto del `.grammar`        | tokens                                                   | autómata finito determinista                              |
+| Parser                           | tokens                      | reglas                                                   | análisis descendente LL(1)                                |
+| Gramática                        | reglas                      | G = (N, Σ, P, S)                                         | gramática libre de contexto                               |
+| Análisis                         | G                           | anulables, inútiles, minYield, ciclos, FIRST/FOLLOW      | algoritmos de punto fijo                                  |
+| Traducción (SPEC 04, ampliación) | texto en español controlado | etiquetas                                                | autómatas finitos y Earley sobre una gramática de oración |
+| Relato                           | etiquetas                   | etiquetas verificadas contra Σ                           | alfabeto y cadena                                         |
+| Earley                           | G y el relato               | aceptado o rechazado, con diagnóstico                    | pertenencia en una GLC                                    |
+| Árboles                          | el chart de Earley          | árboles, cantidad y derivación                           | árboles de derivación                                     |
+| FNC                              | G                           | la misma L(G) en Forma Normal de Chomsky                 | formas normales                                           |
+| CYK                              | la FNC y el relato          | aceptado o rechazado, y un árbol FNC                     | programación dinámica                                     |
+| Autómata de pila                 | G y el relato               | aceptado o rechazado, con el camino de IDs               | equivalencia GLC ↔ AP                                     |
+| Búsquedas acotadas               | G (o G y H) y un largo k    | las oraciones, un testigo de ambigüedad o una diferencia | semidecisión de problemas indecidibles                    |
 
 **Para qué sirve el análisis:** los anulables los usan Earley (el arreglo de ε), los árboles y el paso DEL de la FNC; los inútiles, el paso USELESS; minYield, la poda del autómata de pila. FIRST/FOLLOW y la tabla LL(1) no alimentan a ningún algoritmo: **validan** la gramática. Si la tabla no tiene conflictos, la gramática es LL(1) y por lo tanto no ambigua. Así se demuestra que G1 no es ambigua (G0 tiene 13 conflictos).
 
@@ -179,23 +180,24 @@ El detalle de cada pieza, con sus funciones clave, está en la [documentación d
 
 ## Estado
 
-**SPEC 02: pasos 1 a 26 de 30 terminados.** El núcleo ya:
+**SPEC 02: pasos 1 a 27 de 30 terminados.** El núcleo ya:
 
 - lee gramáticas `.grammar` y trae las del policial: G0 y G1;
 - analiza la gramática: anulables, longitud mínima, símbolos inútiles, ciclos, FIRST/FOLLOW y tabla LL(1);
 - decide con Earley si un relato pertenece al lenguaje, explica el rechazo, cuenta y dibuja los árboles y escribe la derivación;
 - convierte cualquier gramática a Forma Normal de Chomsky en seis pasos;
 - reconoce con CYK sobre la FNC y compara su árbol con el de Earley;
-- construye el autómata de pila de la gramática y lo simula, con el camino de aceptación.
+- construye el autómata de pila de la gramática y lo simula, con el camino de aceptación;
+- busca testigos de ambigüedad y diferencias entre dos lenguajes hasta un largo k (semidecisión).
 
-**Sigue:** búsquedas acotadas (paso 27). **Después:** pruebas diferenciales y de rendimiento, el guion de consola y las fichas finales.
+**Sigue:** pruebas diferenciales y de rendimiento (paso 28). **Después:** el guion de consola y las fichas finales.
 
 El proyecto avanza por specs, en orden:
 
 | Spec                                                            | Contenido                                                                      | Estado                      |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------- |
 | [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Terminado                   |
-| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | En curso (pasos 1–26 de 30) |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | En curso (pasos 1–27 de 30) |
 | [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                    |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                    |
 
@@ -233,6 +235,8 @@ npm run sabueso -- count --grammar g1 "CRI SOS PIS INT REV"   # 1 árbol: G1 no 
 npm run sabueso -- chomsky-normal-form --grammar g1           # los 6 pasos de la FNC
 npm run sabueso -- cocke-younger-kasami --grammar g1 --compare "CRI PIS REV"   # CYK junto a Earley
 npm run sabueso -- pushdown-automaton --grammar g1 "CRI PIS REV"              # el autómata de pila, ID por ID
+npm run sabueso -- ambiguity --grammar g0 --max-length 4      # el relato más corto con 2 árboles
+npm run sabueso -- compare g0 g1 --max-length 3               # lo que acepta G0 y no G1
 ```
 
 Las gramáticas incluidas son las del género (`g0` y `g1`), la del formato (`meta`) y siete de prueba (`arithmetic`, `parentheses`, `epsilon-trap`, …). `npm run sabueso -- grammars` las lista. Para usar una gramática propia: `--grammar-file <ruta>`.
@@ -262,6 +266,7 @@ sabueso/
 │       │   ├── chomsky-normal-form/   # los 6 pasos de la FNC
 │       │   ├── cocke-younger-kasami/  # CYK sobre la FNC
 │       │   ├── pushdown-automaton/    # GLC → autómata de pila y su simulación
+│       │   ├── bounded/               # búsquedas acotadas: generar, testigo, comparar
 │       │   ├── genres/                # catálogo de géneros y sus etiquetas
 │       │   ├── command-line/          # la consola sabueso: un archivo por comando
 │       │   ├── parse.ts               # parse(): la API que usa la web

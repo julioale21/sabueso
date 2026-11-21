@@ -1105,6 +1105,14 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - `npm run sabueso -- generate --grammar g1 --max-length 3` lista las oraciones.
       - `npm run sabueso -- ambiguity --grammar g0 --max-length 4` imprime el testigo y sus 2 árboles.
       - `npm run sabueso -- compare g0 g1 --max-length 3` imprime las listas "solo en G0" y "solo en G1".
+    - **Decisiones (2026-11-21):**
+      - Las funciones reciben un objeto (convención de parámetros): `generateSentences({ grammar, maxLength, maxForms })`, `findAmbiguityWitness({ grammar, maxLength })` y `compareLanguages({ first, second, maxLength })`. Devuelven los tipos del spec (`AmbiguityWitness`, `LanguageComparison`).
+      - `generateSentences` agrega un límite de formas (`maxForms`, 500 000) que lanza un error: la poda por minYield no alcanza solo con una recursión que no agrega etiquetas (S → S B, B ⇒ ε). Con las gramáticas del proyecto no se alcanza.
+      - El orden es por largo y después por etiqueta como texto (`compareSentences`, exportada). Con él, B2 da `CRI SOS ATQ REV`.
+      - `--max-length` es obligatoria y va de 0 a 12 (`command-line/max-length.ts`). `compare` recibe dos nombres de gramáticas incluidas (nueva `builtInGrammarSource` en `grammar-source.ts`).
+      - La consola está en inglés (`WITNESS: … has 2 trees`, `Only in detective/g0 (2):`). Sin testigo, o sin diferencias, aclara que eso no demuestra nada; `ambiguity` sugiere `predictive-table`.
+      - Además de B1 a B4: generar da exactamente las cadenas que acepta Earley (G0 y G1 hasta largo 3, las de libro más largo); `arithmetic-ambiguous` tiene el testigo `id * id * id`; G1 no tiene oraciones propias frente a G0 hasta largo 4.
+      - Medido: G1 tiene 19 986 oraciones de largo ≤ 7 y G0 34 420; B3 tarda menos de medio segundo.
 
 28. **Pruebas diferenciales y de rendimiento.**
     - `test/differential.test.ts` y `test/performance.test.ts`, según las secciones 9.4 y 9.5.

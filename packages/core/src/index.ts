@@ -72,6 +72,13 @@ export type { CockeYoungerKasamiResult } from './cocke-younger-kasami/recognizer
 export { buildPushdownAutomaton } from './pushdown-automaton/build.js';
 export type { PushdownAutomaton, PushdownTransition } from './pushdown-automaton/build.js';
 export { DEFAULT_MAX_STEPS, simulatePushdownAutomaton } from './pushdown-automaton/simulate.js';
+
+// The bounded searches: semidecisions of undecidable problems (step 27).
+export { compareSentences, DEFAULT_MAX_FORMS, generateSentences } from './bounded/generate.js';
+export { findAmbiguityWitness } from './bounded/ambiguity.js';
+export type { AmbiguityWitness } from './bounded/ambiguity.js';
+export { compareLanguages } from './bounded/compare.js';
+export type { LanguageComparison } from './bounded/compare.js';
 export type {
   InstantaneousDescription,
   PathStep,

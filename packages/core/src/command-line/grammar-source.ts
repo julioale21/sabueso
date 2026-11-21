@@ -89,6 +89,12 @@ function chooseGrammarSource({
   return grammar === undefined ? unknownGrammarMessage(name ?? '') : { kind: 'built-in', grammar };
 }
 
+/** A built-in grammar by name, or the usage error that lists the valid names. */
+export function builtInGrammarSource(name: string): GrammarSource | string {
+  const grammar = findBuiltInGrammar(name);
+  return grammar === undefined ? unknownGrammarMessage(name) : { kind: 'built-in', grammar };
+}
+
 /** The usage error for a name that is not a built-in grammar, with the valid names. */
 function unknownGrammarMessage(id: string): string {
   return `Unknown grammar: ${id}. Available grammars: ${builtInGrammarIds().join(', ')}`;

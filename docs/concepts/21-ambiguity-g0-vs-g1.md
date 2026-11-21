@@ -1,7 +1,5 @@
 # 21 — Ambigüedad: G0 contra G1
 
-> **Borrador (paso 19).** Se completa en el paso 27, con la búsqueda acotada de testigos de ambigüedad y la comparación de lenguajes.
-
 ## 1. Definición formal
 
 - G es **ambigua** si existe una cadena w con dos árboles de derivación distintos (equivalentemente, dos derivaciones más a la izquierda distintas).
@@ -23,7 +21,9 @@ Los 4 árboles dan **3 lecturas**: la sospecha abarca nada, solo PIS, o PIS e IN
 
 **Cuántos árboles puede tener un relato en G0:** con n pasos sin sospechas, C(n−1), el número de Catalan. L1 (198 pistas) tiene C(197), un número de 115 dígitos.
 
-**Los lenguajes:** L(G1) ⊊ L(G0). G1 rechaza un descarte sin sospecha (`CRI DSC REV`) y dos descartes de la misma sospecha (`CRI SOS DSC DSC REV`).
+**El testigo más corto de G0:** la búsqueda acotada (ficha 25) encuentra `CRI SOS ATQ REV`, de largo 4, con 2 árboles: la sospecha abarca el ataque o no. Con largo 3 no hay ninguno. En G1 no hay testigo hasta largo 7, y la tabla LL(1) demuestra que no hay ninguno.
+
+**Los lenguajes:** L(G1) ⊊ L(G0). G1 rechaza un descarte sin sospecha (`CRI DSC REV`) y dos descartes de la misma sospecha (`CRI SOS DSC DSC REV`). `compare g0 g1 --max-length 3` lo muestra: solo G0 tiene `CRI DSC REV` y `HAL DSC REV`, y G1 no tiene ninguna oración propia (hasta largo 4 tampoco).
 
 ## 3. Dónde está en el código
 
@@ -32,14 +32,16 @@ Los 4 árboles dan **3 lecturas**: la sospecha abarca nada, solo PIS, o PIS e IN
 | Los árboles de A1      | `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV"` (paso 19) |
 | G1 es LL(1)            | `npm run sabueso -- predictive-table --grammar g1` (paso 12)            |
 | Conteo (Catalan)       | paso 20 (`count`)                                                       |
-| Testigos y comparación | paso 27 (`ambiguity`, `compare`)                                        |
+| Testigo más corto      | `npm run sabueso -- ambiguity --grammar g0 --max-length 4` (paso 27)    |
+| Comparar los lenguajes | `npm run sabueso -- compare g0 g1 --max-length 3` (paso 27)             |
 
 ## 4. Qué prueba lo verifica
 
-| Prueba                                                 | Qué verifica                 |
-| ------------------------------------------------------ | ---------------------------- |
-| `packages/core/test/trees/enumerate.test.ts`           | A1: 4 árboles en G0, 1 en G1 |
-| `packages/core/test/analysis/predictive-table.test.ts` | G1 sin conflictos            |
+| Prueba                                                 | Qué verifica                                                                              |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `packages/core/test/trees/enumerate.test.ts`           | A1: 4 árboles en G0, 1 en G1                                                              |
+| `packages/core/test/analysis/predictive-table.test.ts` | G1 sin conflictos                                                                         |
+| `packages/core/test/bounded/bounded.test.ts`           | el testigo de G0 (B2), ninguno en G1 hasta largo 7 (B3) y la diferencia de lenguajes (B4) |
 
 ## 5. Referencia bibliográfica
 

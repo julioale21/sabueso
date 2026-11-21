@@ -236,3 +236,14 @@ npm run sabueso -- pushdown-automaton --grammar g1 "CRI SOS PIS INT REV"
 npm run sabueso -- pushdown-automaton --grammar parentheses --transitions "( ( ) ) ( )"
 npm run sabueso -- pushdown-automaton --grammar g1 "CRI REV"
 ```
+
+## Búsquedas acotadas
+
+Paso 27. La ambigüedad y la equivalencia de GLC son indecidibles, pero se pueden **semidecidir**: buscar un testigo entre todas las oraciones hasta un largo k. Si aparece, la respuesta está demostrada; si no, no se sabe nada. G0 tiene un testigo de largo 4 (`CRI SOS ATQ REV`, 2 árboles); G1 no tiene ninguno hasta largo 7, y su tabla LL(1) demuestra que no lo tiene. Hasta largo 3, solo G0 acepta `CRI DSC REV` y `HAL DSC REV`.
+
+```sh
+npm run sabueso -- generate --grammar g1 --max-length 3
+npm run sabueso -- ambiguity --grammar g0 --max-length 4
+npm run sabueso -- ambiguity --grammar g1 --max-length 7
+npm run sabueso -- compare g0 g1 --max-length 3
+```
