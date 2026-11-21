@@ -21,7 +21,10 @@ export interface Grammar {
   name: string;
   /** Declared start symbol S. */
   start: SymbolName;
-  /** N: every symbol that is the left-hand side of some rule. */
+  /**
+   * N: the nonterminals. After buildGrammar, exactly the left-hand sides of the rules; the steps
+   * of the Chomsky normal form may keep a nonterminal with no productions (rewriteGrammar).
+   */
   nonterminals: ReadonlySet<SymbolName>;
   /** Σ: every other symbol, plus the terminals declared with %terminals. */
   terminals: ReadonlySet<SymbolName>;

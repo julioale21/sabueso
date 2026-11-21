@@ -19,7 +19,7 @@ Este paso agrega los tres últimos pasos, que le dan la **forma** final: toda pr
 
 ## 2. Por qué así
 
-- **El orden de Hopcroft 7.1.5:** USELESS va después de DEL y UNIT porque esos dos pasos **dejan** símbolos inútiles (A en `epsilon-trap`, `Descarte` en G1). TERM va antes que BIN para que BIN solo vea no terminales.
+- **El orden (Hopcroft 7.1):** USELESS va después de DEL y UNIT porque esos dos pasos **dejan** símbolos inútiles (A en `epsilon-trap`, `Descarte` en G1). TERM va antes que BIN para que BIN solo vea no terminales.
 - **USELESS reutiliza el paso 9:** `analyzeUsefulSymbols` ya calcula productivos y alcanzables en el orden correcto. El paso solo filtra las producciones.
 - **El inicial nunca se borra:** si L(G) = ∅ (`test-empty`), el inicial es inútil, pero una gramática sin inicial no existe. Queda solo, sin producciones.
 - **N ahora también puede achicarse:** `rewriteGrammar` suma el parámetro opcional `removedNonterminals`, que USELESS usa para sacar de N los inútiles.

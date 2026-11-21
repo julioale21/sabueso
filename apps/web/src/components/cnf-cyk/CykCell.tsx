@@ -26,7 +26,7 @@ export function CykCell({
       data-goal={isGoal || undefined}
       data-state={state}
       className={cx(
-        'max-w-[10rem] min-w-[4rem] border border-slate-200 px-1.5 py-1 align-top font-mono text-[11px] leading-tight dark:border-slate-700',
+        'max-w-40 min-w-16 border border-slate-200 px-1.5 py-1 align-top font-mono text-[11px] leading-tight dark:border-slate-700',
         stateStyles[state],
         state !== 'pending' && symbols.length === 0 && 'text-slate-300 dark:text-slate-600',
         isGoal && 'ring-2 ring-inset ring-indigo-400',

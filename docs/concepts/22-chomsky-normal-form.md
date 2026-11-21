@@ -5,7 +5,7 @@
 ## 1. Definición formal
 
 - Una gramática está en **Forma Normal de Chomsky (FNC)** si toda producción es **A → BC** (dos no terminales) o **A → a** (un terminal). Además se permite **S → ε** para el símbolo inicial S si ε ∈ L(G), siempre que S no aparezca en ningún lado derecho.
-- Toda GLC G tiene una G' en FNC con L(G') = L(G) (Hopcroft 7.1.5). La conversión tiene seis pasos, uno por función, y **cada uno preserva el lenguaje**:
+- Toda GLC G tiene una G' en FNC con L(G') = L(G) (Sipser 2.1, Teorema 2.9; Hopcroft 7.1.5 lo prueba para L − {ε}). La conversión tiene seis pasos, uno por función, y **cada uno preserva el lenguaje**:
 
 | #   | Paso    | Qué hace                                                                                                                 |
 | --- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -23,6 +23,7 @@
 - **UNIT** rompe también los ciclos A ⇒+ A (ficha 09): un ciclo está hecho de pasos unitarios, y no queda ninguno.
 - **USELESS** nunca borra el inicial: si L(G) = ∅, queda solo y sin producciones.
 - **BIN:** A → B1 B2 … Bk pasa a A → B1 X1, X1 → B2 X2, …, X(k−2) → B(k−1) Bk. Cada X tiene una sola producción, así que no agrega cadenas ni ambigüedad.
+- **De dónde sale cada paso:** START viene de Sipser (2.1): Hopcroft trabaja con L − {ε} y no lo necesita. DEL, UNIT, USELESS, TERM y BIN siguen Hopcroft 7.1.3, 7.1.4, 7.1.1 y 7.1.5. Los nombres cortos (START, DEL, UNIT, TERM, BIN) son una convención habitual, no salen de ninguno de los dos libros.
 - **El orden importa:** DEL crea producciones unitarias nuevas (`Planteo → Hecho MarcoOpc` da `Planteo → Hecho`), así que UNIT va después. DEL y UNIT dejan símbolos inútiles, así que USELESS va después de los dos. TERM va antes que BIN para que BIN solo vea no terminales.
 
 ## 2. Ejemplo resuelto a mano
@@ -70,4 +71,5 @@ En **G1** (40 producciones):
 ## 5. Referencia bibliográfica
 
 - Hopcroft, Motwani y Ullman, _Introducción a la teoría de autómatas, lenguajes y computación_, secciones 7.1.1 y 7.1.2 (símbolos inútiles), 7.1.3 (producciones ε), 7.1.4 (producciones unitarias) y 7.1.5 (Forma Normal de Chomsky).
+- Sipser, M., _Introducción a la teoría de la computación_, sección 2.1 (Teorema 2.9: la FNC con el inicial nuevo S0).
 - Augusto, sección 2.4.3.

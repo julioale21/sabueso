@@ -38,6 +38,13 @@ describe('findCycles', () => {
     expect(cyclesOf("S -> A 'x' | 'y'\nA -> S\n")).toEqual([]);
   });
 
+  it('reports one cycle per back edge, not every cycle: A → C → A is not listed', () => {
+    // Edges A → B, A → C, B → C, C → A. The search finds A → B → C → A; when it later tries
+    // A → C, C is already finished, so the shorter cycle A → C → A gives no back edge. That is
+    // enough to decide whether the grammar has cycles, which is what the analysis needs.
+    expect(cyclesOf("A -> B | C\nB -> C\nC -> A | 'a'\n")).toEqual([['A', 'B', 'C']]);
+  });
+
   it('finds a longer cycle in order, and a separate one', () => {
     const cycles = cyclesOf("S -> A | 'a'\nA -> B\nB -> S\nC -> D | 'c'\nD -> C\n");
     expect(cycles).toEqual([

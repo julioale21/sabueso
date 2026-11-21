@@ -19,7 +19,10 @@ export interface GrammarAnalysis extends FirstFollowSets {
   useless: Set<SymbolName>;
   /** L(G) = ∅. */
   isEmpty: boolean;
-  /** Every cycle A ⇒+ A found; empty when the grammar has none. */
+  /**
+   * Cycles A ⇒+ A, one per back edge of the search (not every cycle): empty exactly when the
+   * grammar has none.
+   */
   cycles: SymbolName[][];
   predictiveTable: PredictiveTable;
 }

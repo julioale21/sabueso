@@ -1,7 +1,8 @@
 /**
  * Concept: the Chomsky normal form (FNC): every production is A → B C or A → a, plus S → ε
  * for the start symbol S when ε ∈ L(G). The conversion chains the six steps in order.
- * Reference: Hopcroft 7.1.5; Augusto 2.4.3; SPEC 02, section 3.23.
+ * Reference: Hopcroft 7.1 (7.1.1 to 7.1.5); Sipser 2.1 (Theorem 2.9) for START; Augusto 2.4.3;
+ * SPEC 02, section 3.23.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
 import type { Grammar, Production } from '../grammar/types.js';
@@ -22,7 +23,9 @@ export interface ChomskyNormalFormStep {
 }
 
 /**
- * The six steps in the order of Hopcroft 7.1.5. The order matters: DEL creates unit
+ * The six steps. START comes from Sipser 2.1 (Theorem 2.9): Hopcroft converts L − {ε} and has no
+ * such step. DEL, UNIT, USELESS, TERM and BIN follow Hopcroft 7.1.3, 7.1.4, 7.1.1 and 7.1.5.
+ * The short names are a common convention, not taken from either book. The order matters: DEL creates unit
  * productions (A → B C with C nullable gives A → B), UNIT and DEL can leave useless symbols,
  * and TERM must go before BIN so that BIN only sees nonterminals.
  */
