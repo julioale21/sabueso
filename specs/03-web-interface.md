@@ -273,8 +273,9 @@ apps/web/
     components/sequence-input/   # SequenceInput y sus piezas: TagPalette, TagButton, StoryField, TagSequence, TagChip…
     components/grammar-panel/    # GrammarPanel y sus piezas: GrammarSelect, GrammarSummary, GrammarText
     domain/grammar-options.ts    # las versiones de un género para el selector
-    components/TreeView.tsx
-    components/DerivationView.tsx
+    components/tree-view/        # TreeView (SVG), TreeNode, TreeEdge
+    components/derivation-view/  # DerivationView, DerivationStepItem, SententialForm, TreeAndDerivation
+    tree-layout/geometry.ts      # de unidades de grilla a píxeles
     components/ResultPanel.tsx
     components/DiagnosticPanel.tsx
     components/AppHeader.tsx

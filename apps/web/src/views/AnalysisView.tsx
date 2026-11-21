@@ -3,7 +3,9 @@
  * alphabet and a string over it (card 01), the grammar and its analysis (cards 02 and 06 to
  * 10); the result arrives in step 9 (cards 17 to 21).
  */
+import { useAnalyze } from '../analysis/use-analyze';
 import { useGrammars } from '../analysis/use-grammars';
+import { ResultPreview } from '../components/ResultPreview';
 import { GrammarPanel } from '../components/grammar-panel/GrammarPanel';
 import { SequenceInput } from '../components/sequence-input/SequenceInput';
 import { MutedText } from '../components/ui/MutedText';
@@ -14,6 +16,8 @@ import type { ViewProps } from '../state/app-state';
 export function AnalysisView({ state, dispatch }: ViewProps) {
   const catalog = useGrammars();
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
+  const grammar = catalog?.grammars.find((each) => each.id === state.grammarId);
+  const { result, analyze } = useAnalyze();
 
   return (
     <div className="space-y-4">
@@ -30,7 +34,7 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
                 dispatch({ type: 'set-input', input });
               }}
               onAnalyze={() => {
-                // The result panel arrives in step 9 (SPEC 03).
+                analyze(state.grammarId, state.input);
               }}
             />
           )}
@@ -51,9 +55,11 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
         </Panel>
       </div>
       <Panel title="Resultado">
-        <MutedText>
-          El veredicto, el árbol y la derivación llegan en el paso 9 del SPEC 03.
-        </MutedText>
+        <ResultPreview
+          result={result}
+          alphabet={new Set(grammar?.alphabet)}
+          collapseEpsilon={state.collapseEpsilon}
+        />
       </Panel>
     </div>
   );
