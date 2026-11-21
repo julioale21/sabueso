@@ -261,11 +261,11 @@ Se queda con la producción si su lado derecho no está vacío **o** si es del s
 ```ts
 const unitPairs = new Map<SymbolName, Set<SymbolName>>();
 for (const nonterminal of grammar.nonterminals) {
-  const reached = repeatRuleUntilNoChange({
+  const rounds = repeatRuleUntilNoChange({
     start: [nonterminal],
     newSymbolsOfRound: (reachedSymbols) => unitTargets({ grammar, reachedSymbols }),
   });
-  unitPairs.set(nonterminal, reached);
+  unitPairs.set(nonterminal, lastRound(rounds));
 }
 return unitPairs;
 ```
@@ -286,6 +286,7 @@ Para cada no terminal A, corre un **menor punto fijo** (el mismo `repeatRuleUnti
 
 - **Empieza con `{A}`:** A llega a sí mismo sin hacer nada.
 - **Cada ronda:** `unitTargets` mira las producciones unitarias `B → C` cuyo B ya está en el conjunto (`reachedSymbols`) y agrega los C. `production.rightSide[0]` es ese C, el único símbolo del lado derecho.
+- **`lastRound(rounds)`:** `repeatRuleUntilNoChange` devuelve todas las rondas; los pares de A son el conjunto de la última.
 - **Termina** cuando una ronda no agrega nada. Siempre termina: el conjunto solo crece y no puede tener más que |N| símbolos.
 
 Ejemplo con Investigacion, en G1 después de DEL:

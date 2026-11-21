@@ -69,4 +69,4 @@ El proyecto se implementa por specs, en este orden:
 | [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                             |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                             |
 
-La guía para la exposición está en [`presentation-guide.md`](presentation-guide.md).
+La documentación del proyecto (arquitectura, piezas y cómo se conectan) está en [`docs/documentation/sabueso-es.md`](docs/documentation/sabueso-es.md).
