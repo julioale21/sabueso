@@ -27,8 +27,8 @@ describe('the public API', () => {
   });
 
   it('analyzeGrammar: G1 is LL(1), G0 is not', () => {
-    expect(analyzeGrammar(g1).predictiveTable.isPredictive).toBe(true);
-    expect(analyzeGrammar(g0).predictiveTable.isPredictive).toBe(false);
+    expect(analyzeGrammar({ grammar: g1 }).predictiveTable.isPredictive).toBe(true);
+    expect(analyzeGrammar({ grammar: g0 }).predictiveTable.isPredictive).toBe(false);
   });
 
   it('parse accepts A1: 4 trees in G0, 1 in G1, with the derivation of the first', () => {

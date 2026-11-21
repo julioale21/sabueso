@@ -152,7 +152,7 @@ return lookaheads;
 
 Recorre las filas y las casillas en orden y junta las que tienen más de una producción. El orden sigue la gramática (filas) y el orden en que se llenaron las casillas, así la salida es siempre la misma.
 
-### 5.4 `analyzeGrammar(grammar)` (`analysis/index.ts`)
+### 5.4 `analyzeGrammar({ grammar })` (`analysis/index.ts`)
 
 ```ts
 const useful = analyzeUsefulSymbols({ grammar });

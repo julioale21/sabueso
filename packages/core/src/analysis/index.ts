@@ -25,7 +25,7 @@ export interface GrammarAnalysis extends FirstFollowSets {
 }
 
 /** Runs every analysis of steps 7 to 12 on the grammar. */
-export function analyzeGrammar(grammar: Grammar): GrammarAnalysis {
+export function analyzeGrammar({ grammar }: { grammar: Grammar }): GrammarAnalysis {
   const useful = analyzeUsefulSymbols({ grammar });
   const sets = computeFirstFollow({ grammar });
   return {

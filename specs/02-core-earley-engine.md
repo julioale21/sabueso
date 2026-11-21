@@ -1305,8 +1305,8 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 - [ ] `npm run sabueso -- parse --grammar ./any.grammar "CRI"` termina con código 2 y lista los nombres válidos: la CLI no acepta rutas.
 - [ ] Un `.grammar` con un literal sin cerrar en la línea 3 lanza `GrammarSyntaxError` con `line === 3`.
 - [ ] Un `.grammar` con `%terminals` y un identificador no declarado que no es lado izquierdo de ninguna regla lanza un error que nombra ese identificador.
-- [ ] `analyzeGrammar(meta).predictiveTable.isPredictive === true` y `analyzeGrammar(g1).predictiveTable.isPredictive === true`.
-- [ ] `analyzeGrammar(g0).predictiveTable.conflicts` incluye la celda (Linea, SOS).
+- [ ] `analyzeGrammar({ grammar: meta }).predictiveTable.isPredictive === true` y `analyzeGrammar({ grammar: g1 }).predictiveTable.isPredictive === true`.
+- [ ] `analyzeGrammar({ grammar: g0 }).predictiveTable.conflicts` incluye la celda (Linea, SOS).
 - [ ] Los anulables, inútiles, la vacuidad y los ciclos coinciden con los pasos 7 a 10 del plan.
 - [ ] Cada caso de la tabla 9.1 da exactamente la aceptación, la cantidad de árboles y el `ParseError` (posición, `found` y `expected`) indicados, con G0 y con G1.
 - [ ] La derivación de A1 con G1 es idéntica a la sección 9.2.
