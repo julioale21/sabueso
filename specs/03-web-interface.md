@@ -266,7 +266,7 @@ apps/web/
     state/app-state.ts
     state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
-    tree-layout/layout.ts
+    tree-layout/layout.ts        # posición de cada nodo: hojas en columnas, padres centrados, colapso de ε
     components/ui/               # primitivas reutilizables, sin dependencias: Tabs, TabButton, TabPanel, Button, Panel, Badge, SelectField, MutedText…
     utils/cx.ts                  # combina clases condicionales (tres líneas)
     domain/tags.ts               # separa el relato en etiquetas
@@ -345,7 +345,8 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
    - Pruebas:
      - un árbol de 3 hojas da x = 0, 1, 2 y la raíz en x = 1;
      - ningún par de nodos del mismo nivel comparte x;
-     - con `collapseEpsilon`, el árbol de G1 sobre A1 tiene menos hojas y menos altura que sin colapsar (los valores exactos se calculan y se fijan en el paso).
+     - con `collapseEpsilon`, G1 sobre A1 tiene 11 hojas: las 5 etiquetas y 6 nodos ε colapsados (HallazgoOpc, MarcoOpc, CuerpoLinea, Lineas, Cierre y EpiOpc), y 6 nodos menos que sin colapsar. La altura no cambia: cada ε colapsado reemplaza un nodo y su hoja ε por un solo nodo (corrección del 2026-11-21: el borrador decía que la altura bajaba);
+     - cada nodo interno lleva su número de expansión en preorden, el orden de la derivación más a la izquierda: en A1 con G1, `Pasos` es la expansión 6 (el paso 7 de la derivación).
 8. **TreeView y DerivationView.**
    - El árbol se dibuja en SVG. La derivación es una lista de formas sentenciales.
    - Seleccionar un paso resalta el nodo expandido.
