@@ -1,4 +1,4 @@
-/** The valid tags of the genre, always visible: the alphabet Σ (card 01). */
+/** The valid tags of the genre, shown on demand: the alphabet Σ (card 01). */
 import type { TagInfo } from '@sabueso/core';
 import { TagButton } from './TagButton';
 

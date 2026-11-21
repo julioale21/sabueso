@@ -31,7 +31,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 
 - El workspace `apps/web` (`@sabueso/web`) con Vite, React 19 y TypeScript estricto.
 - **Vista "Análisis"** (la principal, según el boceto del anteproyecto):
-  - entrada de secuencia: campo de texto libre, con la paleta de etiquetas válidas siempre visible y las etiquetas desconocidas marcadas mientras se escribe (sección 3.7);
+  - entrada de secuencia: campo de texto libre, con la paleta de etiquetas válidas a un clic ("Ver las 14 etiquetas") y las etiquetas desconocidas marcadas mientras se escribe (sección 3.7);
   - ejemplos precargados;
   - selector de género (hoy solo el policial de enigma) y de versión (G1 oficial o G0 para ver la ambigüedad), con la gramática activa en solo lectura y su resumen de análisis;
   - resultado: árbol en SVG, derivación paso a paso, el total de árboles y los primeros 3 para recorrer;
@@ -89,6 +89,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 - **Las pestañas comparten estado:** gramática activa y secuencia actual. Cambiar de pestaña no pierde la entrada.
 - **Dos grupos de pestañas** (2026-11-21): primero las que dependen del relato (Análisis, Earley paso a paso, FNC y CYK, Autómata de pila) y al final las que dependen solo de la gramática (LL(1), G0 vs G1). Los grupos se ven: cada uno tiene su título, "Sobre el relato" y "Sobre la gramática" (`TabGroup`).
 - **Barra lateral y drawer** (2026-11-21, elegido entre cinco prototipos de navegación): en escritorio las vistas son una barra lateral angosta, fija al hacer scroll y tan alta como la ventana, sobre un panel gris para que se distinga; la vista activa va en blanco con un borde índigo. En pantallas chicas la barra es un drawer que entra desde la izquierda y cubre toda la pantalla, abierto desde una barra "☰ Vista: Análisis"; se cierra con ✕, con Escape o al elegir una vista. Las pestañas bloqueadas escriben su motivo debajo, porque en una pantalla táctil no hay hover. Sigue siendo un solo `tablist` vertical: las flechas, en las cuatro direcciones, y Home y End recorren todas las vistas. La página usa todo el ancho de la pantalla.
+- **Foco en el relato** (2026-11-21, elegido entre seis prototipos porque la primera vista estaba muy cargada): la vista Análisis es una columna. Arriba, el campo del relato con Analizar y Limpiar; la paleta de etiquetas ("Ver las 14 etiquetas") y los ejemplos ("Probar un ejemplo") están plegados. Debajo, la gramática en una línea: el selector y LL(1) ✓; su resumen y su texto se abren con "Ver la gramática". El panel Resultado aparece recién después de Analizar, a todo el ancho.
   - Las del relato, salvo Análisis, quedan **desactivadas hasta el primer Analizar** ("Analiza un relato primero") y usan **el relato analizado** (`analyzedInput` en el estado), no lo que se está escribiendo. Limpiar y Reiniciar lo borran.
   - Las de la gramática están siempre activas, con el aviso "Propiedad de la gramática G1 · oficial: no depende del relato": su contenido es el mismo para cualquier relato.
   - El teclado salta las pestañas desactivadas.
@@ -166,15 +167,15 @@ Las etiquetas, su función narrativa y su ejemplo (tabla del anteproyecto) viene
 
 En esta primera etapa la entrada es la **cadena de etiquetas**, como en la consola (el texto en español llega con el SPEC 04). Se escribe libremente, con la lista de valores válidos siempre a la vista:
 
-| Pieza                      | Qué hace                                                                                                                                                                 |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Paleta siempre visible** | las 14 etiquetas del género como botones, cada una con su nombre y su función corta (`PIS · pista`). Es la lista de valores válidos; un clic agrega la etiqueta al final |
-| **Campo de texto libre**   | se escribe o se edita a mano, separado por espacios                                                                                                                      |
-| **Marcado inmediato**      | mientras se escribe, cada palabra que no está en Σ de la gramática activa se marca en rojo, antes de analizar                                                            |
-| **Ejemplos**               | V1, A1, I1, I5 y L1 cargan la secuencia directamente                                                                                                                     |
-| **Analizar**               | botón y Ctrl+Enter                                                                                                                                                       |
-| **Limpiar**                | borra el relato y su resultado; deja la gramática elegida. Desactivado con el campo vacío                                                                                |
-| **Reiniciar** (encabezado) | vuelve todo al estado inicial: pestaña Análisis, G1, relato vacío, sin resultado, primer árbol y ε colapsado                                                             |
+| Pieza                      | Qué hace                                                                                                                                                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paleta a un clic**       | las 14 etiquetas del género como botones, cada una con su nombre y su función corta (`PIS · pista`). Es la lista de valores válidos; un clic agrega la etiqueta al final. Está plegada detrás de "Ver las 14 etiquetas" (diseño "Foco en el relato", 2026-11-21) |
+| **Campo de texto libre**   | se escribe o se edita a mano, separado por espacios                                                                                                                                                                                                              |
+| **Marcado inmediato**      | mientras se escribe, cada palabra que no está en Σ de la gramática activa se marca en rojo, antes de analizar                                                                                                                                                    |
+| **Ejemplos**               | V1, A1, I1, I5 y L1 cargan la secuencia directamente                                                                                                                                                                                                             |
+| **Analizar**               | botón y Ctrl+Enter                                                                                                                                                                                                                                               |
+| **Limpiar**                | borra el relato y su resultado; deja la gramática elegida. Desactivado con el campo vacío                                                                                                                                                                        |
+| **Reiniciar** (encabezado) | vuelve todo al estado inicial: pestaña Análisis, G1, relato vacío, sin resultado, primer árbol y ε colapsado                                                                                                                                                     |
 
 - **Por qué no un selector cerrado:** los errores son parte de lo que se muestra. El anteproyecto pide informar la posición del error y los símbolos esperados. Una etiqueta inexistente (`XYZ`) solo se puede mostrar si se puede escribir; y el error más interesante, etiquetas válidas en mal orden (`CRI REV`), lo produce cualquier forma de entrada.
 - **Analizar está activo también con el campo vacío** (2026-11-21): el relato vacío es la cadena ε, y "¿ε ∈ L(G)?" es una pregunta de pertenencia válida. Con G1 se rechaza, y el diagnóstico muestra "ε (relato vacío)" y con qué etiquetas puede empezar un relato.
@@ -345,7 +346,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
    - `app-state.ts` (un `useReducer`). Al principio incluía `persistence.ts`; se quitó con el paso 15.
    - Pruebas: el estado inicial y cada acción del reducer.
 5. **Entrada de secuencia.**
-   - `SequenceInput` según la sección 3.7: paleta siempre visible (etiquetas y funciones desde el catálogo de géneros), campo de texto libre con las etiquetas desconocidas marcadas, ejemplos de `examples.ts` y botón Analizar (también Ctrl+Enter).
+   - `SequenceInput` según la sección 3.7: paleta de etiquetas a un clic (etiquetas y funciones desde el catálogo de géneros), campo de texto libre con las etiquetas desconocidas marcadas, ejemplos de `examples.ts` y botón Analizar (también Ctrl+Enter).
    - Pruebas: hacer clic en `CRI` y después en `PIS` deja "CRI PIS" en el campo; escribir `CRI XYZ REV` marca `XYZ` como desconocida y no marca las otras dos.
 6. **Panel de gramática.**
    - `GrammarPanel` con selector, texto de la gramática en solo lectura y resumen del análisis.
@@ -421,8 +422,8 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 - [ ] El reproductor de Earley con A1 y G1 recorre todos los eventos de la traza, y el último evento ocurre en el conjunto S5.
 - [ ] La vista LL(1) muestra "LL(1) ✓" para G1 y conflictos resaltados para G0.
 - [ ] La vista G0 vs G1 con k = 3 lista exactamente `CRI DSC REV` y `HAL DSC REV` como "solo en G0", y con k = 4 muestra el testigo `CRI SOS ATQ REV` de G0.
-- [ ] El selector ofrece solo el género policial con sus versiones G1 y G0, y la paleta muestra sus 14 etiquetas con su función narrativa. No aparece ninguna gramática interna (meta ni de prueba).
-- [ ] Escribir `CRI XYZ REV` marca `XYZ` en rojo antes de analizar, y la paleta muestra siempre las 14 etiquetas con su función corta.
+- [ ] El selector ofrece solo el género policial con sus versiones G1 y G0, y "Ver las 14 etiquetas" muestra la paleta con su función narrativa. No aparece ninguna gramática interna (meta ni de prueba).
+- [ ] Escribir `CRI XYZ REV` marca `XYZ` en rojo antes de analizar.
 - [ ] El panel de gramática muestra el texto de la gramática activa sin permitir editarlo, y la UI no ofrece ninguna forma de cargar una gramática.
 - [ ] Al recargar, la página abre con G1 y el relato vacío: no se guarda nada.
 - [ ] El workflow `deploy-pages.yml` existe y es válido. Con Pages habilitado, el sitio carga en `https://<usuario>.github.io/sabueso/`.

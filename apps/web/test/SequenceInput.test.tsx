@@ -29,8 +29,10 @@ function Harness({ onAnalyze = () => undefined }: { onAnalyze?: () => void }) {
 const field = () => screen.getByRole('textbox', { name: /Relato/ });
 
 describe('SequenceInput', () => {
-  it('always shows the 14 tags of the genre with their meaning', () => {
+  it('folds the 14 tags of the genre; Ver las 14 etiquetas shows them with their meaning', () => {
     render(<Harness />);
+    expect(screen.queryByRole('group', { name: 'Etiquetas válidas' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver las 14 etiquetas' }));
     const palette = screen.getByRole('group', { name: 'Etiquetas válidas' });
     expect(palette.querySelectorAll('button')).toHaveLength(14);
     expect(screen.getByRole('button', { name: /PIS\s*Pista/ })).toBeInTheDocument();
@@ -38,6 +40,7 @@ describe('SequenceInput', () => {
 
   it('clicking CRI and then PIS leaves "CRI PIS" in the field', () => {
     render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ver las 14 etiquetas' }));
     fireEvent.click(screen.getByRole('button', { name: /CRI\s*Crimen/ }));
     fireEvent.click(screen.getByRole('button', { name: /PIS\s*Pista/ }));
     expect(field()).toHaveValue('CRI PIS');
@@ -56,8 +59,20 @@ describe('SequenceInput', () => {
 
   it('an example loads its story', () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: 'A1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Probar un ejemplo' }));
+    fireEvent.click(screen.getByRole('button', { name: /^A1/ }));
     expect(field()).toHaveValue('CRI SOS PIS INT REV');
+  });
+
+  it('each example is a card with its name, what it shows and its tags', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Probar un ejemplo' }));
+    const cards = screen.getByRole('list', { name: 'Ejemplos' }).querySelectorAll('button');
+    expect(cards).toHaveLength(5);
+    expect(cards[1]).toHaveTextContent(
+      'A1Un relato ambiguo4 árboles en G0 y 1 en G1.CRI SOS PIS INT REV',
+    );
+    expect(cards[4]).toHaveTextContent('CRI PIS PIS … PIS REV (200 etiquetas)');
   });
 
   it('Analizar and Ctrl+Enter ask for the analysis', () => {
@@ -72,7 +87,8 @@ describe('SequenceInput', () => {
     render(<Harness />);
     const clear = screen.getByRole('button', { name: 'Limpiar' });
     expect(clear).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'A1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Probar un ejemplo' }));
+    fireEvent.click(screen.getByRole('button', { name: /^A1/ }));
     expect(clear).toBeEnabled();
     fireEvent.click(clear);
     expect(field()).toHaveValue('');

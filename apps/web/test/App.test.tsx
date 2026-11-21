@@ -88,7 +88,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
     expect(screen.getByRole('textbox', { name: /Relato/ })).toHaveValue('');
     expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.getByText('Escribe un relato y aprieta Analizar.')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Resultado' })).not.toBeInTheDocument();
   });
 
   it('Reiniciar goes back to the initial state: G1, empty story, no result, first tab', async () => {

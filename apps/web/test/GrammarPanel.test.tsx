@@ -26,8 +26,15 @@ function Harness() {
 const summary = () => screen.getByRole('list', { name: 'Resumen del análisis' });
 
 describe('GrammarPanel', () => {
+  it('shows the selector and LL(1) in one line; the rest opens on demand', () => {
+    render(<Harness />);
+    expect(screen.getByText('LL(1) ✓')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Gramática activa')).not.toBeInTheDocument();
+  });
+
   it('G1: LL(1) ✓, its numbers and its text, read-only', () => {
     render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ver la gramática' }));
     expect(summary()).toHaveTextContent('LL(1) ✓');
     expect(summary()).toHaveTextContent('anulables: 10');
     expect(summary()).toHaveTextContent('inútiles: 0');
@@ -39,6 +46,7 @@ describe('GrammarPanel', () => {
 
   it('choosing G0 shows LL(1) ✗ with its 13 conflicts', () => {
     render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ver la gramática' }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Gramática' }), {
       target: { value: 'detective/g0' },
     });

@@ -5,24 +5,14 @@
  */
 import type { GrammarAnalysis } from '@sabueso/core';
 import { Badge } from '../ui/Badge';
+import { Ll1Badge } from './Ll1Badge';
 
 export function GrammarSummary({ analysis }: { analysis: GrammarAnalysis }) {
   const conflicts = analysis.predictiveTable.conflicts.length;
   return (
     <ul aria-label="Resumen del análisis" className="flex flex-wrap gap-1.5">
       <li>
-        {conflicts === 0 ? (
-          <Badge
-            tone="success"
-            title="La tabla predictiva no tiene conflictos: la gramática no es ambigua"
-          >
-            LL(1) ✓
-          </Badge>
-        ) : (
-          <Badge tone="danger" title="La tabla predictiva tiene conflictos: no es LL(1)">
-            LL(1) ✗ · {conflicts} conflictos
-          </Badge>
-        )}
+        <Ll1Badge conflicts={conflicts} />
       </li>
       <SummaryItem label="anulables" value={analysis.nullableSymbols.size} />
       <SummaryItem label="inútiles" value={analysis.useless.size} />

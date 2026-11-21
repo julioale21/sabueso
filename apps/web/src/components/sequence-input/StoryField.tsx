@@ -18,12 +18,12 @@ export function StoryField({
   };
   return (
     <label className="block">
-      <span className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
-        Relato (etiquetas separadas por espacios)
-      </span>
+      {/* The panel already says "Relato": the label stays for screen readers only. */}
+      <span className="sr-only">Relato (etiquetas separadas por espacios)</span>
       <textarea
         value={value}
         rows={2}
+        placeholder="Etiquetas separadas por espacios, por ejemplo: CRI SOS PIS INT REV"
         spellCheck={false}
         onChange={(event) => {
           onChange(event.target.value);

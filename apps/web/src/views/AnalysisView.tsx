@@ -31,8 +31,9 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Entrada">
+      {/* "Foco en el relato": the story first, the grammar in one line, the result below. */}
+      <div className="max-w-3xl space-y-3">
+        <Panel title="Relato">
           {genre === undefined ? (
             <MutedText>Cargando las gramáticas…</MutedText>
           ) : (
@@ -69,21 +70,23 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
           )}
         </Panel>
       </div>
-      <Panel title="Resultado">
-        <ResultPanel
-          result={result}
-          isAnalyzing={isAnalyzing}
-          alphabet={new Set(grammar?.alphabet)}
-          selectedTree={state.selectedTree}
-          collapseEpsilon={state.collapseEpsilon}
-          onSelectTree={(index) => {
-            dispatch({ type: 'select-tree', index });
-          }}
-          onToggleCollapseEpsilon={() => {
-            dispatch({ type: 'toggle-collapse-epsilon' });
-          }}
-        />
-      </Panel>
+      {(result !== null || isAnalyzing) && (
+        <Panel title="Resultado">
+          <ResultPanel
+            result={result}
+            isAnalyzing={isAnalyzing}
+            alphabet={new Set(grammar?.alphabet)}
+            selectedTree={state.selectedTree}
+            collapseEpsilon={state.collapseEpsilon}
+            onSelectTree={(index) => {
+              dispatch({ type: 'select-tree', index });
+            }}
+            onToggleCollapseEpsilon={() => {
+              dispatch({ type: 'toggle-collapse-epsilon' });
+            }}
+          />
+        </Panel>
+      )}
     </div>
   );
 }
