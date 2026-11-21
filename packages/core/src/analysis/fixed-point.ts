@@ -37,8 +37,11 @@ export function leastFixedPoint(
   }
 }
 
-/** The left sides of the productions that satisfy the condition: the usual rule of a round. */
-export function leftSidesWhere(
+/**
+ * The nonterminals A with some production A → α that satisfies the condition: the usual rule
+ * of a round (A is nullable if some A → α has every symbol of α nullable).
+ */
+export function nonterminalsWithProductionThat(
   productions: readonly Production[],
   condition: (production: Production) => boolean,
 ): SymbolName[] {
