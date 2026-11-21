@@ -23,7 +23,13 @@ function firstThreeSteps(grammar: Grammar): [Grammar, Grammar, Grammar] {
 }
 
 /** Every string over the alphabet of length 0 to maxLength, shortest first. */
-function stringsUpTo(alphabet: readonly SymbolName[], maxLength: number): SymbolName[][] {
+function stringsUpTo({
+  alphabet,
+  maxLength,
+}: {
+  alphabet: readonly SymbolName[];
+  maxLength: number;
+}): SymbolName[][] {
   const strings: SymbolName[][] = [[]];
   let previous: SymbolName[][] = [[]];
   for (let length = 1; length <= maxLength; length++) {
@@ -33,8 +39,13 @@ function stringsUpTo(alphabet: readonly SymbolName[], maxLength: number): Symbol
   return strings;
 }
 
-const accepts = (grammar: Grammar, tokens: readonly SymbolName[]): boolean =>
-  recognize(grammar, tokens).accepted;
+const accepts = ({
+  grammar,
+  tokens,
+}: {
+  grammar: Grammar;
+  tokens: readonly SymbolName[];
+}): boolean => recognize(grammar, tokens).accepted;
 
 describe('START: a new start symbol S0 → S, only if S appears on some right side', () => {
   it('adds S0 → S first in parentheses, where S is in S → ( S ) S', () => {
@@ -107,8 +118,8 @@ describe('DEL: no ε-productions, except S → ε for the start symbol when ε �
       'A → a',
       'B → b',
     ]);
-    for (const tokens of stringsUpTo(['a', 'b'], 3)) {
-      expect(accepts(withoutUnits, tokens)).toBe(accepts(grammar, tokens));
+    for (const tokens of stringsUpTo({ alphabet: ['a', 'b'], maxLength: 3 })) {
+      expect(accepts({ grammar: withoutUnits, tokens })).toBe(accepts({ grammar, tokens }));
     }
   });
 
@@ -153,7 +164,11 @@ describe('UNIT: no production A → B', () => {
     'leaves %s with no unit production',
     (name) => {
       const [, , withoutUnits] = firstThreeSteps(loadBuiltInGrammar(name));
-      expect(withoutUnits.productions.filter((p) => isUnit(p, withoutUnits))).toEqual([]);
+      expect(
+        withoutUnits.productions.filter((production) =>
+          isUnit({ production, grammar: withoutUnits }),
+        ),
+      ).toEqual([]);
     },
   );
 });
@@ -162,19 +177,23 @@ describe('the language is preserved after each step', () => {
   it('every sentence of G1 of length ≤ 4 is accepted after START, DEL and UNIT', () => {
     const g1 = loadBuiltInGrammar('g1');
     const steps = firstThreeSteps(g1);
-    const sentences = stringsUpTo([...g1.terminals], 4).filter((tokens) => accepts(g1, tokens));
+    const sentences = stringsUpTo({ alphabet: [...g1.terminals], maxLength: 4 }).filter((tokens) =>
+      accepts({ grammar: g1, tokens }),
+    );
     expect(sentences.length).toBeGreaterThan(0);
     for (const step of steps) {
-      expect(sentences.filter((tokens) => !accepts(step, tokens))).toEqual([]);
+      expect(sentences.filter((tokens) => !accepts({ grammar: step, tokens }))).toEqual([]);
     }
   });
 
   it('G0 and G1 accept and reject the same strings of length ≤ 3 after each step', () => {
     for (const grammar of [loadBuiltInGrammar('g0'), loadBuiltInGrammar('g1')]) {
-      const strings = stringsUpTo([...grammar.terminals], 3);
+      const strings = stringsUpTo({ alphabet: [...grammar.terminals], maxLength: 3 });
       for (const step of firstThreeSteps(grammar)) {
         expect(
-          strings.filter((tokens) => accepts(step, tokens) !== accepts(grammar, tokens)),
+          strings.filter(
+            (tokens) => accepts({ grammar: step, tokens }) !== accepts({ grammar, tokens }),
+          ),
         ).toEqual([]);
       }
     }
@@ -188,10 +207,12 @@ describe('the language is preserved after each step', () => {
     ['test-cyclic', ['a'], 3],
   ])('%s keeps its language up to length %#, ε included', (name, alphabet, maxLength) => {
     const grammar = loadBuiltInGrammar(name);
-    const strings = stringsUpTo(alphabet, maxLength);
+    const strings = stringsUpTo({ alphabet, maxLength });
     for (const step of firstThreeSteps(grammar)) {
       expect(
-        strings.filter((tokens) => accepts(step, tokens) !== accepts(grammar, tokens)),
+        strings.filter(
+          (tokens) => accepts({ grammar: step, tokens }) !== accepts({ grammar, tokens }),
+        ),
       ).toEqual([]);
     }
   });

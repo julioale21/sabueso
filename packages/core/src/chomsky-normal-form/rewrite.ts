@@ -12,23 +12,30 @@ export interface NewProduction {
   rightSide: readonly SymbolName[];
 }
 
-/** What changes from G to G': the productions, and maybe the start symbol and N. */
-export interface Rewrite {
-  productions: readonly NewProduction[];
-  start?: SymbolName;
-  /** Nonterminals added by the step (S0, T_a, Xi). */
-  newNonterminals?: readonly SymbolName[];
-}
-
 /**
- * Builds G' from G and the rewrite. Unlike buildGrammar, N is kept as it was: a nonterminal
+ * Builds G' from G: its productions, and maybe a new start symbol and new nonterminals. Σ is
+ * the one of G. Unlike buildGrammar, N is kept as it was: a nonterminal
  * left without productions (A in A → ε, after DEL) stays a nonterminal, so it never turns
  * into a terminal by accident. It is non-productive, and the USELESS step removes it.
  * A production that appears twice is kept once (P is a set), in the order it first appeared.
  */
-export function rewriteGrammar(grammar: Grammar, rewrite: Rewrite): Grammar {
-  const nonterminals = new Set([...(rewrite.newNonterminals ?? []), ...grammar.nonterminals]);
-  const productions = uniqueProductions(rewrite.productions);
+export function rewriteGrammar({
+  grammar,
+  productions: newProductions,
+  start = grammar.start,
+  newNonterminals = [],
+}: {
+  /** G, the grammar before the step. */
+  grammar: Grammar;
+  /** P of G', still without numbers. */
+  productions: readonly NewProduction[];
+  /** The start symbol of G', if the step changes it (START). */
+  start?: SymbolName | undefined;
+  /** Nonterminals added by the step (S0, T_a, Xi). */
+  newNonterminals?: readonly SymbolName[] | undefined;
+}): Grammar {
+  const nonterminals = new Set([...newNonterminals, ...grammar.nonterminals]);
+  const productions = uniqueProductions(newProductions);
   const productionsByLeftSide = new Map<SymbolName, Production[]>();
   for (const nonterminal of nonterminals) {
     productionsByLeftSide.set(nonterminal, []);
@@ -38,7 +45,7 @@ export function rewriteGrammar(grammar: Grammar, rewrite: Rewrite): Grammar {
   }
   return {
     name: grammar.name,
-    start: rewrite.start ?? grammar.start,
+    start,
     nonterminals,
     terminals: grammar.terminals,
     productions,
@@ -52,7 +59,7 @@ export function productionKey(production: NewProduction): string {
 }
 
 /** A symbol that is not in N or Σ: the name itself, or with primes until it is new (S0'). */
-export function freshSymbol(grammar: Grammar, name: SymbolName): SymbolName {
+export function freshSymbol({ grammar, name }: { grammar: Grammar; name: SymbolName }): SymbolName {
   let candidate = name;
   while (grammar.nonterminals.has(candidate) || grammar.terminals.has(candidate)) {
     candidate = `${candidate}'`;

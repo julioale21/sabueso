@@ -24,7 +24,9 @@ export function computeUnitPairs(grammar: Grammar): Map<SymbolName, Set<SymbolNa
         start: [nonterminal],
         newSymbolsOfRound: (reached) =>
           grammar.productions
-            .filter((production) => reached.has(production.leftSide) && isUnit(production, grammar))
+            .filter(
+              (production) => reached.has(production.leftSide) && isUnit({ production, grammar }),
+            )
             .map((production) => production.rightSide[0] ?? ''),
       }),
     ]),
@@ -43,15 +45,21 @@ export function removeUnitProductions(grammar: Grammar): Grammar {
   const productions = [...grammar.nonterminals].flatMap((nonterminal) =>
     [...(unitPairs.get(nonterminal) ?? [])].flatMap((target) =>
       (grammar.productionsByLeftSide.get(target) ?? [])
-        .filter((production) => !isUnit(production, grammar))
+        .filter((production) => !isUnit({ production, grammar }))
         .map((production) => ({ leftSide: nonterminal, rightSide: production.rightSide })),
     ),
   );
-  return rewriteGrammar(grammar, { productions });
+  return rewriteGrammar({ grammar, productions });
 }
 
 /** A → B with B a nonterminal: a step that only renames, without producing anything. */
-export function isUnit(production: Production, grammar: Grammar): boolean {
+export function isUnit({
+  production,
+  grammar,
+}: {
+  production: Production;
+  grammar: Grammar;
+}): boolean {
   const [only] = production.rightSide;
   return production.rightSide.length === 1 && only !== undefined && grammar.nonterminals.has(only);
 }

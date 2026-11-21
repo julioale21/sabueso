@@ -149,18 +149,25 @@ Lo que cambia en cada paso:
 export const NEW_START = 'S0';
 
 export function addNewStart(grammar: Grammar): Grammar {
-  if (!appearsOnSomeRightSide(grammar, grammar.start)) {
+  if (!appearsOnSomeRightSide({ grammar, symbol: grammar.start })) {
     return grammar;
   }
-  const newStart = freshSymbol(grammar, NEW_START);
-  return rewriteGrammar(grammar, {
+  const newStart = freshSymbol({ grammar, name: NEW_START });
+  return rewriteGrammar({
+    grammar,
     start: newStart,
     newNonterminals: [newStart],
     productions: [{ leftSide: newStart, rightSide: [grammar.start] }, ...grammar.productions],
   });
 }
 
-export function appearsOnSomeRightSide(grammar: Grammar, symbol: string): boolean {
+export function appearsOnSomeRightSide({
+  grammar,
+  symbol,
+}: {
+  grammar: Grammar;
+  symbol: string;
+}): boolean {
   return grammar.productions.some((production) => production.rightSide.includes(symbol));
 }
 ```
@@ -171,12 +178,12 @@ export function appearsOnSomeRightSide(grammar: Grammar, symbol: string): boolea
 
 Línea por línea:
 
-1. **`appearsOnSomeRightSide(grammar, grammar.start)`** recorre todas las producciones y pregunta si alguna tiene al inicial en su lado derecho (`rightSide.includes(symbol)`). `some` corta en la primera que encuentra.
+1. **`appearsOnSomeRightSide({ grammar, symbol: grammar.start })`** recorre todas las producciones y pregunta si alguna tiene al inicial en su lado derecho (`rightSide.includes(symbol)`). `some` corta en la primera que encuentra.
    - Con G1 pregunta por `Relato`: ninguna producción lo tiene a la derecha, así que da `false`.
    - Con `parentheses` pregunta por `S`: `S → ( S ) S` lo tiene, así que da `true`.
 2. **`return grammar`:** si el inicial no aparece a la derecha, no hay nada que hacer. Se devuelve **el mismo objeto**, sin copiarlo. El comando lo detecta (`after === before`) e imprime `Nothing to do: …`.
-3. **`freshSymbol(grammar, NEW_START)`** elige el nombre del inicial nuevo. Quiere llamarlo `S0`, pero si la gramática ya tiene un símbolo `S0`, usarlo mezclaría dos símbolos distintos con el mismo nombre. En ese caso prueba `S0'`, después `S0''`, hasta encontrar uno libre. En `parentheses` devuelve `'S0'`.
-4. **`rewriteGrammar(grammar, { … })`** arma G' a partir de G (sección 5.6). Le dice tres cosas:
+3. **`freshSymbol({ grammar, name: NEW_START })`** elige el nombre del inicial nuevo. Quiere llamarlo `S0`, pero si la gramática ya tiene un símbolo `S0`, usarlo mezclaría dos símbolos distintos con el mismo nombre. En ese caso prueba `S0'`, después `S0''`, hasta encontrar uno libre. En `parentheses` devuelve `'S0'`.
+4. **`rewriteGrammar({ grammar, … })`** arma G' a partir de G (sección 5.6). Además de `grammar`, le dice tres cosas:
    - **`start: newStart`:** el inicial de G' es `S0`, no `S`.
    - **`newNonterminals: [newStart]`:** `S0` se agrega a N. Sin esto, `S0` no sería un no terminal de G'.
    - **`productions: [ {S0 → S}, ...grammar.productions ]`:** las producciones de G' son `S0 → S` (primera) seguida de **todas** las de G, sin cambios. `rightSide: [grammar.start]` es el lado derecho con un solo símbolo: el inicial viejo. `...grammar.productions` copia las producciones de G.
@@ -193,13 +200,14 @@ Línea por línea:
 export function removeEpsilonProductions(grammar: Grammar): Grammar {
   const nullable = computeNullable({ grammar });
   const productions = grammar.productions.flatMap((production) =>
-    withoutNullableSymbols(production.rightSide, nullable).map((rightSide) => ({
+    withoutNullableSymbols({ rightSide: production.rightSide, nullable }).map((rightSide) => ({
       leftSide: production.leftSide,
       rightSide,
     })),
   );
-  return rewriteGrammar(grammar, {
-    productions: productions.filter((production) => keepsProduction(production, grammar)),
+  return rewriteGrammar({
+    grammar,
+    productions: productions.filter((production) => keepsProduction({ production, grammar })),
   });
 }
 ```
@@ -209,7 +217,7 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
 3. **`filter(keepsProduction)`:** saca las versiones vacías (`A → ε`), salvo la del símbolo inicial.
 4. **`rewriteGrammar`:** arma G'. Acá no cambia el inicial ni N; solo las producciones. Además quita las repetidas.
 
-**`withoutNullableSymbols(rightSide, nullable)`**, la función que arma las versiones:
+**`withoutNullableSymbols({ rightSide, nullable })`**, la función que arma las versiones:
 
 ```ts
 let versions: SymbolName[][] = [[]];
@@ -238,7 +246,7 @@ Ejemplo con `( S ) S`, donde solo S es anulable:
 
 Las 4 versiones salen en el orden de contar en binario, y la original siempre es la primera.
 
-**`keepsProduction(production, grammar)`:**
+**`keepsProduction({ production, grammar })`:**
 
 ```ts
 return production.rightSide.length > 0 || production.leftSide === grammar.start;
@@ -256,7 +264,9 @@ return new Map(
       start: [nonterminal],
       newSymbolsOfRound: (reached) =>
         grammar.productions
-          .filter((production) => reached.has(production.leftSide) && isUnit(production, grammar))
+          .filter(
+            (production) => reached.has(production.leftSide) && isUnit({ production, grammar }),
+          )
           .map((production) => production.rightSide[0] ?? ''),
     }),
   ]),
@@ -289,11 +299,11 @@ const unitPairs = computeUnitPairs(grammar);
 const productions = [...grammar.nonterminals].flatMap((nonterminal) =>
   [...(unitPairs.get(nonterminal) ?? [])].flatMap((target) =>
     (grammar.productionsByLeftSide.get(target) ?? [])
-      .filter((production) => !isUnit(production, grammar))
+      .filter((production) => !isUnit({ production, grammar }))
       .map((production) => ({ leftSide: nonterminal, rightSide: production.rightSide })),
   ),
 );
-return rewriteGrammar(grammar, { productions });
+return rewriteGrammar({ grammar, productions });
 ```
 
 Son tres bucles anidados, escritos con `flatMap`:
@@ -304,7 +314,7 @@ Son tres bucles anidados, escritos con `flatMap`:
 
 Como el par (A, A) siempre está, A conserva sus propias producciones no unitarias. Las unitarias no se copian nunca: así desaparecen. Si dos B le dan a A la misma producción, `rewriteGrammar` deja una sola.
 
-### 5.5 `isUnit(production, grammar)`
+### 5.5 `isUnit({ production, grammar })`
 
 ```ts
 const [only] = production.rightSide;
@@ -313,10 +323,11 @@ return production.rightSide.length === 1 && only !== undefined && grammar.nonter
 
 Una producción es unitaria si su lado derecho tiene **exactamente un símbolo** y ese símbolo es un **no terminal**. `Investigacion → Pasos` es unitaria. `Evidencia → PIS` no lo es, porque PIS es terminal: esa producción sí produce algo. `only !== undefined` solo está para que TypeScript sepa que el símbolo existe.
 
-### 5.6 `rewriteGrammar(grammar, rewrite)` (`rewrite.ts`)
+### 5.6 `rewriteGrammar({ grammar, productions, start, newNonterminals })` (`rewrite.ts`)
 
-Es la función que usan los tres pasos para armar G' a partir de G. Recibe G y un `rewrite` con:
+Es la función que usan los tres pasos para armar G' a partir de G. Recibe un objeto con:
 
+- **`grammar`** (obligatorio): G, la gramática antes del paso;
 - **`productions`** (obligatorio): las producciones de G', todavía sin numerar;
 - **`start`** (opcional): el inicial nuevo; si no se pasa, se queda el de G;
 - **`newNonterminals`** (opcional): no terminales nuevos para agregar a N.
@@ -333,7 +344,7 @@ Y devuelve G':
 También exporta dos ayudas:
 
 - **`productionKey(production)`:** convierte una producción en un texto que la identifica por sus símbolos (`["S","(","S",")"]`), sin importar su número. Sirve para detectar repetidas y para que el comando compare dos gramáticas.
-- **`freshSymbol(grammar, name)`:** devuelve `name` si no está en N ni en Σ; si no, le agrega primas hasta que quede libre.
+- **`freshSymbol({ grammar, name })`:** devuelve `name` si no está en N ni en Σ; si no, le agrega primas hasta que quede libre.
 
 ### 5.7 El comando `chomsky-normal-form`
 

@@ -21,11 +21,12 @@ export function addNewStart(grammar: Grammar): Grammar {
   // - if some production uses S on its right side (A → … S …), a new S0 → S is added;
   // - if none does, S already meets that condition: the grammar is returned unchanged
   //   and S stays as the start symbol.
-  if (!appearsOnSomeRightSide(grammar, grammar.start)) {
+  if (!appearsOnSomeRightSide({ grammar, symbol: grammar.start })) {
     return grammar;
   }
-  const newStart = freshSymbol(grammar, NEW_START);
-  return rewriteGrammar(grammar, {
+  const newStart = freshSymbol({ grammar, name: NEW_START });
+  return rewriteGrammar({
+    grammar,
     start: newStart,
     newNonterminals: [newStart],
     productions: [{ leftSide: newStart, rightSide: [grammar.start] }, ...grammar.productions],
@@ -33,6 +34,12 @@ export function addNewStart(grammar: Grammar): Grammar {
 }
 
 /** Whether some production uses the symbol on its right side, as in S → ( S ) S. */
-export function appearsOnSomeRightSide(grammar: Grammar, symbol: string): boolean {
+export function appearsOnSomeRightSide({
+  grammar,
+  symbol,
+}: {
+  grammar: Grammar;
+  symbol: string;
+}): boolean {
   return grammar.productions.some((production) => production.rightSide.includes(symbol));
 }

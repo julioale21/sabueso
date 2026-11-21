@@ -24,13 +24,14 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
   // itself is dropped.
   const nullable = computeNullable({ grammar });
   const productions = grammar.productions.flatMap((production) =>
-    withoutNullableSymbols(production.rightSide, nullable).map((rightSide) => ({
+    withoutNullableSymbols({ rightSide: production.rightSide, nullable }).map((rightSide) => ({
       leftSide: production.leftSide,
       rightSide,
     })),
   );
-  return rewriteGrammar(grammar, {
-    productions: productions.filter((production) => keepsProduction(production, grammar)),
+  return rewriteGrammar({
+    grammar,
+    productions: productions.filter((production) => keepsProduction({ production, grammar })),
   });
 }
 
@@ -38,10 +39,13 @@ export function removeEpsilonProductions(grammar: Grammar): Grammar {
  * Every right side obtained by erasing some of the nullable symbols, the original first:
  * A B x with A nullable gives A B x and B x. The empty one is included if all are nullable.
  */
-function withoutNullableSymbols(
-  rightSide: readonly SymbolName[],
-  nullable: ReadonlySet<SymbolName>,
-): SymbolName[][] {
+function withoutNullableSymbols({
+  rightSide,
+  nullable,
+}: {
+  rightSide: readonly SymbolName[];
+  nullable: ReadonlySet<SymbolName>;
+}): SymbolName[][] {
   // Built symbol by symbol: each version so far is extended with Xi and, if Xi is
   // nullable, also without it. Order: keeping a symbol comes before erasing it.
   let versions: SymbolName[][] = [[]];
@@ -54,6 +58,12 @@ function withoutNullableSymbols(
 }
 
 /** Every production stays except A → ε; only S → ε survives (S the start), when ε ∈ L(G). */
-function keepsProduction(production: NewProduction, grammar: Grammar): boolean {
+function keepsProduction({
+  production,
+  grammar,
+}: {
+  production: NewProduction;
+  grammar: Grammar;
+}): boolean {
   return production.rightSide.length > 0 || production.leftSide === grammar.start;
 }
