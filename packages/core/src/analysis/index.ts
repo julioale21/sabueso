@@ -30,7 +30,7 @@ export function analyzeGrammar(grammar: Grammar): GrammarAnalysis {
   const sets = computeFirstFollow(grammar);
   return {
     nullable: computeNullable({ grammar }),
-    minYield: computeMinYield(grammar),
+    minYield: computeMinYield({ grammar }),
     productive: useful.productive,
     reachable: useful.reachable,
     useless: useful.useless,

@@ -55,7 +55,7 @@ Costo: cada ronda recorre P una vez. Las rondas están acotadas por la altura de
 
 ## 5. El código, función por función
 
-### 5.1 `computeMinYield(grammar)`
+### 5.1 `computeMinYield({ grammar })`
 
 ```ts
 let current = new Map<SymbolName, number>();
@@ -63,8 +63,8 @@ for (const nonterminal of grammar.nonterminals) {
   current.set(nonterminal, Infinity);
 }
 for (;;) {
-  const next = minYieldRound(grammar.productions, current);
-  if (sameValues(next, current)) {
+  const next = minYieldRound({ productions: grammar.productions, previous: current });
+  if (sameValues({ first: next, second: current })) {
     return next;
   }
   current = next;
@@ -77,12 +77,12 @@ for (;;) {
 - El ciclo termina porque los valores solo bajan y son naturales (o ∞): no pueden bajar para siempre.
 - Devuelve un `Map` con todos los no terminales, en el orden de la gramática.
 
-### 5.2 `minYieldRound(productions, previous)`
+### 5.2 `minYieldRound({ productions, previous })`
 
 ```ts
 const next = new Map(previous);
 for (const production of productions) {
-  const length = minYieldOfSequence(production.rightSide, previous);
+  const length = minYieldOfSequence({ symbols: production.rightSide, minYield: previous });
   if (length < (next.get(production.leftSide) ?? Infinity)) {
     next.set(production.leftSide, length);
   }
@@ -95,7 +95,7 @@ return next;
 - `length < (next.get(production.leftSide) ?? Infinity)` compara con `next`, no con `previous`: si A tiene varias producciones, se queda con la menor de esta ronda.
 - `?? Infinity` es para TypeScript, porque `get` puede devolver `undefined`. Todo lado izquierdo ya está en el mapa; si no estuviera, ∞ es el valor neutro: cualquier largo lo mejora.
 
-### 5.3 `minYieldOfSequence(symbols, minYield)`
+### 5.3 `minYieldOfSequence({ symbols, minYield })`
 
 ```ts
 return symbols.reduce((total, symbol) => total + (minYield.get(symbol) ?? 1), 0);
@@ -105,7 +105,7 @@ return symbols.reduce((total, symbol) => total + (minYield.get(symbol) ?? 1), 0)
 - La lista vacía suma 0: así A → ε da 0 sin un caso especial.
 - Es exportada porque el autómata de pila la va a usar sobre su pila.
 
-### 5.4 `sameValues(first, second)`
+### 5.4 `sameValues({ first, second })`
 
 ```ts
 return [...first].every(([symbol, value]) => second.get(symbol) === value);

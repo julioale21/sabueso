@@ -38,7 +38,7 @@ export const minYieldCommand: Command = {
       return reportUsageError(`Usage: ${MIN_YIELD_USAGE}`, environment);
     }
     const grammar = await readGrammar(source, environment);
-    const minYield = computeMinYield(grammar);
+    const minYield = computeMinYield({ grammar });
     environment.writeOutput(
       [
         `${grammar.name}: minimum yield (length of the shortest string each nonterminal derives)`,

@@ -156,7 +156,7 @@ const useful = analyzeUsefulSymbols({ grammar });
 const sets = computeFirstFollow(grammar);
 return {
   nullable: computeNullable({ grammar }),
-  minYield: computeMinYield(grammar),
+  minYield: computeMinYield({ grammar }),
   productive: useful.productive,
   reachable: useful.reachable,
   useless: useful.useless,
