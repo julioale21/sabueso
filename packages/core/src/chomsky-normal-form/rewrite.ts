@@ -3,6 +3,7 @@
  * changes; N only grows (S0, and later T_a and Xi), and P is rewritten.
  * Card: docs/concepts/22-chomsky-normal-form.md
  */
+import { groupByLeftSide, productionKey } from '../grammar/productions.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 
 /** A production before it gets its number in the new grammar. */
@@ -43,26 +44,14 @@ export function rewriteGrammar({
     ),
   );
   const productions = uniqueProductions(newProductions);
-  const productionsByLeftSide = new Map<SymbolName, Production[]>();
-  for (const nonterminal of nonterminals) {
-    productionsByLeftSide.set(nonterminal, []);
-  }
-  for (const production of productions) {
-    productionsByLeftSide.get(production.leftSide)?.push(production);
-  }
   return {
     name: grammar.name,
     start,
     nonterminals,
     terminals: grammar.terminals,
     productions,
-    productionsByLeftSide,
+    productionsByLeftSide: groupByLeftSide({ nonterminals, productions }),
   };
-}
-
-/** A key that identifies a production by its symbols, not by its number. */
-export function productionKey(production: NewProduction): string {
-  return JSON.stringify([production.leftSide, ...production.rightSide]);
 }
 
 /**

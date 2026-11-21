@@ -2,6 +2,7 @@
  * Concept: building G = (N, Σ, P, S) from its rules, with the .grammar terminal convention.
  * Card: docs/concepts/02-context-free-grammar.md
  */
+import { groupByLeftSide, productionKey } from './productions.js';
 import type { Grammar, Production, SymbolName } from './types.js';
 
 /**
@@ -221,7 +222,7 @@ function checkLiteral({ literal, symbols }: { literal: string; symbols: SymbolTa
 function rejectDuplicateProductions(productions: readonly Production[]): void {
   const seen = new Set<string>();
   for (const production of productions) {
-    const key = JSON.stringify([production.leftSide, ...production.rightSide]);
+    const key = productionKey(production);
     if (seen.has(key)) {
       throw new GrammarBuildError(`Duplicate production: ${formatProduction(production)}`);
     }
@@ -241,26 +242,6 @@ function requireNonterminalStart({
     throw new GrammarBuildError(`Start symbol "${start}" is not the left-hand side of any rule`);
   }
   return start;
-}
-
-// Index A → [its productions]. Earley's Predictor uses it: on "• A" it needs
-// every A → α without scanning all of P.
-/** The productions of each nonterminal, in order, so an algorithm can expand A quickly. */
-function groupByLeftSide({
-  nonterminals,
-  productions,
-}: {
-  nonterminals: ReadonlySet<SymbolName>;
-  productions: readonly Production[];
-}): Map<SymbolName, Production[]> {
-  const productionsByLeftSide = new Map<SymbolName, Production[]>();
-  for (const nonterminal of nonterminals) {
-    productionsByLeftSide.set(nonterminal, []);
-  }
-  for (const production of productions) {
-    productionsByLeftSide.get(production.leftSide)?.push(production);
-  }
-  return productionsByLeftSide;
 }
 
 /** '$' is reserved for the end marker of FOLLOW and for the augmented start symbol $S. */

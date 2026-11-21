@@ -9,7 +9,7 @@ import {
   type ChomskyNormalFormStep,
   type ChomskyNormalFormStepName,
 } from '../../chomsky-normal-form/index.js';
-import { productionKey } from '../../chomsky-normal-form/rewrite.js';
+import { productionKey } from '../../grammar/productions.js';
 import { formatProduction } from '../../grammar/build.js';
 import type { Grammar, Production } from '../../grammar/types.js';
 import { parseArguments } from '../arguments.js';
