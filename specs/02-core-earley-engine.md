@@ -1119,6 +1119,13 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:**
       - `npm run sabueso -- differential --grammar g1 --max-length 3` corre Earley, CYK y el AP sobre el corpus exhaustivo, e imprime la cantidad de cadenas y de discrepancias (0).
       - `npm run sabueso -- bench --grammar g0 --file packages/core/test/fixtures/l1.txt` imprime los tiempos de reconocimiento y de conteo.
+    - **Decisiones (2026-11-21):**
+      - La lógica vive en el núcleo, no en las pruebas: `differential/differential.ts` (`allStrings`, `runDifferential`, tipos `DifferentialReport` y `Discrepancy`) y `performance/benchmark.ts` (`benchmark`, tipo `BenchmarkResult`). Las pruebas y los comandos las usan; el ayudante de pruebas `stringsUpTo` pasa a ser un reexport de `allStrings`.
+      - Una discrepancia es CYK distinto de Earley, o el autómata de pila con algo distinto de `accept`/`reject` según Earley (`undetermined` incluido). La FNC se calcula una vez por gramática.
+      - `benchmark` recibe el reloj (`clock`, por defecto `performance.now()`) para poder probar su estructura con tiempos fijos. Mide por separado reconocer, el primer árbol, la derivación y el conteo, e informa los ítems del chart.
+      - `differential` acepta `--max-length` de 0 a 6 (|Σ|^k cadenas) y termina con código 1 si hay discrepancias. `bench` lee el relato como palabras o con `--file` (`readStory`).
+      - No hizo falta subir `testTimeout`: el corpus de la sección 9.4 corre en unos 2 segundos (G1 hasta largo 4: 41 371 cadenas, 110 oraciones; G0: 145).
+      - Medido con L1: G1 en unos 24 ms (22 709 ítems) y G0 en unos 245 ms (43 006 ítems; la mitad es el conteo de 115 dígitos).
 
 29. **Guion de consola completo.**
     - Completar `docs/console-demo.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.

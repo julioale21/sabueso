@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo hasta el paso 27 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo hasta el paso 28 del SPEC 02. Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -340,6 +340,7 @@ Las demás exportaciones, por área:
 | CYK                | `recognizeCockeYoungerKasami` y `CockeYoungerKasamiResult`                                           |
 | Autómata de pila   | `buildPushdownAutomaton`, `simulatePushdownAutomaton` y sus tipos                                    |
 | Búsquedas acotadas | `generateSentences`, `findAmbiguityWitness`, `compareLanguages` y sus tipos                          |
+| Pruebas y medición | `allStrings`, `runDifferential`, `benchmark` y sus tipos                                             |
 | Catálogo           | `genres`                                                                                             |
 | Consola            | `createCommandLineProgram`, `formatTable`, `formatSet` (para sumar los comandos del SPEC 04)         |
 
@@ -395,27 +396,32 @@ La conversión tiene seis transformaciones. Cada una es una función que recibe 
 
 La consola `sabueso` muestra cada pieza del motor por separado: cada comando llama al motor y formatea el resultado, sin lógica propia. Se ejecuta con `npm run sabueso -- <comando>`, y la gramática se elige con `--grammar <nombre>` o `--grammar-file <ruta>`.
 
-| Comando                                                                                    | Qué muestra                                                                               | Sección |
-| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ------- |
-| `genres`, `grammars`                                                                       | el catálogo y las gramáticas incluidas                                                    | 3       |
-| `lex`, `grammar`                                                                           | los tokens y las transiciones del AFD; la gramática y la traza del parser                 | 4       |
-| `tokens`                                                                                   | un relato separado en etiquetas y verificado contra Σ                                     | 5       |
-| `nullable`, `min-yield`, `useful`, `cycles`, `first-follow`, `predictive-table`, `analyze` | cada análisis; con `--steps`, las rondas del punto fijo                                   | 6       |
-| `items`, `earley`, `trace`                                                                 | las reglas punteadas, el chart y cada paso de Earley                                      | 7       |
-| `epsilon-trees`, `trees`, `count`, `derive`                                                | los árboles, su cantidad y la derivación                                                  | 8       |
-| `parse`                                                                                    | el análisis completo de un relato                                                         | 9       |
-| `chomsky-normal-form`                                                                      | la gramática después de cada paso de la FNC                                               | 10      |
-| `cocke-younger-kasami`                                                                     | la tabla CYK, el veredicto y el árbol FNC; con `--compare`, junto a Earley                | 10.1    |
-| `pushdown-automaton`                                                                       | el autómata de pila, el resultado y el camino de IDs; con `--transitions`, δ              | 10.2    |
-| `generate`, `ambiguity`, `compare`                                                         | las oraciones hasta largo k, el testigo de ambigüedad y la diferencia entre dos lenguajes | 10.3    |
+| Comando                                                                                    | Qué muestra                                                                                        | Sección |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | ------- |
+| `genres`, `grammars`                                                                       | el catálogo y las gramáticas incluidas                                                             | 3       |
+| `lex`, `grammar`                                                                           | los tokens y las transiciones del AFD; la gramática y la traza del parser                          | 4       |
+| `tokens`                                                                                   | un relato separado en etiquetas y verificado contra Σ                                              | 5       |
+| `nullable`, `min-yield`, `useful`, `cycles`, `first-follow`, `predictive-table`, `analyze` | cada análisis; con `--steps`, las rondas del punto fijo                                            | 6       |
+| `items`, `earley`, `trace`                                                                 | las reglas punteadas, el chart y cada paso de Earley                                               | 7       |
+| `epsilon-trees`, `trees`, `count`, `derive`                                                | los árboles, su cantidad y la derivación                                                           | 8       |
+| `parse`                                                                                    | el análisis completo de un relato                                                                  | 9       |
+| `chomsky-normal-form`                                                                      | la gramática después de cada paso de la FNC                                                        | 10      |
+| `cocke-younger-kasami`                                                                     | la tabla CYK, el veredicto y el árbol FNC; con `--compare`, junto a Earley                         | 10.1    |
+| `pushdown-automaton`                                                                       | el autómata de pila, el resultado y el camino de IDs; con `--transitions`, δ                       | 10.2    |
+| `generate`, `ambiguity`, `compare`                                                         | las oraciones hasta largo k, el testigo de ambigüedad y la diferencia entre dos lenguajes          | 10.3    |
+| `differential`, `bench`                                                                    | los tres reconocedores sobre todas las cadenas hasta largo k; el tiempo de cada etapa de un relato | 12      |
 
 El recorrido completo, con la salida de cada comando, está en `docs/console-demo.md`. Una prueba verifica que cada comando de ese documento siga siendo válido.
 
 # 12. Pruebas y calidad
 
-- **891 pruebas** (Vitest), organizadas como el código, más una prueba de integración de la API pública.
+**Detalle:** guía 28 para la prueba diferencial y el rendimiento.
+
+- **917 pruebas** (Vitest), organizadas como el código, más una prueba de integración de la API pública.
 - **Contra cálculos hechos a mano:** el chart de `CRI PIS REV` con G1 coincide ítem por ítem con el del spec, y la derivación de A1 tiene sus mismos 18 pasos.
 - **Propiedades del lenguaje:** después de cada paso de la FNC, las oraciones cortas de G1 se siguen aceptando, y G0 y G1 aceptan y rechazan lo mismo hasta largo 3. CYK sobre FNC(G), el autómata de pila y Earley aceptan las mismas cadenas.
+- **Prueba diferencial** (`differential/differential.ts`, `runDifferential`): Earley sobre G, CYK sobre la FNC y el autómata de pila de G corren sobre **todas** las cadenas hasta un largo y tienen que aceptar exactamente las mismas. Con G0 y G1 hasta largo 4 son 41 371 cadenas cada una, con 0 discrepancias. Como los tres reconocedores están construidos de maneras distintas, un error en cualquiera aparece como discrepancia.
+- **Rendimiento** (`performance/benchmark.ts`, `benchmark`): con L1 (200 eventos), G1 analiza el relato completo (reconocer, árbol, derivación y conteo) en unos 24 ms, muy por debajo del segundo que pide el anteproyecto; G0, en unos 245 ms, la mitad en contar un número de 115 dígitos de árboles.
 - **Casos borde:** gramáticas con ε, con símbolos inútiles, con lenguaje vacío y con ciclos.
 - **Calidad del código:** TypeScript estricto, ESLint y Prettier. Los hooks de git verifican formato y lint antes de cada commit y corren las pruebas antes de cada push. La integración continua repite todo en cada push.
 

@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/julioale21/sabueso/actions/workflows/ci.yml/badge.svg)](https://github.com/julioale21/sabueso/actions/workflows/ci.yml)
 ![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.0-blue)
-![Estado](https://img.shields.io/badge/SPEC%2002-paso%2027%20de%2030-orange)
+![Estado](https://img.shields.io/badge/SPEC%2002-paso%2028%20de%2030-orange)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520.19-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
 
@@ -180,7 +180,7 @@ El detalle de cada pieza, con sus funciones clave, está en la [documentación d
 
 ## Estado
 
-**SPEC 02: pasos 1 a 27 de 30 terminados.** El núcleo ya:
+**SPEC 02: pasos 1 a 28 de 30 terminados.** El núcleo ya:
 
 - lee gramáticas `.grammar` y trae las del policial: G0 y G1;
 - analiza la gramática: anulables, longitud mínima, símbolos inútiles, ciclos, FIRST/FOLLOW y tabla LL(1);
@@ -188,16 +188,17 @@ El detalle de cada pieza, con sus funciones clave, está en la [documentación d
 - convierte cualquier gramática a Forma Normal de Chomsky en seis pasos;
 - reconoce con CYK sobre la FNC y compara su árbol con el de Earley;
 - construye el autómata de pila de la gramática y lo simula, con el camino de aceptación;
-- busca testigos de ambigüedad y diferencias entre dos lenguajes hasta un largo k (semidecisión).
+- busca testigos de ambigüedad y diferencias entre dos lenguajes hasta un largo k (semidecisión);
+- verifica que sus tres reconocedores aceptan lo mismo sobre todas las cadenas cortas, y mide su rendimiento.
 
-**Sigue:** pruebas diferenciales y de rendimiento (paso 28). **Después:** el guion de consola y las fichas finales.
+**Sigue:** el guion de consola completo (paso 29). **Después:** las fichas teóricas finales y la documentación en inglés (paso 30).
 
 El proyecto avanza por specs, en orden:
 
 | Spec                                                            | Contenido                                                                      | Estado                      |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------- |
 | [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Terminado                   |
-| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | En curso (pasos 1–27 de 30) |
+| [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | En curso (pasos 1–28 de 30) |
 | [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador                    |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador                    |
 
@@ -267,6 +268,8 @@ sabueso/
 │       │   ├── cocke-younger-kasami/  # CYK sobre la FNC
 │       │   ├── pushdown-automaton/    # GLC → autómata de pila y su simulación
 │       │   ├── bounded/               # búsquedas acotadas: generar, testigo, comparar
+│       │   ├── differential/          # los tres reconocedores sobre el mismo corpus
+│       │   ├── performance/           # el tiempo de cada etapa de un análisis
 │       │   ├── genres/                # catálogo de géneros y sus etiquetas
 │       │   ├── command-line/          # la consola sabueso: un archivo por comando
 │       │   ├── parse.ts               # parse(): la API que usa la web
@@ -304,7 +307,9 @@ sabueso/
 
 ## Calidad
 
-- **Pruebas:** más de 800 pruebas con Vitest, con valores calculados a mano. Cada comando de consola tiene la suya, y una prueba verifica que el guion de la demo sigue funcionando.
+- **Pruebas:** más de 900 pruebas con Vitest, con valores calculados a mano. Cada comando de consola tiene la suya, y una prueba verifica que el guion de la demo sigue funcionando.
+- **Prueba diferencial:** Earley, CYK y el autómata de pila aceptan exactamente las mismas cadenas, sobre todas las cadenas de G0 y G1 hasta largo 4 (41 371 cada una): 0 discrepancias. `npm run sabueso -- differential --grammar g1 --max-length 4`.
+- **Rendimiento:** G1 analiza un relato de 200 eventos en unos 24 ms; el anteproyecto pide menos de un segundo. `npm run sabueso -- bench --grammar g1 --file packages/core/test/fixtures/l1.txt`.
 - **Hooks de git** (`.githooks/`): `pre-commit` corre `format:check` y `lint`; `pre-push` corre `npm test`.
 - **Integración continua** (`.github/workflows/ci.yml`): en cada push y pull request corre `npm ci`, `format:check`, `lint`, `typecheck`, `build` y `test`.
 - **TypeScript estricto**, con `exactOptionalPropertyTypes`.

@@ -2,12 +2,14 @@
 // tests can run it in memory, without starting a Node process.
 import { ambiguityCommand } from './commands/ambiguity.js';
 import { analyzeCommand } from './commands/analyze.js';
+import { benchCommand } from './commands/bench.js';
 import { chomskyNormalFormCommand } from './commands/chomsky-normal-form.js';
 import { cockeYoungerKasamiCommand } from './commands/cocke-younger-kasami.js';
 import { compareCommand } from './commands/compare.js';
 import { countCommand } from './commands/count.js';
 import { cyclesCommand } from './commands/cycles.js';
 import { deriveCommand } from './commands/derive.js';
+import { differentialCommand } from './commands/differential.js';
 import { earleyCommand } from './commands/earley.js';
 import { epsilonTreesCommand } from './commands/epsilon-trees.js';
 import { firstFollowCommand } from './commands/first-follow.js';
@@ -57,6 +59,8 @@ export const runCommandLine = createCommandLineProgram({
     generateCommand,
     ambiguityCommand,
     compareCommand,
+    differentialCommand,
+    benchCommand,
     lexCommand,
   ],
   helpFooter: formatGrammarGroups(),

@@ -247,3 +247,13 @@ npm run sabueso -- ambiguity --grammar g0 --max-length 4
 npm run sabueso -- ambiguity --grammar g1 --max-length 7
 npm run sabueso -- compare g0 g1 --max-length 3
 ```
+
+## Pruebas diferenciales y rendimiento
+
+Paso 28. Los tres reconocedores (Earley sobre G, CYK sobre la FNC y el autómata de pila) sobre todas las cadenas hasta un largo: con G1 hasta largo 4 son 41 371 cadenas, 110 oraciones y 0 discrepancias. Y el tiempo de cada etapa con L1 (200 eventos): G1 lo analiza en unos 24 ms, muy por debajo del segundo que pide el anteproyecto; G0 tarda unas diez veces más por la ambigüedad.
+
+```sh
+npm run sabueso -- differential --grammar g1 --max-length 4
+npm run sabueso -- bench --grammar g1 --file packages/core/test/fixtures/l1.txt
+npm run sabueso -- bench --grammar g0 --file packages/core/test/fixtures/l1.txt
+```

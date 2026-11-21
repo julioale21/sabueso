@@ -79,6 +79,12 @@ export { findAmbiguityWitness } from './bounded/ambiguity.js';
 export type { AmbiguityWitness } from './bounded/ambiguity.js';
 export { compareLanguages } from './bounded/compare.js';
 export type { LanguageComparison } from './bounded/compare.js';
+
+// Differential testing of the three recognizers, and timing (step 28).
+export { allStrings, runDifferential } from './differential/differential.js';
+export type { DifferentialReport, Discrepancy } from './differential/differential.js';
+export { benchmark } from './performance/benchmark.js';
+export type { BenchmarkResult } from './performance/benchmark.js';
 export type {
   InstantaneousDescription,
   PathStep,
