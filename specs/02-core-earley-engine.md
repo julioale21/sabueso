@@ -898,7 +898,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - `npm run sabueso -- useful --grammar test-useless --steps` imprime las iteraciones de productivos y de alcanzables, los inútiles y la gramática limpia.
      - Con `test-empty`, imprime `L(G) = ∅`.
    - **Decisiones (2026-11-20):**
-     - `analyzeUsefulSymbols(grammar, onIteration?)` devuelve `{ productive, reachable, useless, isEmpty, usefulGrammar }`. `reachable` se calcula **después** de quitar los no productivos (orden de Hopcroft 7.1.1). `usefulGrammar` es G sin inútiles, construida de nuevo con `buildGrammar` (ids nuevos, Σ solo con los terminales usados), o `null` si L(G) = ∅.
+     - `analyzeUsefulSymbols(grammar, onIteration?)` (desde el paso 23, `analyzeUsefulSymbols({ grammar, onRound })`, con `onRound({ phase, round, symbolsSoFar })` de tipo `UsefulRoundListener`) devuelve `{ productive, reachable, useless, isEmpty, usefulGrammar }`. `reachable` se calcula **después** de quitar los no productivos (orden de Hopcroft 7.1.1). `usefulGrammar` es G sin inútiles, construida de nuevo con `buildGrammar` (ids nuevos, Σ solo con los terminales usados), o `null` si L(G) = ∅.
      - Los conjuntos son de **no terminales**. Los terminales que dejan de usarse desaparecen solos de Σ en `usefulGrammar`.
      - `onIteration(phase, iteration, symbols)` agrega la fase (`'productive'` o `'reachable'`) a la forma general de la sección 8.2, porque este paso tiene dos puntos fijos. Si L(G) = ∅ no se corre la fase de alcanzables.
      - Con `--steps`, la tabla de alcanzables muestra S como ronda 0, porque ese punto fijo no parte de ∅.

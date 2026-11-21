@@ -152,7 +152,7 @@ Recorre las filas y las casillas en orden y junta las que tienen más de una pro
 ### 5.4 `analyzeGrammar(grammar)` (`analysis/index.ts`)
 
 ```ts
-const useful = analyzeUsefulSymbols(grammar);
+const useful = analyzeUsefulSymbols({ grammar });
 const sets = computeFirstFollow(grammar);
 return {
   nullable: computeNullable({ grammar }),
