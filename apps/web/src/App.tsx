@@ -1,5 +1,5 @@
 /** The page: the header and one tab per view (SPEC 03, section 3.1). */
-import { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 import { AnalysisServiceProvider } from './analysis/context';
 import { createLocalAnalysisService } from './analysis/local-service';
 import { AppHeader } from './components/AppHeader';
@@ -13,11 +13,17 @@ const analysisService = createLocalAnalysisService();
 export function App() {
   // Saved grammar and story are connected in step 15 (SPEC 03); until then, the defaults.
   const [state, dispatch] = useReducer(appReducer, null, createInitialState);
+  // Each reset mounts the views again, so their own state (results, selected steps) goes too.
+  const [resets, setResets] = useState(0);
+  const reset = () => {
+    dispatch({ type: 'reset' });
+    setResets((count) => count + 1);
+  };
   return (
     <AnalysisServiceProvider value={analysisService}>
       <div className="mx-auto max-w-7xl px-4 py-6">
-        <AppHeader />
-        <main>
+        <AppHeader onReset={reset} />
+        <main key={resets}>
           <Tabs
             label="Vistas"
             items={viewTabs({ state, dispatch })}

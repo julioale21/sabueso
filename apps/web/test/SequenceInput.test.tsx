@@ -19,6 +19,9 @@ function Harness({ onAnalyze = () => undefined }: { onAnalyze?: () => void }) {
       examples={EXAMPLES}
       onChange={setValue}
       onAnalyze={onAnalyze}
+      onClear={() => {
+        setValue('');
+      }}
     />
   );
 }
@@ -63,6 +66,17 @@ describe('SequenceInput', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Analizar' }));
     fireEvent.keyDown(field(), { key: 'Enter', ctrlKey: true });
     expect(onAnalyze).toHaveBeenCalledTimes(2);
+  });
+
+  it('Limpiar empties the field, and is disabled when there is nothing to clear', () => {
+    render(<Harness />);
+    const clear = screen.getByRole('button', { name: 'Limpiar' });
+    expect(clear).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'A1' }));
+    expect(clear).toBeEnabled();
+    fireEvent.click(clear);
+    expect(field()).toHaveValue('');
+    expect(clear).toBeDisabled();
   });
 
   it('splitTags: any run of spaces or line breaks separates', () => {

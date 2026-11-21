@@ -57,6 +57,17 @@ describe('appReducer', () => {
     expect(appReducer(state, { type: 'toggle-collapse-epsilon' }).collapseEpsilon).toBe(false);
   });
 
+  it('reset goes back to the initial state, whatever changed', () => {
+    const changed = {
+      ...state,
+      activeTab: 'll1' as const,
+      grammarId: 'detective/g0',
+      input: 'CRI SOS PIS INT REV',
+      collapseEpsilon: false,
+    };
+    expect(appReducer(changed, { type: 'reset' })).toEqual(createInitialState(null));
+  });
+
   it('does not change the state it receives', () => {
     const before = createInitialState(null);
     appReducer(before, { type: 'set-input', input: 'CRI' });

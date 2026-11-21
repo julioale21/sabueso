@@ -19,6 +19,11 @@ export function DiagnosticPanel({
   return (
     <div className="space-y-2">
       <ol aria-label="Relato con el error marcado" className="flex flex-wrap gap-1">
+        {tokens.length === 0 && (
+          <li className="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">
+            ε (relato vacío)
+          </li>
+        )}
         {tokens.map((token, index) => (
           <DiagnosticToken key={index} token={token} isError={!atEnd && index === error.position} />
         ))}

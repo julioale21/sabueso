@@ -6,7 +6,7 @@
 import type { TagInfo } from '@sabueso/core';
 import type { Example } from '../../domain/examples';
 import { splitTags } from '../../domain/tags';
-import { Button } from '../ui/Button';
+import { AnalyzeActions } from './AnalyzeActions';
 import { ExampleButtons } from './ExampleButtons';
 import { StoryField } from './StoryField';
 import { TagPalette } from './TagPalette';
@@ -19,6 +19,7 @@ export function SequenceInput({
   examples,
   onChange,
   onAnalyze,
+  onClear,
 }: {
   /** Σ of the active grammar, with the meaning of each tag. */
   tags: readonly TagInfo[];
@@ -26,6 +27,8 @@ export function SequenceInput({
   examples: readonly Example[];
   onChange: (input: string) => void;
   onAnalyze: () => void;
+  /** Resets the story and its result. */
+  onClear: () => void;
 }) {
   const alphabet = new Set(tags.map((tag) => tag.tag));
   const words = splitTags(value);
@@ -42,12 +45,7 @@ export function SequenceInput({
       <TagSequence words={words} alphabet={alphabet} />
       <UnknownTagsAlert unknown={words.filter((word) => !alphabet.has(word))} />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Button variant="primary" onClick={onAnalyze}>
-            Analizar
-          </Button>
-          <span className="text-xs text-slate-500">o Ctrl+Enter</span>
-        </div>
+        <AnalyzeActions canClear={value !== ''} onAnalyze={onAnalyze} onClear={onClear} />
         <ExampleButtons examples={examples} onPick={onChange} />
       </div>
     </div>

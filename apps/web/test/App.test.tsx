@@ -58,6 +58,32 @@ describe('App', () => {
     expect(marked).toHaveTextContent('PIS');
   });
 
+  it('the empty story is analyzed: ε is not in L(G1), and it says what a story can start with', async () => {
+    render(<App />);
+    await screen.findByRole('textbox', { name: /Relato/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('✗ Rechazado');
+    expect(screen.getByText('ε (relato vacío)')).toBeInTheDocument();
+    expect(screen.getByText(/se esperaba: CRI, CTX, HAL, PER/)).toBeInTheDocument();
+  });
+
+  it('Limpiar resets the story and the result', async () => {
+    await analyze({ input: 'CRI PIS REV', grammar: 'detective/g1' });
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
+    expect(screen.getByRole('textbox', { name: /Relato/ })).toHaveValue('');
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByText('Escribe un relato y aprieta Analizar.')).toBeInTheDocument();
+  });
+
+  it('Reiniciar goes back to the initial state: G1, empty story, no result, first tab', async () => {
+    await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }));
+    expect(await screen.findByRole('textbox', { name: /Relato/ })).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'Gramática' })).toHaveValue('detective/g1');
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Análisis' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('changing the grammar redoes the last analysis', async () => {
     await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g1' });
     fireEvent.change(screen.getByRole('combobox', { name: 'Gramática' }), {

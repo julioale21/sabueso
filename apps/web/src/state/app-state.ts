@@ -28,7 +28,8 @@ export type AppAction =
   | { type: 'select-grammar'; genreId: string; grammarId: GrammarId }
   | { type: 'set-input'; input: string }
   | { type: 'select-tree'; index: number }
-  | { type: 'toggle-collapse-epsilon' };
+  | { type: 'toggle-collapse-epsilon' }
+  | { type: 'reset' };
 
 /** What every view receives: the shared state and the way to change it. */
 export interface ViewProps {
@@ -66,5 +67,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, selectedTree: Math.max(0, action.index) };
     case 'toggle-collapse-epsilon':
       return { ...state, collapseEpsilon: !state.collapseEpsilon };
+    case 'reset':
+      // Back to how the page opens the first time, ignoring anything saved.
+      return createInitialState(null);
   }
 }

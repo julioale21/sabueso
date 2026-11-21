@@ -18,7 +18,7 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
   const catalog = useGrammars();
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
   const grammar = catalog?.grammars.find((each) => each.id === state.grammarId);
-  const { result, isAnalyzing, analyze, analyzedInput } = useAnalyze();
+  const { result, isAnalyzing, analyze, analyzedInput, reset } = useAnalyze();
 
   // Another grammar gives another analysis: redo the last one with the new grammar.
   useEffect(() => {
@@ -45,6 +45,10 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
               }}
               onAnalyze={() => {
                 analyze(state.grammarId, state.input);
+              }}
+              onClear={() => {
+                dispatch({ type: 'set-input', input: '' });
+                reset();
               }}
             />
           )}

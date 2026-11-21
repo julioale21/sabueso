@@ -10,6 +10,8 @@ export interface AnalysisRun {
   /** The story of the latest analysis, to redo it with another grammar; null before any. */
   analyzedInput: string | null;
   analyze: (grammarId: GrammarId, input: string) => void;
+  /** Forgets the result, as before the first analysis. */
+  reset: () => void;
 }
 
 export function useAnalyze(): AnalysisRun {
@@ -35,5 +37,12 @@ export function useAnalyze(): AnalysisRun {
     [service],
   );
 
-  return { result, isAnalyzing, analyzedInput, analyze };
+  const reset = useCallback(() => {
+    latest.current++;
+    setResult(null);
+    setIsAnalyzing(false);
+    setAnalyzedInput(null);
+  }, []);
+
+  return { result, isAnalyzing, analyzedInput, analyze, reset };
 }
