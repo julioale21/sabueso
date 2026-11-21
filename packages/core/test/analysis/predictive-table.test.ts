@@ -74,7 +74,7 @@ describe('buildPredictiveTable', () => {
 });
 
 describe('predictionSet', () => {
-  const sets = computeFirstFollow(miniDetective);
+  const sets = computeFirstFollow({ grammar: miniDetective });
   const production = (text: string) =>
     miniDetective.productions.find((candidate) => formatProduction(candidate) === text);
 

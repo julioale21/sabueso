@@ -43,9 +43,10 @@ export const firstFollowCommand: Command = {
     }
     const grammar = await readGrammar(source, environment);
     const rounds: Record<FirstFollowPhase, Snapshot[]> = { first: [], follow: [] };
-    const sets = computeFirstFollow(grammar, (phase, _round, snapshot) =>
-      rounds[phase].push(snapshot),
-    );
+    const sets = computeFirstFollow({
+      grammar,
+      onRound: ({ phase, setsSoFar }) => rounds[phase].push(setsSoFar),
+    });
     const sections = [`${grammar.name}: FIRST and FOLLOW`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(formatRounds('FIRST, round by round:', rounds.first, new Map()));

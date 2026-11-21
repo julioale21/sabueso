@@ -34,7 +34,7 @@ export interface PredictiveTable {
  */
 export function buildPredictiveTable(
   grammar: Grammar,
-  sets: FirstFollowSets = computeFirstFollow(grammar),
+  sets: FirstFollowSets = computeFirstFollow({ grammar }),
 ): PredictiveTable {
   // The table writes down, before reading any input, the decision an LL(1) parser takes:
   // "I am expanding A and the next token is a: use this production". A cell with two
@@ -58,7 +58,7 @@ export function buildPredictiveTable(
  * Two productions of the same A conflict exactly when their prediction sets overlap.
  */
 export function predictionSet(production: Production, sets: FirstFollowSets): Set<SymbolName> {
-  const firstOfRightSide = firstOfSequence(production.rightSide, sets.first);
+  const firstOfRightSide = firstOfSequence({ symbols: production.rightSide, first: sets.first });
   const lookaheads = new Set([...firstOfRightSide].filter((member) => member !== EMPTY_STRING));
   if (firstOfRightSide.has(EMPTY_STRING)) {
     for (const member of sets.follow.get(production.leftSide) ?? []) {

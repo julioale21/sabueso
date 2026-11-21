@@ -20,6 +20,13 @@ export const END_OF_INPUT = '$';
 /** The two fixed points, in the order they run: FOLLOW needs FIRST. */
 export type FirstFollowPhase = 'first' | 'follow';
 
+/** Called after each round of each phase with every set as found so far. */
+export type FirstFollowRoundListener = (round: {
+  phase: FirstFollowPhase;
+  round: number;
+  setsSoFar: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}) => void;
+
 export interface FirstFollowSets {
   /** FIRST(A) for each nonterminal: the terminals A can start with, plus ε if A ⇒* ε. */
   first: SetsBySymbol;
@@ -28,20 +35,23 @@ export interface FirstFollowSets {
 }
 
 /** FIRST and FOLLOW of every nonterminal; FIRST first, because FOLLOW is built from it. */
-export function computeFirstFollow(
-  grammar: Grammar,
-  onRound?: (
-    phase: FirstFollowPhase,
-    round: number,
-    sets: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-  ) => void,
-): FirstFollowSets {
-  const first = computeFirst(grammar, ({ round, setsSoFar }) =>
-    onRound?.('first', round, setsSoFar),
-  );
-  const follow = computeFollow(grammar, first, ({ round, setsSoFar }) =>
-    onRound?.('follow', round, setsSoFar),
-  );
+export function computeFirstFollow({
+  grammar,
+  onRound,
+}: {
+  grammar: Grammar;
+  /** Called after each round of each phase (the --steps tables). */
+  onRound?: FirstFollowRoundListener | undefined;
+}): FirstFollowSets {
+  const first = computeFirst({
+    grammar,
+    onRound: ({ round, setsSoFar }) => onRound?.({ phase: 'first', round, setsSoFar }),
+  });
+  const follow = computeFollow({
+    grammar,
+    first,
+    onRound: ({ round, setsSoFar }) => onRound?.({ phase: 'follow', round, setsSoFar }),
+  });
   return { first, follow };
 }
 
@@ -49,15 +59,22 @@ export function computeFirstFollow(
  * FIRST(A) for every nonterminal A, by least fixed point: for each A → α, everything that
  * FIRST(α) has so far goes into FIRST(A).
  */
-export function computeFirst(grammar: Grammar, onRound?: SetsRoundListener): SetsBySymbol {
+export function computeFirst({
+  grammar,
+  onRound,
+}: {
+  grammar: Grammar;
+  /** Called after each round with every FIRST set as found so far. */
+  onRound?: SetsRoundListener | undefined;
+}): SetsBySymbol {
   // Each round, for every production A → X1…Xk: a sequence starts with what X1 starts
   // with; if X1 can vanish (ε ∈ FIRST(X1)), also with what X2 starts with, and so on.
   // If all of them can vanish, A can too, and ε goes into FIRST(A).
   return repeatRuleOnSetsUntilNoChange({
-    start: emptySetFor(grammar.nonterminals),
+    start: emptySetFor({ symbols: grammar.nonterminals }),
     newMembersOfRound: (first) =>
       grammar.productions.flatMap((production) =>
-        [...firstOfSequence(production.rightSide, first)].map(
+        [...firstOfSequence({ symbols: production.rightSide, first })].map(
           (member): [SymbolName, SymbolName] => [production.leftSide, member],
         ),
       ),
@@ -70,19 +87,25 @@ export function computeFirst(grammar: Grammar, onRound?: SetsRoundListener): Set
  * for each production A → α B β: FIRST(β) without ε follows B; if β can vanish, so does
  * everything that follows A.
  */
-export function computeFollow(
-  grammar: Grammar,
-  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-  onRound?: SetsRoundListener,
-): SetsBySymbol {
+export function computeFollow({
+  grammar,
+  first,
+  onRound,
+}: {
+  grammar: Grammar;
+  /** FIRST of every nonterminal, already computed. */
+  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+  /** Called after each round with every FOLLOW set as found so far. */
+  onRound?: SetsRoundListener | undefined;
+}): SetsBySymbol {
   // FOLLOW looks to the right: what comes after B is what β starts with. When β can
   // vanish, B can be the last thing of A, so whatever comes after A comes after B too.
-  const start = emptySetFor(grammar.nonterminals);
+  const start = emptySetFor({ symbols: grammar.nonterminals });
   start.get(grammar.start)?.add(END_OF_INPUT);
   return repeatRuleOnSetsUntilNoChange({
     start,
     newMembersOfRound: (follow) =>
-      grammar.productions.flatMap((production) => followPairs(production, first, follow)),
+      grammar.productions.flatMap((production) => followPairs({ production, first, follow })),
     onRound,
   });
 }
@@ -92,10 +115,14 @@ export function computeFollow(
  * X2 too, and so on. ε is included only if every Xi can vanish (or the sequence is empty).
  * A terminal is its own FIRST.
  */
-export function firstOfSequence(
-  symbols: readonly SymbolName[],
-  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-): Set<SymbolName> {
+export function firstOfSequence({
+  symbols,
+  first,
+}: {
+  symbols: readonly SymbolName[];
+  /** FIRST of every nonterminal; a symbol not in the map is a terminal, its own FIRST. */
+  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}): Set<SymbolName> {
   const result = new Set<SymbolName>();
   for (const symbol of symbols) {
     const firstOfSymbol = first.get(symbol) ?? new Set([symbol]);
@@ -113,17 +140,22 @@ export function firstOfSequence(
 }
 
 /** The [B, member] pairs one production A → α B β adds to FOLLOW, for each nonterminal B. */
-function followPairs(
-  production: Grammar['productions'][number],
-  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-  follow: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>,
-): [SymbolName, SymbolName][] {
+function followPairs({
+  production,
+  first,
+  follow,
+}: {
+  production: Grammar['productions'][number];
+  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+  /** The FOLLOW sets known at the end of the previous round. */
+  follow: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}): [SymbolName, SymbolName][] {
   const pairs: [SymbolName, SymbolName][] = [];
   production.rightSide.forEach((symbol, position) => {
     if (!first.has(symbol)) {
       return; // a terminal has no FOLLOW
     }
-    const rest = firstOfSequence(production.rightSide.slice(position + 1), first);
+    const rest = firstOfSequence({ symbols: production.rightSide.slice(position + 1), first });
     for (const member of rest) {
       if (member !== EMPTY_STRING) {
         pairs.push([symbol, member]);
@@ -139,6 +171,6 @@ function followPairs(
 }
 
 /** An empty set for each of the given symbols. */
-function emptySetFor(symbols: Iterable<SymbolName>): SetsBySymbol {
+function emptySetFor({ symbols }: { symbols: Iterable<SymbolName> }): SetsBySymbol {
   return new Map([...symbols].map((symbol) => [symbol, new Set<SymbolName>()]));
 }
