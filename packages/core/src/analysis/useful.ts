@@ -5,11 +5,7 @@
  */
 import { buildGrammar } from '../grammar/build.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
-import {
-  repeatRuleUntilNoChange,
-  nonterminalsWithProductionMatching,
-  type RoundListener,
-} from './fixed-point.js';
+import { repeatRuleUntilNoChange, type RoundListener } from './fixed-point.js';
 
 /** The two fixed points, in the order they run. */
 export type UsefulPhase = 'productive' | 'reachable';
@@ -98,13 +94,23 @@ export function computeProductive({
   // Round 1: the A with a right side of only terminals (or ε).
   return repeatRuleUntilNoChange({
     start: [],
-    newSymbolsOfRound: (productive) =>
-      nonterminalsWithProductionMatching({
-        productions: grammar.productions,
-        condition: (production) => usesOnly({ production, nonterminals: productive, grammar }),
-      }),
+    newSymbolsOfRound: (productiveSymbols) => newProductiveSymbols({ grammar, productiveSymbols }),
     onRound,
   });
+}
+
+/** The rule of a round: the left sides of the productions that only use terminals and what is known. */
+function newProductiveSymbols({
+  grammar,
+  productiveSymbols,
+}: {
+  grammar: Grammar;
+  /** The symbols known to be productive at the end of the previous round. */
+  productiveSymbols: ReadonlySet<SymbolName>;
+}): SymbolName[] {
+  return grammar.productions
+    .filter((production) => usesOnly({ production, nonterminals: productiveSymbols, grammar }))
+    .map((production) => production.leftSide);
 }
 
 /**
@@ -128,8 +134,8 @@ export function computeReachable({
   const nonterminals = new Set(productions.map((production) => production.leftSide));
   return repeatRuleUntilNoChange({
     start: [start],
-    newSymbolsOfRound: (reachable) =>
-      nonterminalsUsedBy({ symbols: reachable, productions, nonterminals }),
+    newSymbolsOfRound: (reachableSymbols) =>
+      nonterminalsUsedBy({ symbols: reachableSymbols, productions, nonterminals }),
     onRound,
   });
 }

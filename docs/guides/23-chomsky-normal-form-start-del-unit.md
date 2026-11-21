@@ -259,20 +259,25 @@ Se queda con la producción si su lado derecho no está vacío **o** si es del s
 ### 5.3 `computeUnitPairs(grammar)` (`remove-unit-productions.ts`)
 
 ```ts
-return new Map(
-  [...grammar.nonterminals].map((nonterminal) => [
-    nonterminal,
-    repeatRuleUntilNoChange({
-      start: [nonterminal],
-      newSymbolsOfRound: (reached) =>
-        grammar.productions
-          .filter(
-            (production) => reached.has(production.leftSide) && isUnit({ production, grammar }),
-          )
-          .map((production) => production.rightSide[0] ?? ''),
-    }),
-  ]),
-);
+const unitPairs = new Map<SymbolName, Set<SymbolName>>();
+for (const nonterminal of grammar.nonterminals) {
+  const reached = repeatRuleUntilNoChange({
+    start: [nonterminal],
+    newSymbolsOfRound: (reachedSymbols) => unitTargets({ grammar, reachedSymbols }),
+  });
+  unitPairs.set(nonterminal, reached);
+}
+return unitPairs;
+```
+
+La regla de cada ronda, `unitTargets({ grammar, reachedSymbols })`:
+
+```ts
+return grammar.productions
+  .filter(
+    (production) => reachedSymbols.has(production.leftSide) && isUnit({ production, grammar }),
+  )
+  .map((production) => production.rightSide[0] ?? '');
 ```
 
 **Qué devuelve:** un `Map` que a cada no terminal A le asocia el conjunto de los B a los que llega con renombres (sus pares unitarios).
@@ -280,7 +285,7 @@ return new Map(
 Para cada no terminal A, corre un **menor punto fijo** (el mismo `repeatRuleUntilNoChange` de los anulables):
 
 - **Empieza con `{A}`:** A llega a sí mismo sin hacer nada.
-- **Cada ronda:** mira las producciones unitarias `B → C` cuyo B ya está en el conjunto (`reached`) y agrega los C. `production.rightSide[0]` es ese C, el único símbolo del lado derecho.
+- **Cada ronda:** `unitTargets` mira las producciones unitarias `B → C` cuyo B ya está en el conjunto (`reachedSymbols`) y agrega los C. `production.rightSide[0]` es ese C, el único símbolo del lado derecho.
 - **Termina** cuando una ronda no agrega nada. Siempre termina: el conjunto solo crece y no puede tener más que |N| símbolos.
 
 Ejemplo con Investigacion, en G1 después de DEL:

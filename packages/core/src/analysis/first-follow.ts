@@ -72,14 +72,27 @@ export function computeFirst({
   // If all of them can vanish, A can too, and ε goes into FIRST(A).
   return repeatRuleOnSetsUntilNoChange({
     start: emptySetFor(grammar.nonterminals),
-    newMembersOfRound: (first) =>
-      grammar.productions.flatMap((production) =>
-        [...firstOfSequence({ symbols: production.rightSide, first })].map(
-          (member): [SymbolName, SymbolName] => [production.leftSide, member],
-        ),
-      ),
+    newMembersOfRound: (first) => newFirstMembers({ grammar, first }),
     onRound,
   });
+}
+
+/** The rule of a round of FIRST: a [A, member] pair for each member of FIRST(α), for each A → α. */
+function newFirstMembers({
+  grammar,
+  first,
+}: {
+  grammar: Grammar;
+  /** The FIRST sets known at the end of the previous round. */
+  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}): [SymbolName, SymbolName][] {
+  const pairs: [SymbolName, SymbolName][] = [];
+  for (const production of grammar.productions) {
+    for (const member of firstOfSequence({ symbols: production.rightSide, first })) {
+      pairs.push([production.leftSide, member]);
+    }
+  }
+  return pairs;
 }
 
 /**
@@ -104,10 +117,23 @@ export function computeFollow({
   start.get(grammar.start)?.add(END_OF_INPUT);
   return repeatRuleOnSetsUntilNoChange({
     start,
-    newMembersOfRound: (follow) =>
-      grammar.productions.flatMap((production) => followPairs({ production, first, follow })),
+    newMembersOfRound: (follow) => newFollowMembers({ grammar, first, follow }),
     onRound,
   });
+}
+
+/** The rule of a round of FOLLOW: the [B, member] pairs of every production together. */
+function newFollowMembers({
+  grammar,
+  first,
+  follow,
+}: {
+  grammar: Grammar;
+  first: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+  /** The FOLLOW sets known at the end of the previous round. */
+  follow: ReadonlyMap<SymbolName, ReadonlySet<SymbolName>>;
+}): [SymbolName, SymbolName][] {
+  return grammar.productions.flatMap((production) => followPairs({ production, first, follow }));
 }
 
 /**

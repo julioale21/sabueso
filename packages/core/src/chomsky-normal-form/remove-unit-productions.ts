@@ -17,20 +17,31 @@ export function computeUnitPairs(grammar: Grammar): Map<SymbolName, Set<SymbolNa
   // Hopcroft's induction is the same least fixed point as nullable, from {A}:
   // base (A, A); if (A, B) is a pair and B → C is a production, (A, C) is a pair.
   // It stops because the set only grows and is bounded by |N|.
-  return new Map(
-    [...grammar.nonterminals].map((nonterminal) => [
-      nonterminal,
-      repeatRuleUntilNoChange({
-        start: [nonterminal],
-        newSymbolsOfRound: (reached) =>
-          grammar.productions
-            .filter(
-              (production) => reached.has(production.leftSide) && isUnit({ production, grammar }),
-            )
-            .map((production) => production.rightSide[0] ?? ''),
-      }),
-    ]),
-  );
+  const unitPairs = new Map<SymbolName, Set<SymbolName>>();
+  for (const nonterminal of grammar.nonterminals) {
+    const reached = repeatRuleUntilNoChange({
+      start: [nonterminal],
+      newSymbolsOfRound: (reachedSymbols) => unitTargets({ grammar, reachedSymbols }),
+    });
+    unitPairs.set(nonterminal, reached);
+  }
+  return unitPairs;
+}
+
+/** The rule of a round: the B of every unit production A → B whose A was already reached. */
+function unitTargets({
+  grammar,
+  reachedSymbols,
+}: {
+  grammar: Grammar;
+  /** The nonterminals reached at the end of the previous round. */
+  reachedSymbols: ReadonlySet<SymbolName>;
+}): SymbolName[] {
+  return grammar.productions
+    .filter(
+      (production) => reachedSymbols.has(production.leftSide) && isUnit({ production, grammar }),
+    )
+    .map((production) => production.rightSide[0] ?? '');
 }
 
 /**

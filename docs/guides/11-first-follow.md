@@ -167,20 +167,26 @@ return result;
 ```ts
 return repeatRuleOnSetsUntilNoChange({
   start: emptySetFor(grammar.nonterminals),
-  newMembersOfRound: (first) =>
-    grammar.productions.flatMap((production) =>
-      [...firstOfSequence({ symbols: production.rightSide, first })].map(
-        (member): [SymbolName, SymbolName] => [production.leftSide, member],
-      ),
-    ),
+  newMembersOfRound: (first) => newFirstMembers({ grammar, first }),
   onRound,
 });
 ```
 
 - `start: emptySetFor(grammar.nonterminals)`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
-- `firstOfSequence({ symbols: production.rightSide, first })`: para A → α, calcula FIRST(α) con los conjuntos de la ronda anterior (regla de la sección 3.1).
-- `.map((member) => [production.leftSide, member])`: convierte cada elemento en un par "este elemento entra en FIRST(A)".
-- `flatMap` junta los pares de todas las producciones en una sola lista. Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
+- La regla de cada ronda es `newFirstMembers`, definida justo debajo:
+
+```ts
+const pairs: [SymbolName, SymbolName][] = [];
+for (const production of grammar.productions) {
+  for (const member of firstOfSequence({ symbols: production.rightSide, first })) {
+    pairs.push([production.leftSide, member]);
+  }
+}
+return pairs;
+```
+
+- Para cada producción A → α, `firstOfSequence` calcula FIRST(α) con los conjuntos de la ronda anterior (regla de la sección 3.1).
+- Cada elemento se guarda como un par `[A, elemento]`: "este elemento entra en FIRST(A)". Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
 - ε entra en FIRST(A) solo si `firstOfSequence` lo devuelve, es decir, si todo α puede desaparecer.
 
 ### 5.4 `computeFollow({ grammar, first, onRound })`
@@ -190,11 +196,12 @@ const start = emptySetFor(grammar.nonterminals);
 start.get(grammar.start)?.add(END_OF_INPUT);
 return repeatRuleOnSetsUntilNoChange({
   start,
-  newMembersOfRound: (follow) =>
-    grammar.productions.flatMap((production) => followPairs({ production, first, follow })),
+  newMembersOfRound: (follow) => newFollowMembers({ grammar, first, follow }),
   onRound,
 });
 ```
+
+- La regla de cada ronda es `newFollowMembers`: junta en una sola lista los pares de `followPairs` de todas las producciones (`grammar.productions.flatMap(...)`).
 
 - `start.get(grammar.start)?.add(END_OF_INPUT)`: `$` va en FOLLOW(S) desde el principio. Es la primera regla de FOLLOW: después de una oración completa viene el fin de la entrada.
 - Por eso el punto fijo no parte de conjuntos todos vacíos. Ese `$` se propaga a otros no terminales por la regla de `followPairs`.

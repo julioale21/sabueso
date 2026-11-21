@@ -4,11 +4,7 @@
  * Card: docs/concepts/07-nullable-symbols.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
-import {
-  repeatRuleUntilNoChange,
-  nonterminalsWithProductionMatching,
-  type RoundListener,
-} from './fixed-point.js';
+import { repeatRuleUntilNoChange, type RoundListener } from './fixed-point.js';
 
 /**
  * The nonterminals that derive the empty string: A is nullable if some production
@@ -29,13 +25,23 @@ export function computeNullable({
   // A terminal is never nullable (it always contributes a symbol), so it never enters.
   return repeatRuleUntilNoChange({
     start: [],
-    newSymbolsOfRound: (nullableSymbols) =>
-      nonterminalsWithProductionMatching({
-        productions: grammar.productions,
-        condition: (production) => derivesEmptyString({ production, nullableSymbols }),
-      }),
+    newSymbolsOfRound: (nullableSymbols) => newNullableSymbols({ grammar, nullableSymbols }),
     onRound,
   });
+}
+
+/** The rule of a round: the left sides of the productions that derive ε with what is known. */
+function newNullableSymbols({
+  grammar,
+  nullableSymbols,
+}: {
+  grammar: Grammar;
+  /** The symbols known to be nullable at the end of the previous round. */
+  nullableSymbols: ReadonlySet<SymbolName>;
+}): SymbolName[] {
+  return grammar.productions
+    .filter((production) => derivesEmptyString({ production, nullableSymbols }))
+    .map((production) => production.leftSide);
 }
 
 /** A → X1…Xk derives ε when every Xi is nullable. `every` is true for k = 0, so A → ε counts. */

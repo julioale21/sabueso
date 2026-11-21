@@ -100,18 +100,22 @@ const useless = new Set(
 ```ts
 return repeatRuleUntilNoChange({
   start: [],
-  newSymbolsOfRound: (productive) =>
-    nonterminalsWithProductionMatching({
-      productions: grammar.productions,
-      condition: (production) => usesOnly({ production, nonterminals: productive, grammar }),
-    }),
+  newSymbolsOfRound: (productiveSymbols) => newProductiveSymbols({ grammar, productiveSymbols }),
   onRound,
 });
 ```
 
 - Usa el mismo `repeatRuleUntilNoChange` que los anulables (guía 07, sección 5.1). Parte de `start: []`, es decir, de ∅.
-- `nonterminalsWithProductionMatching({ productions, condition })`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
-- `usesOnly({ production, nonterminals: productive, grammar })`: la condición. Todo el lado derecho son terminales o productivos ya conocidos.
+- La regla de cada ronda es `newProductiveSymbols`, definida justo debajo:
+
+```ts
+return grammar.productions
+  .filter((production) => usesOnly({ production, nonterminals: productiveSymbols, grammar }))
+  .map((production) => production.leftSide);
+```
+
+- `filter` con `usesOnly`: se queda con las producciones cuyo lado derecho tiene solo terminales o productivos ya conocidos.
+- `map`: toma sus lados izquierdos. Son los productivos que encuentra esta ronda.
 - La única diferencia con los anulables es esa regla: `usesOnly` acepta terminales, porque un terminal ya es una cadena de Σ\*. En la ronda 1 entran los A con lado derecho de solo terminales (o ε).
 
 ### 5.3 `usesOnly({ production, nonterminals, grammar })`
@@ -130,8 +134,8 @@ return production.rightSide.every(
 const nonterminals = new Set(productions.map((production) => production.leftSide));
 return repeatRuleUntilNoChange({
   start: [start],
-  newSymbolsOfRound: (reachable) =>
-    nonterminalsUsedBy({ symbols: reachable, productions, nonterminals }),
+  newSymbolsOfRound: (reachableSymbols) =>
+    nonterminalsUsedBy({ symbols: reachableSymbols, productions, nonterminals }),
   onRound,
 });
 ```

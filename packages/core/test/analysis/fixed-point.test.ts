@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   repeatRuleUntilNoChange,
   repeatRuleOnSetsUntilNoChange,
-  nonterminalsWithProductionMatching,
 } from '../../src/analysis/fixed-point.js';
-import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import type { SymbolName } from '../../src/grammar/types.js';
 
 /** A chain a → b → c → d: each round, the successors of the symbols known so far. */
@@ -71,17 +69,6 @@ describe('repeatRuleUntilNoChange', () => {
       onRound: ({ symbolsSoFar }) => snapshots.push(symbolsSoFar),
     });
     expect(snapshots.map((snapshot) => snapshot.size)).toEqual([2, 3, 4, 4]);
-  });
-});
-
-describe('nonterminalsWithProductionMatching', () => {
-  it('returns the left sides of the productions that match the condition', () => {
-    const grammar = parseGrammarText({ text: "S -> A 'x' | ε\nA -> 'a'\n", name: 'small' });
-    const emptyRightSide = nonterminalsWithProductionMatching({
-      productions: grammar.productions,
-      condition: (production) => production.rightSide.length === 0,
-    });
-    expect(emptyRightSide).toEqual(['S']);
   });
 });
 

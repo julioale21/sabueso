@@ -4,7 +4,7 @@
  * Reference: Hopcroft 7.1; SPEC 02, sections 3.7 and 3.8.
  * Card: docs/concepts/07-nullable-symbols.md
  */
-import type { Production, SymbolName } from '../grammar/types.js';
+import type { SymbolName } from '../grammar/types.js';
 
 /** Called after each round with its number (from 1) and every symbol found so far. */
 export type RoundListener = (round: {
@@ -46,21 +46,6 @@ export function repeatRuleUntilNoChange({
     }
     knownBefore = knownAfter;
   }
-}
-
-/**
- * The nonterminals A with some production A → α that matches the condition: the usual rule
- * of a round (A is nullable if some A → α has every symbol of α nullable).
- */
-export function nonterminalsWithProductionMatching({
-  productions,
-  condition,
-}: {
-  productions: readonly Production[];
-  /** Decides whether a production counts: its left side is then in the result. */
-  condition: (production: Production) => boolean;
-}): SymbolName[] {
-  return productions.filter(condition).map((production) => production.leftSide);
 }
 
 /** One set per symbol, as FIRST and FOLLOW are. */

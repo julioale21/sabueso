@@ -107,18 +107,26 @@ export function computeNullable({
 }): Set<SymbolName> {
   return repeatRuleUntilNoChange({
     start: [],
-    newSymbolsOfRound: (nullableSymbols) =>
-      nonterminalsWithProductionMatching({
-        productions: grammar.productions,
-        condition: (production) => derivesEmptyString({ production, nullableSymbols }),
-      }),
+    newSymbolsOfRound: (nullableSymbols) => newNullableSymbols({ grammar, nullableSymbols }),
     onRound,
   });
 }
 ```
 
-- Se lee como la definición: "parto de ∅; en cada ronda entran los lados izquierdos de las producciones que derivan ε con los anulables conocidos".
-- `nonterminalsWithProductionMatching({ productions, condition })` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda. La condición la decide quien llama: acá, `derivesEmptyString`; en los productivos (paso 9), `usesOnly`.
+- Se lee como la definición: "parto de ∅ y, en cada ronda, aplico la regla `newNullableSymbols`".
+- `newSymbolsOfRound` recibe los anulables conocidos al final de la ronda anterior y le pasa ese conjunto a la regla. La regla tiene nombre y está definida justo debajo, en el mismo archivo.
+
+**La regla de una ronda, `newNullableSymbols({ grammar, nullableSymbols })`:**
+
+```ts
+return grammar.productions
+  .filter((production) => derivesEmptyString({ production, nullableSymbols }))
+  .map((production) => production.leftSide);
+```
+
+- `filter`: se queda con las producciones A → X1…Xk que ya derivan ε, es decir, con todos sus Xi anulables (sección 5.3).
+- `map`: de cada una toma el lado izquierdo A. Esos son los anulables que encuentra esta ronda.
+- Puede repetir un símbolo (A con dos producciones anulables): no importa, porque `repeatRuleUntilNoChange` los junta en un `Set`.
 
 ### 5.3 `derivesEmptyString({ production, nullableSymbols })`
 
