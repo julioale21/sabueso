@@ -267,11 +267,12 @@ apps/web/
     state/persistence.ts
     domain/examples.ts           # casos de la sección 9.1 del SPEC 02
     tree-layout/layout.ts
-    components/ui/               # primitivas reutilizables, sin dependencias: Tabs, TabButton, TabPanel, Button, Panel, MutedText…
+    components/ui/               # primitivas reutilizables, sin dependencias: Tabs, TabButton, TabPanel, Button, Panel, Badge, SelectField, MutedText…
     utils/cx.ts                  # combina clases condicionales (tres líneas)
     domain/tags.ts               # separa el relato en etiquetas
     components/sequence-input/   # SequenceInput y sus piezas: TagPalette, TagButton, StoryField, TagSequence, TagChip…
-    components/GrammarPanel.tsx
+    components/grammar-panel/    # GrammarPanel y sus piezas: GrammarSelect, GrammarSummary, GrammarText
+    domain/grammar-options.ts    # las versiones de un género para el selector
     components/TreeView.tsx
     components/DerivationView.tsx
     components/ResultPanel.tsx
