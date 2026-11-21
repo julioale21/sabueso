@@ -25,6 +25,15 @@ export default defineConfig(
       },
     },
   },
+  // Off: the editor's ESLint server reports them as false positives when a file is renamed
+  // or created with the editor open (the imported symbols turn into `any` until it restarts).
+  {
+    rules: {
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+    },
+  },
   // React hook rules, only for the web app.
   {
     files: ['apps/web/**/*.{ts,tsx}'],
