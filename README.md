@@ -201,7 +201,7 @@ El proyecto avanza por specs, en orden:
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------- |
 | [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Terminado            |
 | [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Terminado (30 pasos) |
-| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Borrador             |
+| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | En curso             |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador             |
 
 ---
@@ -245,6 +245,17 @@ npm run sabueso -- compare g0 g1 --max-length 3               # lo que acepta G0
 Las gramáticas incluidas son las del género (`g0` y `g1`), la del formato (`meta`) y siete de prueba (`arithmetic`, `parentheses`, `epsilon-trap`, …). `npm run sabueso -- grammars` las lista. Para usar una gramática propia: `--grammar-file <ruta>`.
 
 El recorrido completo de la demo está en [`docs/console-demo.md`](docs/console-demo.md).
+
+### La interfaz web
+
+- **En línea:** [julioale21.github.io/sabueso](https://julioale21.github.io/sabueso/). Se publica sola en cada push a `main`.
+- **En local:** `npm run dev -w @sabueso/web` y abre la dirección que muestra la consola.
+
+Para publicarla en un fork:
+
+1. El repositorio tiene que ser público (o tener un plan que permita Pages en repositorios privados).
+2. En **Settings → Pages → Build and deployment → Source**, elige **GitHub Actions**.
+3. Haz push a `main`: el workflow [`deploy-pages.yml`](.github/workflows/deploy-pages.yml) corre las pruebas, compila la web con `VITE_BASE=/<repositorio>/` y la publica. Si el repositorio no se llama `sabueso`, cambia `VITE_BASE` en el workflow.
 
 ---
 

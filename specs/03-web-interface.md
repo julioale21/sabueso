@@ -393,6 +393,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - Se usa `base` desde `VITE_BASE`.
     - Workflow `deploy-pages.yml`: en cada push a `main` corre `npm ci`, después `npm test`, después `npm run build` con `VITE_BASE=/sabueso/`, y publica `apps/web/dist` con `actions/upload-pages-artifact` y `actions/deploy-pages`.
     - En el README, los pasos manuales: hacer público el repo (si hace falta) y elegir "GitHub Actions" como fuente de Pages.
+    - Hecho: `.github/workflows/deploy-pages.yml` (también se puede lanzar a mano, con `workflow_dispatch`). Un deploy por vez, sin cancelar uno en curso. Se probó en local: con `VITE_BASE=/sabueso/` los recursos apuntan a `/sabueso/assets/…`, y `vite preview` en `/sabueso/` analiza A1 sin errores en la consola. La sección "La interfaz web" del README tiene el enlace y los pasos manuales.
 17. **Verificación manual.**
     - `docs/web-manual-check.md` con los casos de la sección 8, marcados después de revisarlos en el navegador.
 18. **Mejoras de la UI (versión 2).**
