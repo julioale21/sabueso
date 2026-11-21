@@ -33,7 +33,7 @@ De abajo hacia arriba, usando las producciones de G1:
 | Qué                | Dónde                                                                                 |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Archivo            | `packages/core/src/analysis/min-yield.ts`                                             |
-| Funciones          | `computeMinYield({ grammar })` y `minYieldOfSequence({ symbols, minYield })`          |
+| Funciones          | `computeMinYield(grammar)` y `minYieldOfSequence({ symbols, minYield })`              |
 | Comando de consola | `npm run sabueso -- min-yield --grammar g1`                                           |
 | Quién lo usa       | la poda del autómata de pila (paso 26) y la generación acotada de oraciones (paso 27) |
 

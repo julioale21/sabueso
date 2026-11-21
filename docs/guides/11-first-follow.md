@@ -100,14 +100,14 @@ Los conjuntos son `Map<SymbolName, Set<SymbolName>>`. ε y `$` se guardan como l
 La versión de `repeatRuleUntilNoChange` (guía 07) para un conjunto por símbolo: repite la regla hasta que ningún conjunto cambia. Recibe un objeto con tres campos: `start` (el conjunto de cada símbolo antes de la primera ronda), `newMembersOfRound` (la regla) y `onRound` (opcional).
 
 ```ts
-let knownBefore = copySets({ sets: start });
+let knownBefore = copySets(start);
 for (let round = 1; ; round++) {
-  const knownAfter = copySets({ sets: knownBefore });
+  const knownAfter = copySets(knownBefore);
   for (const [symbol, member] of newMembersOfRound(knownBefore)) {
     knownAfter.get(symbol)?.add(member);
   }
   onRound?.({ round, setsSoFar: knownAfter });
-  if (totalSize({ sets: knownAfter }) === totalSize({ sets: knownBefore })) {
+  if (totalSize(knownAfter) === totalSize(knownBefore)) {
     return knownAfter;
   }
   knownBefore = knownAfter;
@@ -117,7 +117,7 @@ for (let round = 1; ; round++) {
 - La regla devuelve pares `[symbol, member]`: "este elemento entra en el conjunto de este símbolo".
 - `newMembersOfRound(knownBefore)`: la regla lee solo los conjuntos de la ronda anterior. Lo nuevo va a `knownAfter`, así que un elemento hallado en esta ronda recién cuenta en la siguiente. Es la misma disciplina de rondas que en `repeatRuleUntilNoChange`.
 - `knownAfter.get(symbol)?.add(member)`: el `?.` ignora un par cuyo símbolo no tiene conjunto. Como `Set`, un elemento repetido no cuenta dos veces.
-- `totalSize({ sets: knownAfter }) === totalSize({ sets: knownBefore })`: si ninguna ronda agregó nada, es el punto fijo.
+- `totalSize(knownAfter) === totalSize(knownBefore)`: si ninguna ronda agregó nada, es el punto fijo.
 - Siempre termina: los conjuntos solo crecen y sus elementos salen de un conjunto finito (terminales, ε y $).
 
 `copySets` hace una copia **profunda**:
@@ -166,7 +166,7 @@ return result;
 
 ```ts
 return repeatRuleOnSetsUntilNoChange({
-  start: emptySetFor({ symbols: grammar.nonterminals }),
+  start: emptySetFor(grammar.nonterminals),
   newMembersOfRound: (first) =>
     grammar.productions.flatMap((production) =>
       [...firstOfSequence({ symbols: production.rightSide, first })].map(
@@ -177,7 +177,7 @@ return repeatRuleOnSetsUntilNoChange({
 });
 ```
 
-- `start: emptySetFor({ symbols: grammar.nonterminals })`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
+- `start: emptySetFor(grammar.nonterminals)`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
 - `firstOfSequence({ symbols: production.rightSide, first })`: para A → α, calcula FIRST(α) con los conjuntos de la ronda anterior (regla de la sección 3.1).
 - `.map((member) => [production.leftSide, member])`: convierte cada elemento en un par "este elemento entra en FIRST(A)".
 - `flatMap` junta los pares de todas las producciones en una sola lista. Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
@@ -186,7 +186,7 @@ return repeatRuleOnSetsUntilNoChange({
 ### 5.4 `computeFollow({ grammar, first, onRound })`
 
 ```ts
-const start = emptySetFor({ symbols: grammar.nonterminals });
+const start = emptySetFor(grammar.nonterminals);
 start.get(grammar.start)?.add(END_OF_INPUT);
 return repeatRuleOnSetsUntilNoChange({
   start,

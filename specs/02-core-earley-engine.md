@@ -887,7 +887,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
    - Prueba: minYield(Relato) es 3 en G0 y en G1. minYield(S) en `parentheses` es 0. Ficha 10.
    - **Consola:** `npm run sabueso -- min-yield --grammar g1` imprime la tabla de no terminales con su longitud mínima.
    - **Decisiones (2026-11-20):**
-     - Funciones: `computeMinYield(grammar)` devuelve `Map<SymbolName, number>` con todos los no terminales, y `minYieldOfSequence(symbols, minYield)` suma los de una secuencia (un terminal vale 1). La segunda queda exportada para la poda del AP (paso 26) y la generación acotada (paso 27). Desde el paso 23 reciben un objeto: `computeMinYield({ grammar })` y `minYieldOfSequence({ symbols, minYield })`.
+     - Funciones: `computeMinYield(grammar)` devuelve `Map<SymbolName, number>` con todos los no terminales, y `minYieldOfSequence(symbols, minYield)` suma los de una secuencia (un terminal vale 1). La segunda queda exportada para la poda del AP (paso 26) y la generación acotada (paso 27). Desde el paso 23, `minYieldOfSequence` recibe un objeto: `minYieldOfSequence({ symbols, minYield })`.
      - Un no terminal que no deriva ninguna cadena de terminales vale `Infinity` (∞). La consola lo muestra como `∞ (derives no string)` y, si es el inicial, informa L(G) = ∅.
      - Mismo punto fijo por rondas que los anulables. El spec no pide `--steps` para este paso, así que no se agregó `onIteration`.
 
@@ -910,7 +910,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:** `npm run sabueso -- cycles --grammar test-cyclic` imprime `S ⇒+ A ⇒+ S`.
     - **Decisiones (2026-11-20):**
       - `findCycles(grammar)` devuelve un ciclo por cada arista de retroceso de la DFS sobre el grafo unitario (en el orden de la gramática). Alcanza para decidir si G es cíclica y para mostrar los ciclos; no enumera todos los ciclos simples.
-      - `buildUnitGraph(grammar, nullable)` queda exportada: el comando la muestra con `--graph`. Desde el paso 23 las dos reciben un objeto: `findCycles({ grammar })` y `buildUnitGraph({ grammar, nullable })`.
+      - `buildUnitGraph(grammar, nullable)` queda exportada: el comando la muestra con `--graph`. Desde el paso 23, `buildUnitGraph` recibe un objeto: `buildUnitGraph({ grammar, nullable })`.
       - Ejemplo nuevo `examples/grammars/hidden-cycle.grammar`: un ciclo escondido detrás de símbolos anulables (`S → A S B` con A y B anulables).
 
 11. **FIRST y FOLLOW.**
@@ -1055,6 +1055,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - Las versiones de DEL salen en orden binario (la original primero: `( S ) S`, `( S )`, `( ) S`, `( )`), y `--until` acepta el nombre en minúsculas. Sin `--until`, el comando corre todos los pasos implementados.
       - Además de lo pedido, la prueba verifica que G0 y G1 aceptan y rechazan lo mismo hasta largo 3, y las gramáticas de libro (con ε incluida), después de cada paso.
       - `index.ts` exporta `addNewStart`, `NEW_START`, `removeEpsilonProductions`, `computeUnitPairs` y `removeUnitProductions`.
+      - **Convención de parámetros (refactor durante el paso 23):** una función con dos o más parámetros, o con algún parámetro opcional, los recibe por nombre en un solo objeto (`repeatRuleUntilNoChange({ start, newSymbolsOfRound, onRound })`). Una función con un solo parámetro obligatorio lo recibe por posición (`findCycles(grammar)`), porque el nombre de la función ya dice qué es. Un parámetro opcional se declara `campo?: Tipo | undefined`, por `exactOptionalPropertyTypes`.
 
 24. **FNC: USELESS, TERM y BIN.**
     - `chomsky-normal-form/remove-useless-symbols.ts`, `chomsky-normal-form/isolate-terminals.ts`, `chomsky-normal-form/binarize.ts` y `chomsky-normal-form/index.ts` (`toChomskyNormalForm` e `isChomskyNormalForm`).
@@ -1305,8 +1306,8 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 - [ ] `npm run sabueso -- parse --grammar ./any.grammar "CRI"` termina con código 2 y lista los nombres válidos: la CLI no acepta rutas.
 - [ ] Un `.grammar` con un literal sin cerrar en la línea 3 lanza `GrammarSyntaxError` con `line === 3`.
 - [ ] Un `.grammar` con `%terminals` y un identificador no declarado que no es lado izquierdo de ninguna regla lanza un error que nombra ese identificador.
-- [ ] `analyzeGrammar({ grammar: meta }).predictiveTable.isPredictive === true` y `analyzeGrammar({ grammar: g1 }).predictiveTable.isPredictive === true`.
-- [ ] `analyzeGrammar({ grammar: g0 }).predictiveTable.conflicts` incluye la celda (Linea, SOS).
+- [ ] `analyzeGrammar(meta).predictiveTable.isPredictive === true` y `analyzeGrammar(g1).predictiveTable.isPredictive === true`.
+- [ ] `analyzeGrammar(g0).predictiveTable.conflicts` incluye la celda (Linea, SOS).
 - [ ] Los anulables, inútiles, la vacuidad y los ciclos coinciden con los pasos 7 a 10 del plan.
 - [ ] Cada caso de la tabla 9.1 da exactamente la aceptación, la cantidad de árboles y el `ParseError` (posición, `found` y `expected`) indicados, con G0 y con G1.
 - [ ] La derivación de A1 con G1 es idéntica a la sección 9.2.

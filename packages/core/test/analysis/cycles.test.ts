@@ -5,41 +5,41 @@ import { computeNullable } from '../../src/analysis/nullable.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
-function cyclesOf({ text }: { text: string }) {
-  return findCycles({ grammar: parseGrammarText(text, 'test') });
+function cyclesOf(text: string) {
+  return findCycles(parseGrammarText(text, 'test'));
 }
 
 describe('findCycles', () => {
   it('test-cyclic: S → A, A → S gives the cycle [S, A]', () => {
-    expect(findCycles({ grammar: loadBuiltInGrammar('test-cyclic') })).toEqual([['S', 'A']]);
+    expect(findCycles(loadBuiltInGrammar('test-cyclic'))).toEqual([['S', 'A']]);
   });
 
   it.each(['g0', 'g1', 'arithmetic', 'parentheses', 'meta'])('%s has no cycles', (name) => {
-    expect(findCycles({ grammar: loadBuiltInGrammar(name) })).toEqual([]);
+    expect(findCycles(loadBuiltInGrammar(name))).toEqual([]);
   });
 
   it('a unit production to itself is a cycle of one symbol', () => {
-    expect(cyclesOf({ text: "S -> S | 'a'\n" })).toEqual([['S']]);
+    expect(cyclesOf("S -> S | 'a'\n")).toEqual([['S']]);
   });
 
   it('a cycle can hide behind nullable symbols: S → A S B with A and B nullable', () => {
-    expect(cyclesOf({ text: "S -> A S B | 'x'\nA -> ε | 'a'\nB -> ε | 'b'\n" })).toEqual([['S']]);
+    expect(cyclesOf("S -> A S B | 'x'\nA -> ε | 'a'\nB -> ε | 'b'\n")).toEqual([['S']]);
   });
 
   it('S → S S is not a cycle when S is not nullable: the other S must produce something', () => {
-    expect(cyclesOf({ text: "S -> S S | 'a'\n" })).toEqual([]);
+    expect(cyclesOf("S -> S S | 'a'\n")).toEqual([]);
   });
 
   it('S → S S is a cycle when S is nullable', () => {
-    expect(cyclesOf({ text: "S -> S S | 'a' | ε\n" })).toEqual([['S']]);
+    expect(cyclesOf("S -> S S | 'a' | ε\n")).toEqual([['S']]);
   });
 
   it('a terminal next to B breaks the edge: S → A x, A → S has no cycle', () => {
-    expect(cyclesOf({ text: "S -> A 'x' | 'y'\nA -> S\n" })).toEqual([]);
+    expect(cyclesOf("S -> A 'x' | 'y'\nA -> S\n")).toEqual([]);
   });
 
   it('finds a longer cycle in order, and a separate one', () => {
-    const cycles = cyclesOf({ text: "S -> A | 'a'\nA -> B\nB -> S\nC -> D | 'c'\nD -> C\n" });
+    const cycles = cyclesOf("S -> A | 'a'\nA -> B\nB -> S\nC -> D | 'c'\nD -> C\n");
     expect(cycles).toEqual([
       ['S', 'A', 'B'],
       ['C', 'D'],

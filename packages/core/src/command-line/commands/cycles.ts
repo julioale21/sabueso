@@ -46,7 +46,7 @@ export const cyclesCommand: Command = {
         formatUnitGraph(buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) })),
       );
     }
-    sections.push(formatCycles(findCycles({ grammar })));
+    sections.push(formatCycles(findCycles(grammar)));
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },

@@ -37,7 +37,7 @@ export const analyzeCommand: Command = {
       return reportUsageError(`Usage: ${ANALYZE_USAGE}`, environment);
     }
     const grammar = await readGrammar(source, environment);
-    const report = formatReport(grammar, analyzeGrammar({ grammar }));
+    const report = formatReport(grammar, analyzeGrammar(grammar));
     environment.writeOutput(`${grammar.name}: analysis\n\n${report}\n`);
     return EXIT_CODES.ok;
   },

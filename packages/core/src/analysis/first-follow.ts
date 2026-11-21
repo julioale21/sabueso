@@ -71,7 +71,7 @@ export function computeFirst({
   // with; if X1 can vanish (ε ∈ FIRST(X1)), also with what X2 starts with, and so on.
   // If all of them can vanish, A can too, and ε goes into FIRST(A).
   return repeatRuleOnSetsUntilNoChange({
-    start: emptySetFor({ symbols: grammar.nonterminals }),
+    start: emptySetFor(grammar.nonterminals),
     newMembersOfRound: (first) =>
       grammar.productions.flatMap((production) =>
         [...firstOfSequence({ symbols: production.rightSide, first })].map(
@@ -100,7 +100,7 @@ export function computeFollow({
 }): SetsBySymbol {
   // FOLLOW looks to the right: what comes after B is what β starts with. When β can
   // vanish, B can be the last thing of A, so whatever comes after A comes after B too.
-  const start = emptySetFor({ symbols: grammar.nonterminals });
+  const start = emptySetFor(grammar.nonterminals);
   start.get(grammar.start)?.add(END_OF_INPUT);
   return repeatRuleOnSetsUntilNoChange({
     start,
@@ -171,6 +171,6 @@ function followPairs({
 }
 
 /** An empty set for each of the given symbols. */
-function emptySetFor({ symbols }: { symbols: Iterable<SymbolName> }): SetsBySymbol {
+function emptySetFor(symbols: Iterable<SymbolName>): SetsBySymbol {
   return new Map([...symbols].map((symbol) => [symbol, new Set<SymbolName>()]));
 }

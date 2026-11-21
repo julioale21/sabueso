@@ -57,20 +57,20 @@ Se registra un ciclo por cada arista de retroceso. Alcanza para decidir si la gr
 
 ## 5. El código, función por función
 
-### 5.1 `findCycles({ grammar })`
+### 5.1 `findCycles(grammar)`
 
 ```ts
 const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
-const search = new CycleSearch({ graph });
+const search = new CycleSearch(graph);
 for (const symbol of grammar.nonterminals) {
-  search.visit({ symbol });
+  search.visit(symbol);
 }
 return search.cycles;
 ```
 
 - `computeNullable({ grammar })`: primero los anulables (paso 7). El grafo los necesita para saber qué símbolos pueden desaparecer.
-- `new CycleSearch({ graph })`: una sola búsqueda para todo el grafo. Así `finished` se comparte entre los arranques.
-- `for ... search.visit({ symbol })`: arranca desde cada no terminal, porque el grafo puede tener partes no conectadas. Los que ya se exploraron se saltean solos dentro de `visit`.
+- `new CycleSearch(graph)`: una sola búsqueda para todo el grafo. Así `finished` se comparte entre los arranques.
+- `for ... search.visit(symbol)`: arranca desde cada no terminal, porque el grafo puede tener partes no conectadas. Los que ya se exploraron se saltean solos dentro de `visit`.
 
 ### 5.2 `buildUnitGraph({ grammar, nullable })`
 
@@ -125,7 +125,7 @@ if (position !== -1) {
 }
 this.path.push(symbol);
 for (const next of this.graph.get(symbol) ?? []) {
-  this.visit({ symbol: next });
+  this.visit(next);
 }
 this.path.pop();
 this.finished.add(symbol);

@@ -15,7 +15,7 @@ const miniDetective = parseGrammarText(
   'mini-detective',
 );
 
-function conflictCells({ name }: { name: string }): string[] {
+function conflictCells(name: string): string[] {
   return buildPredictiveTable({ grammar: loadBuiltInGrammar(name) }).conflicts.map(
     (conflict) => `${conflict.nonterminal}, ${conflict.lookahead}`,
   );
@@ -29,7 +29,7 @@ describe('buildPredictiveTable', () => {
   });
 
   it('G0 is not LL(1): among its conflicts, (Linea, SOS), (Planteo, CRI) and (Pasos, PIS)', () => {
-    const cells = conflictCells({ name: 'g0' });
+    const cells = conflictCells('g0');
     expect(cells).toEqual(expect.arrayContaining(['Linea, SOS', 'Planteo, CRI', 'Pasos, PIS']));
     expect(buildPredictiveTable({ grammar: loadBuiltInGrammar('g0') }).isPredictive).toBe(false);
   });
@@ -45,7 +45,7 @@ describe('buildPredictiveTable', () => {
   });
 
   it('arithmetic is not LL(1) because of left recursion: E → E + T and E → T both start with id', () => {
-    expect(conflictCells({ name: 'arithmetic' })).toEqual(['E, (', 'E, id', 'T, (', 'T, id']);
+    expect(conflictCells('arithmetic')).toEqual(['E, (', 'E, id', 'T, (', 'T, id']);
   });
 
   it('the mini detective story has exactly the table of the guide', () => {
@@ -75,16 +75,16 @@ describe('buildPredictiveTable', () => {
 
 describe('predictionSet', () => {
   const sets = computeFirstFollow({ grammar: miniDetective });
-  const production = ({ text }: { text: string }) =>
+  const production = (text: string) =>
     miniDetective.productions.find((candidate) => formatProduction(candidate) === text);
 
   it('FIRST of the right side when it cannot derive ε', () => {
-    const inicio = production({ text: 'Inicio → CRI Hallazgo' });
+    const inicio = production('Inicio → CRI Hallazgo');
     expect(inicio && [...predictionSet({ production: inicio, sets })]).toEqual(['CRI']);
   });
 
   it('FOLLOW of the left side for an ε-production', () => {
-    const empty = production({ text: 'Hallazgo → ε' });
+    const empty = production('Hallazgo → ε');
     expect(empty && [...predictionSet({ production: empty, sets })].sort()).toEqual(['INT', 'PIS']);
   });
 });

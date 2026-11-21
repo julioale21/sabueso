@@ -152,19 +152,19 @@ return lookaheads;
 
 Recorre las filas y las casillas en orden y junta las que tienen más de una producción. El orden sigue la gramática (filas) y el orden en que se llenaron las casillas, así la salida es siempre la misma.
 
-### 5.4 `analyzeGrammar({ grammar })` (`analysis/index.ts`)
+### 5.4 `analyzeGrammar(grammar)` (`analysis/index.ts`)
 
 ```ts
 const useful = analyzeUsefulSymbols({ grammar });
 const sets = computeFirstFollow({ grammar });
 return {
   nullable: computeNullable({ grammar }),
-  minYield: computeMinYield({ grammar }),
+  minYield: computeMinYield(grammar),
   productive: useful.productive,
   reachable: useful.reachable,
   useless: useful.useless,
   isEmpty: useful.isEmpty,
-  cycles: findCycles({ grammar }),
+  cycles: findCycles(grammar),
   first: sets.first,
   follow: sets.follow,
   predictiveTable: buildPredictiveTable({ grammar, sets }),

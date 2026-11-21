@@ -55,7 +55,7 @@ Costo: cada ronda recorre P una vez. Las rondas están acotadas por la altura de
 
 ## 5. El código, función por función
 
-### 5.1 `computeMinYield({ grammar })`
+### 5.1 `computeMinYield(grammar)`
 
 ```ts
 let current = new Map<SymbolName, number>();

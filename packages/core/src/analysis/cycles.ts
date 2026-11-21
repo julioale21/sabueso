@@ -17,14 +17,14 @@ export type UnitGraph = Map<SymbolName, SymbolName[]>;
  * the unit graph. Each cycle lists its symbols in order: [S, A] means S ⇒+ A ⇒+ S.
  * An empty list means the grammar has no cycles.
  */
-export function findCycles({ grammar }: { grammar: Grammar }): SymbolName[][] {
+export function findCycles(grammar: Grammar): SymbolName[][] {
   // A cycle A ⇒+ A derives A again without producing anything else, so it can be repeated
   // as many times as wanted: some string then has infinitely many trees. The unit graph
   // keeps exactly the steps that produce nothing else, and a cycle in it is such a loop.
   const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
-  const search = new CycleSearch({ graph });
+  const search = new CycleSearch(graph);
   for (const symbol of grammar.nonterminals) {
-    search.visit({ symbol });
+    search.visit(symbol);
   }
   return search.cycles;
 }
@@ -82,14 +82,10 @@ class CycleSearch {
   /** Symbols whose search already finished: nothing new can be found from them. */
   private readonly finished = new Set<SymbolName>();
 
-  private readonly graph: UnitGraph;
-
-  constructor({ graph }: { graph: UnitGraph }) {
-    this.graph = graph;
-  }
+  constructor(private readonly graph: UnitGraph) {}
 
   /** Visits a symbol: follows each of its edges, then marks it as finished. */
-  visit({ symbol }: { symbol: SymbolName }): void {
+  visit(symbol: SymbolName): void {
     if (this.finished.has(symbol)) {
       return;
     }
@@ -101,7 +97,7 @@ class CycleSearch {
     }
     this.path.push(symbol);
     for (const next of this.graph.get(symbol) ?? []) {
-      this.visit({ symbol: next });
+      this.visit(next);
     }
     this.path.pop();
     this.finished.add(symbol);

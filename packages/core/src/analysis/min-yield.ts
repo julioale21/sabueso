@@ -13,7 +13,7 @@ import type { Grammar, Production, SymbolName } from '../grammar/types.js';
  * - minYield(a) = 1 for a terminal a.
  * - minYield(A) = min over A → X1…Xk of minYield(X1) + … + minYield(Xk); 0 for A → ε.
  */
-export function computeMinYield({ grammar }: { grammar: Grammar }): Map<SymbolName, number> {
+export function computeMinYield(grammar: Grammar): Map<SymbolName, number> {
   // Same fixed-point scheme as nullable, but with numbers instead of yes/no:
   // start from "∞" (no string known yet) and each round improves the value
   // of A with the sum of its right sides from the previous round. The values only
