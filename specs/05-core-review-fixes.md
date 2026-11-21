@@ -1,6 +1,6 @@
 # SPEC 05 — Arreglos del núcleo después de la revisión de código
 
-> **Estado:** Aprobado (2026-11-21)
+> **Estado:** Implementado (2026-11-21)
 > **Depende de:** SPEC 02 (terminado), SPEC 03 (terminado)
 > **Fecha:** 2026-11-21
 > **Rama:** `core_fixes` (sale de `main`, con todo lo anterior ya commiteado)
@@ -202,6 +202,13 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
 - **Sí:** el ayudante de N9 devuelve `{ parsed, source }` y no lee la gramática (2026-11-21, durante el paso 8). Muchos comandos validan otras opciones o leen el relato entre elegir la gramática y leerla; si el ayudante la leyera, el orden de los mensajes cambiaría cuando hay dos errores a la vez. Se verificó con 42 casos de argumentos inválidos contra el código anterior: misma salida y mismos códigos.
 - **No:** una sola `formatRounds` con un parámetro que arme cada fila. Cumplía el texto del plan, pero agregaba una función como parámetro.
 - **No:** el pulido opcional de la revisión (sección 2). Se puede retomar después.
+- **Cierre (2026-11-21, paso 9).** La validación final pasó:
+  - de los 106 comandos de la línea de base, 100 dan la misma salida. Los 6 que cambian son `parse` con relatos rechazados, y solo suman líneas (los ítems abiertos de N1): ninguna línea se borró ni cambió;
+  - 42 casos de argumentos inválidos dan la misma salida y los mismos códigos que antes del paso 8;
+  - pasan `typecheck`, `lint`, `format:check`, `build` y `npm test`: 1022 pruebas. La línea de base tenía 1020: +1 de los ciclos (N3), +4 de los ítems abiertos en el núcleo (N1) y −3 que se mudaron de la web al núcleo (N1);
+  - en el navegador, Análisis (A1, I1 con sus ítems abiertos, el relato vacío) y las otras cinco vistas muestran los mismos valores;
+  - el `grep` no encuentra nombres borrados ni la cita de Hopcroft 7.1.5 para START.
+- **Quedó anotado, fuera del spec:** `epsilonTrees` tiene el mismo problema que N7 (el parámetro opcional `path` es estado de la recursión), y `Recognition.startProduction` ya no se usa fuera del reconocedor. Se pueden resolver en otro spec.
 
 ---
 
