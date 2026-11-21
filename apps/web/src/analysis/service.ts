@@ -9,6 +9,7 @@ import type {
   DerivationStep,
   CockeYoungerKasamiResult,
   Genre,
+  Grammar,
   GrammarAnalysis,
   LanguageComparison,
   ParseResult,
@@ -48,7 +49,12 @@ export interface AnalysisService {
   normalFormAndCyk(
     id: GrammarId,
     input: string,
-  ): Promise<{ normalForm: ChomskyNormalFormResult; cyk: CockeYoungerKasamiResult }>;
+  ): Promise<{
+    /** The grammar before the conversion, to show what the first step changed. */
+    original: Grammar;
+    normalForm: ChomskyNormalFormResult;
+    cyk: CockeYoungerKasamiResult;
+  }>;
   /** The pushdown automaton of the grammar and its run on the input. */
   pushdown(
     id: GrammarId,

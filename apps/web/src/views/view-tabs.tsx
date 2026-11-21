@@ -7,6 +7,7 @@ import { PendingView } from '../components/PendingView';
 import type { TabItem } from '../components/ui/Tabs';
 import type { TabId, ViewProps } from '../state/app-state';
 import { AnalysisView } from './AnalysisView';
+import { CnfCykView } from './CnfCykView';
 import { EarleyPlayerView } from './EarleyPlayerView';
 import { Ll1View } from './Ll1View';
 
@@ -27,7 +28,7 @@ export function viewTabs(props: ViewProps): readonly TabItem<TabId>[] {
     {
       id: 'cnf-cyk',
       label: 'FNC y CYK',
-      panel: <PendingView concept="Forma Normal de Chomsky y CYK" step={12} />,
+      panel: <CnfCykView {...props} />,
       disabledReason: storyTabReason,
     },
     {

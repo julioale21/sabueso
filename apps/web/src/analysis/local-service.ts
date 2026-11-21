@@ -109,12 +109,13 @@ export function createLocalAnalysisService(): AnalysisService {
       later(() => parse({ grammar: grammarOf(id), input, options: { maxTrees: 1, trace: true } })),
     normalFormAndCyk: (id, input) =>
       later(() => {
-        const normalForm = toChomskyNormalForm(grammarOf(id));
+        const original = grammarOf(id);
+        const normalForm = toChomskyNormalForm(original);
         const cyk = recognizeCockeYoungerKasami({
           grammar: normalForm.grammar,
           tokens: tokenizeSequence(input),
         });
-        return { normalForm, cyk };
+        return { original, normalForm, cyk };
       }),
     pushdown: (id, input) =>
       later(() => {

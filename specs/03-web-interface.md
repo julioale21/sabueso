@@ -300,6 +300,8 @@ apps/web/
     components/ll1/              # Ll1Verdict, PredictiveTableView, PredictiveCell, ConflictList, FirstFollowTable
     domain/productions.ts        # cómo se escriben producciones y conjuntos
     views/CnfCykView.tsx
+    components/cnf-cyk/          # NormalFormSteps, NormalFormStep, CykTable, CykCell, CykVerdict, TreeComparison
+    domain/normal-form.ts        # qué hace cada paso de la FNC y qué producciones agregó y quitó
     views/PdaView.tsx
     views/CompareView.tsx
     styles/index.css             # @import "tailwindcss" y unos pocos estilos base
@@ -377,7 +379,11 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - Tiene su propio selector de gramática (el mismo `GrammarSelect`, sobre el estado compartido): la tabla es una propiedad de la gramática, no del relato, y así se comparan G1 y G0 sin cambiar de pestaña.
     - Prueba: con G0 hay al menos una celda con la clase de conflicto en (Linea, SOS).
 12. **Vista FNC y CYK.**
-    - `CnfCykView`: pasos de la FNC, tabla triangular y los dos árboles lado a lado.
+    - `CnfCykView`: pasos de la FNC, tabla triangular y los dos árboles.
+    - Cada paso muestra cuántas producciones agregó y quitó, y la lista se despliega.
+    - Los dos árboles van uno debajo del otro, a todo el ancho: el de Earley no entra en media pantalla. Debajo, los no terminales que solo tiene cada árbol.
+    - `normalFormAndCyk` también devuelve la gramática original, para comparar el primer paso.
+    - Prueba: CRI PIS REV con G1 tiene Relato en T[0][3] y X1 en T[1][2]; la FNC de G1 tiene 78 producciones.
 13. **Vista del autómata de pila.**
     - `PdaView`: transiciones y tabla de descripciones instantáneas del camino de aceptación.
 14. **Vista G0 vs G1.**
