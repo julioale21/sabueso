@@ -7,7 +7,7 @@ import { renderTree } from '../../src/trees/render.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
 function setup(text: string) {
-  const grammar = parseGrammarText(text, 'test');
+  const grammar = parseGrammarText({ text, name: 'test' });
   return { grammar, nullable: computeNullable({ grammar }) };
 }
 

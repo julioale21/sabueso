@@ -51,7 +51,7 @@ function printLex(
   showStates: boolean,
   environment: CommandLineEnvironment,
 ): void {
-  const tokens = tokenizeGrammar(grammar.text);
+  const tokens = tokenizeGrammar({ text: grammar.text });
   environment.writeOutput(`${grammar.label}: tokens\n\n${formatTokens(tokens)}\n`);
   if (showStates) {
     environment.writeOutput(`\n${formatFirstLineStates(grammar.text)}\n`);
@@ -105,17 +105,20 @@ function isContentLine(line: string): boolean {
 function traceLine(line: string): StatesRow[] {
   const rows: StatesRow[] = [];
   let path = stateName('q0Start');
-  tokenizeGrammar(`${line}\n`, (event: AutomatonEvent<LexerState, string>) => {
-    if (event.type === 'transition') {
-      path += ` ─${visible(event.character)}→ ${stateName(event.to)}`;
-      return;
-    }
-    rows.push({
-      lexeme: [...event.text].map(visible).join(''),
-      states: path,
-      result: event.kind ?? 'discarded',
-    });
-    path = stateName('q0Start');
+  tokenizeGrammar({
+    text: `${line}\n`,
+    onEvent: (event: AutomatonEvent<LexerState, string>) => {
+      if (event.type === 'transition') {
+        path += ` ─${visible(event.character)}→ ${stateName(event.to)}`;
+        return;
+      }
+      rows.push({
+        lexeme: [...event.text].map(visible).join(''),
+        states: path,
+        result: event.kind ?? 'discarded',
+      });
+      path = stateName('q0Start');
+    },
   });
   return rows;
 }

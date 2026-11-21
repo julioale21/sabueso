@@ -21,7 +21,7 @@ Pero una lista de palabras todavía no es una gramática. Falta reconocer la **e
 | 2   | **Parser (LL(1))** | **tokens**           | **`GrammarRule[]`, `%start`, `%terminals`** | **4** | **este paso** |
 | 3   | `buildGrammar`     | `GrammarRule[]`      | `Grammar`                                   | 2     | ✅            |
 
-`buildGrammar` se escribió antes (paso 2), pero en la cadena se ejecuta al final. Con este paso la cadena queda completa: `parseGrammarText(texto, nombre)` recibe el texto de un archivo y devuelve G = (N, Σ, P, S). A partir de ahora, las gramáticas se leen de archivos y no se escriben en código.
+`buildGrammar` se escribió antes (paso 2), pero en la cadena se ejecuta al final. Con este paso la cadena queda completa: `parseGrammarText({ text, name })` recibe el texto de un archivo y devuelve G = (N, Σ, P, S). A partir de ahora, las gramáticas se leen de archivos y no se escriben en código.
 
 ---
 
@@ -94,13 +94,13 @@ El archivo `meta.grammar` se escribe en el paso 5. En el paso 12, el propio prog
 
 | Quién                                                           | Llama a                                     | Para qué                                            |
 | --------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------- |
-| comando `grammar`                                               | `parseGrammarText(texto, nombre, onTrace?)` | mostrar G = (N, Σ, P, S) de un archivo              |
+| comando `grammar`                                               | `parseGrammarText({ text, name, onTrace })` | mostrar G = (N, Σ, P, S) de un archivo              |
 | (paso 5 en adelante) carga de G0, G1 y las gramáticas de prueba | `parseGrammarText`                          | toda gramática del programa se lee con esta función |
 
 `parseGrammarText` encadena las tres etapas:
 
-1. `tokenizeGrammar(texto)`: el lexer del paso 3.
-2. `parseGrammarFile(tokens)`: el parser de este paso. Devuelve las reglas, `%start` y `%terminals`.
+1. `tokenizeGrammar({ text })`: el lexer del paso 3.
+2. `parseGrammarFile({ tokens, onTrace })`: el parser de este paso. Devuelve las reglas, `%start` y `%terminals`.
 3. `buildGrammar({ name, rules, start, declaredTerminals })`: la construcción del paso 2, que valida.
 
 ---
@@ -276,10 +276,10 @@ Todos son `GrammarSyntaxError`, el mismo error del lexer. Los errores de **const
 
 ### 7.1 Funciones públicas
 
-| Función                                  | Qué hace                                                                                            |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `parseGrammarText(text, name, onTrace?)` | la cadena completa: lexer → parser → `buildGrammar`. Devuelve un `Grammar`                          |
-| `parseGrammarFile(tokens, onTrace?)`     | solo el parser: recibe tokens y devuelve `ParsedGrammarFile` (reglas, `start`, `declaredTerminals`) |
+| Función                                     | Qué hace                                                                                            |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `parseGrammarText({ text, name, onTrace })` | la cadena completa: lexer → parser → `buildGrammar`. Devuelve un `Grammar`                          |
+| `parseGrammarFile({ tokens, onTrace })`     | solo el parser: recibe tokens y devuelve `ParsedGrammarFile` (reglas, `start`, `declaredTerminals`) |
 
 **`ParsedGrammarFile`**: lo que dice el archivo antes de construir la gramática. `start` y `declaredTerminals` son `undefined` si el archivo no tiene esas directivas.
 
@@ -299,10 +299,10 @@ Uno por regla de `meta.grammar`. Todos siguen el mismo patrón: miran `lookahead
 
 ```ts
 if (this.lookahead().kind === 'END_OF_FILE') {
-  this.trace('File', 'END_OF_FILE');
+  this.trace({ nonterminal: 'File', alternative: 'END_OF_FILE' });
   return this.file;
 }
-this.trace('File', 'Element File');
+this.trace({ nonterminal: 'File', alternative: 'Element File' });
 this.nested(() => this.parseElement());
 return this.parseFile();
 ```
@@ -317,16 +317,16 @@ return this.parseFile();
 ```ts
 switch (this.lookahead().kind) {
   case 'NEWLINE':
-    this.trace('Element', 'NEWLINE');
+    this.trace({ nonterminal: 'Element', alternative: 'NEWLINE' });
     this.expect('NEWLINE');
     return;
   case 'START':
   case 'TERMINALS':
-    this.trace('Element', 'Directive');
+    this.trace({ nonterminal: 'Element', alternative: 'Directive' });
     this.nested(() => this.parseDirective());
     return;
   case 'IDENTIFIER':
-    this.trace('Element', 'Rule');
+    this.trace({ nonterminal: 'Element', alternative: 'Rule' });
     this.nested(() => this.parseRule());
     return;
   default:
@@ -344,27 +344,36 @@ switch (this.lookahead().kind) {
 ```ts
 const directive = this.lookahead();
 if (directive.kind === 'START') {
-  this.trace('Directive', 'START IDENTIFIER NEWLINE');
+  this.trace({ nonterminal: 'Directive', alternative: 'START IDENTIFIER NEWLINE' });
   this.expect('START');
   const start = this.expect('IDENTIFIER').text;
   this.expect('NEWLINE');
-  this.file.start = this.onlyOnce(directive, this.file.start, start);
+  this.file.start = this.onlyOnce({ directive, previous: this.file.start, value: start });
   return;
 }
-this.trace('Directive', 'TERMINALS Symbols NEWLINE');
+this.trace({ nonterminal: 'Directive', alternative: 'TERMINALS Symbols NEWLINE' });
 this.expect('TERMINALS');
 const terminals = this.nested(() => this.parseSymbols()).map(symbolName);
 this.expect('NEWLINE');
-this.file.declaredTerminals = this.onlyOnce(directive, this.file.declaredTerminals, terminals);
+this.file.declaredTerminals = this.onlyOnce({
+  directive,
+  previous: this.file.declaredTerminals,
+  value: terminals,
+});
 ```
 
 ```ts
-private onlyOnce<T>(directive: Token, previous: T | undefined, value: T): T {
+private onlyOnce<T>({
+  directive,
+  previous,
+  value,
+}: {
+  directive: Token;
+  previous: T | undefined;
+  value: T;
+}): T {
   if (previous !== undefined) {
-    throw new GrammarSyntaxError(
-      `${directive.text} appears more than once`,
-      directive.line,
-      directive.column,
+    throw new GrammarSyntaxError({ message: `${directive.text} appears more than once`, line: directive.line, column: directive.column }
     );
   }
   return value;
@@ -381,7 +390,7 @@ private onlyOnce<T>(directive: Token, previous: T | undefined, value: T): T {
 #### `parseRule()`: Rule → IDENTIFIER ARROW Alternatives NEWLINE
 
 ```ts
-this.trace('Rule', 'IDENTIFIER ARROW Alternatives NEWLINE');
+this.trace({ nonterminal: 'Rule', alternative: 'IDENTIFIER ARROW Alternatives NEWLINE' });
 const leftSide = this.expect('IDENTIFIER').text;
 this.expect('ARROW');
 const alternatives = this.nested(() => this.parseAlternatives());
@@ -405,13 +414,13 @@ Una sola alternativa: lee una `Sequence`, después las demás (`parseMoreAlterna
 const kind = this.lookahead().kind;
 if (kind === 'NEWLINE') {
   // ε is chosen when the lookahead is in FOLLOW(MoreAlternatives) = {NEWLINE}.
-  this.trace('MoreAlternatives', 'ε');
+  this.trace({ nonterminal: 'MoreAlternatives', alternative: 'ε' });
   return [];
 }
 if (kind !== 'BAR') {
   throw this.unexpected(['BAR', 'NEWLINE']);
 }
-this.trace('MoreAlternatives', 'BAR Sequence MoreAlternatives');
+this.trace({ nonterminal: 'MoreAlternatives', alternative: 'BAR Sequence MoreAlternatives' });
 this.expect('BAR');
 const sequence = this.nested(() => this.parseSequence());
 const rest = this.nested(() => this.parseMoreAlternatives());
@@ -428,7 +437,7 @@ return [sequence, ...rest];
 ```ts
 const kind = this.lookahead().kind;
 if (kind === 'EPSILON') {
-  this.trace('Sequence', 'EPSILON');
+  this.trace({ nonterminal: 'Sequence', alternative: 'EPSILON' });
   this.expect('EPSILON');
   return [];
 }
@@ -436,7 +445,7 @@ if (kind === 'EPSILON') {
 if (!symbolsOrSequenceEnd.includes(kind)) {
   throw this.unexpected(['EPSILON', ...symbolsOrSequenceEnd]);
 }
-this.trace('Sequence', 'Symbols');
+this.trace({ nonterminal: 'Sequence', alternative: 'Symbols' });
 return this.nested(() => this.parseSymbols());
 ```
 
@@ -452,13 +461,13 @@ return this.nested(() => this.parseSymbols());
 const kind = this.lookahead().kind;
 if (kind === 'BAR' || kind === 'NEWLINE') {
   // ε is chosen when the lookahead is in FOLLOW(Symbols) = {BAR, NEWLINE}.
-  this.trace('Symbols', 'ε');
+  this.trace({ nonterminal: 'Symbols', alternative: 'ε' });
   return [];
 }
 if (kind !== 'IDENTIFIER' && kind !== 'LITERAL') {
   throw this.unexpected(symbolsOrSequenceEnd);
 }
-this.trace('Symbols', 'Symbol Symbols');
+this.trace({ nonterminal: 'Symbols', alternative: 'Symbol Symbols' });
 const symbol = this.nested(() => this.parseSymbol());
 const rest = this.nested(() => this.parseSymbols());
 return [symbol, ...rest];
@@ -473,11 +482,11 @@ return [symbol, ...rest];
 ```ts
 const token = this.lookahead();
 if (token.kind === 'LITERAL') {
-  this.trace('Symbol', 'LITERAL');
+  this.trace({ nonterminal: 'Symbol', alternative: 'LITERAL' });
   this.expect('LITERAL');
   return { literal: token.text };
 }
-this.trace('Symbol', 'IDENTIFIER');
+this.trace({ nonterminal: 'Symbol', alternative: 'IDENTIFIER' });
 return this.expect('IDENTIFIER').text;
 ```
 
@@ -523,11 +532,11 @@ return token;
 ```ts
 const found = this.lookahead();
 const options = listWithOr(expected.map((kind) => tokenDescriptions[kind]));
-return new GrammarSyntaxError(
-  `Expected ${options}, but found ${describeToken(found)}`,
-  found.line,
-  found.column,
-);
+return new GrammarSyntaxError({
+  message: `Expected ${options}, but found ${describeToken(found)}`,
+  line: found.line,
+  column: found.column,
+});
 ```
 
 ```ts
@@ -565,7 +574,7 @@ try {
 - `finally` baja la profundidad salga como salga `parse()`: con `return` o con un error. Es la forma segura de deshacer un cambio de estado.
 - Es genérica (`<T>`): devuelve lo mismo que la llamada.
 
-#### `trace(nonterminal, alternative)`
+#### `trace({ nonterminal, alternative })`
 
 Avisa la decisión al observador con `this.onTrace?.(...)`: si no hay observador, no hace nada. Se llama antes de consumir, así `lookahead()` es el token que decidió.
 

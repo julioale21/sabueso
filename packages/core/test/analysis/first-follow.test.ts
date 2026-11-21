@@ -11,13 +11,13 @@ import { computeNullable } from '../../src/analysis/nullable.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
-const miniDetective = parseGrammarText(
-  readFileSync(
+const miniDetective = parseGrammarText({
+  text: readFileSync(
     new URL('../../../../examples/grammars/mini-detective.grammar', import.meta.url),
     'utf8',
   ),
-  'mini-detective',
-);
+  name: 'mini-detective',
+});
 
 function sorted({
   sets,
@@ -159,7 +159,7 @@ describe('the rounds of the fixed points', () => {
   });
 
   it('computeFollow starts with $ in FOLLOW(S)', () => {
-    const grammar = parseGrammarText("S -> 'a'\n", 'one');
+    const grammar = parseGrammarText({ text: "S -> 'a'\n", name: 'one' });
     expect(
       sorted({
         sets: computeFollow({ grammar, first: computeFirst({ grammar }) }),

@@ -19,7 +19,7 @@ export function readBuiltInGrammarText(name: string): string {
 
 /** A built-in grammar, read and built with the whole chain. */
 export function loadBuiltInGrammar(name: string): Grammar {
-  return parseGrammarText(readBuiltInGrammarText(name), name);
+  return parseGrammarText({ text: readBuiltInGrammarText(name), name });
 }
 
 /** The fixture L1: CRI, 198 × PIS, REV. */

@@ -34,12 +34,13 @@ export interface Token {
 
 /** A .grammar file that cannot be read; the position points at the offending character. */
 export class GrammarSyntaxError extends Error {
-  constructor(
-    message: string,
-    readonly line: number,
-    readonly column: number,
-  ) {
+  readonly line: number;
+  readonly column: number;
+
+  constructor({ message, line, column }: { message: string; line: number; column: number }) {
     super(`Line ${line}, column ${column}: ${message}`);
+    this.line = line;
+    this.column = column;
     this.name = 'GrammarSyntaxError';
   }
 }
@@ -123,10 +124,13 @@ export function classifyCharacter(character: string): CharacterClass {
 }
 
 /** A row of δ that goes to `target` on every class except the given ones. */
-function everyClassExcept(
-  excluded: readonly CharacterClass[],
-  target: LexerState,
-): Partial<Record<CharacterClass, LexerState>> {
+function everyClassExcept({
+  excluded,
+  target,
+}: {
+  excluded: readonly CharacterClass[];
+  target: LexerState;
+}): Partial<Record<CharacterClass, LexerState>> {
   const row: Partial<Record<CharacterClass, LexerState>> = {};
   for (const characterClass of characterClasses) {
     if (!excluded.includes(characterClass)) {
@@ -166,13 +170,13 @@ export const grammarLexerAutomaton: DeterministicAutomatonDefinition<
     q4BarRead: {},
     q5EpsilonRead: {},
     q6ReadingLiteral: {
-      ...everyClassExcept(['singleQuote', 'lineBreak'], 'q6ReadingLiteral'),
+      ...everyClassExcept({ excluded: ['singleQuote', 'lineBreak'], target: 'q6ReadingLiteral' }),
       singleQuote: 'q7LiteralRead',
     },
     q7LiteralRead: {},
     q8ExpectingDirectiveName: { letter: 'q9ReadingDirective' },
     q9ReadingDirective: { letter: 'q9ReadingDirective' },
-    q10ReadingComment: everyClassExcept(['lineBreak'], 'q10ReadingComment'),
+    q10ReadingComment: everyClassExcept({ excluded: ['lineBreak'], target: 'q10ReadingComment' }),
     q11ReadingSpaces: { whitespace: 'q11ReadingSpaces' },
     q12NewlineRead: {},
   },
@@ -205,23 +209,30 @@ const directives: Partial<Record<string, TokenKind>> = {
  *
  * Throws GrammarSyntaxError with the line and column of the problem.
  */
-export function tokenizeGrammar(
-  text: string,
-  onEvent?: (event: AutomatonEvent<LexerState, LexemeKind>) => void,
-): Token[] {
+export function tokenizeGrammar({
+  text,
+  onEvent,
+}: {
+  text: string;
+  /** Called on each step of the DFA (the --states table of the lex command). */
+  onEvent?: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined;
+}): Token[] {
   // Two stages: the DFA recognizes lexemes (regular level), then each lexeme becomes
   // a token (quotes removed, %start/%terminals resolved). The final NEWLINE and END_OF_FILE
   // guarantee the parser that every line ends the same way and that there is always a
   // token to look at (END_OF_FILE plays the role of $, the end of the input).
-  const tokens = readLexemes(text, onEvent).map(toToken);
-  return [...tokens, ...closingTokens(text, tokens)];
+  const tokens = readLexemes({ text, onEvent }).map(toToken);
+  return [...tokens, ...closingTokens({ text, tokens })];
 }
 
 /** Runs the DFA over the text and turns a stop of the automaton into a GrammarSyntaxError. */
-function readLexemes(
-  text: string,
-  onEvent: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined,
-): AutomatonToken<LexemeKind>[] {
+function readLexemes({
+  text,
+  onEvent,
+}: {
+  text: string;
+  onEvent?: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined;
+}): AutomatonToken<LexemeKind>[] {
   try {
     return runDeterministicAutomaton(grammarLexerAutomaton, text, onEvent);
   } catch (error) {
@@ -251,17 +262,17 @@ function toToken(lexeme: AutomatonToken<LexemeKind>): Token {
 function resolveDirective(lexeme: AutomatonToken<LexemeKind>): TokenKind {
   const kind = directives[lexeme.text];
   if (kind === undefined) {
-    throw new GrammarSyntaxError(
-      `Unknown directive "${lexeme.text}": expected %start or %terminals`,
-      lexeme.line,
-      lexeme.column,
-    );
+    throw new GrammarSyntaxError({
+      message: `Unknown directive "${lexeme.text}": expected %start or %terminals`,
+      line: lexeme.line,
+      column: lexeme.column,
+    });
   }
   return kind;
 }
 
 /** The final NEWLINE (only if missing) and END_OF_FILE, both at the end of the text. */
-function closingTokens(text: string, tokens: readonly Token[]): Token[] {
+function closingTokens({ text, tokens }: { text: string; tokens: readonly Token[] }): Token[] {
   const end = endPosition(text);
   const closing: Token[] = [];
   if (tokens.at(-1)?.kind !== 'NEWLINE') {
@@ -292,10 +303,10 @@ const unfinishedTokenMessages: Partial<Record<LexerState, string>> = {
 function toSyntaxError(error: AutomatonStoppedError<LexerState>): GrammarSyntaxError {
   const message = unfinishedTokenMessages[error.state];
   return message === undefined
-    ? new GrammarSyntaxError(
-        `Invalid character '${error.character ?? ''}'`,
-        error.line,
-        error.column,
-      )
-    : new GrammarSyntaxError(message, error.tokenLine, error.tokenColumn);
+    ? new GrammarSyntaxError({
+        message: `Invalid character '${error.character ?? ''}'`,
+        line: error.line,
+        column: error.column,
+      })
+    : new GrammarSyntaxError({ message, line: error.tokenLine, column: error.tokenColumn });
 }

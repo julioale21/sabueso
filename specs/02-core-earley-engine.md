@@ -837,7 +837,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
 
 4. **Parser LL(1) de `.grammar`.**
    - `grammar-format/parser.ts`: una función por no terminal de `meta.grammar`. Cada función elige la alternativa por el `kind` del lookahead.
-   - Expone `parseGrammarText(text, name)` y la arma con `buildGrammar`.
+   - Expone `parseGrammarText(text, name)` y la arma con `buildGrammar`. Desde el paso 23 recibe un objeto: `parseGrammarText({ text, name, onTrace })`, igual que `tokenizeGrammar({ text, onEvent })` y `parseGrammarFile({ tokens, onTrace })`.
    - Pruebas: errores de sintaxis con línea y columna. Ficha 04.
    - **Consola:**
      - `npm run sabueso -- grammar arithmetic` imprime G = (N, Σ, P, S). También acepta `--grammar-file <ruta>`.

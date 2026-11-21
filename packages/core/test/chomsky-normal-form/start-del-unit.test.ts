@@ -73,7 +73,7 @@ describe('START: a new start symbol S0 → S, only if S appears on some right si
   );
 
   it('uses S0′ when the grammar already has a symbol S0', () => {
-    const grammar = parseGrammarText("S0 -> 'a' S0 | 'b'\n", 'own-s0');
+    const grammar = parseGrammarText({ text: "S0 -> 'a' S0 | 'b'\n", name: 'own-s0' });
     expect(addNewStart(grammar).start).toBe("S0'");
   });
 });
@@ -99,7 +99,10 @@ describe('DEL: no ε-productions, except S → ε for the start symbol when ε �
   });
 
   it('keeps S → ε when the start symbol is nullable and START left it as it was', () => {
-    const grammar = parseGrammarText("S -> A B\nA -> 'a' | ε\nB -> 'b' | ε\n", 'optional-pair');
+    const grammar = parseGrammarText({
+      text: "S -> A B\nA -> 'a' | ε\nB -> 'b' | ε\n",
+      name: 'optional-pair',
+    });
     const [started, withoutEpsilon, withoutUnits] = firstThreeSteps(grammar);
     expect(started).toBe(grammar);
     expect(productions(withoutEpsilon)).toEqual([

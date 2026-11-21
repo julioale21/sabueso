@@ -6,10 +6,10 @@ import type { SymbolName } from '../../src/grammar/types.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
 /** S → A B x | B B, B → A A | b, A → a | ε: one new nullable symbol per round. */
-const chainGrammar = parseGrammarText(
-  "S -> A B 'x' | B B\nB -> A A | 'b'\nA -> 'a' | ε\n",
-  'chain',
-);
+const chainGrammar = parseGrammarText({
+  text: "S -> A B 'x' | B B\nB -> A A | 'b'\nA -> 'a' | ε\n",
+  name: 'chain',
+});
 
 describe('computeNullable', () => {
   it('G0 has no nullable symbols: it has no ε-productions', () => {
@@ -48,7 +48,7 @@ describe('computeNullable', () => {
   });
 
   it('terminals are never nullable, even when the rest of the right side is', () => {
-    const grammar = parseGrammarText("S -> A 'x'\nA -> ε\n", 'terminal');
+    const grammar = parseGrammarText({ text: "S -> A 'x'\nA -> ε\n", name: 'terminal' });
     expect(computeNullable({ grammar })).toEqual(new Set(['A']));
   });
 

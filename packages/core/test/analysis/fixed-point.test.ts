@@ -76,7 +76,7 @@ describe('repeatRuleUntilNoChange', () => {
 
 describe('nonterminalsWithProductionMatching', () => {
   it('returns the left sides of the productions that match the condition', () => {
-    const grammar = parseGrammarText("S -> A 'x' | ε\nA -> 'a'\n", 'small');
+    const grammar = parseGrammarText({ text: "S -> A 'x' | ε\nA -> 'a'\n", name: 'small' });
     const emptyRightSide = nonterminalsWithProductionMatching({
       productions: grammar.productions,
       condition: (production) => production.rightSide.length === 0,

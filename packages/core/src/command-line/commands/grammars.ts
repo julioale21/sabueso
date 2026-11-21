@@ -49,7 +49,7 @@ async function describeGrammar(
   environment: CommandLineEnvironment,
 ): Promise<GrammarRow> {
   const text = await environment.readFile(builtInGrammarPath(builtIn));
-  return { builtIn, grammar: parseGrammarText(text, builtIn.id) };
+  return { builtIn, grammar: parseGrammarText({ text, name: builtIn.id }) };
 }
 
 /** The table of one group of grammars: id, aliases, |N|, |Σ|, |P| and description. */

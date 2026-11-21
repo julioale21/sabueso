@@ -73,7 +73,7 @@ describe('meta.grammar', () => {
     // A text that uses every kind of token: START, TERMINALS, IDENTIFIER, ARROW, LITERAL,
     // BAR, EPSILON, NEWLINE and END_OF_FILE.
     const text = "%start S\n%terminals a\nS -> 'b' | ε\n";
-    const tokenKinds = new Set(tokenizeGrammar(text).map((token) => token.kind));
+    const tokenKinds = new Set(tokenizeGrammar({ text }).map((token) => token.kind));
     expect(tokenKinds.size).toBe(9);
     expect(new Set(loadBuiltInGrammar('meta').terminals)).toEqual(tokenKinds);
   });

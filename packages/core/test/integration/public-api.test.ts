@@ -15,7 +15,7 @@ import {
 
 function loadGenreGrammar(id: string): Grammar {
   const url = new URL(`../../grammars/genres/${id}.grammar`, import.meta.url);
-  return parseGrammarText(readFileSync(url, 'utf8'), id);
+  return parseGrammarText({ text: readFileSync(url, 'utf8'), name: id });
 }
 
 const g0 = loadGenreGrammar('detective/g0');
@@ -68,7 +68,7 @@ describe('the public API', () => {
   });
 
   it('the classic algorithm can still be asked for', () => {
-    const trap = parseGrammarText("S -> A A 'x'\nA -> ε\n", 'epsilon-trap');
+    const trap = parseGrammarText({ text: "S -> A A 'x'\nA -> ε\n", name: 'epsilon-trap' });
     expect(parse(trap, 'x').accepted).toBe(true);
     expect(parse(trap, 'x', { classicEpsilon: true }).accepted).toBe(false);
   });

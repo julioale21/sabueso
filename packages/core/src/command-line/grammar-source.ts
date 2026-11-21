@@ -102,7 +102,7 @@ export async function readGrammar(
   environment: CommandLineEnvironment,
 ): Promise<Grammar> {
   const { label, text } = await readGrammarSource(source, environment);
-  return parseGrammarText(text, label);
+  return parseGrammarText({ text, name: label });
 }
 
 /** Reads a --grammar-file, turning a missing file into a clear message. */

@@ -19,7 +19,7 @@ function describeToken(token: Token): string {
 
 function captureSyntaxError(testCase: ErrorLexerCase): GrammarSyntaxError {
   try {
-    tokenizeGrammar(testCase.text);
+    tokenizeGrammar({ text: testCase.text });
   } catch (error) {
     if (error instanceof GrammarSyntaxError) {
       return error;
@@ -31,11 +31,11 @@ function captureSyntaxError(testCase: ErrorLexerCase): GrammarSyntaxError {
 
 describe('tokenizeGrammar: valid texts', () => {
   it.each(validLexerCases)('$name: $purpose', (testCase) => {
-    expect(tokenizeGrammar(testCase.text).map(describeToken)).toEqual(testCase.tokens);
+    expect(tokenizeGrammar({ text: testCase.text }).map(describeToken)).toEqual(testCase.tokens);
   });
 
   it.each(validLexerCases)('$name: ends in NEWLINE, END_OF_FILE', (testCase) => {
-    const kinds = tokenizeGrammar(testCase.text).map((token) => token.kind);
+    const kinds = tokenizeGrammar({ text: testCase.text }).map((token) => token.kind);
     expect(kinds.slice(-2)).toEqual(['NEWLINE', 'END_OF_FILE']);
   });
 });

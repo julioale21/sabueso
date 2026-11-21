@@ -6,7 +6,7 @@ import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
 function cyclesOf(text: string) {
-  return findCycles(parseGrammarText(text, 'test'));
+  return findCycles(parseGrammarText({ text, name: 'test' }));
 }
 
 describe('findCycles', () => {
@@ -63,7 +63,10 @@ describe('buildUnitGraph', () => {
   });
 
   it('lists each target once, even if several productions lead to it', () => {
-    const grammar = parseGrammarText("S -> A | A 'x' | E A\nA -> 'a'\nE -> ε\n", 'repeated');
+    const grammar = parseGrammarText({
+      text: "S -> A | A 'x' | E A\nA -> 'a'\nE -> ε\n",
+      name: 'repeated',
+    });
     const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
     expect(graph.get('S')).toEqual(['A']);
   });

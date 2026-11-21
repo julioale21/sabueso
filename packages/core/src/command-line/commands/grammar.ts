@@ -52,11 +52,11 @@ function printGrammar(
   environment: CommandLineEnvironment,
 ): void {
   const trace: string[] = [];
-  const grammar = parseGrammarText(
-    source.text,
-    source.label,
-    showTrace ? (step) => trace.push(formatTraceStep(step)) : undefined,
-  );
+  const grammar = parseGrammarText({
+    text: source.text,
+    name: source.label,
+    onTrace: showTrace ? (step) => trace.push(formatTraceStep(step)) : undefined,
+  });
   if (showTrace) {
     environment.writeOutput(`Parser trace (nonterminal [lookahead] → alternative):\n\n`);
     environment.writeOutput(`${trace.join('\n')}\n\n`);

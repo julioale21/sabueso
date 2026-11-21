@@ -14,7 +14,10 @@ import { loadBuiltInGrammar } from '../helpers/load.js';
  * Hopcroft's example 7.2: S → A B | a, A → b, where B derives no string of terminals. In the
  * .grammar format a nonterminal needs a rule, so B → B c (it never ends) plays that role.
  */
-const hopcroftExample = parseGrammarText("S -> A B | 'a'\nA -> 'b'\nB -> B 'c'\n", 'hopcroft');
+const hopcroftExample = parseGrammarText({
+  text: "S -> A B | 'a'\nA -> 'b'\nB -> B 'c'\n",
+  name: 'hopcroft',
+});
 
 describe('analyzeUsefulSymbols', () => {
   it('test-useless: A is not productive and, once it is removed, C is not reachable', () => {

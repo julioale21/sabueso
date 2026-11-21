@@ -17,7 +17,7 @@ import {
 
 function captureError(testCase: ErrorParserCase): unknown {
   try {
-    parseGrammarText(testCase.text, 'test');
+    parseGrammarText({ text: testCase.text, name: 'test' });
   } catch (error) {
     return error;
   }
@@ -26,7 +26,7 @@ function captureError(testCase: ErrorParserCase): unknown {
 
 describe('parseGrammarText: valid files', () => {
   it.each(validParserCases)('$name: $purpose', (testCase) => {
-    const grammar = parseGrammarText(testCase.text, 'test');
+    const grammar = parseGrammarText({ text: testCase.text, name: 'test' });
     expect(grammar.start).toBe(testCase.start);
     expect([...grammar.terminals]).toEqual(testCase.terminals);
     expect(grammar.productions.map(formatProduction)).toEqual(testCase.productions);
@@ -37,7 +37,7 @@ describe('parseGrammarText: valid files', () => {
       new URL('../../grammars/test/arithmetic.grammar', import.meta.url),
       'utf8',
     );
-    const grammar = parseGrammarText(text, 'arithmetic');
+    const grammar = parseGrammarText({ text, name: 'arithmetic' });
     expect([...grammar.nonterminals]).toEqual(['E', 'T', 'F']);
     expect(grammar.productions.map(formatProduction)).toEqual([
       'E → E + T',
@@ -50,7 +50,7 @@ describe('parseGrammarText: valid files', () => {
   });
 
   it('keeps literals apart from identifiers in the parsed rules', () => {
-    const file = parseGrammarFile(tokenizeGrammar("E -> E '+' T\n"));
+    const file = parseGrammarFile({ tokens: tokenizeGrammar({ text: "E -> E '+' T\n" }) });
     expect(file.rules).toEqual([{ leftSide: 'E', rightSide: ['E', { literal: '+' }, 'T'] }]);
     expect(file.start).toBeUndefined();
     expect(file.declaredTerminals).toBeUndefined();
@@ -77,7 +77,7 @@ describe('parseGrammarText: rejected files', () => {
 describe('the parser trace', () => {
   it('shows every decision with the lookahead that made it, nested by depth', () => {
     const steps: ParserTraceStep[] = [];
-    parseGrammarText('A -> a | ε\n', 'trace', (step) => steps.push(step));
+    parseGrammarText({ text: 'A -> a | ε\n', name: 'trace', onTrace: (step) => steps.push(step) });
     const lines = steps.map(
       (step) =>
         `${'  '.repeat(step.depth)}${step.nonterminal} [${step.lookahead.kind}] → ${step.alternative}`,
@@ -100,7 +100,11 @@ describe('the parser trace', () => {
 
   it('chooses the alternative of Directive by its lookahead: START or TERMINALS', () => {
     const steps: ParserTraceStep[] = [];
-    parseGrammarText('%start S\n%terminals a\nS -> a\n', 'trace', (step) => steps.push(step));
+    parseGrammarText({
+      text: '%start S\n%terminals a\nS -> a\n',
+      name: 'trace',
+      onTrace: (step) => steps.push(step),
+    });
     const directives = steps
       .filter((step) => step.nonterminal === 'Directive')
       .map((step) => `[${step.lookahead.kind}] → ${step.alternative}`);

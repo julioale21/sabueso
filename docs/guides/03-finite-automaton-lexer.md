@@ -35,7 +35,7 @@ Los espacios y los comentarios no producen tokens. Después, el parser (paso 4) 
 | 2   | Parser (LL(1))  | tokens                   | `GrammarRule[]` | 4     | ✅ hecho      |
 | 3   | `buildGrammar`  | `GrammarRule[]`          | `Grammar`       | 2     | ✅ hecho      |
 
-`tokenizeGrammar(text)` es la única función pública del lexer. La llaman `parseGrammarText` (el parser del paso 4, antes de leer las reglas) y el comando `lex`, que solo muestra los tokens.
+`tokenizeGrammar({ text, onEvent })` es la única función pública del lexer (`onEvent` es opcional). La llaman `parseGrammarText` (el parser del paso 4, antes de leer las reglas) y el comando `lex`, que solo muestra los tokens.
 
 ---
 
@@ -556,7 +556,7 @@ export function classifyCharacter(character: string): CharacterClass {
 - Lo último son los dígitos `0`–`9`; todo lo demás es `otherCharacter`, una clase sin transiciones desde q₀.
 - Es la razón por la que δ tiene 13 columnas en vez de una por carácter Unicode.
 
-#### `everyClassExcept(excluded, target)` (interna)
+#### `everyClassExcept({ excluded, target })` (interna)
 
 ```ts
 const row: Partial<Record<CharacterClass, LexerState>> = {};
@@ -593,12 +593,12 @@ acceptingStates: { q1ReadingIdentifier: 'IDENTIFIER', q3ArrowRead: 'ARROW', …,
 
 Un estado sin transiciones (`q3ArrowRead: {}`) es un estado donde el token ya terminó. La prueba `the automaton of the guide` compara con esta guía los estados, F y la fila de q₀.
 
-#### `tokenizeGrammar(text, onEvent?)`
+#### `tokenizeGrammar({ text, onEvent })`
 
 ```ts
-export function tokenizeGrammar(text, onEvent?) {
-  const tokens = readLexemes(text, onEvent).map(toToken);
-  return [...tokens, ...closingTokens(text, tokens)];
+export function tokenizeGrammar({ text, onEvent }) {
+  const tokens = readLexemes({ text, onEvent }).map(toToken);
+  return [...tokens, ...closingTokens({ text, tokens })];
 }
 ```
 
@@ -655,7 +655,7 @@ Busca el texto en la tabla de palabras reservadas (`%start` → `START`, `%termi
 #### `closingTokens` y `endPosition` (internas)
 
 ```ts
-function closingTokens(text: string, tokens: readonly Token[]): Token[] {
+function closingTokens({ text, tokens }: { text: string; tokens: readonly Token[] }): Token[] {
   const end = endPosition(text);
   const closing: Token[] = [];
   if (tokens.at(-1)?.kind !== 'NEWLINE') {
@@ -692,12 +692,12 @@ const unfinishedTokenMessages: Partial<Record<LexerState, string>> = {
 function toSyntaxError(error: AutomatonStoppedError<LexerState>): GrammarSyntaxError {
   const message = unfinishedTokenMessages[error.state];
   return message === undefined
-    ? new GrammarSyntaxError(
-        `Invalid character '${error.character ?? ''}'`,
-        error.line,
-        error.column,
-      )
-    : new GrammarSyntaxError(message, error.tokenLine, error.tokenColumn);
+    ? new GrammarSyntaxError({
+        message: `Invalid character '${error.character ?? ''}'`,
+        line: error.line,
+        column: error.column,
+      })
+    : new GrammarSyntaxError({ message, line: error.tokenLine, column: error.tokenColumn });
 }
 ```
 

@@ -7,13 +7,13 @@ import { formatProduction } from '../../src/grammar/build.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
-const miniDetective = parseGrammarText(
-  readFileSync(
+const miniDetective = parseGrammarText({
+  text: readFileSync(
     new URL('../../../../examples/grammars/mini-detective.grammar', import.meta.url),
     'utf8',
   ),
-  'mini-detective',
-);
+  name: 'mini-detective',
+});
 
 function conflictCells(name: string): string[] {
   return buildPredictiveTable({ grammar: loadBuiltInGrammar(name) }).conflicts.map(
@@ -61,7 +61,10 @@ describe('buildPredictiveTable', () => {
   });
 
   it('a factorable grammar has a conflict: Inicio → CRI HAL | CRI', () => {
-    const grammar = parseGrammarText("Inicio -> 'CRI' 'HAL' | 'CRI' | 'HAL'\n", 'unfactored');
+    const grammar = parseGrammarText({
+      text: "Inicio -> 'CRI' 'HAL' | 'CRI' | 'HAL'\n",
+      name: 'unfactored',
+    });
     expect(
       buildPredictiveTable({ grammar }).conflicts.map((conflict) => conflict.lookahead),
     ).toEqual(['CRI']);

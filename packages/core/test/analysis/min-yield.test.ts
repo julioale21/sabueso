@@ -35,7 +35,10 @@ describe('computeMinYield', () => {
   });
 
   it('takes the shortest alternative, even when it is not the first one', () => {
-    const grammar = parseGrammarText("S -> 'a' 'a' 'a' | A\nA -> 'b' | 'b' 'b'\n", 'alternatives');
+    const grammar = parseGrammarText({
+      text: "S -> 'a' 'a' 'a' | A\nA -> 'b' | 'b' 'b'\n",
+      name: 'alternatives',
+    });
     expect(computeMinYield(grammar)).toEqual(
       new Map([
         ['S', 1],
@@ -45,7 +48,7 @@ describe('computeMinYield', () => {
   });
 
   it('follows a chain of nonterminals: each level adds its own terminals', () => {
-    const grammar = parseGrammarText("S -> 'x' A\nA -> 'y' B\nB -> 'z'\n", 'chain');
+    const grammar = parseGrammarText({ text: "S -> 'x' A\nA -> 'y' B\nB -> 'z'\n", name: 'chain' });
     expect(computeMinYield(grammar).get('S')).toBe(3);
   });
 
