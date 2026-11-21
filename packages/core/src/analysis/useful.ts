@@ -7,7 +7,7 @@ import { buildGrammar } from '../grammar/build.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {
   repeatRuleUntilNoChange,
-  nonterminalsWithProductionThat,
+  nonterminalsWithProductionMatching,
   type RoundListener,
 } from './fixed-point.js';
 
@@ -82,9 +82,10 @@ export function computeProductive(grammar: Grammar, onRound?: RoundListener): Se
   return repeatRuleUntilNoChange({
     start: [],
     newSymbolsOfRound: (productive) =>
-      nonterminalsWithProductionThat(grammar.productions, (production) =>
-        usesOnly(production, productive, grammar),
-      ),
+      nonterminalsWithProductionMatching({
+        productions: grammar.productions,
+        condition: (production) => usesOnly(production, productive, grammar),
+      }),
     onRound,
   });
 }

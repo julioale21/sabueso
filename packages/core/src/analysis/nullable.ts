@@ -6,7 +6,7 @@
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {
   repeatRuleUntilNoChange,
-  nonterminalsWithProductionThat,
+  nonterminalsWithProductionMatching,
   type RoundListener,
 } from './fixed-point.js';
 
@@ -23,9 +23,10 @@ export function computeNullable(grammar: Grammar, onRound?: RoundListener): Set<
   return repeatRuleUntilNoChange({
     start: [],
     newSymbolsOfRound: (nullable) =>
-      nonterminalsWithProductionThat(grammar.productions, (production) =>
-        derivesEmptyString(production, nullable),
-      ),
+      nonterminalsWithProductionMatching({
+        productions: grammar.productions,
+        condition: (production) => derivesEmptyString(production, nullable),
+      }),
     onRound,
   });
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   repeatRuleUntilNoChange,
   repeatRuleOnSetsUntilNoChange,
-  nonterminalsWithProductionThat,
+  nonterminalsWithProductionMatching,
 } from '../../src/analysis/fixed-point.js';
 import { parseGrammarText } from '../../src/grammar-format/parser.js';
 import type { SymbolName } from '../../src/grammar/types.js';
@@ -74,13 +74,13 @@ describe('repeatRuleUntilNoChange', () => {
   });
 });
 
-describe('nonterminalsWithProductionThat', () => {
-  it('returns the left sides of the productions that satisfy the condition', () => {
+describe('nonterminalsWithProductionMatching', () => {
+  it('returns the left sides of the productions that match the condition', () => {
     const grammar = parseGrammarText("S -> A 'x' | ε\nA -> 'a'\n", 'small');
-    const emptyRightSide = nonterminalsWithProductionThat(
-      grammar.productions,
-      (p) => p.rightSide.length === 0,
-    );
+    const emptyRightSide = nonterminalsWithProductionMatching({
+      productions: grammar.productions,
+      condition: (production) => production.rightSide.length === 0,
+    });
     expect(emptyRightSide).toEqual(['S']);
   });
 });

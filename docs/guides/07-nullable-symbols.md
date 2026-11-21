@@ -102,16 +102,17 @@ export function computeNullable(grammar: Grammar, onRound?: RoundListener): Set<
   return repeatRuleUntilNoChange({
     start: [],
     newSymbolsOfRound: (nullable) =>
-      nonterminalsWithProductionThat(grammar.productions, (production) =>
-        derivesEmptyString(production, nullable),
-      ),
+      nonterminalsWithProductionMatching({
+        productions: grammar.productions,
+        condition: (production) => derivesEmptyString(production, nullable),
+      }),
     onRound,
   });
 }
 ```
 
 - Se lee como la definición: "parto de ∅; en cada ronda entran los lados izquierdos de las producciones que derivan ε con los anulables conocidos".
-- `nonterminalsWithProductionThat(productions, condition)` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda.
+- `nonterminalsWithProductionMatching({ productions, condition })` (también en `fixed-point.ts`) devuelve los lados izquierdos de las producciones que cumplen la condición: la forma habitual de la regla de una ronda. La condición la decide quien llama: acá, `derivesEmptyString`; en los productivos (paso 9), `usesOnly`.
 
 ### 5.3 `derivesEmptyString(production, nullable)`
 

@@ -98,15 +98,16 @@ const useless = new Set(
 return repeatRuleUntilNoChange({
   start: [],
   newSymbolsOfRound: (productive) =>
-    nonterminalsWithProductionThat(grammar.productions, (production) =>
-      usesOnly(production, productive, grammar),
-    ),
+    nonterminalsWithProductionMatching({
+      productions: grammar.productions,
+      condition: (production) => usesOnly(production, productive, grammar),
+    }),
   onRound,
 });
 ```
 
 - Usa el mismo `repeatRuleUntilNoChange` que los anulables (guía 07, sección 5.1). Parte de `start: []`, es decir, de ∅.
-- `nonterminalsWithProductionThat(...)`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
+- `nonterminalsWithProductionMatching({ productions, condition })`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
 - `usesOnly(production, productive, grammar)`: la condición. Todo el lado derecho son terminales o productivos ya conocidos.
 - La única diferencia con los anulables es esa regla: `usesOnly` acepta terminales, porque un terminal ya es una cadena de Σ\*. En la ronda 1 entran los A con lado derecho de solo terminales (o ε).
 
