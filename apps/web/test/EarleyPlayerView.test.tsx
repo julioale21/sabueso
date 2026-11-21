@@ -16,7 +16,7 @@ function renderPlayer({
   input: string;
   grammarId?: string;
 }) {
-  const state = { ...createInitialState(null), input, grammarId };
+  const state = { ...createInitialState(null), input, analyzedInput: input, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
       <EarleyPlayerView state={state} dispatch={() => undefined} />
@@ -68,6 +68,7 @@ describe('EarleyPlayerView', () => {
   it('says which story and grammar it traces, and where they are changed', async () => {
     renderPlayer({ input: 'CRI PIS REV' });
     expect(await screen.findByText('CRI PIS REV')).toBeInTheDocument();
+    expect(screen.getByText(/Relato analizado/)).toBeInTheDocument();
     expect(screen.getByText(/Gramática: G1 · oficial/)).toBeInTheDocument();
     expect(screen.getByText('(se cambian en la pestaña Análisis)')).toBeInTheDocument();
   });

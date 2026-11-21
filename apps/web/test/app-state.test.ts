@@ -9,6 +9,7 @@ describe('createInitialState', () => {
       genreId: 'detective',
       grammarId: 'detective/g1',
       input: '',
+      analyzedInput: null,
       selectedTree: 0,
       collapseEpsilon: true,
     });
@@ -46,6 +47,14 @@ describe('appReducer', () => {
       input: 'CRI REV',
       selectedTree: 0,
     });
+  });
+
+  it('analyze keeps the typed story as the analyzed one; clear empties both', () => {
+    const typed = { ...state, input: 'CRI PIS REV' };
+    expect(appReducer(typed, { type: 'analyze' }).analyzedInput).toBe('CRI PIS REV');
+    expect(appReducer({ ...typed, analyzedInput: 'CRI PIS REV' }, { type: 'clear' })).toMatchObject(
+      { input: '', analyzedInput: null, selectedTree: 0 },
+    );
   });
 
   it('select-tree picks a tree, never below 0', () => {

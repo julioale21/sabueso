@@ -84,6 +84,17 @@ describe('App', () => {
     expect(screen.getByRole('tab', { name: 'Análisis' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('Analizar enables the tabs about the story, and they use the analyzed story', async () => {
+    await analyze({ input: 'CRI PIS REV', grammar: 'detective/g1' });
+    fireEvent.change(screen.getByRole('textbox', { name: /Relato/ }), {
+      target: { value: 'CRI SOS PIS INT REV' },
+    });
+    const earley = screen.getByRole('tab', { name: 'Earley paso a paso' });
+    expect(earley).toBeEnabled();
+    fireEvent.click(earley);
+    expect(await screen.findByText('CRI PIS REV')).toBeInTheDocument();
+  });
+
   it('changing the grammar redoes the last analysis', async () => {
     await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g1' });
     fireEvent.change(screen.getByRole('combobox', { name: 'Gramática' }), {

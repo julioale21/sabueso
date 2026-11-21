@@ -25,7 +25,9 @@ export const MAX_PLAYER_TOKENS = 15;
 export function EarleyPlayerView({ state }: ViewProps) {
   const service = useAnalysisService();
   const catalog = useGrammars();
-  const tokens = splitTags(state.input);
+  // The story of the latest Analizar, not what is being typed (the tab is disabled before it).
+  const input = state.analyzedInput ?? '';
+  const tokens = splitTags(input);
   const tooLong = tokens.length > MAX_PLAYER_TOKENS;
   const [result, setResult] = useState<ParseResult | null>(null);
 
@@ -34,7 +36,7 @@ export function EarleyPlayerView({ state }: ViewProps) {
       return undefined;
     }
     let current = true;
-    void service.trace(state.grammarId, state.input).then((answer) => {
+    void service.trace(state.grammarId, input).then((answer) => {
       if (current) {
         setResult(answer);
       }
@@ -42,7 +44,7 @@ export function EarleyPlayerView({ state }: ViewProps) {
     return () => {
       current = false;
     };
-  }, [service, state.grammarId, state.input, tooLong]);
+  }, [service, state.grammarId, input, tooLong]);
 
   const events = result?.trace ?? [];
   const player = usePlayer({ last: events.length });
@@ -55,8 +57,8 @@ export function EarleyPlayerView({ state }: ViewProps) {
   if (tooLong) {
     return (
       <MutedText>
-        El relato de la pestaña Análisis tiene {tokens.length} etiquetas: acorta la entrada a{' '}
-        {MAX_PLAYER_TOKENS} o menos para la vista paso a paso.
+        El relato analizado tiene {tokens.length} etiquetas: acorta la entrada a {MAX_PLAYER_TOKENS}{' '}
+        o menos para la vista paso a paso.
       </MutedText>
     );
   }
@@ -71,7 +73,7 @@ export function EarleyPlayerView({ state }: ViewProps) {
       title={`Earley paso a paso · ${state.input.trim() === '' ? 'ε (relato vacío)' : state.input}`}
     >
       <div className="space-y-3">
-        <TraceSource input={state.input} grammarLabel={grammarLabel} />
+        <TraceSource input={input} grammarLabel={grammarLabel} />
         <PlayerControls player={player} unit="evento" />
         <EventDescription event={current} start={start} />
         <div className="flex gap-2 overflow-x-auto pb-2">

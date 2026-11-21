@@ -7,12 +7,14 @@ const tabStyles = {
   active: 'border-indigo-600 text-indigo-700 dark:border-indigo-400 dark:text-indigo-300',
   inactive:
     'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100',
+  disabled: 'cursor-not-allowed border-transparent text-slate-300 dark:text-slate-600',
 };
 
 export function TabButton({
   id,
   label,
   isActive,
+  disabledReason,
   buttonRef,
   onSelect,
   onKeyDown,
@@ -20,6 +22,8 @@ export function TabButton({
   id: string;
   label: string;
   isActive: boolean;
+  /** Why the tab is disabled, shown on hover; undefined when enabled. */
+  disabledReason?: string | undefined;
   buttonRef: Ref<HTMLButtonElement>;
   onSelect: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -33,9 +37,19 @@ export function TabButton({
       aria-selected={isActive}
       aria-controls={`panel-${id}`}
       tabIndex={isActive ? 0 : -1}
+      disabled={disabledReason !== undefined}
+      aria-disabled={disabledReason !== undefined || undefined}
+      title={disabledReason}
       onClick={onSelect}
       onKeyDown={onKeyDown}
-      className={cx(tabStyles.base, isActive ? tabStyles.active : tabStyles.inactive)}
+      className={cx(
+        tabStyles.base,
+        disabledReason !== undefined
+          ? tabStyles.disabled
+          : isActive
+            ? tabStyles.active
+            : tabStyles.inactive,
+      )}
     >
       {label}
     </button>

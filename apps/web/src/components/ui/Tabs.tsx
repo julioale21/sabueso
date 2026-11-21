@@ -11,18 +11,41 @@ export interface TabItem<Id extends string> {
   id: Id;
   label: string;
   panel: ReactNode;
+  /** Why the tab cannot be opened yet; undefined when it can. */
+  disabledReason?: string | undefined;
 }
 
-/** Where each key moves the selection, from the active index. */
-function keyTarget({ key, active, count }: { key: string; active: number; count: number }) {
-  const targets: Record<string, number> = {
-    ArrowRight: active + 1,
-    ArrowLeft: active - 1,
-    Home: 0,
-    End: count - 1,
+/**
+ * Where each key moves the selection, from the active index, skipping the disabled tabs:
+ * the arrows walk in their direction (wrapping around), Home and End go to the ends.
+ */
+function keyTarget({
+  key,
+  active,
+  enabled,
+}: {
+  key: string;
+  active: number;
+  /** For each tab, whether it can be selected. */
+  enabled: readonly boolean[];
+}): number | undefined {
+  const count = enabled.length;
+  const walk = (from: number, direction: number): number | undefined => {
+    for (let offset = 1; offset <= count; offset++) {
+      const index = (((from + direction * offset) % count) + count) % count;
+      if (enabled[index] === true) {
+        return index;
+      }
+    }
+    return undefined;
   };
-  const target = targets[key];
-  return target === undefined ? undefined : (target + count) % count;
+  const moves: Record<string, () => number | undefined> = {
+    ArrowRight: () => walk(active, 1),
+    ArrowLeft: () => walk(active, -1),
+    Home: () => walk(-1, 1),
+    End: () => walk(count, -1),
+  };
+  return moves[key]?.();
 }
 
 export function Tabs<Id extends string>({
@@ -54,7 +77,11 @@ export function Tabs<Id extends string>({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const target = keyTarget({ key: event.key, active: activeIndex, count: items.length });
+    const target = keyTarget({
+      key: event.key,
+      active: activeIndex,
+      enabled: items.map((item) => item.disabledReason === undefined),
+    });
     const item = target === undefined ? undefined : items[target];
     if (item !== undefined) {
       event.preventDefault();
@@ -76,6 +103,7 @@ export function Tabs<Id extends string>({
             id={item.id}
             label={item.label}
             isActive={item.id === activeItem?.id}
+            disabledReason={item.disabledReason}
             buttonRef={registerButton(item.id)}
             onSelect={() => {
               onChange(item.id);

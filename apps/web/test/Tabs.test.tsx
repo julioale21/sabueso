@@ -9,26 +9,35 @@ describe('the tabs of the page', () => {
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Análisis',
       'Earley paso a paso',
-      'LL(1)',
       'FNC y CYK',
       'Autómata de pila',
+      'LL(1)',
       'G0 vs G1',
     ]);
     expect(screen.getByRole('tab', { name: 'Análisis' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('the arrow keys, Home and End move between tabs, wrapping around', () => {
+  it('before analyzing, the tabs about the story are disabled and say why', () => {
+    render(<App />);
+    for (const name of ['Earley paso a paso', 'FNC y CYK', 'Autómata de pila']) {
+      const tab = screen.getByRole('tab', { name });
+      expect(tab).toBeDisabled();
+      expect(tab).toHaveAttribute('title', 'Analiza un relato primero (pestaña Análisis)');
+    }
+    for (const name of ['LL(1)', 'G0 vs G1']) {
+      expect(screen.getByRole('tab', { name })).toBeEnabled();
+    }
+  });
+
+  it('the arrow keys, Home and End move between the enabled tabs, wrapping around', () => {
     render(<App />);
     const press = (key: string) => {
       fireEvent.keyDown(document.activeElement ?? document.body, { key });
     };
     screen.getByRole('tab', { name: 'Análisis' }).focus();
     press('ArrowRight');
-    expect(screen.getByRole('tab', { name: 'Earley paso a paso' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'tab-earley');
+    expect(screen.getByRole('tab', { name: 'LL(1)' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'tab-ll1');
     press('End');
     expect(screen.getByRole('tab', { name: 'G0 vs G1' })).toHaveFocus();
     press('ArrowRight');
@@ -40,6 +49,6 @@ describe('the tabs of the page', () => {
   it('clicking a tab shows its panel', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('tab', { name: 'LL(1)' }));
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('FIRST, FOLLOW y la tabla LL(1)');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'tab-ll1');
   });
 });

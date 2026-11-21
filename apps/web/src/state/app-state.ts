@@ -17,6 +17,11 @@ export interface AppState {
   grammarId: GrammarId;
   /** The story as typed: tags separated by spaces. */
   input: string;
+  /**
+   * The story of the latest Analizar, or null before any. The tabs that depend on the story
+   * (Earley, FNC y CYK, autómata de pila) are enabled only when there is one, and use it.
+   */
+  analyzedInput: string | null;
   /** Which of the trees built is shown (0, 1 or 2). */
   selectedTree: number;
   /** Draw the subtrees that only derive ε as one dimmed node (SPEC 03, section 3.3). */
@@ -27,6 +32,8 @@ export type AppAction =
   | { type: 'select-tab'; tab: TabId }
   | { type: 'select-grammar'; genreId: string; grammarId: GrammarId }
   | { type: 'set-input'; input: string }
+  | { type: 'analyze' }
+  | { type: 'clear' }
   | { type: 'select-tree'; index: number }
   | { type: 'toggle-collapse-epsilon' }
   | { type: 'reset' };
@@ -49,6 +56,7 @@ export function createInitialState(
     genreId: saved?.genreId ?? DEFAULT_GRAMMAR.genreId,
     grammarId: saved?.grammarId ?? DEFAULT_GRAMMAR.grammarId,
     input: saved?.input ?? '',
+    analyzedInput: null,
     selectedTree: 0,
     collapseEpsilon: true,
   };
@@ -63,6 +71,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, genreId: action.genreId, grammarId: action.grammarId, selectedTree: 0 };
     case 'set-input':
       return { ...state, input: action.input, selectedTree: 0 };
+    case 'analyze':
+      return { ...state, analyzedInput: state.input, selectedTree: 0 };
+    case 'clear':
+      return { ...state, input: '', analyzedInput: null, selectedTree: 0 };
     case 'select-tree':
       return { ...state, selectedTree: Math.max(0, action.index) };
     case 'toggle-collapse-epsilon':

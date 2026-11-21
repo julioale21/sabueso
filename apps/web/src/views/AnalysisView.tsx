@@ -18,12 +18,12 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
   const catalog = useGrammars();
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
   const grammar = catalog?.grammars.find((each) => each.id === state.grammarId);
-  const { result, isAnalyzing, analyze, analyzedInput, reset } = useAnalyze();
+  const { result, isAnalyzing, analyze, reset } = useAnalyze();
 
   // Another grammar gives another analysis: redo the last one with the new grammar.
   useEffect(() => {
-    if (analyzedInput !== null) {
-      analyze(state.grammarId, analyzedInput);
+    if (state.analyzedInput !== null) {
+      analyze(state.grammarId, state.analyzedInput);
     }
     // Only when the grammar changes; the input changes are analyzed on demand.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,10 +44,11 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
                 dispatch({ type: 'set-input', input });
               }}
               onAnalyze={() => {
+                dispatch({ type: 'analyze' });
                 analyze(state.grammarId, state.input);
               }}
               onClear={() => {
-                dispatch({ type: 'set-input', input: '' });
+                dispatch({ type: 'clear' });
                 reset();
               }}
             />

@@ -69,7 +69,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 ### 3.1 Organización de la pantalla
 
 ```text
-┌ Sabueso ─────────────────────────────── [Análisis] [Earley] [LL(1)] [FNC·CYK] [AP] [G0 vs G1] ┐
+┌ Sabueso ─────────────────────────────── [Análisis] [Earley] [FNC·CYK] [AP] [LL(1)] [G0 vs G1] ┐
 │ ┌ Entrada ───────────────────────────┐ ┌ Gramática ──────────────────────────────────────┐ │
 │ │ [CTX][PER][CRI][HAL][ENC][PIS]…    │ │ Gramática: [G1 ▾]   LL(1) ✓   ε: 10   inútiles: 0│ │
 │ │ CTX HAL ENC INT SOS PIS DSC REV …  │ │ ┌ gramática activa (solo lectura) ────────────┐ │ │
@@ -87,6 +87,10 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 ```
 
 - **Las pestañas comparten estado:** gramática activa y secuencia actual. Cambiar de pestaña no pierde la entrada.
+- **Dos grupos de pestañas** (2026-11-21): primero las que dependen del relato (Análisis, Earley paso a paso, FNC y CYK, Autómata de pila) y al final las que dependen solo de la gramática (LL(1), G0 vs G1).
+  - Las del relato, salvo Análisis, quedan **desactivadas hasta el primer Analizar** ("Analiza un relato primero") y usan **el relato analizado** (`analyzedInput` en el estado), no lo que se está escribiendo. Limpiar y Reiniciar lo borran.
+  - Las de la gramática están siempre activas, con el aviso "Propiedad de la gramática G1 · oficial: no depende del relato": su contenido es el mismo para cualquier relato.
+  - El teclado salta las pestañas desactivadas.
 - **Navegación:** las pestañas se implementan con `role="tablist"` y se navegan con las flechas del teclado.
 
 ### 3.2 El servicio de análisis
@@ -293,6 +297,8 @@ apps/web/
     player/use-player.ts         # el estado de un reproductor paso a paso
     domain/earley-events.ts      # agrupa la traza por conjunto
     views/Ll1View.tsx
+    components/ll1/              # Ll1Verdict, PredictiveTableView, PredictiveCell, ConflictList, FirstFollowTable
+    domain/productions.ts        # cómo se escriben producciones y conjuntos
     views/CnfCykView.tsx
     views/PdaView.tsx
     views/CompareView.tsx
@@ -368,6 +374,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - `EarleyPlayerView`: columnas S0…Sn, resaltado del evento, controles, reproducción con `setInterval` y límite de 15 etiquetas.
 11. **Vista LL(1).**
     - `Ll1View`: tablas de FIRST/FOLLOW y M[A, a] con los conflictos resaltados.
+    - Tiene su propio selector de gramática (el mismo `GrammarSelect`, sobre el estado compartido): la tabla es una propiedad de la gramática, no del relato, y así se comparan G1 y G0 sin cambiar de pestaña.
     - Prueba: con G0 hay al menos una celda con la clase de conflicto en (Linea, SOS).
 12. **Vista FNC y CYK.**
     - `CnfCykView`: pasos de la FNC, tabla triangular y los dos árboles lado a lado.
