@@ -130,11 +130,12 @@ describe('App', () => {
     await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g1' });
     fireEvent.click(screen.getByRole('tab', { name: 'LL(1)' }));
     fireEvent.click(screen.getByRole('tab', { name: 'Análisis' }));
-    // Right away: if the page analyzed again, the button would say "Analizando…" and the
-    // result would be hidden for a moment.
-    expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
+    // Right away: if the page analyzed again, the result would be hidden for a moment and the
+    // button would say "Analizando…".
     expect(screen.getByRole('status')).toHaveTextContent('Aceptado · 1 árbol');
     expect(screen.getByText('Derivación más a la izquierda (18 pasos)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Analizando/ })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Analizar' })).toBeEnabled();
   });
 
   it('pressing Analizar again with the same story analyzes again', async () => {

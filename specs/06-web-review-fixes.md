@@ -152,6 +152,15 @@ Cada paso deja la web funcionando: pasan `npx tsc -p apps/web --noEmit`, `npx es
 - **Sí:** un hook genérico chico, `useServiceResult(load, deps)` (2026-11-21). Recibe una función, pero es la única de ese tipo y la carga y el descarte de respuestas viejas quedan explicados una sola vez.
 - **No:** un hook por método del servicio. Sin funciones como parámetro, pero cinco hooks que comparten la misma lógica por dentro.
 - **Sí:** solo W1 a W5 (2026-11-21). El pulido de accesibilidad y de textos repetidos queda para otro spec.
+- **Sí:** el efecto que analiza vive en `App` (en un componente `Page`, dentro del proveedor del servicio), junto al resultado. Así no depende de que la vista Análisis esté montada.
+- **Sí:** `useServiceResult` acepta que `load` devuelva `null` para no pedir nada (un relato demasiado largo para la vista, una gramática que falta). Así las vistas con esa condición también quedan en una línea.
+- **Cierre (2026-11-21, paso 6).** La validación final pasó:
+  - `typecheck`, `lint`, `format:check`, `build` y `npm test` desde la raíz: 1033 pruebas (923 del núcleo, sin cambios, y 110 de la web; antes eran 99). Las 11 nuevas son: 1 de W1, 4 de W5 (dominio), 3 del hook de W4, 1 del contador de W2 y 2 de W2 en `App` (volver a la pestaña y analizar dos veces el mismo relato);
+  - en el navegador, los valores del paso 0 son los mismos: A1 con G1 da 1 árbol y 18 pasos; I1 muestra el error y sus ítems abiertos; el relato vacío espera CRI, CTX, HAL o PER; Earley tiene 53 eventos; la FNC va de 40 a 78 producciones; el autómata explora 23 configuraciones; LL(1) ✓; G0 vs G1 lista 2 relatos;
+  - W1: con `CRI PIS REV` analizado y `CRI PIS REV CNF` escrito, el título dice "Earley paso a paso · CRI PIS REV";
+  - W2: al volver de LL(1) a Análisis, el resultado está al instante, sin "Analizando…", sin la animación, sin bajar la página y con el árbol completo (29 nodos, paso 18/18);
+  - el `grep` no encuentra `PendingView`, `let current = true` ni `eslint-disable` de `exhaustive-deps` fuera del hook.
+- **Quedó anotado:** al volver a la pestaña Análisis, la vista recarga el catálogo de gramáticas y muestra un instante "Cargando las gramáticas…" en lugar del campo. El resultado no se pierde. Se puede resolver subiendo el catálogo al nivel de la página, en otro spec.
 
 ---
 

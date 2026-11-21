@@ -414,6 +414,8 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 
 ---
 
+> **Después del SPEC 06 (2026-11-21):** el resultado del análisis vive en la página (`App`), no en la vista Análisis, y se conserva al cambiar de pestaña; las vistas piden sus datos al servicio con `useServiceResult` (`src/analysis/use-service-result.ts`).
+
 ## 7. Criterios de aceptación
 
 - [ ] `npm install`, `npm test`, `npm run build` y `npm run lint` terminan sin errores en la raíz con Node 24, incluyendo `apps/web`.
