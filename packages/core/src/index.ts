@@ -18,6 +18,7 @@ export {
 } from './automata/deterministic-finite-automaton.js';
 export type {
   AutomatonEvent,
+  AutomatonRun,
   AutomatonToken,
   DeterministicAutomatonDefinition,
 } from './automata/deterministic-finite-automaton.js';

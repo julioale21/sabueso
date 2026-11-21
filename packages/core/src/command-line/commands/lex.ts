@@ -3,8 +3,12 @@
  * Reference: Hopcroft 2.2; Augusto 1.3.
  * Card: docs/concepts/03-finite-automaton-lexer.md
  */
-import type { AutomatonEvent } from '../../automata/deterministic-finite-automaton.js';
-import { tokenizeGrammar, type LexerState, type Token } from '../../grammar-format/lexer.js';
+import {
+  lexerEvents,
+  tokenizeGrammar,
+  type LexerState,
+  type Token,
+} from '../../grammar-format/lexer.js';
 import { parseArguments } from '../arguments.js';
 import { formatTable } from '../format.js';
 import {
@@ -58,7 +62,7 @@ function printLex({
   showStates: boolean;
   environment: CommandLineEnvironment;
 }): void {
-  const tokens = tokenizeGrammar({ text: grammar.text });
+  const tokens = tokenizeGrammar(grammar.text);
   environment.writeOutput(`${grammar.label}: tokens\n\n${formatTokens(tokens)}\n`);
   if (showStates) {
     environment.writeOutput(`\n${formatFirstLineStates(grammar.text)}\n`);
@@ -108,25 +112,22 @@ function isContentLine(line: string): boolean {
   return trimmed !== '' && !trimmed.startsWith('#');
 }
 
-/** Collects the automaton events of one line and groups them by lexeme. */
+/** Walks the automaton events of one line and groups them by lexeme. */
 function traceLine(line: string): StatesRow[] {
   const rows: StatesRow[] = [];
   let path = stateName('q0Start');
-  tokenizeGrammar({
-    text: `${line}\n`,
-    onEvent: (event: AutomatonEvent<LexerState, string>) => {
-      if (event.type === 'transition') {
-        path += ` ─${visible(event.character)}→ ${stateName(event.to)}`;
-        return;
-      }
-      rows.push({
-        lexeme: [...event.text].map(visible).join(''),
-        states: path,
-        result: event.kind ?? 'discarded',
-      });
-      path = stateName('q0Start');
-    },
-  });
+  for (const event of lexerEvents(`${line}\n`)) {
+    if (event.type === 'transition') {
+      path += ` ─${visible(event.character)}→ ${stateName(event.to)}`;
+      continue;
+    }
+    rows.push({
+      lexeme: [...event.text].map(visible).join(''),
+      states: path,
+      result: event.kind ?? 'discarded',
+    });
+    path = stateName('q0Start');
+  }
   return rows;
 }
 

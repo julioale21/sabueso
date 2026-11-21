@@ -27,6 +27,8 @@ export interface ParsedGrammarFile {
   start: SymbolName | undefined;
   /** The %terminals directive, if the file has one. */
   declaredTerminals: SymbolName[] | undefined;
+  /** Every decision of the parser, in order (the --trace of the grammar command). */
+  trace: ParserTraceStep[];
 }
 
 /** One decision of the parser: which alternative a nonterminal chose, and why. */
@@ -48,18 +50,15 @@ export interface ParserTraceStep {
 export function parseGrammarText({
   text,
   name,
-  onTrace,
 }: {
   /** The content of the .grammar file. */
   text: string;
   /** The name of the grammar, shown in the output and in errors. */
   name: string;
-  /** Called on each decision of the parser (the --trace of the grammar command). */
-  onTrace?: ((step: ParserTraceStep) => void) | undefined;
 }): Grammar {
   // The whole reading pipeline: text → (DFA, regular language) → tokens →
   // (LL(1), context-free) → rules → (buildGrammar) → G = (N, Σ, P, S).
-  const file = parseGrammarFile({ tokens: tokenizeGrammar({ text }), onTrace });
+  const file = parseGrammarFile(tokenizeGrammar(text));
   return buildGrammar({
     name,
     rules: file.rules,
@@ -68,15 +67,12 @@ export function parseGrammarText({
   });
 }
 
-/** Parses the tokens of a .grammar file, starting at File, the start symbol of meta.grammar. */
-export function parseGrammarFile({
-  tokens,
-  onTrace,
-}: {
-  tokens: readonly Token[];
-  onTrace?: ((step: ParserTraceStep) => void) | undefined;
-}): ParsedGrammarFile {
-  return new GrammarFileParser({ tokens, onTrace }).parseFile();
+/**
+ * Parses the tokens of a .grammar file, starting at File, the start symbol of meta.grammar.
+ * The result also holds every decision of the parser, in `trace`.
+ */
+export function parseGrammarFile(tokens: readonly Token[]): ParsedGrammarFile {
+  return new GrammarFileParser(tokens).parseFile(0);
 }
 
 /** FIRST(Symbols) ∪ FOLLOW(Symbols): the tokens that can start or end a sequence of symbols. */
@@ -107,53 +103,45 @@ const tokenDescriptions: Record<TokenKind, string> = {
 // The stack of the equivalent pushdown automaton is the call stack of these methods.
 class GrammarFileParser {
   private position = 0;
-  private depth = 0;
   private readonly file: ParsedGrammarFile = {
     rules: [],
     start: undefined,
     declaredTerminals: undefined,
+    trace: [],
   };
 
   private readonly tokens: readonly Token[];
-  private readonly onTrace: ((step: ParserTraceStep) => void) | undefined;
 
-  constructor({
-    tokens,
-    onTrace,
-  }: {
-    tokens: readonly Token[];
-    onTrace?: ((step: ParserTraceStep) => void) | undefined;
-  }) {
+  constructor(tokens: readonly Token[]) {
     this.tokens = tokens;
-    this.onTrace = onTrace;
   }
 
   /** File -> Element File | END_OF_FILE */
-  parseFile(): ParsedGrammarFile {
+  parseFile(depth: number): ParsedGrammarFile {
     if (this.lookahead().kind === 'END_OF_FILE') {
-      this.trace({ nonterminal: 'File', alternative: 'END_OF_FILE' });
+      this.record({ depth, nonterminal: 'File', alternative: 'END_OF_FILE' });
       return this.file;
     }
-    this.trace({ nonterminal: 'File', alternative: 'Element File' });
-    this.nested(() => this.parseElement());
-    return this.parseFile();
+    this.record({ depth, nonterminal: 'File', alternative: 'Element File' });
+    this.parseElement(depth + 1);
+    return this.parseFile(depth);
   }
 
   /** Element -> NEWLINE | Directive | Rule */
-  private parseElement(): void {
+  private parseElement(depth: number): void {
     switch (this.lookahead().kind) {
       case 'NEWLINE':
-        this.trace({ nonterminal: 'Element', alternative: 'NEWLINE' });
+        this.record({ depth, nonterminal: 'Element', alternative: 'NEWLINE' });
         this.expect('NEWLINE');
         return;
       case 'START':
       case 'TERMINALS':
-        this.trace({ nonterminal: 'Element', alternative: 'Directive' });
-        this.nested(() => this.parseDirective());
+        this.record({ depth, nonterminal: 'Element', alternative: 'Directive' });
+        this.parseDirective(depth + 1);
         return;
       case 'IDENTIFIER':
-        this.trace({ nonterminal: 'Element', alternative: 'Rule' });
-        this.nested(() => this.parseRule());
+        this.record({ depth, nonterminal: 'Element', alternative: 'Rule' });
+        this.parseRule(depth + 1);
         return;
       default:
         throw this.unexpected(['IDENTIFIER', 'START', 'TERMINALS', 'NEWLINE']);
@@ -161,19 +149,19 @@ class GrammarFileParser {
   }
 
   /** Directive -> START IDENTIFIER NEWLINE | TERMINALS Symbols NEWLINE */
-  private parseDirective(): void {
+  private parseDirective(depth: number): void {
     const directive = this.lookahead();
     if (directive.kind === 'START') {
-      this.trace({ nonterminal: 'Directive', alternative: 'START IDENTIFIER NEWLINE' });
+      this.record({ depth, nonterminal: 'Directive', alternative: 'START IDENTIFIER NEWLINE' });
       this.expect('START');
       const start = this.expect('IDENTIFIER').text;
       this.expect('NEWLINE');
       this.file.start = this.onlyOnce({ directive, previous: this.file.start, value: start });
       return;
     }
-    this.trace({ nonterminal: 'Directive', alternative: 'TERMINALS Symbols NEWLINE' });
+    this.record({ depth, nonterminal: 'Directive', alternative: 'TERMINALS Symbols NEWLINE' });
     this.expect('TERMINALS');
-    const terminals = this.nested(() => this.parseSymbols()).map(symbolName);
+    const terminals = this.parseSymbols(depth + 1).map(symbolName);
     this.expect('NEWLINE');
     this.file.declaredTerminals = this.onlyOnce({
       directive,
@@ -183,11 +171,15 @@ class GrammarFileParser {
   }
 
   /** Rule -> IDENTIFIER ARROW Alternatives NEWLINE. Each alternative is one production. */
-  private parseRule(): void {
-    this.trace({ nonterminal: 'Rule', alternative: 'IDENTIFIER ARROW Alternatives NEWLINE' });
+  private parseRule(depth: number): void {
+    this.record({
+      depth,
+      nonterminal: 'Rule',
+      alternative: 'IDENTIFIER ARROW Alternatives NEWLINE',
+    });
     const leftSide = this.expect('IDENTIFIER').text;
     this.expect('ARROW');
-    const alternatives = this.nested(() => this.parseAlternatives());
+    const alternatives = this.parseAlternatives(depth + 1);
     this.expect('NEWLINE');
     for (const rightSide of alternatives) {
       this.file.rules.push({ leftSide, rightSide });
@@ -195,36 +187,40 @@ class GrammarFileParser {
   }
 
   /** Alternatives -> Sequence MoreAlternatives */
-  private parseAlternatives(): RightSideSymbol[][] {
-    this.trace({ nonterminal: 'Alternatives', alternative: 'Sequence MoreAlternatives' });
-    const first = this.nested(() => this.parseSequence());
-    const rest = this.nested(() => this.parseMoreAlternatives());
+  private parseAlternatives(depth: number): RightSideSymbol[][] {
+    this.record({ depth, nonterminal: 'Alternatives', alternative: 'Sequence MoreAlternatives' });
+    const first = this.parseSequence(depth + 1);
+    const rest = this.parseMoreAlternatives(depth + 1);
     return [first, ...rest];
   }
 
   /** MoreAlternatives -> BAR Sequence MoreAlternatives | ε */
-  private parseMoreAlternatives(): RightSideSymbol[][] {
+  private parseMoreAlternatives(depth: number): RightSideSymbol[][] {
     const kind = this.lookahead().kind;
     if (kind === 'NEWLINE') {
       // ε is chosen when the lookahead is in FOLLOW(MoreAlternatives) = {NEWLINE}.
-      this.trace({ nonterminal: 'MoreAlternatives', alternative: 'ε' });
+      this.record({ depth, nonterminal: 'MoreAlternatives', alternative: 'ε' });
       return [];
     }
     if (kind !== 'BAR') {
       throw this.unexpected(['BAR', 'NEWLINE']);
     }
-    this.trace({ nonterminal: 'MoreAlternatives', alternative: 'BAR Sequence MoreAlternatives' });
+    this.record({
+      depth,
+      nonterminal: 'MoreAlternatives',
+      alternative: 'BAR Sequence MoreAlternatives',
+    });
     this.expect('BAR');
-    const sequence = this.nested(() => this.parseSequence());
-    const rest = this.nested(() => this.parseMoreAlternatives());
+    const sequence = this.parseSequence(depth + 1);
+    const rest = this.parseMoreAlternatives(depth + 1);
     return [sequence, ...rest];
   }
 
   /** Sequence -> EPSILON | Symbols. Both give an empty right side when there are no symbols. */
-  private parseSequence(): RightSideSymbol[] {
+  private parseSequence(depth: number): RightSideSymbol[] {
     const kind = this.lookahead().kind;
     if (kind === 'EPSILON') {
-      this.trace({ nonterminal: 'Sequence', alternative: 'EPSILON' });
+      this.record({ depth, nonterminal: 'Sequence', alternative: 'EPSILON' });
       this.expect('EPSILON');
       return [];
     }
@@ -232,39 +228,39 @@ class GrammarFileParser {
     if (!symbolsOrSequenceEnd.includes(kind)) {
       throw this.unexpected(['EPSILON', ...symbolsOrSequenceEnd]);
     }
-    this.trace({ nonterminal: 'Sequence', alternative: 'Symbols' });
-    return this.nested(() => this.parseSymbols());
+    this.record({ depth, nonterminal: 'Sequence', alternative: 'Symbols' });
+    return this.parseSymbols(depth + 1);
   }
 
   /** Symbols -> Symbol Symbols | ε */
-  private parseSymbols(): RightSideSymbol[] {
+  private parseSymbols(depth: number): RightSideSymbol[] {
     // The key LL(1) case with ε: "Symbols → ε" is chosen only if the next token can
     // come AFTER Symbols (FOLLOW = {BAR, NEWLINE}). If it is in neither FIRST nor
     // FOLLOW, the error is caught right here and the message lists both sets.
     const kind = this.lookahead().kind;
     if (kind === 'BAR' || kind === 'NEWLINE') {
       // ε is chosen when the lookahead is in FOLLOW(Symbols) = {BAR, NEWLINE}.
-      this.trace({ nonterminal: 'Symbols', alternative: 'ε' });
+      this.record({ depth, nonterminal: 'Symbols', alternative: 'ε' });
       return [];
     }
     if (kind !== 'IDENTIFIER' && kind !== 'LITERAL') {
       throw this.unexpected(symbolsOrSequenceEnd);
     }
-    this.trace({ nonterminal: 'Symbols', alternative: 'Symbol Symbols' });
-    const symbol = this.nested(() => this.parseSymbol());
-    const rest = this.nested(() => this.parseSymbols());
+    this.record({ depth, nonterminal: 'Symbols', alternative: 'Symbol Symbols' });
+    const symbol = this.parseSymbol(depth + 1);
+    const rest = this.parseSymbols(depth + 1);
     return [symbol, ...rest];
   }
 
   /** Symbol -> IDENTIFIER | LITERAL */
-  private parseSymbol(): RightSideSymbol {
+  private parseSymbol(depth: number): RightSideSymbol {
     const token = this.lookahead();
     if (token.kind === 'LITERAL') {
-      this.trace({ nonterminal: 'Symbol', alternative: 'LITERAL' });
+      this.record({ depth, nonterminal: 'Symbol', alternative: 'LITERAL' });
       this.expect('LITERAL');
       return { literal: token.text };
     }
-    this.trace({ nonterminal: 'Symbol', alternative: 'IDENTIFIER' });
+    this.record({ depth, nonterminal: 'Symbol', alternative: 'IDENTIFIER' });
     return this.expect('IDENTIFIER').text;
   }
 
@@ -321,19 +317,18 @@ class GrammarFileParser {
     return value;
   }
 
-  /** Runs a call one level deeper, so the trace shows the recursion. */
-  private nested<T>(parse: () => T): T {
-    this.depth++;
-    try {
-      return parse();
-    } finally {
-      this.depth--;
-    }
-  }
-
-  /** Reports one decision of the parser to the trace observer, if there is one. */
-  private trace({ nonterminal, alternative }: { nonterminal: string; alternative: string }): void {
-    this.onTrace?.({ depth: this.depth, nonterminal, lookahead: this.lookahead(), alternative });
+  /** Records one decision of the parser in the trace of the result. */
+  private record({
+    depth,
+    nonterminal,
+    alternative,
+  }: {
+    /** How deep the call is: File is 0, and each call goes one level deeper. */
+    depth: number;
+    nonterminal: string;
+    alternative: string;
+  }): void {
+    this.file.trace.push({ depth, nonterminal, lookahead: this.lookahead(), alternative });
   }
 }
 

@@ -5,6 +5,9 @@
  * Reference: SPEC 02, sections 3.12 to 3.16 and step 17.
  */
 
+import type { SymbolName } from '../grammar/types.js';
+import { label, type EarleyItem } from './item.js';
+
 /** The operation that added an item; 'nullable' is the advance of the ε fix (step 15). */
 export type TraceOperation = 'predict' | 'scan' | 'complete' | 'nullable';
 
@@ -18,6 +21,27 @@ export interface TraceEvent {
   cause: string;
   /** False when the item was already there and only got one more link: another way to it. */
   isNew: boolean;
+}
+
+/**
+ * Why an item was added, as data: the item that predicted it or was completed, the token read,
+ * or the nullable symbol skipped. The trace turns it into text with describeCause.
+ */
+export type TraceCause =
+  | { kind: 'item'; item: EarleyItem }
+  | { kind: 'token'; tokenIndex: number; terminal: SymbolName }
+  | { kind: 'nullable'; symbol: SymbolName };
+
+/** The text of a cause, as the trace shows it: 'S → • ( S ) S, 0', 'token 0 CRI' or 'B ⇒* ε'. */
+export function describeCause(cause: TraceCause): string {
+  switch (cause.kind) {
+    case 'item':
+      return label(cause.item);
+    case 'token':
+      return `token ${cause.tokenIndex} ${cause.terminal}`;
+    case 'nullable':
+      return `${cause.symbol} ⇒* ε`;
+  }
 }
 
 /**

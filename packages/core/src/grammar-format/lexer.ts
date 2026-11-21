@@ -8,6 +8,7 @@ import {
   AutomatonStoppedError,
   runDeterministicAutomaton,
   type AutomatonEvent,
+  type AutomatonRun,
   type AutomatonToken,
   type DeterministicAutomatonDefinition,
 } from '../automata/deterministic-finite-automaton.js';
@@ -91,7 +92,8 @@ const characterClasses = [
 export type CharacterClass = (typeof characterClasses)[number];
 
 /** What the automaton emits. A directive is resolved to START or TERMINALS afterwards. */
-type LexemeKind = 'IDENTIFIER' | 'LITERAL' | 'ARROW' | 'BAR' | 'EPSILON' | 'NEWLINE' | 'DIRECTIVE';
+export type LexemeKind =
+  'IDENTIFIER' | 'LITERAL' | 'ARROW' | 'BAR' | 'EPSILON' | 'NEWLINE' | 'DIRECTIVE';
 
 const singleCharacterClasses: Partial<Record<string, CharacterClass>> = {
   ' ': 'whitespace',
@@ -209,32 +211,24 @@ const directives: Partial<Record<string, TokenKind>> = {
  *
  * Throws GrammarSyntaxError with the line and column of the problem.
  */
-export function tokenizeGrammar({
-  text,
-  onEvent,
-}: {
-  text: string;
-  /** Called on each step of the DFA (the --states table of the lex command). */
-  onEvent?: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined;
-}): Token[] {
+export function tokenizeGrammar(text: string): Token[] {
   // Two stages: the DFA recognizes lexemes (regular level), then each lexeme becomes
   // a token (quotes removed, %start/%terminals resolved). The final NEWLINE and END_OF_FILE
   // guarantee the parser that every line ends the same way and that there is always a
   // token to look at (END_OF_FILE plays the role of $, the end of the input).
-  const tokens = readLexemes({ text, onEvent }).map(toToken);
+  const tokens = runLexerAutomaton(text).tokens.map(toToken);
   return [...tokens, ...closingTokens({ text, tokens })];
 }
 
+/** Every step of the DFA over the text: its transitions and accepted lexemes (lex --states). */
+export function lexerEvents(text: string): AutomatonEvent<LexerState, LexemeKind>[] {
+  return runLexerAutomaton(text).events;
+}
+
 /** Runs the DFA over the text and turns a stop of the automaton into a GrammarSyntaxError. */
-function readLexemes({
-  text,
-  onEvent,
-}: {
-  text: string;
-  onEvent?: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined;
-}): AutomatonToken<LexemeKind>[] {
+function runLexerAutomaton(text: string): AutomatonRun<LexerState, LexemeKind> {
   try {
-    return runDeterministicAutomaton({ automaton: grammarLexerAutomaton, text, onEvent });
+    return runDeterministicAutomaton({ automaton: grammarLexerAutomaton, text });
   } catch (error) {
     if (error instanceof AutomatonStoppedError) {
       throw toSyntaxError(error as AutomatonStoppedError<LexerState>);

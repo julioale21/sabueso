@@ -40,6 +40,13 @@ export type AutomatonEvent<State, TokenKind> =
   | { type: 'transition'; from: State; character: string; to: State }
   | { type: 'accept'; state: State; text: string; kind: TokenKind | null };
 
+/** The result of a run: the tokens, and every step the automaton took to find them. */
+export interface AutomatonRun<State, TokenKind> {
+  tokens: AutomatonToken<TokenKind>[];
+  /** Every transition and every accepted lexeme, in order (the `lex --states` table). */
+  events: AutomatonEvent<State, TokenKind>[];
+}
+
 /**
  * The automaton stopped in a state that does not accept: the text is not a sequence of
  * tokens. It reports the state, so each lexer can turn it into a precise message.
@@ -102,19 +109,19 @@ export function runDeterministicAutomaton<
 >({
   automaton,
   text,
-  onEvent,
 }: {
   automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>;
   text: string;
-  onEvent?: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined;
-}): AutomatonToken<TokenKind>[] {
+}): AutomatonRun<State, TokenKind> {
   // A DFA only accepts or rejects a string. To use it as a lexer, it runs many
   // times: each token is one run from q0. When δ has no transition, the run ends;
   // if the state ∈ F, what was read is a token, and it goes back to q0 with the rest.
   const tokens: AutomatonToken<TokenKind>[] = [];
+  const events: AutomatonEvent<State, TokenKind>[] = [];
   let cursor: Cursor = { index: 0, line: 1, column: 1 };
   while (cursor.index < text.length) {
-    const end = readLongestToken({ automaton, text, tokenStart: cursor, onEvent });
+    const end = readLongestToken({ automaton, text, tokenStart: cursor });
+    events.push(...end.transitions);
     const lexeme = text.slice(cursor.index, end.index);
     const kind = tokenKindOfFinalState({
       automaton,
@@ -122,18 +129,19 @@ export function runDeterministicAutomaton<
       end,
       blockingCharacter: text[end.index],
     });
-    onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
+    events.push({ type: 'accept', state: end.state, text: lexeme, kind });
     if (kind !== null) {
       tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
     }
     cursor = end;
   }
-  return tokens;
+  return { tokens, events };
 }
 
 /**
  * Follows δ from q0 while there is a transition (maximal munch). Returns the state where it
- * stopped and the position of the first character it could not consume.
+ * stopped, the position of the first character it could not consume, and the transitions
+ * it took.
  */
 function readLongestToken<
   State extends string,
@@ -143,18 +151,17 @@ function readLongestToken<
   automaton,
   text,
   tokenStart,
-  onEvent,
 }: {
   automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>;
   text: string;
   tokenStart: Cursor;
-  onEvent?: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined;
-}): Cursor & { state: State } {
+}): Cursor & { state: State; transitions: AutomatonEvent<State, TokenKind>[] } {
   // This is δ̂ (the extended transition function) on the longest possible prefix:
   // it advances while δ(q, class(c)) exists. It never backtracks: no token of this
   // format needs to, so taking the longest one (maximal munch) is safe.
   let state = automaton.initialState;
   let cursor = tokenStart;
+  const transitions: AutomatonEvent<State, TokenKind>[] = [];
   for (;;) {
     const character = text[cursor.index];
     const next =
@@ -162,9 +169,9 @@ function readLongestToken<
         ? undefined
         : automaton.transitions[state][automaton.classifyCharacter(character)];
     if (character === undefined || next === undefined) {
-      return { ...cursor, state };
+      return { ...cursor, state, transitions };
     }
-    onEvent?.({ type: 'transition', from: state, character, to: next });
+    transitions.push({ type: 'transition', from: state, character, to: next });
     state = next;
     cursor = moveCursorPast({ cursor, character });
   }

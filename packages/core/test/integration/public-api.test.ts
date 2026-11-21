@@ -110,7 +110,7 @@ describe('the public API', () => {
   });
 
   it('the DFA executor is available for SPEC 04', () => {
-    const tokens = runDeterministicAutomaton({
+    const { tokens } = runDeterministicAutomaton({
       automaton: {
         initialState: 'start',
         classifyCharacter: (character) => (/[0-9]/.test(character) ? 'digit' : 'other'),

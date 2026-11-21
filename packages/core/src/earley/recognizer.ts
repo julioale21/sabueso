@@ -15,7 +15,13 @@ import {
 } from '../grammar/types.js';
 import { addItem, createChart, type Chart, type EarleySet } from './chart.js';
 import { itemKey, label, nextSymbol, type EarleyItem, type Link } from './item.js';
-import { TraceRecorder, type TraceEvent, type TraceOperation } from './trace.js';
+import {
+  describeCause,
+  TraceRecorder,
+  type TraceCause,
+  type TraceEvent,
+  type TraceOperation,
+} from './trace.js';
 
 export interface RecognitionOptions {
   /**
@@ -146,7 +152,7 @@ export function predict({
       dot: 0,
       origin: item.setIndex,
       op: 'predict',
-      cause: () => label(item),
+      cause: { kind: 'item', item },
     });
   }
   // The classic algorithm relies on the Completer to advance over an empty B, but the
@@ -162,7 +168,7 @@ export function predict({
       origin: item.origin,
       link,
       op: 'nullable',
-      cause: () => `${symbol} ⇒* ε`,
+      cause: { kind: 'nullable', symbol },
     });
   }
 }
@@ -194,7 +200,7 @@ export function scan({
     origin: item.origin,
     link,
     op: 'scan',
-    cause: () => `token ${tokenIndex} ${terminal}`,
+    cause: { kind: 'token', tokenIndex, terminal },
   });
 }
 
@@ -233,7 +239,7 @@ export function complete({
         origin: waiting.origin,
         link,
         op: 'complete',
-        cause: () => label(item),
+        cause: { kind: 'item', item },
       });
     }
   }
@@ -246,8 +252,8 @@ export function isEmptySpan(item: EarleyItem): boolean {
 
 /**
  * Adds the item through addItem and, only if the trace is on, records the event. The cause
- * is passed as a function so that, without the trace, its text is never even built.
- * (Without the trace option, `context.recorder` is undefined and nothing else happens.)
+ * arrives as data and is turned into text only when there is a recorder, so without the
+ * trace no text is built. (Without the trace option, `context.recorder` is undefined.)
  */
 function addAndTrace({
   context,
@@ -266,12 +272,19 @@ function addAndTrace({
   origin: number;
   link?: Link | undefined;
   op: TraceOperation;
-  cause: () => string;
+  /** Why the item is added: the trace shows it as text (describeCause). */
+  cause: TraceCause;
 }): void {
   const { item, isNew } = addItem({ set, production, dot, origin, link });
   // A prediction of an item that was already there changes nothing: it is not an event.
   // A repeated item with a link is: it is one more way to reach the item.
   if (context.recorder !== undefined && (isNew || link !== undefined)) {
-    context.recorder.record({ set: set.index, op, item: label(item), cause: cause(), isNew });
+    context.recorder.record({
+      set: set.index,
+      op,
+      item: label(item),
+      cause: describeCause(cause),
+      isNew,
+    });
   }
 }

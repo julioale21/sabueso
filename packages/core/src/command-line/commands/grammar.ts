@@ -4,7 +4,12 @@
  * Reference: Aho, Lam, Sethi and Ullman, Compilers (2nd ed.), 4.4.
  * Card: docs/concepts/04-predictive-recursive-descent-parser.md
  */
-import { parseGrammarText, type ParserTraceStep } from '../../grammar-format/parser.js';
+import { tokenizeGrammar } from '../../grammar-format/lexer.js';
+import {
+  parseGrammarFile,
+  parseGrammarText,
+  type ParserTraceStep,
+} from '../../grammar-format/parser.js';
 import { parseArguments } from '../arguments.js';
 import { formatGrammar } from '../format.js';
 import {
@@ -58,13 +63,10 @@ function printGrammar({
   showTrace: boolean;
   environment: CommandLineEnvironment;
 }): void {
-  const trace: string[] = [];
-  const grammar = parseGrammarText({
-    text: source.text,
-    name: source.label,
-    onTrace: showTrace ? (step) => trace.push(formatTraceStep(step)) : undefined,
-  });
+  const grammar = parseGrammarText({ text: source.text, name: source.label });
   if (showTrace) {
+    // The grammar is valid (parseGrammarText did not throw), so this parse succeeds too.
+    const trace = parseGrammarFile(tokenizeGrammar(source.text)).trace.map(formatTraceStep);
     environment.writeOutput(`Parser trace (nonterminal [lookahead] → alternative):\n\n`);
     environment.writeOutput(`${trace.join('\n')}\n\n`);
   }
