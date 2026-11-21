@@ -15,6 +15,8 @@ import { TagPalette } from './TagPalette';
 import { TagSequence } from './TagSequence';
 import { UnknownTagsAlert } from './UnknownTagsAlert';
 import { DisclosureButton } from '../ui/DisclosureButton';
+import { storyMeaning } from '../../domain/story-meaning';
+import { StoryMeaningList } from './StoryMeaningList';
 
 export function SequenceInput({
   tags,
@@ -37,6 +39,7 @@ export function SequenceInput({
 }) {
   const alphabet = new Set(tags.map((tag) => tag.tag));
   const words = splitTags(value);
+  const meaning = storyMeaning({ words, tags, examples });
   const [showsTags, setShowsTags] = useState(false);
   const [showsExamples, setShowsExamples] = useState(false);
   // Analizar folds the palette and the examples, so the result gets the attention.
@@ -50,6 +53,7 @@ export function SequenceInput({
     <div className="space-y-3">
       <StoryField value={value} onChange={onChange} onSubmit={analyzeAndFold} />
       <TagSequence words={words} alphabet={alphabet} />
+      {meaning !== null && <StoryMeaningList meaning={meaning} />}
       <UnknownTagsAlert unknown={words.filter((word) => !alphabet.has(word))} />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <AnalyzeActions

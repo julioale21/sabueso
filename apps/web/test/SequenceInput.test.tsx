@@ -76,6 +76,29 @@ describe('SequenceInput', () => {
     expect(cards[4]).toHaveTextContent('CRI PIS PIS … PIS REV (200 etiquetas)');
   });
 
+  it('under the chips, an example is told in words, one sentence per tag', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Probar un ejemplo' }));
+    fireEvent.click(screen.getByRole('button', { name: /^V1/ }));
+    const story = screen.getByRole('region', { name: 'El relato en palabras (V1)' });
+    expect(story.querySelectorAll('li')[0]).toHaveTextContent(
+      'CTXLord Ashby vivía en una mansión de Kent.',
+    );
+    for (const example of EXAMPLES.filter((each) => each.id !== 'L1')) {
+      expect(example.narrative.map((line) => line.tags).join(' ')).toBe(example.input);
+    }
+  });
+
+  it('a story of my own shows what each tag means', () => {
+    render(<Harness />);
+    fireEvent.change(field(), { target: { value: 'CRI XYZ' } });
+    const lines = screen
+      .getByRole('region', { name: 'Qué significa cada etiqueta' })
+      .querySelectorAll('li');
+    expect(lines[0]).toHaveTextContent('CRICrimen');
+    expect(lines[1]).toHaveTextContent('XYZno es una etiqueta de este género');
+  });
+
   it('Analizar folds the palette and the examples', () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: 'Ver las 14 etiquetas' }));
