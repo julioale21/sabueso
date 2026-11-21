@@ -910,7 +910,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:** `npm run sabueso -- cycles --grammar test-cyclic` imprime `S ⇒+ A ⇒+ S`.
     - **Decisiones (2026-11-20):**
       - `findCycles(grammar)` devuelve un ciclo por cada arista de retroceso de la DFS sobre el grafo unitario (en el orden de la gramática). Alcanza para decidir si G es cíclica y para mostrar los ciclos; no enumera todos los ciclos simples.
-      - `buildUnitGraph(grammar, nullable)` queda exportada: el comando la muestra con `--graph`.
+      - `buildUnitGraph(grammar, nullable)` queda exportada: el comando la muestra con `--graph`. Desde el paso 23 las dos reciben un objeto: `findCycles({ grammar })` y `buildUnitGraph({ grammar, nullable })`.
       - Ejemplo nuevo `examples/grammars/hidden-cycle.grammar`: un ciclo escondido detrás de símbolos anulables (`S → A S B` con A y B anulables).
 
 11. **FIRST y FOLLOW.**

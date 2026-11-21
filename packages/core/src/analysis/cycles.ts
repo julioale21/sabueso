@@ -17,26 +17,33 @@ export type UnitGraph = Map<SymbolName, SymbolName[]>;
  * the unit graph. Each cycle lists its symbols in order: [S, A] means S ⇒+ A ⇒+ S.
  * An empty list means the grammar has no cycles.
  */
-export function findCycles(grammar: Grammar): SymbolName[][] {
+export function findCycles({ grammar }: { grammar: Grammar }): SymbolName[][] {
   // A cycle A ⇒+ A derives A again without producing anything else, so it can be repeated
   // as many times as wanted: some string then has infinitely many trees. The unit graph
   // keeps exactly the steps that produce nothing else, and a cycle in it is such a loop.
-  const graph = buildUnitGraph(grammar, computeNullable({ grammar }));
-  const search = new CycleSearch(graph);
+  const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+  const search = new CycleSearch({ graph });
   for (const symbol of grammar.nonterminals) {
-    search.visit(symbol);
+    search.visit({ symbol });
   }
   return search.cycles;
 }
 
 /** One edge A → B for each B in a right side whose other symbols are all nullable. */
-export function buildUnitGraph(grammar: Grammar, nullable: ReadonlySet<SymbolName>): UnitGraph {
+export function buildUnitGraph({
+  grammar,
+  nullable,
+}: {
+  grammar: Grammar;
+  /** The nullable symbols: the ones that can vanish around B in A → α B β. */
+  nullable: ReadonlySet<SymbolName>;
+}): UnitGraph {
   const graph: UnitGraph = new Map();
   for (const nonterminal of grammar.nonterminals) {
     graph.set(nonterminal, []);
   }
   for (const production of grammar.productions) {
-    for (const target of unitTargets(production, grammar, nullable)) {
+    for (const target of unitTargets({ production, grammar, nullable })) {
       const edges = graph.get(production.leftSide) ?? [];
       if (!edges.includes(target)) {
         edges.push(target);
@@ -47,11 +54,15 @@ export function buildUnitGraph(grammar: Grammar, nullable: ReadonlySet<SymbolNam
 }
 
 /** The nonterminals B of A → α B β such that α and β are nullable: A can become just B. */
-function unitTargets(
-  production: Production,
-  grammar: Grammar,
-  nullable: ReadonlySet<SymbolName>,
-): SymbolName[] {
+function unitTargets({
+  production,
+  grammar,
+  nullable,
+}: {
+  production: Production;
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+}): SymbolName[] {
   const symbols = production.rightSide;
   return symbols.filter(
     (symbol, position) =>
@@ -71,10 +82,14 @@ class CycleSearch {
   /** Symbols whose search already finished: nothing new can be found from them. */
   private readonly finished = new Set<SymbolName>();
 
-  constructor(private readonly graph: UnitGraph) {}
+  private readonly graph: UnitGraph;
+
+  constructor({ graph }: { graph: UnitGraph }) {
+    this.graph = graph;
+  }
 
   /** Visits a symbol: follows each of its edges, then marks it as finished. */
-  visit(symbol: SymbolName): void {
+  visit({ symbol }: { symbol: SymbolName }): void {
     if (this.finished.has(symbol)) {
       return;
     }
@@ -86,7 +101,7 @@ class CycleSearch {
     }
     this.path.push(symbol);
     for (const next of this.graph.get(symbol) ?? []) {
-      this.visit(next);
+      this.visit({ symbol: next });
     }
     this.path.pop();
     this.finished.add(symbol);

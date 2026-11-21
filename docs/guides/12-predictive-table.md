@@ -161,7 +161,7 @@ return {
   reachable: useful.reachable,
   useless: useful.useless,
   isEmpty: useful.isEmpty,
-  cycles: findCycles(grammar),
+  cycles: findCycles({ grammar }),
   first: sets.first,
   follow: sets.follow,
   predictiveTable: buildPredictiveTable(grammar, sets),

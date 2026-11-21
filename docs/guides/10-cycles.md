@@ -57,22 +57,22 @@ Se registra un ciclo por cada arista de retroceso. Alcanza para decidir si la gr
 
 ## 5. El código, función por función
 
-### 5.1 `findCycles(grammar)`
+### 5.1 `findCycles({ grammar })`
 
 ```ts
-const graph = buildUnitGraph(grammar, computeNullable({ grammar }));
-const search = new CycleSearch(graph);
+const graph = buildUnitGraph({ grammar, nullable: computeNullable({ grammar }) });
+const search = new CycleSearch({ graph });
 for (const symbol of grammar.nonterminals) {
-  search.visit(symbol);
+  search.visit({ symbol });
 }
 return search.cycles;
 ```
 
 - `computeNullable({ grammar })`: primero los anulables (paso 7). El grafo los necesita para saber qué símbolos pueden desaparecer.
-- `new CycleSearch(graph)`: una sola búsqueda para todo el grafo. Así `finished` se comparte entre los arranques.
-- `for ... search.visit(symbol)`: arranca desde cada no terminal, porque el grafo puede tener partes no conectadas. Los que ya se exploraron se saltean solos dentro de `visit`.
+- `new CycleSearch({ graph })`: una sola búsqueda para todo el grafo. Así `finished` se comparte entre los arranques.
+- `for ... search.visit({ symbol })`: arranca desde cada no terminal, porque el grafo puede tener partes no conectadas. Los que ya se exploraron se saltean solos dentro de `visit`.
 
-### 5.2 `buildUnitGraph(grammar, nullable)`
+### 5.2 `buildUnitGraph({ grammar, nullable })`
 
 ```ts
 const graph: UnitGraph = new Map();
@@ -80,7 +80,7 @@ for (const nonterminal of grammar.nonterminals) {
   graph.set(nonterminal, []);
 }
 for (const production of grammar.productions) {
-  for (const target of unitTargets(production, grammar, nullable)) {
+  for (const target of unitTargets({ production, grammar, nullable })) {
     const edges = graph.get(production.leftSide) ?? [];
     if (!edges.includes(target)) {
       edges.push(target);
@@ -94,7 +94,7 @@ return graph;
 - `graph.get(production.leftSide) ?? []`: el `?? []` solo está para el tipo, porque `get` puede devolver `undefined`. En la práctica la lista ya existe, y `push` la modifica dentro del mapa.
 - `if (!edges.includes(target))`: no repite aristas. Dos producciones A → B y A → B C (con C anulable) dan la misma arista A → B.
 
-### 5.3 `unitTargets(production, grammar, nullable)`
+### 5.3 `unitTargets({ production, grammar, nullable })`
 
 ```ts
 return symbols.filter(
@@ -125,7 +125,7 @@ if (position !== -1) {
 }
 this.path.push(symbol);
 for (const next of this.graph.get(symbol) ?? []) {
-  this.visit(next);
+  this.visit({ symbol: next });
 }
 this.path.pop();
 this.finished.add(symbol);
