@@ -32,7 +32,8 @@ export type { PredictiveTable, PredictiveTableConflict } from './analysis/predic
 export { parse } from './parse.js';
 export type { ParseOptions, ParseResult } from './parse.js';
 export { checkAlphabet, tokenizeSequence } from './input/sequence.js';
-export type { ParseError } from './earley/diagnostics.js';
+export type { OpenItems, ParseError } from './earley/diagnostics.js';
+export { openItemsAt } from './earley/diagnostics.js';
 export type { Chart, EarleySet } from './earley/chart.js';
 export type { EarleyItem, Link } from './earley/item.js';
 export { dottedRule, label } from './earley/item.js';

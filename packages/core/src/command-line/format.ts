@@ -1,5 +1,6 @@
 // Plain-text formatting helpers shared by the commands.
-import type { ParseError } from '../earley/diagnostics.js';
+import type { OpenItems, ParseError } from '../earley/diagnostics.js';
+import { label, type EarleyItem } from '../earley/item.js';
 import { formatProduction } from '../grammar/build.js';
 import type { Grammar, Production } from '../grammar/types.js';
 
@@ -61,4 +62,18 @@ export function formatRejection(error: ParseError): string {
   const expected =
     error.expected.length === 0 ? 'incomplete input' : `expected: ${error.expected.join(', ')}`;
   return `REJECTED · ${place} · ${expected}`;
+}
+
+/**
+ * The Earley items left open where a story fails, by group: the structures that had started,
+ * and the rules waiting for one of the expected tags. Empty groups are left out.
+ */
+export function formatOpenItems(open: OpenItems): string {
+  const group = (title: string, items: readonly EarleyItem[]) =>
+    items.length === 0 ? [] : [`  ${title}:`, ...items.map((item) => `    ${label(item)}`)];
+  return [
+    `Open items in S${open.set}, where the story fails:`,
+    ...group('Started and could not go on', open.started),
+    ...group('Waiting for one of the expected tags', open.waiting),
+  ].join('\n');
 }

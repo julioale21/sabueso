@@ -1,11 +1,11 @@
 /**
  * Concept: why a story is rejected, as data: where it fails, what was found and what was
- * expected. Read straight from the Earley chart.
- * Card: docs/concepts/17-acceptance-and-errors.md
+ * expected, and which Earley items were left open there. Read straight from the Earley chart.
+ * Cards: docs/concepts/17-acceptance-and-errors.md, 11-earley-item.md, 12-earley-sets.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
 import type { Chart, EarleySet } from './chart.js';
-import { nextSymbol } from './item.js';
+import { isComplete, nextSymbol, type EarleyItem } from './item.js';
 
 export interface ParseError {
   /**
@@ -84,4 +84,45 @@ export function expectedTerminals({
     }
   }
   return [...terminals].sort();
+}
+
+/**
+ * The Earley items still open in the set where a story fails. A rejected story has no tree,
+ * but the chart says which structures had started and what could have come next.
+ */
+export interface OpenItems {
+  /** k: the set S_k where the story failed (the position of the error). */
+  set: number;
+  /** Structures already started (something before the dot) that could not go on. */
+  started: EarleyItem[];
+  /** Predicted rules (dot 0) that would have read one of the expected tags. */
+  waiting: EarleyItem[];
+}
+
+/**
+ * The open items of the set where the story failed, or null when Earley did not run (a tag
+ * outside Σ stops the analysis before it).
+ */
+export function openItemsAt({
+  chart,
+  error,
+}: {
+  chart: Chart;
+  error: ParseError;
+}): OpenItems | null {
+  // S_k holds every item that reached the error position. The incomplete ones are the open
+  // structures: with something before the dot, a part of the story that had started; with
+  // the dot at the start, a rule predicted there, and it matters if it would read one of the
+  // expected tags (those are where "se esperaba: …" comes from).
+  const set = chart[error.position];
+  if (set === undefined) {
+    return null;
+  }
+  const expected = new Set(error.expected);
+  const open = set.items.filter((item) => !isComplete(item));
+  return {
+    set: error.position,
+    started: open.filter((item) => item.dot > 0),
+    waiting: open.filter((item) => item.dot === 0 && expected.has(nextSymbol(item) ?? '')),
+  };
 }

@@ -37,6 +37,16 @@ describe('sabueso parse', () => {
       }),
     ).toBe(1);
     expect(output()).toContain('REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL');
+    expect(output()).toContain(
+      [
+        'Open items in S2, where the story fails:',
+        '  Started and could not go on:',
+        '    Planteo → Marco • Hecho, 0',
+        '  Waiting for one of the expected tags:',
+        '    Hecho → • CRI HallazgoOpc, 2',
+        '    Hecho → • HAL, 2',
+      ].join('\n'),
+    );
   });
 
   it('--trace adds the steps of Earley', async () => {

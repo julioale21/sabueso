@@ -3,8 +3,8 @@
  * diagnosis, the trees, their count and the leftmost derivation of the first one. It is
  * what the web (SPEC 03) calls.
  */
-import type { ParseError } from './earley/diagnostics.js';
-import { diagnose } from './earley/diagnostics.js';
+import type { OpenItems, ParseError } from './earley/diagnostics.js';
+import { diagnose, openItemsAt } from './earley/diagnostics.js';
 import type { Chart } from './earley/chart.js';
 import { recognize } from './earley/recognizer.js';
 import type { TraceEvent } from './earley/trace.js';
@@ -39,7 +39,15 @@ export type ParseResult =
       chart: Chart;
       trace: TraceEvent[];
     }
-  | { accepted: false; tokens: SymbolName[]; error: ParseError; chart: Chart; trace: TraceEvent[] };
+  | {
+      accepted: false;
+      tokens: SymbolName[];
+      error: ParseError;
+      chart: Chart;
+      trace: TraceEvent[];
+      /** The Earley items left open where the story fails; null when a tag is outside Σ. */
+      openItems: OpenItems | null;
+    };
 
 /**
  * Analyzes a story with a grammar. The story can be the text ('CRI PIS REV') or its tokens.
@@ -60,7 +68,7 @@ export function parse({
   const tokens = typeof input === 'string' ? tokenizeSequence(input) : [...input];
   const unknown = checkAlphabet({ tokens, grammar });
   if (unknown !== null) {
-    return { accepted: false, tokens, error: unknown, chart: [], trace: [] };
+    return { accepted: false, tokens, error: unknown, chart: [], trace: [], openItems: null };
   }
   const recognition = recognize({
     grammar,
@@ -73,7 +81,14 @@ export function parse({
   const { chart, trace } = recognition;
   const error = diagnose({ grammar, chart, tokens, accepted: recognition.accepted });
   if (error !== null) {
-    return { accepted: false, tokens, error, chart, trace };
+    return {
+      accepted: false,
+      tokens,
+      error,
+      chart,
+      trace,
+      openItems: openItemsAt({ chart, error }),
+    };
   }
   const trees = parseTrees({ grammar, recognition, limit: options.maxTrees ?? DEFAULT_TREE_LIMIT });
   const [firstTree] = trees;

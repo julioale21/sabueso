@@ -1,6 +1,6 @@
 /**
  * Concept: the full analysis of a story in one command, through the public parse():
- * accepted or rejected (with the diagnosis), how many trees, the first trees drawn, and the
+ * accepted or rejected (with the diagnosis and the Earley items left open), how many trees, the first trees drawn, and the
  * leftmost derivation of the first one. With --trace, every step of Earley.
  */
 import { parse, type ParseResult } from '../../parse.js';
@@ -8,7 +8,7 @@ import { renderDerivation } from '../../trees/derivation.js';
 import { renderTree } from '../../trees/render.js';
 import type { TreeCount } from '../../trees/tree.js';
 import { parseArguments } from '../arguments.js';
-import { formatRejection } from '../format.js';
+import { formatOpenItems, formatRejection } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
@@ -72,7 +72,8 @@ function formatResult(result: ParseResult): string[] {
   const trace = result.trace.length === 0 ? [] : [formatTrace(result)];
   if (!result.accepted) {
     const renderRejection = formatRejection as (error: unknown) => string;
-    return [renderRejection(result.error), ...trace];
+    const openItems = result.openItems === null ? [] : [formatOpenItems(result.openItems)];
+    return [renderRejection(result.error), ...openItems, ...trace];
   }
   const trees = result.trees.map((tree, index) => `Tree ${index + 1}:\n${renderTree(tree)}`);
   const renderLeftmostDerivation = renderDerivation as (derivation: unknown) => string;
