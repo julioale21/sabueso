@@ -98,13 +98,15 @@ const useless = new Set(
 return leastFixedPoint(
   [],
   (productive) =>
-    leftSidesWhere(grammar.productions, (production) => usesOnly(production, productive, grammar)),
+    nonterminalsWithProductionThat(grammar.productions, (production) =>
+      usesOnly(production, productive, grammar),
+    ),
   onIteration,
 );
 ```
 
 - Usa el mismo `leastFixedPoint` que los anulables (guía 07, sección 5.1). Parte de `[]`, es decir, de ∅.
-- `leftSidesWhere(...)`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
+- `nonterminalsWithProductionThat(...)`: en cada ronda entran los lados izquierdos de las producciones que cumplen la condición.
 - `usesOnly(production, productive, grammar)`: la condición. Todo el lado derecho son terminales o productivos ya conocidos.
 - La única diferencia con los anulables es esa regla: `usesOnly` acepta terminales, porque un terminal ya es una cadena de Σ\*. En la ronda 1 entran los A con lado derecho de solo terminales (o ε).
 
