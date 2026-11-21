@@ -1,6 +1,6 @@
 # SPEC 03 — Interfaz web de Sabueso: análisis visual y vistas didácticas
 
-> **Estado:** Aprobado (2026-11-21). Se implementa en la rama `ui_v1`: primera versión de la UI, con un diseño simple
+> **Estado:** Terminado (2026-11-21). Publicado en GitHub Pages: https://julioale21.github.io/sabueso/. Se descartaron el paso 15 (persistencia) y, del paso 18, el estilo del árbol con zoom (queda en "Mejoras posibles")
 > **Depende de:** SPEC 01, SPEC 02 (terminado)
 > **Fecha:** 2026-11-14 · **Revisión:** 2026-11-21 (con el núcleo terminado)
 > **Objetivo:** Construir `apps/web`, una aplicación React de una sola página y sin servidor que usa `@sabueso/core` sin modificarlo, para cargar un relato, ver su árbol, su derivación y su diagnóstico, y recorrer visualmente cada concepto teórico del núcleo durante la exposición.
@@ -408,7 +408,7 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
       - **Hecho (2026-11-21).** La tabla CYK tiene su reproductor por largo (`CykPlayer`): el paso l llena la fila l, resaltada, y deja vacías las de arriba; una frase dice qué hace cada largo, y el último llega a la celda T[0][n]. Arranca solo, una fila cada 1,5 s, salvo con `prefers-reduced-motion`. Los reproductores de Earley y del autómata arrancan a 1,2 s por paso. En Earley paso a paso, cada ítem nuevo entra con un fundido.
     - **Diagnóstico con los ítems activos:** cuando un relato se rechaza no hay árbol (no existe derivación). En lugar de un árbol parcial, el panel de diagnóstico muestra los ítems de Earley activos en el punto del error (por ejemplo, `Planteo → Marco • Hecho`, esperaba `CRI` o `HAL`): qué parte de la estructura quedó incompleta.
       - **Hecho (2026-11-21).** `openItemsAt` (`domain/open-items.ts`) toma el conjunto S_k del error y separa dos grupos: las estructuras empezadas (ítems con algo antes del punto) y las reglas predichas que habrían leído una de las etiquetas esperadas. Con I1 en G1: S2, `Planteo → Marco • Hecho, 0`, y esperaban `Hecho → • CRI HallazgoOpc, 2` y `Hecho → • HAL, 2`. Si una etiqueta está fuera de Σ, Earley no corre y no se muestra nada.
-    - **Estilo del árbol:** un layout más compacto (por ejemplo, `d3-hierarchy`), zoom y arrastre para árboles grandes como L1, y el pulido general de colores, tipografía y espaciado.
+    - ~~**Estilo del árbol:**~~ **Descartado** (2026-11-21): un layout más compacto (por ejemplo, `d3-hierarchy`), zoom y arrastre para árboles grandes como L1. Necesitaba una dependencia de producción y no muestra ningún concepto. Queda en "Mejoras posibles".
     - **Regla:** cada animación se puede pausar y avanzar a mano (sirve para explicar en la exposición), y respeta `prefers-reduced-motion`. Si alguna mejora necesita una dependencia de producción (por ejemplo, para el layout o el zoom), se propone y se anota como decisión antes de agregarla.
     - Prueba: el reproductor del árbol, en el paso k de A1 con G1, muestra exactamente los nodos de las expansiones 0 a k − 1 y sus hijos.
 
@@ -513,6 +513,8 @@ Cada uno de esos puntos, si se hace, va en su propio spec.
 ## Mejoras posibles (v3, no planificadas)
 
 Ideas registradas para después de terminar los SPEC 02, 03 y 04. No forman parte de este spec.
+
+- **Estilo del árbol** (sacado del paso 18 el 2026-11-21). Un layout más compacto (por ejemplo, `d3-hierarchy`) y zoom con arrastre para árboles grandes como L1. Necesita una dependencia de producción: proponerla antes de agregarla.
 
 - **Panel de comparación de motores** (propuesto el 2026-11-20). En la vista de Análisis, una tabla con los tres reconocedores sobre la misma entrada: Earley, CYK y el autómata de pila, cada uno con su resultado, su tiempo y qué puede mostrar (Earley: diagnóstico y árboles del relato; CYK: árbol en FNC; autómata de pila: camino de aceptación y configuraciones exploradas), con un enlace a la pestaña de cada uno.
   - **Earley sigue siendo el motor que decide.** No es un selector de motor: los tres dan siempre la misma respuesta (lo garantizan las pruebas diferenciales del SPEC 02, paso 28), y cambiar a CYK o al autómata de pila solo haría perder el diagnóstico y los árboles del relato.

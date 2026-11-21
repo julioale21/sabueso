@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/julioale21/sabueso/actions/workflows/ci.yml/badge.svg)](https://github.com/julioale21/sabueso/actions/workflows/ci.yml)
 ![Versión](https://img.shields.io/badge/versi%C3%B3n-0.1.0-blue)
-![Estado](<https://img.shields.io/badge/n%C3%BAcleo%20(SPEC%2002)-terminado-brightgreen>)
+![Estado](<https://img.shields.io/badge/n%C3%BAcleo%20y%20web%20(SPEC%2002%20y%2003)-terminados-brightgreen>)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520.19-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
 
@@ -46,7 +46,7 @@ El motor es genérico: recibe la gramática como dato, en un archivo de texto `.
 
 | Versión                          | Qué escribe el usuario                                                                                                                        | Estado              |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| **Núcleo** (SPEC 02)             | La secuencia de etiquetas, una por evento: `CTX HAL ENC INT SOS PIS DSC REV CNF CAP`                                                          | En curso            |
+| **Núcleo y web** (SPEC 02 y 03)  | La secuencia de etiquetas, una por evento: `CTX HAL ENC INT SOS PIS DSC REV CNF CAP`                                                          | Terminado           |
 | **Español controlado** (SPEC 04) | El relato en español, con oraciones simples (una por evento) y un vocabulario cerrado. Sabueso lo traduce a etiquetas y se las pasa al núcleo | Ampliación opcional |
 
 **Un ejemplo.** Este es el relato de ejemplo del anteproyecto. Cada oración cuenta un evento, y cada evento tiene su etiqueta:
@@ -193,7 +193,9 @@ El detalle de cada pieza, con sus funciones clave, está en la [documentación d
 - busca testigos de ambigüedad y diferencias entre dos lenguajes hasta un largo k (semidecisión);
 - verifica que sus tres reconocedores aceptan lo mismo sobre todas las cadenas cortas, y mide su rendimiento.
 
-**Sigue:** la interfaz web (SPEC 03). **Después, como ampliación opcional:** el relato en español controlado (SPEC 04).
+**La interfaz web está terminada (SPEC 03)** y publicada en [julioale21.github.io/sabueso](https://julioale21.github.io/sabueso/): el análisis de un relato con su árbol, su derivación y su diagnóstico, y una vista por concepto (Earley paso a paso, FNC y CYK, autómata de pila, LL(1) y G0 vs G1).
+
+**Sigue, como ampliación opcional:** el relato en español controlado (SPEC 04).
 
 El proyecto avanza por specs, en orden:
 
@@ -201,7 +203,7 @@ El proyecto avanza por specs, en orden:
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------- |
 | [01 — Setup del proyecto](specs/01-project-setup.md)            | Monorepo, tooling, esqueletos y CLI base                                       | Terminado            |
 | [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Terminado (30 pasos) |
-| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | En curso             |
+| [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Terminado            |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador             |
 
 ---
