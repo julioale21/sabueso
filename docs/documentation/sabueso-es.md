@@ -1,6 +1,6 @@
 ---
 title: 'Sabueso'
-subtitle: 'Documentación del núcleo: arquitectura, piezas y cómo se conectan'
+subtitle: 'Documentación del núcleo y de la web: arquitectura, piezas y cómo se conectan'
 date: 'Fundamentos Teóricos de Informática · UNPSJB · 2026'
 lang: es
 ---
@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo completo (SPEC 02). Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo completo (SPEC 02) y la interfaz web que lo muestra (SPEC 03). Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -37,22 +37,23 @@ Este documento describe el núcleo completo (SPEC 02). Cada sección explica qu�
 
 Cada etapa transforma la salida de la anterior, y cada una corresponde a un concepto de la materia:
 
-| Etapa                  | Entrada                | Salida                                  | Concepto                          | Módulo                                 | Sección |
-| ---------------------- | ---------------------- | --------------------------------------- | --------------------------------- | -------------------------------------- | ------- |
-| Lexer                  | texto de un `.grammar` | tokens                                  | AFD, lenguaje regular             | `automata/`, `grammar-format/lexer.ts` | 4       |
-| Parser                 | tokens                 | reglas y directivas                     | análisis descendente LL(1)        | `grammar-format/parser.ts`             | 4       |
-| Construcción           | reglas                 | G = (N, Σ, P, S)                        | gramática libre de contexto       | `grammar/`                             | 3       |
-| Análisis               | G                      | anulables, inútiles, FIRST, FOLLOW…     | menor punto fijo, LL(1)           | `analysis/`                            | 6       |
-| Tokenizador de relatos | texto del relato       | etiquetas, o "símbolo fuera de Σ"       | alfabeto y cadena                 | `input/`                               | 5       |
-| Earley                 | G y las etiquetas      | chart, veredicto, error ubicado         | pertenencia a una GLC             | `earley/`                              | 7       |
-| Árboles                | el chart               | árboles, su cantidad, la derivación     | árboles de derivación, ambigüedad | `trees/`                               | 8       |
-| API pública            | G y el relato          | un resultado completo                   | (encadena las etapas)             | `parse.ts`, `index.ts`                 | 9       |
-| FNC                    | G                      | una gramática equivalente, por pasos    | formas normales                   | `chomsky-normal-form/`                 | 10      |
-| CYK                    | FNC(G) y el relato     | sí o no, la tabla y un árbol FNC        | programación dinámica             | `cocke-younger-kasami/`                | 10      |
-| Autómata de pila       | G y el relato          | sí, no o no se sabe, y el camino de IDs | GLC ↔ AP (Hopcroft 6.3.1)         | `pushdown-automaton/`                  | 10      |
-| Búsquedas acotadas     | G (y H), un largo k    | oraciones, un testigo, una diferencia   | semidecisión                      | `bounded/`                             | 10      |
+| Etapa                  | Entrada                          | Salida                                  | Concepto                          | Módulo                                 | Sección |
+| ---------------------- | -------------------------------- | --------------------------------------- | --------------------------------- | -------------------------------------- | ------- |
+| Lexer                  | texto de un `.grammar`           | tokens                                  | AFD, lenguaje regular             | `automata/`, `grammar-format/lexer.ts` | 4       |
+| Parser                 | tokens                           | reglas y directivas                     | análisis descendente LL(1)        | `grammar-format/parser.ts`             | 4       |
+| Construcción           | reglas                           | G = (N, Σ, P, S)                        | gramática libre de contexto       | `grammar/`                             | 3       |
+| Análisis               | G                                | anulables, inútiles, FIRST, FOLLOW…     | menor punto fijo, LL(1)           | `analysis/`                            | 6       |
+| Tokenizador de relatos | texto del relato                 | etiquetas, o "símbolo fuera de Σ"       | alfabeto y cadena                 | `input/`                               | 5       |
+| Earley                 | G y las etiquetas                | chart, veredicto, error ubicado         | pertenencia a una GLC             | `earley/`                              | 7       |
+| Árboles                | el chart                         | árboles, su cantidad, la derivación     | árboles de derivación, ambigüedad | `trees/`                               | 8       |
+| API pública            | G y el relato                    | un resultado completo                   | (encadena las etapas)             | `parse.ts`, `index.ts`                 | 9       |
+| FNC                    | G                                | una gramática equivalente, por pasos    | formas normales                   | `chomsky-normal-form/`                 | 10      |
+| CYK                    | FNC(G) y el relato               | sí o no, la tabla y un árbol FNC        | programación dinámica             | `cocke-younger-kasami/`                | 10      |
+| Autómata de pila       | G y el relato                    | sí, no o no se sabe, y el camino de IDs | GLC ↔ AP (Hopcroft 6.3.1)         | `pushdown-automaton/`                  | 10      |
+| Búsquedas acotadas     | G (y H), un largo k              | oraciones, un testigo, una diferencia   | semidecisión                      | `bounded/`                             | 10      |
+| Interfaz web           | el relato y la gramática elegida | lo mismo, dibujado                      | (presentación)                    | `apps/web/`                            | 12      |
 
-Los módulos están en `packages/core/src/`. Además están `genres/` (el catálogo de géneros) y `command-line/` (la consola, sección 11).
+Los módulos están en `packages/core/src/`. Además están `genres/` (el catálogo de géneros) y `command-line/` (la consola, sección 11). La web está en `apps/web/` (sección 12).
 
 # 3. Gramáticas
 
@@ -410,11 +411,32 @@ La consola `sabueso` muestra cada pieza del motor por separado: cada comando lla
 | `cocke-younger-kasami`                                                                     | la tabla CYK, el veredicto y el árbol FNC; con `--compare`, junto a Earley                         | 10.1    |
 | `pushdown-automaton`                                                                       | el autómata de pila, el resultado y el camino de IDs; con `--transitions`, δ                       | 10.2    |
 | `generate`, `ambiguity`, `compare`                                                         | las oraciones hasta largo k, el testigo de ambigüedad y la diferencia entre dos lenguajes          | 10.3    |
-| `differential`, `bench`                                                                    | los tres reconocedores sobre todas las cadenas hasta largo k; el tiempo de cada etapa de un relato | 12      |
+| `differential`, `bench`                                                                    | los tres reconocedores sobre todas las cadenas hasta largo k; el tiempo de cada etapa de un relato | 13      |
 
 El recorrido completo, con la salida de cada comando, está en `docs/console-demo.md`. Una prueba verifica que cada comando de ese documento siga siendo válido.
 
-# 12. Pruebas y calidad
+# 12. La interfaz web
+
+La web (`apps/web`, publicada en `https://julioale21.github.io/sabueso/`) muestra lo mismo que la consola, de forma visual. **No calcula nada:** cada vista le pide el resultado al núcleo y lo dibuja.
+
+- **Una sola puerta al núcleo:** `AnalysisService` (`src/analysis/service.ts`). Las vistas le piden cada cosa pasando el nombre de la gramática (`'detective/g1'`), nunca una gramática. La implementación de hoy (`local-service.ts`) corre el núcleo en el navegador, y cada método es una sola llamada a la API pública (sección 9). El servicio es asíncrono, así que una API web o un Worker lo podrían reemplazar sin tocar las vistas.
+- **El estado de la página** es un `useReducer`: la pestaña, la gramática, el relato escrito y el último relato analizado. El resultado del análisis también vive en la página, y por eso se conserva al cambiar de pestaña.
+- **Dos grupos de vistas:** las del relato usan el último relato analizado y se abren al apretar Analizar; las de la gramática siempre están abiertas.
+
+| Vista              | Qué muestra                                                  | Núcleo                                               | Sección   |
+| ------------------ | ------------------------------------------------------------ | ---------------------------------------------------- | --------- |
+| Análisis           | veredicto, árboles, derivación, diagnóstico e ítems abiertos | `parse`, `leftmostDerivation`                        | 7.5, 8, 9 |
+| Earley paso a paso | los conjuntos S0 … Sn llenándose evento por evento           | `parse` con `trace`                                  | 7         |
+| FNC y CYK          | los 6 pasos de la FNC, la tabla por largos y los dos árboles | `toChomskyNormalForm`, `recognizeCockeYoungerKasami` | 10, 10.1  |
+| Autómata de pila   | el camino de aceptación con la pila animada                  | `simulatePushdownAutomaton`                          | 10.2      |
+| LL(1)              | FIRST, FOLLOW y la tabla predictiva                          | `analyzeGrammar`                                     | 6.2       |
+| G0 vs G1           | el testigo de ambigüedad y los relatos que genera una sola   | `findAmbiguityWitness`, `compareLanguages`           | 10.3      |
+
+**El árbol** se dibuja en dos etapas. `layoutTree` arma una grilla: cada hoja ocupa su propia columna, cada nodo interno va centrado sobre su primer y su último hijo, y la fila es la profundidad. Cada nodo guarda su número de expansión en preorden, el orden de la derivación más a la izquierda (sección 8.2): por eso el árbol se puede armar paso a paso al ritmo de la derivación. Después `geometry.ts` convierte la grilla a píxeles (116 px por columna, 64 px por fila) y `TreeView` la dibuja en SVG.
+
+**Detalle:** guía 29 · SPEC 03 y SPEC 06.
+
+# 13. Pruebas y calidad
 
 **Detalle:** guía 28 para la prueba diferencial y el rendimiento.
 
@@ -426,7 +448,7 @@ El recorrido completo, con la salida de cada comando, está en `docs/console-dem
 - **Casos borde:** gramáticas con ε, con símbolos inútiles, con lenguaje vacío y con ciclos.
 - **Calidad del código:** TypeScript estricto, ESLint y Prettier. Los hooks de git verifican formato y lint antes de cada commit y corren las pruebas antes de cada push. La integración continua repite todo en cada push.
 
-# 13. Límites del modelo y decidibilidad
+# 14. Límites del modelo y decidibilidad
 
 **Qué es:** dos temas de la materia sin código propio, que ubican en la teoría lo que el núcleo hace.
 
@@ -435,7 +457,7 @@ El recorrido completo, con la salida de cada comando, está en `docs/console-dem
 
 **Detalle:** fichas 26 y 27.
 
-# 14. Referencias
+# 15. Referencias
 
 - Aho, A., Lam, M., Sethi, R. y Ullman, J., _Compiladores: principios, técnicas y herramientas_ (2.ª ed.). Capítulos 3 y 4.
 - Augusto, material de la cátedra de Fundamentos Teóricos de Informática, UNPSJB. Capítulos 1 a 3.

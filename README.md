@@ -331,7 +331,7 @@ sabueso/
 │   └── web/                           # @sabueso/web: la interfaz web (Vite + React)
 ├── docs/
 │   ├── documentation/                 # documentación del núcleo (sabueso-es.md y su PDF)
-│   ├── guides/                        # una guía de estudio por paso del SPEC 02
+│   ├── guides/                        # una guía por paso del SPEC 02, y la 29 de la web
 │   ├── concepts/                      # fichas teóricas, una por concepto
 │   ├── interactive/                   # páginas paso a paso: Earley y el autómata de pila
 │   └── console-demo.md                # los comandos de la demo, en orden
@@ -371,9 +371,9 @@ sabueso/
 
 | Documento                                                                                                      | Para qué                                                   |
 | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [Documentación del núcleo](docs/documentation/sabueso-es.md)                                                   | Arquitectura, piezas, funciones clave y cómo se conectan   |
-| [Core documentation (English)](docs/documentation/sabueso-en.md)                                               | La misma documentación, en inglés                          |
-| [Guías de estudio](docs/guides/)                                                                               | El código de cada paso, función por función                |
+| [Documentación del núcleo y la web](docs/documentation/sabueso-es.md)                                          | Arquitectura, piezas, funciones clave y cómo se conectan   |
+| [Core and web documentation (English)](docs/documentation/sabueso-en.md)                                       | La misma documentación, en inglés                          |
+| [Guías de estudio](docs/guides/)                                                                               | El código de cada paso, función por función, y la web (29) |
 | [Fichas teóricas](docs/concepts/)                                                                              | La teoría de cada concepto, con referencias bibliográficas |
 | [Demo por consola](docs/console-demo.md)                                                                       | Los comandos de la exposición, en orden                    |
 | [Verificación manual de la web](docs/web-manual-check.md)                                                      | La lista para revisar la web a mano, vista por vista       |

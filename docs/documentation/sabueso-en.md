@@ -1,6 +1,6 @@
 ---
 title: 'Sabueso'
-subtitle: 'Core documentation: architecture, components and how they connect'
+subtitle: 'Core and web documentation: architecture, components and how they connect'
 date: 'Fundamentos Teóricos de Informática · UNPSJB · 2026'
 lang: en
 ---
@@ -19,7 +19,7 @@ To answer it, Sabueso implements the **Earley** algorithm (Earley, 1970) from sc
 
 The project includes two grammars for the whodunit. **G0**, the one from the project proposal, is natural but **ambiguous**. **G1**, the official one, is **LL(1)** and therefore unambiguous. Comparing them with the same tools is one of the main themes of the project.
 
-This document describes the complete core (SPEC 02). Each section explains what a component does, its key functions and how it connects with the others. The details of each component (the code line by line and the theory) are in the study guides (`docs/guides/`) and in the concept cards (`docs/concepts/`); each section ends with the reference. The study guides and concept cards are written in Spanish.
+This document describes the complete core (SPEC 02) and the web interface that shows it (SPEC 03). Each section explains what a component does, its key functions and how it connects with the others. The details of each component (the code line by line and the theory) are in the study guides (`docs/guides/`) and in the concept cards (`docs/concepts/`); each section ends with the reference. The study guides and concept cards are written in Spanish.
 
 # 2. Architecture
 
@@ -37,22 +37,23 @@ This document describes the complete core (SPEC 02). Each section explains what 
 
 Each stage transforms the output of the previous one, and each one matches a concept from the course:
 
-| Stage              | Input                 | Output                                  | Concept                    | Module                                 | Section |
-| ------------------ | --------------------- | --------------------------------------- | -------------------------- | -------------------------------------- | ------- |
-| Lexer              | text of a `.grammar`  | tokens                                  | DFA, regular language      | `automata/`, `grammar-format/lexer.ts` | 4       |
-| Parser             | tokens                | rules and directives                    | LL(1) top-down parsing     | `grammar-format/parser.ts`             | 4       |
-| Construction       | rules                 | G = (N, Σ, P, S)                        | context-free grammar       | `grammar/`                             | 3       |
-| Analysis           | G                     | nullable, useless, FIRST, FOLLOW…       | least fixed point, LL(1)   | `analysis/`                            | 6       |
-| Story tokenizer    | text of the story     | tags, or "symbol not in Σ"              | alphabet and string        | `input/`                               | 5       |
-| Earley             | G and the tags        | chart, verdict, located error           | membership in a CFG        | `earley/`                              | 7       |
-| Trees              | the chart             | trees, their number, the derivation     | parse trees, ambiguity     | `trees/`                               | 8       |
-| Public API         | G and the story       | a complete result                       | (chains the stages)        | `parse.ts`, `index.ts`                 | 9       |
-| CNF                | G                     | an equivalent grammar, step by step     | normal forms               | `chomsky-normal-form/`                 | 10      |
-| CYK                | CNF(G) and the story  | yes or no, the table and a CNF tree     | dynamic programming        | `cocke-younger-kasami/`                | 10      |
-| Pushdown automaton | G and the story       | yes, no or unknown, and the path of IDs | CFG ↔ PDA (Hopcroft 6.3.1) | `pushdown-automaton/`                  | 10      |
-| Bounded searches   | G (and H), a length k | sentences, a witness, a difference      | semidecision               | `bounded/`                             | 10      |
+| Stage              | Input                            | Output                                  | Concept                    | Module                                 | Section |
+| ------------------ | -------------------------------- | --------------------------------------- | -------------------------- | -------------------------------------- | ------- |
+| Lexer              | text of a `.grammar`             | tokens                                  | DFA, regular language      | `automata/`, `grammar-format/lexer.ts` | 4       |
+| Parser             | tokens                           | rules and directives                    | LL(1) top-down parsing     | `grammar-format/parser.ts`             | 4       |
+| Construction       | rules                            | G = (N, Σ, P, S)                        | context-free grammar       | `grammar/`                             | 3       |
+| Analysis           | G                                | nullable, useless, FIRST, FOLLOW…       | least fixed point, LL(1)   | `analysis/`                            | 6       |
+| Story tokenizer    | text of the story                | tags, or "symbol not in Σ"              | alphabet and string        | `input/`                               | 5       |
+| Earley             | G and the tags                   | chart, verdict, located error           | membership in a CFG        | `earley/`                              | 7       |
+| Trees              | the chart                        | trees, their number, the derivation     | parse trees, ambiguity     | `trees/`                               | 8       |
+| Public API         | G and the story                  | a complete result                       | (chains the stages)        | `parse.ts`, `index.ts`                 | 9       |
+| CNF                | G                                | an equivalent grammar, step by step     | normal forms               | `chomsky-normal-form/`                 | 10      |
+| CYK                | CNF(G) and the story             | yes or no, the table and a CNF tree     | dynamic programming        | `cocke-younger-kasami/`                | 10      |
+| Pushdown automaton | G and the story                  | yes, no or unknown, and the path of IDs | CFG ↔ PDA (Hopcroft 6.3.1) | `pushdown-automaton/`                  | 10      |
+| Bounded searches   | G (and H), a length k            | sentences, a witness, a difference      | semidecision               | `bounded/`                             | 10      |
+| Web interface      | the story and the chosen grammar | the same, drawn                         | (presentation)             | `apps/web/`                            | 12      |
 
-The modules are in `packages/core/src/`. There are also `genres/` (the genre catalog) and `command-line/` (the console, section 11).
+The modules are in `packages/core/src/`. There are also `genres/` (the genre catalog) and `command-line/` (the console, section 11). The web is in `apps/web/` (section 12).
 
 # 3. Grammars
 
@@ -410,11 +411,32 @@ The `sabueso` console shows each component of the engine separately: each comman
 | `cocke-younger-kasami`                                                                     | the CYK table, the verdict and the CNF tree; with `--compare`, next to Earley                | 10.1    |
 | `pushdown-automaton`                                                                       | the pushdown automaton, the result and the path of IDs; with `--transitions`, δ              | 10.2    |
 | `generate`, `ambiguity`, `compare`                                                         | the sentences up to length k, the ambiguity witness and the difference between two languages | 10.3    |
-| `differential`, `bench`                                                                    | the three recognizers on all strings up to length k; the time of each stage for one story    | 12      |
+| `differential`, `bench`                                                                    | the three recognizers on all strings up to length k; the time of each stage for one story    | 13      |
 
 The complete walkthrough, with the output of each command, is in `docs/console-demo.md`. A test checks that every command in that document is still valid.
 
-# 12. Testing and quality
+# 12. The web interface
+
+The web (`apps/web`, published at `https://julioale21.github.io/sabueso/`) shows the same as the console, visually. **It computes nothing:** each view asks the core for the result and draws it.
+
+- **A single door to the core:** `AnalysisService` (`src/analysis/service.ts`). Views ask it for everything by grammar name (`'detective/g1'`), never by grammar. Today's implementation (`local-service.ts`) runs the core in the browser, and each method is a single call to the public API (section 9). The service is asynchronous, so a web API or a Worker could replace it without touching the views.
+- **The page state** is a `useReducer`: the tab, the grammar, the typed story and the last analyzed story. The analysis result also lives in the page, so it survives changing tabs.
+- **Two groups of views:** the story views use the last analyzed story and open when you press Analizar; the grammar views are always open.
+
+| View               | What it shows                                            | Core                                                 | Section   |
+| ------------------ | -------------------------------------------------------- | ---------------------------------------------------- | --------- |
+| Análisis           | verdict, trees, derivation, diagnosis and open items     | `parse`, `leftmostDerivation`                        | 7.5, 8, 9 |
+| Earley paso a paso | the sets S0 … Sn filling event by event                  | `parse` with `trace`                                 | 7         |
+| FNC y CYK          | the 6 CNF steps, the table by length and both trees      | `toChomskyNormalForm`, `recognizeCockeYoungerKasami` | 10, 10.1  |
+| Autómata de pila   | the accepting path with the animated stack               | `simulatePushdownAutomaton`                          | 10.2      |
+| LL(1)              | FIRST, FOLLOW and the predictive table                   | `analyzeGrammar`                                     | 6.2       |
+| G0 vs G1           | the ambiguity witness and the stories only one generates | `findAmbiguityWitness`, `compareLanguages`           | 10.3      |
+
+**The tree** is drawn in two stages. `layoutTree` builds a grid: each leaf takes its own column, each inner node is centered over its first and last child, and the row is the depth. Each node keeps its expansion number in preorder, the order of the leftmost derivation (section 8.2): that is why the tree can build itself step by step with the derivation. Then `geometry.ts` turns the grid into pixels (116 px per column, 64 px per row) and `TreeView` draws it as SVG.
+
+**Detail:** guide 29 · SPEC 03 and SPEC 06.
+
+# 13. Testing and quality
 
 **Detail:** guide 28 for the differential test and performance.
 
@@ -426,7 +448,7 @@ The complete walkthrough, with the output of each command, is in `docs/console-d
 - **Edge cases:** grammars with ε, with useless symbols, with an empty language and with cycles.
 - **Code quality:** strict TypeScript, ESLint and Prettier. The git hooks check formatting and lint before each commit and run the tests before each push. Continuous integration repeats everything on each push.
 
-# 13. Limits of the model and decidability
+# 14. Limits of the model and decidability
 
 **What it is:** two topics from the course without code of their own, which place what the core does within the theory.
 
@@ -435,7 +457,7 @@ The complete walkthrough, with the output of each command, is in `docs/console-d
 
 **Detail:** cards 26 and 27.
 
-# 14. References
+# 15. References
 
 - Aho, A., Lam, M., Sethi, R. and Ullman, J., _Compiladores: principios, técnicas y herramientas_ (2nd ed.). Chapters 3 and 4.
 - Augusto, course material for Fundamentos Teóricos de Informática, UNPSJB. Chapters 1 to 3.
