@@ -48,9 +48,10 @@ export const usefulCommand: Command = {
       productive: [],
       reachable: [],
     };
-    const analysis = analyzeUsefulSymbols(grammar, (phase, _iteration, symbols) =>
-      rounds[phase].push(symbols),
-    );
+    const analysis = analyzeUsefulSymbols({
+      grammar,
+      onRound: ({ phase, symbolsSoFar }) => rounds[phase].push(symbolsSoFar),
+    });
     const sections = [`${grammar.name}: useful symbols`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(
