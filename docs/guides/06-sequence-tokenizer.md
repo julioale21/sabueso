@@ -127,6 +127,8 @@ Los comandos de los pasos 3 a 5 reciben la gramática como argumento suelto (`le
 | `resolveGrammarOption` | los que leen un relato (`tokens`)                  | la opción `--grammar`                            |
 | `chooseGrammarSource`  | (interna, la usan las dos)                         | exige exactamente uno: nombre o `--grammar-file` |
 
+Desde el SPEC 05, los comandos con `--grammar` no llaman a `resolveGrammarOption` a mano: usan `readGrammarCommandArguments`, que en una sola llamada lee los argumentos, elige la gramática y, para los comandos que no reciben un relato, rechaza los argumentos sobrantes. Devuelve `{ parsed, source }` o el código de salida del error. No lee la gramática, para que cada comando siga validando sus otras opciones antes, en el mismo orden de siempre.
+
 ---
 
 ## 6. Ejemplo recorrido a mano

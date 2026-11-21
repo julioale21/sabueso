@@ -152,7 +152,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
    - `commands/chomsky-normal-form.ts` toma los pasos de `toChomskyNormalForm(grammar).steps` en lugar de repetir el bucle.
    - Verificación: consola idéntica (`nullable --steps`, `useful --steps`, `first-follow --steps`, `chomsky-normal-form` con y sin `--until`).
 8. **Inicio común de los comandos (N9).**
-   - Agregar `readGrammarCommandInput({ commandArguments, rules, usage, environment })` a `command-line/grammar-source.ts`. Devuelve `{ grammar, parsed }` o un código de salida.
+   - Agregar `readGrammarCommandArguments({ commandArguments, rules, usage, environment, allowsPositionals })` a `command-line/grammar-source.ts`. Devuelve `{ parsed, source }` o el código de salida del error de uso. No lee la gramática: ver la decisión en la sección 6.
    - Pasar los comandos de a grupos chicos, corriendo sus pruebas después de cada grupo.
    - Verificación: consola idéntica, códigos de salida incluidos, también con argumentos inválidos (gramática que no existe, opción desconocida, falta el relato).
 9. **Validación final: todo funciona igual.**
@@ -181,7 +181,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
 - [ ] `computeProductive`, `computeFirst` y `computeFollow` no existen, y ninguna guía ni ficha los nombra.
 - [ ] Ningún archivo de `packages/core/src` tiene una línea `Reference:`, y cada cita de libro que tenían está en la ficha de su concepto.
 - [ ] No queda ninguna copia de `formatRounds`: `nullable` y `useful` usan `formatSymbolRounds`, `first-follow` usa `formatSetsRounds` (las dos en `format.ts`), y el comando `chomsky-normal-form` usa `toChomskyNormalForm(grammar).steps`.
-- [ ] Los comandos que leen una gramática usan `readGrammarCommandInput`.
+- [ ] Los comandos que leen una gramática con `--grammar` o `--grammar-file` usan `readGrammarCommandArguments`, y ninguno repite el inicio a mano.
 - [ ] El `diff` contra la línea de base del paso 0 no muestra diferencias, salvo `parse` con relatos rechazados.
 - [ ] Pasan `typecheck`, `lint`, `format:check`, `build` y `npm test` desde la raíz.
 
@@ -199,6 +199,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
 - **Sí:** línea de base al principio y `diff` al final. "Todo funciona igual" tiene que ser verificable, no una impresión.
 - **Sí:** las referencias bibliográficas viven solo en las fichas (N11, sumado el 2026-11-21 durante el paso 2). El error de la cita de START estaba repetido en el código, la ficha y la guía; con una sola fuente se corrige una vez, y la cabecera del código queda en qué concepto implementa (`Concept:`) y dónde se explica (`Card:`).
 - **Sí:** dos funciones de rondas en `format.ts` en lugar de una (2026-11-21, durante el paso 7). Las copias no eran iguales: `nullable` y `useful` muestran las rondas de un conjunto de símbolos (`formatSymbolRounds`), y `first-follow` las de un conjunto por no terminal (`formatSetsRounds`). Una sola función habría necesitado otra función como parámetro para armar cada fila, el patrón más difícil de seguir.
+- **Sí:** el ayudante de N9 devuelve `{ parsed, source }` y no lee la gramática (2026-11-21, durante el paso 8). Muchos comandos validan otras opciones o leen el relato entre elegir la gramática y leerla; si el ayudante la leyera, el orden de los mensajes cambiaría cuando hay dos errores a la vez. Se verificó con 42 casos de argumentos inválidos contra el código anterior: misma salida y mismos códigos.
 - **No:** una sola `formatRounds` con un parámetro que arme cada fila. Cumplía el texto del plan, pero agregaba una función como parámetro.
 - **No:** el pulido opcional de la revisión (sección 2). Se puede retomar después.
 
