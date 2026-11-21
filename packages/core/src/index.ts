@@ -41,6 +41,14 @@ export type { DerivationStep } from './trees/derivation.js';
 export { renderDerivation } from './trees/derivation.js';
 export { renderTree } from './trees/render.js';
 
+// The Chomsky normal form, step by step (step 23: START, DEL and UNIT).
+export { addNewStart, NEW_START } from './chomsky-normal-form/add-new-start.js';
+export { removeEpsilonProductions } from './chomsky-normal-form/remove-epsilon-productions.js';
+export {
+  computeUnitPairs,
+  removeUnitProductions,
+} from './chomsky-normal-form/remove-unit-productions.js';
+
 // The catalog of genres.
 export { genres } from './genres/catalog.js';
 export type { Genre, TagInfo } from './genres/types.js';
