@@ -2,7 +2,7 @@
  * The six steps of the Chomsky normal form as the view shows them (card 22): what each step
  * does, and which productions it added and removed, compared as text.
  */
-import type { Grammar } from '@sabueso/core';
+import type { Grammar, ParseTree } from '@sabueso/core';
 import { productionText } from './productions';
 
 export const STEP_DESCRIPTIONS: Record<string, string> = {
@@ -29,4 +29,11 @@ export function stepChanges({ before, after }: { before: Grammar; after: Grammar
     added: afterTexts.filter((text) => !beforeSet.has(text)),
     removed: beforeTexts.filter((text) => !afterSet.has(text)),
   };
+}
+
+/** The symbols of the inner nodes of a tree: to compare the CYK tree with the Earley one. */
+export function nonterminalsOf(tree: ParseTree): Set<string> {
+  return tree.kind === 'nonterminal'
+    ? new Set([tree.symbol, ...tree.children.flatMap((child) => [...nonterminalsOf(child)])])
+    : new Set();
 }

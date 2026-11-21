@@ -4,14 +4,8 @@
  * the genre (unit and ε steps disappear) and gains the chain symbols of BIN.
  */
 import type { ParseTree } from '@sabueso/core';
+import { nonterminalsOf } from '../../domain/normal-form';
 import { TreeView } from '../tree-view/TreeView';
-
-/** The symbols of the inner nodes of a tree. */
-function nonterminalsOf(tree: ParseTree): Set<string> {
-  return tree.kind === 'nonterminal'
-    ? new Set([tree.symbol, ...tree.children.flatMap((child) => [...nonterminalsOf(child)])])
-    : new Set();
-}
 
 function OnlyIn({ title, symbols }: { title: string; symbols: readonly string[] }) {
   return (
@@ -29,7 +23,7 @@ export function TreeComparison({
 }: {
   cykTree: ParseTree;
   earleyTree: ParseTree;
-  /** The same choice as in Análisis: on by default. The CYK tree has no ε to collapse. */
+  /** The same choice as in Análisis (off by default). The CYK tree has no ε to collapse. */
   collapseEpsilon: boolean;
 }) {
   const cykSymbols = nonterminalsOf(cykTree);

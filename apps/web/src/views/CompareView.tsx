@@ -4,9 +4,10 @@
  * Finding something proves; finding nothing up to k proves nothing (cards 21 and 25).
  */
 import type { AmbiguityWitness, LanguageComparison } from '@sabueso/core';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAnalysisService } from '../analysis/context';
 import { useGrammars } from '../analysis/use-grammars';
+import { useServiceResult } from '../analysis/use-service-result';
 import { AmbiguityCard } from '../components/compare/AmbiguityCard';
 import { ComparisonVerdict } from '../components/compare/ComparisonVerdict';
 import { LengthSelector } from '../components/compare/LengthSelector';
@@ -30,7 +31,7 @@ export function CompareView({ state }: ViewProps) {
   const service = useAnalysisService();
   const catalog = useGrammars();
   const [maxLength, setMaxLength] = useState(DEFAULT_LENGTH);
-  const [searches, setSearches] = useState<Searches | null>(null);
+
   const genre = catalog?.genres.find((each) => each.id === state.genreId);
   // The alternative grammar first: G0 vs G1, as the course compares them.
   const [official, alternative] = genre === undefined ? [] : grammarOptionsOf(genre);
@@ -40,24 +41,21 @@ export function CompareView({ state }: ViewProps) {
   const officialId = official?.id;
   const alternativeId = alternative?.id;
 
-  useEffect(() => {
-    if (officialId === undefined || alternativeId === undefined) {
-      return undefined;
-    }
-    let current = true;
-    void Promise.all([
-      service.ambiguity(alternativeId, maxLength),
-      service.ambiguity(officialId, maxLength),
-      service.compare(alternativeId, officialId, maxLength),
-    ]).then(([first, second, comparison]) => {
-      if (current) {
-        setSearches({ maxLength, witnesses: [first, second], comparison });
-      }
-    });
-    return () => {
-      current = false;
-    };
-  }, [service, officialId, alternativeId, maxLength]);
+  const searches = useServiceResult<Searches>(
+    () =>
+      officialId === undefined || alternativeId === undefined
+        ? null
+        : Promise.all([
+            service.ambiguity(alternativeId, maxLength),
+            service.ambiguity(officialId, maxLength),
+            service.compare(alternativeId, officialId, maxLength),
+          ]).then(([first, second, comparison]) => ({
+            maxLength,
+            witnesses: [first, second],
+            comparison,
+          })),
+    [service, officialId, alternativeId, maxLength],
+  );
 
   if (catalog === null) {
     return <MutedText>Cargando las gramáticas…</MutedText>;

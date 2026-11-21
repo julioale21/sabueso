@@ -4,9 +4,9 @@
  * the ε fix (cards 11 to 16). The trace comes from the core.
  */
 import type { ParseResult } from '@sabueso/core';
-import { useEffect, useState } from 'react';
 import { useAnalysisService } from '../analysis/context';
 import { useGrammars } from '../analysis/use-grammars';
+import { useServiceResult } from '../analysis/use-service-result';
 import { EarleySetColumn } from '../components/earley-player/EarleySetColumn';
 import { EventDescription } from '../components/earley-player/EventDescription';
 import { TraceSource } from '../components/earley-player/TraceSource';
@@ -29,22 +29,10 @@ export function EarleyPlayerView({ state }: ViewProps) {
   const input = state.analyzedInput ?? '';
   const tokens = splitTags(input);
   const tooLong = tokens.length > MAX_PLAYER_TOKENS;
-  const [result, setResult] = useState<ParseResult | null>(null);
-
-  useEffect(() => {
-    if (tooLong) {
-      return undefined;
-    }
-    let current = true;
-    void service.trace(state.grammarId, input).then((answer) => {
-      if (current) {
-        setResult(answer);
-      }
-    });
-    return () => {
-      current = false;
-    };
-  }, [service, state.grammarId, input, tooLong]);
+  const result = useServiceResult<ParseResult>(
+    () => (tooLong ? null : service.trace(state.grammarId, input)),
+    [service, state.grammarId, input, tooLong],
+  );
 
   const events = result?.trace ?? [];
   const player = usePlayer({ last: events.length });
@@ -69,9 +57,7 @@ export function EarleyPlayerView({ state }: ViewProps) {
   const currentEvent = player.step - 1;
   const current = events[currentEvent];
   return (
-    <Panel
-      title={`Earley paso a paso · ${state.input.trim() === '' ? 'ε (relato vacío)' : state.input}`}
-    >
+    <Panel title={`Earley paso a paso · ${input.trim() === '' ? 'ε (relato vacío)' : input}`}>
       <div className="space-y-3">
         <TraceSource input={input} grammarLabel={grammarLabel} />
         <PlayerControls player={player} unit="evento" />

@@ -3,8 +3,8 @@
  * the triangular CYK table of the analyzed story, and the CYK tree next to the Earley tree.
  * Concepts: Chomsky normal form and CYK (cards 22 and 23). Everything comes from the core.
  */
-import { useEffect, useState } from 'react';
 import { useAnalysisService } from '../analysis/context';
+import { useServiceResult } from '../analysis/use-service-result';
 import type { AnalysisService, StoryAnalysis } from '../analysis/service';
 import { CykPlayer } from '../components/cnf-cyk/CykPlayer';
 import { CykVerdict } from '../components/cnf-cyk/CykVerdict';
@@ -25,22 +25,14 @@ export function CnfCykView({ state }: ViewProps) {
   const service = useAnalysisService();
   // The story of the latest Analizar (the tab is disabled before it).
   const input = state.analyzedInput ?? '';
-  const [data, setData] = useState<CnfCykData | null>(null);
-
-  useEffect(() => {
-    let current = true;
-    void Promise.all([
-      service.normalFormAndCyk(state.grammarId, input),
-      service.analyze(state.grammarId, input),
-    ]).then(([conversion, earley]) => {
-      if (current) {
-        setData({ conversion, earley });
-      }
-    });
-    return () => {
-      current = false;
-    };
-  }, [service, state.grammarId, input]);
+  const data = useServiceResult(
+    () =>
+      Promise.all([
+        service.normalFormAndCyk(state.grammarId, input),
+        service.analyze(state.grammarId, input),
+      ]).then(([conversion, earley]): CnfCykData => ({ conversion, earley })),
+    [service, state.grammarId, input],
+  );
 
   if (data === null) {
     return <MutedText>Convirtiendo la gramática…</MutedText>;

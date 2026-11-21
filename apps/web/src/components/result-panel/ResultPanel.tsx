@@ -7,21 +7,18 @@ import type { StoryAnalysis } from '../../analysis/service';
 import { DiagnosticPanel } from '../diagnostic-panel/DiagnosticPanel';
 import { TreeAndDerivation } from '../derivation-view/TreeAndDerivation';
 import { CheckboxField } from '../ui/CheckboxField';
-import { MutedText } from '../ui/MutedText';
 import { TreePager } from './TreePager';
 import { VerdictBanner } from './VerdictBanner';
 
 export function ResultPanel({
   result,
-  isAnalyzing,
   alphabet,
   selectedTree,
   collapseEpsilon,
   onSelectTree,
   onToggleCollapseEpsilon,
 }: {
-  result: StoryAnalysis | null;
-  isAnalyzing: boolean;
+  result: StoryAnalysis;
   alphabet: ReadonlySet<string>;
   selectedTree: number;
   collapseEpsilon: boolean;
@@ -30,12 +27,6 @@ export function ResultPanel({
 }) {
   // The tree builds itself only when the result arrives, not after browsing to another tree.
   const [hasBrowsed, setHasBrowsed] = useState(false);
-  if (isAnalyzing) {
-    return <MutedText>Analizando…</MutedText>;
-  }
-  if (result === null) {
-    return <MutedText>Escribe un relato y aprieta Analizar.</MutedText>;
-  }
   if (!result.accepted) {
     return (
       <div className="space-y-3">

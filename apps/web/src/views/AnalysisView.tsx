@@ -1,7 +1,7 @@
 /**
  * The main view: the story, and its analysis (SPEC 03, sections 3.1 and 3.4). Concepts: the
  * alphabet and a string over it (card 01), the grammar and its analysis (cards 02 and 06 to
- * 10); the result arrives in step 9 (cards 17 to 21).
+ * 10), and the result: verdict, trees, derivation and diagnosis (cards 17 to 21).
  */
 import { useAnalyze } from '../analysis/use-analyze';
 import { useGrammars } from '../analysis/use-grammars';
@@ -81,7 +81,6 @@ export function AnalysisView({ state, dispatch }: ViewProps) {
           <Panel title="Resultado">
             <ResultPanel
               result={result}
-              isAnalyzing={isAnalyzing}
               alphabet={new Set(grammar?.alphabet)}
               selectedTree={state.selectedTree}
               collapseEpsilon={state.collapseEpsilon}

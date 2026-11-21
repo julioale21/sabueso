@@ -3,8 +3,8 @@
  * analyzed story and the accepting path as instantaneous descriptions. Concept: from a CFG to
  * a pushdown automaton, accepting by empty stack (card 24). Everything comes from the core.
  */
-import { useEffect, useState } from 'react';
 import { useAnalysisService } from '../analysis/context';
+import { useServiceResult } from '../analysis/use-service-result';
 import type { AnalysisService } from '../analysis/service';
 import { PdaDefinition } from '../components/pda/PdaDefinition';
 import { PdaPlayer } from '../components/pda/PdaPlayer';
@@ -26,22 +26,10 @@ export function PdaView({ state }: ViewProps) {
   const input = state.analyzedInput ?? '';
   const tokens = splitTags(input);
   const tooLong = tokens.length > MAX_PDA_TOKENS;
-  const [answer, setAnswer] = useState<PushdownAnswer | null>(null);
-
-  useEffect(() => {
-    if (tooLong) {
-      return undefined;
-    }
-    let current = true;
-    void service.pushdown(state.grammarId, input).then((result) => {
-      if (current) {
-        setAnswer(result);
-      }
-    });
-    return () => {
-      current = false;
-    };
-  }, [service, state.grammarId, input, tooLong]);
+  const answer = useServiceResult<PushdownAnswer>(
+    () => (tooLong ? null : service.pushdown(state.grammarId, input)),
+    [service, state.grammarId, input, tooLong],
+  );
 
   if (tooLong) {
     return (

@@ -1,7 +1,7 @@
 /**
  * One tab per view (SPEC 03, section 3.4): first the ones about the analyzed story, then the
- * ones about the grammar alone. The views arrive step by step; until then each tab says which
- * step brings it.
+ * ones about the grammar alone. The story views wait for Analizar; the grammar views are always
+ * open.
  */
 import type { TabItem } from '../components/ui/Tabs';
 import type { TabId, ViewProps } from '../state/app-state';

@@ -38,6 +38,10 @@ export default defineConfig(
   {
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat['recommended-latest']],
+    rules: {
+      // useServiceResult takes its dependencies like useEffect: check them where it is called.
+      'react-hooks/exhaustive-deps': ['warn', { additionalHooks: '(useServiceResult)' }],
+    },
   },
   // JavaScript files (like this one) are not part of any tsconfig.
   { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },

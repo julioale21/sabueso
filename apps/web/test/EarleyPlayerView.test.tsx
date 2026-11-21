@@ -11,12 +11,15 @@ const service = createLocalAnalysisService();
 
 function renderPlayer({
   input,
+  analyzedInput = input,
   grammarId = 'detective/g1',
 }: {
   input: string;
+  /** The story of the latest Analizar; by default, the same as the field. */
+  analyzedInput?: string;
   grammarId?: string;
 }) {
-  const state = { ...createInitialState(), input, analyzedInput: input, grammarId };
+  const state = { ...createInitialState(), input, analyzedInput, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
       <EarleyPlayerView state={state} dispatch={() => undefined} />
@@ -28,6 +31,13 @@ const itemsOf = (set: string) =>
   within(screen.getByRole('region', { name: set })).queryAllByRole('listitem');
 
 describe('EarleyPlayerView', () => {
+  it('the title names the analyzed story, not what is being typed after it', async () => {
+    renderPlayer({ input: 'CRI PIS REV CNF', analyzedInput: 'CRI PIS REV' });
+    expect(
+      await screen.findByRole('region', { name: 'Earley paso a paso · CRI PIS REV' }),
+    ).toBeInTheDocument();
+  });
+
   it('step 0 shows only the initial item in S0', async () => {
     renderPlayer({ input: 'CRI PIS REV' });
     expect(await screen.findByText('evento 0/53')).toBeInTheDocument();

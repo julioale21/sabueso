@@ -1,5 +1,9 @@
 // How counts and diagnoses are written on screen (SPEC 03, step 9).
 import { describe, expect, it } from 'vitest';
+import { createLocalAnalysisService } from '../src/analysis/local-service';
+import { stepText } from '../src/domain/cyk';
+import { leftmostNonterminal } from '../src/domain/derivation';
+import { nonterminalsOf } from '../src/domain/normal-form';
 import { stepInterval } from '../src/domain/tree-animation';
 import { diagnosticMessage } from '../src/domain/diagnostic-message';
 import { formatTreeCount, treesWord } from '../src/domain/tree-count';
@@ -48,5 +52,47 @@ describe('stepInterval', () => {
     expect(stepInterval(18)).toBe(889);
     expect(stepInterval(5)).toBe(1500);
     expect(stepInterval(40)).toBe(700);
+  });
+});
+
+describe('leftmostNonterminal', () => {
+  const alphabet = new Set(['CRI', 'PIS', 'REV']);
+
+  it('is the first symbol outside Σ: the one the next step of the derivation replaces', () => {
+    expect(
+      leftmostNonterminal({ form: ['CRI', 'MarcoOpc', 'Investigacion', 'Desenlace'], alphabet }),
+    ).toBe(1);
+  });
+
+  it('is null for a form made only of tags: the derivation is over', () => {
+    expect(leftmostNonterminal({ form: ['CRI', 'PIS', 'REV'], alphabet })).toBeNull();
+  });
+});
+
+describe('nonterminalsOf', () => {
+  it('the CYK tree of CRI PIS REV with G1 has the chain X1 and no genre categories like Pasos', async () => {
+    const { cyk } = await createLocalAnalysisService().normalFormAndCyk(
+      'detective/g1',
+      'CRI PIS REV',
+    );
+    if (cyk.tree === null) {
+      throw new Error('CRI PIS REV should be accepted by CYK');
+    }
+    expect([...nonterminalsOf(cyk.tree)].sort()).toEqual([
+      'Desenlace',
+      'Investigacion',
+      'Planteo',
+      'Relato',
+      'X1',
+    ]);
+  });
+});
+
+describe('stepText', () => {
+  it('explains each length of the CYK table, and that the last one decides', () => {
+    expect(stepText({ step: 0, n: 3 })).toBe('La tabla vacía: todavía no se llenó ningún largo.');
+    expect(stepText({ step: 1, n: 3 })).toMatch(/^Largo 1: cada etiqueta sola/);
+    expect(stepText({ step: 2, n: 3 })).not.toMatch(/decide/);
+    expect(stepText({ step: 3, n: 3 })).toMatch(/Es la celda de arriba: decide\.$/);
   });
 });
