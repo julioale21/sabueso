@@ -29,7 +29,7 @@ export function leftmostDerivation(tree: ParseTree): DerivationStep[] {
   const steps: DerivationStep[] = [{ form: [tree.symbol], production: null }];
   let form: SymbolName[] = [tree.symbol];
   for (const production of productionsInPreorder(tree)) {
-    form = replaceLeftmostNonterminal(form, production);
+    form = replaceLeftmostNonterminal({ form, production });
     steps.push({ form, production });
   }
   return steps;
@@ -47,10 +47,13 @@ function productionsInPreorder(tree: ParseTree): Production[] {
  * The form with its leftmost nonterminal (the left side of the production) replaced by the
  * right side. An ε-production just removes it.
  */
-function replaceLeftmostNonterminal(
-  form: readonly SymbolName[],
-  production: Production,
-): SymbolName[] {
+function replaceLeftmostNonterminal({
+  form,
+  production,
+}: {
+  form: readonly SymbolName[];
+  production: Production;
+}): SymbolName[] {
   // The preorder guarantees that the first occurrence of the left side that is still a
   // nonterminal is the leftmost nonterminal: every symbol before it is already a terminal.
   const position = form.indexOf(production.leftSide);

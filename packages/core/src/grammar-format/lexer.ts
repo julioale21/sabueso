@@ -234,7 +234,7 @@ function readLexemes({
   onEvent?: ((event: AutomatonEvent<LexerState, LexemeKind>) => void) | undefined;
 }): AutomatonToken<LexemeKind>[] {
   try {
-    return runDeterministicAutomaton(grammarLexerAutomaton, text, onEvent);
+    return runDeterministicAutomaton({ automaton: grammarLexerAutomaton, text, onEvent });
   } catch (error) {
     if (error instanceof AutomatonStoppedError) {
       throw toSyntaxError(error as AutomatonStoppedError<LexerState>);

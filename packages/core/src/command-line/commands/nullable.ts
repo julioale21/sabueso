@@ -23,22 +23,25 @@ export const nullableCommand: Command = {
   name: 'nullable',
   description: 'Compute the nullable symbols, A ⇒* ε (--steps: each round of the fixed point)',
   usage: NULLABLE_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [STEPS_FLAG],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [STEPS_FLAG],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, NULLABLE_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: NULLABLE_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${NULLABLE_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${NULLABLE_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const rounds: ReadonlySet<SymbolName>[] = [];
     const nullable = computeNullable({
       grammar,
@@ -48,7 +51,7 @@ export const nullableCommand: Command = {
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(formatRounds(rounds));
     }
-    sections.push(formatResult(grammar, nullable));
+    sections.push(formatResult({ grammar, nullable }));
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },
@@ -65,11 +68,17 @@ function formatRounds(rounds: readonly ReadonlySet<SymbolName>[]): string {
       added.length === 0 ? '(none: fixed point)' : added.sort().join(', '),
     ];
   });
-  return formatTable(['Round', 'Nullable so far', 'Added in this round'], rows);
+  return formatTable({ header: ['Round', 'Nullable so far', 'Added in this round'], rows });
 }
 
 /** The closing line: the nullable set and how many of the nonterminals it covers. */
-function formatResult(grammar: Grammar, nullable: ReadonlySet<SymbolName>): string {
+function formatResult({
+  grammar,
+  nullable,
+}: {
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+}): string {
   return `Nullable = ${formatNullableSet(nullable)} (${nullable.size} of ${grammar.nonterminals.size} nonterminals)`;
 }
 

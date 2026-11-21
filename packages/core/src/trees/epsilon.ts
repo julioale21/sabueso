@@ -13,13 +13,19 @@ import { addCounts, multiplyCounts, type ParseTree, type TreeCount } from './tre
  * nullable, of the product of the ε-trees of each Xi (1 for B → ε). 'infinite' if the
  * symbol can derive ε through itself again (a cycle among nullable symbols).
  */
-export function countEpsilonTrees(
-  grammar: Grammar,
-  nullable: ReadonlySet<SymbolName>,
-  symbol: SymbolName,
-  known: Map<SymbolName, TreeCount> = new Map(),
-  inProgress: Set<SymbolName> = new Set(),
-): TreeCount {
+export function countEpsilonTrees({
+  grammar,
+  nullable,
+  symbol,
+  known = new Map(),
+  inProgress = new Set(),
+}: {
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+  symbol: SymbolName;
+  known?: Map<SymbolName, TreeCount> | undefined;
+  inProgress?: Set<SymbolName> | undefined;
+}): TreeCount {
   // A count depends on the counts of the symbols of its productions, so it is computed
   // depth-first and remembered (memoization). Meeting a symbol that is still being
   // counted means it derives ε through itself: S ⇒+ S with nothing produced, so the
@@ -33,13 +39,16 @@ export function countEpsilonTrees(
   }
   inProgress.add(symbol);
   let total: TreeCount = 0n;
-  for (const production of emptyProductionsOf(grammar, nullable, symbol)) {
+  for (const production of emptyProductionsOf({ grammar, nullable, symbol })) {
     const ways = production.rightSide.reduce<TreeCount>(
       (product, child) =>
-        multiplyCounts(product, countEpsilonTrees(grammar, nullable, child, known, inProgress)),
+        multiplyCounts({
+          first: product,
+          second: countEpsilonTrees({ grammar, nullable, symbol: child, known, inProgress }),
+        }),
       1n,
     );
-    total = addCounts(total, ways);
+    total = addCounts({ first: total, second: ways });
   }
   inProgress.delete(symbol);
   known.set(symbol, total);
@@ -53,18 +62,25 @@ export function countEpsilonTrees(
  * Productions that would use a symbol already on the path are skipped, so with a cycle
  * this lists only the trees without repeated symbols (countEpsilonTrees says 'infinite').
  */
-export function epsilonTrees(
-  grammar: Grammar,
-  nullable: ReadonlySet<SymbolName>,
-  symbol: SymbolName,
-  path: ReadonlySet<SymbolName> = new Set(),
-): ParseTree[] {
+export function epsilonTrees({
+  grammar,
+  nullable,
+  symbol,
+  path = new Set(),
+}: {
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+  symbol: SymbolName;
+  path?: ReadonlySet<SymbolName> | undefined;
+}): ParseTree[] {
   const onPath = new Set([...path, symbol]);
-  return emptyProductionsOf(grammar, nullable, symbol)
+  return emptyProductionsOf({ grammar, nullable, symbol })
     .filter((production) => production.rightSide.every((child) => !onPath.has(child)))
     .flatMap((production) =>
       combinations(
-        production.rightSide.map((child) => epsilonTrees(grammar, nullable, child, onPath)),
+        production.rightSide.map((child) =>
+          epsilonTrees({ grammar, nullable, symbol: child, path: onPath }),
+        ),
       ).map((children): ParseTree => ({
         kind: 'nonterminal',
         symbol,
@@ -75,11 +91,15 @@ export function epsilonTrees(
 }
 
 /** The productions B → X1…Xk of the symbol whose right side can vanish entirely. */
-function emptyProductionsOf(
-  grammar: Grammar,
-  nullable: ReadonlySet<SymbolName>,
-  symbol: SymbolName,
-): readonly Production[] {
+function emptyProductionsOf({
+  grammar,
+  nullable,
+  symbol,
+}: {
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+  symbol: SymbolName;
+}): readonly Production[] {
   return (grammar.productionsByLeftSide.get(symbol) ?? []).filter((production) =>
     production.rightSide.every((child) => nullable.has(child)),
   );

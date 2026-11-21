@@ -34,7 +34,7 @@ const integers: DeterministicAutomatonDefinition<ToyState, ToyClass, 'INTEGER'> 
 };
 
 function run(text: string) {
-  return runDeterministicAutomaton(integers, text);
+  return runDeterministicAutomaton({ automaton: integers, text });
 }
 
 function stoppedError(text: string): AutomatonStoppedError<ToyState> {
@@ -92,7 +92,11 @@ describe('runDeterministicAutomaton', () => {
 
   it('reports every transition and every accepted lexeme to the observer', () => {
     const events: AutomatonEvent<ToyState, 'INTEGER'>[] = [];
-    runDeterministicAutomaton(integers, '-4 ', (event) => events.push(event));
+    runDeterministicAutomaton({
+      automaton: integers,
+      text: '-4 ',
+      onEvent: (event) => events.push(event),
+    });
     expect(events).toEqual([
       { type: 'transition', from: 'start', character: '-', to: 'minus' },
       { type: 'transition', from: 'minus', character: '4', to: 'number' },

@@ -28,40 +28,51 @@ export const deriveCommand: Command = {
   name: 'derive',
   description: 'Write the leftmost derivation of a story, step by step (--tree: of tree number k)',
   usage: DERIVE_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, TREE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, TREE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, DERIVE_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: DERIVE_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     const treeNumber = Number(parsed.values.get(TREE_OPTION) ?? '1');
     if (!Number.isInteger(treeNumber) || treeNumber < 1) {
-      return reportUsageError(`${TREE_OPTION} needs a whole number greater than 0`, environment);
+      return reportUsageError({
+        message: `${TREE_OPTION} needs a whole number greater than 0`,
+        environment,
+      });
     }
-    const story = await readStory(parsed, environment);
+    const story = await readStory({ parsed, environment });
     if (typeof story === 'string') {
-      return reportUsageError(story, environment);
+      return reportUsageError({ message: story, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const title = `${grammar.name}: leftmost derivation of ${story.label}`;
     const recognition =
-      checkAlphabet(story.tokens, grammar) === null ? recognize(grammar, story.tokens) : undefined;
+      checkAlphabet({ tokens: story.tokens, grammar }) === null
+        ? recognize({ grammar, tokens: story.tokens })
+        : undefined;
     const tree =
       recognition === undefined
         ? undefined
-        : parseTrees(grammar, recognition, treeNumber)[treeNumber - 1];
+        : parseTrees({ grammar, recognition, limit: treeNumber })[treeNumber - 1];
     if (recognition === undefined || !recognition.accepted) {
       environment.writeOutput(`${title}\n\nREJECTED: the input has no derivation\n`);
       return EXIT_CODES.rejected;
     }
     if (tree === undefined) {
-      return reportUsageError(`The input has fewer than ${treeNumber} trees`, environment);
+      return reportUsageError({
+        message: `The input has fewer than ${treeNumber} trees`,
+        environment,
+      });
     }
     const steps = leftmostDerivation(tree);
     environment.writeOutput(
@@ -79,5 +90,5 @@ function formatSteps(steps: readonly DerivationStep[]): string {
     `${index === 0 ? '  ' : '⇒ '}${step.form.length === 0 ? 'ε' : step.form.join(' ')}`,
     step.production === null ? '' : formatProduction(step.production),
   ]);
-  return formatTable(['Step', 'Sentential form', 'Production applied'], rows);
+  return formatTable({ header: ['Step', 'Sentential form', 'Production applied'], rows });
 }

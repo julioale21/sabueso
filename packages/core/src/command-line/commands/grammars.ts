@@ -24,14 +24,14 @@ export const grammarsCommand: Command = {
   name: 'grammars',
   description: 'List the built-in grammars with their sizes |N|, |Σ| and |P|',
   usage: 'sabueso grammars',
-  async run(commandArguments, environment) {
+  async run({ commandArguments, environment }) {
     if (commandArguments.length > 0) {
-      return reportUsageError('Usage: sabueso grammars', environment);
+      return reportUsageError({ message: 'Usage: sabueso grammars', environment });
     }
     const rows = await Promise.all(
-      listBuiltInGrammars().map((grammar) => describeGrammar(grammar, environment)),
+      listBuiltInGrammars().map((grammar) => describeGrammar({ builtIn: grammar, environment })),
     );
-    const sections = grammarGroups.map((group) => formatGroup(group, rows));
+    const sections = grammarGroups.map((group) => formatGroup({ group, rows }));
     environment.writeOutput(`${sections.join('\n\n')}\n`);
     return EXIT_CODES.ok;
   },
@@ -44,23 +44,32 @@ interface GrammarRow {
 }
 
 /** Reads and builds one built-in grammar, to show its sizes. */
-async function describeGrammar(
-  builtIn: BuiltInGrammar,
-  environment: CommandLineEnvironment,
-): Promise<GrammarRow> {
+async function describeGrammar({
+  builtIn,
+  environment,
+}: {
+  builtIn: BuiltInGrammar;
+  environment: CommandLineEnvironment;
+}): Promise<GrammarRow> {
   const text = await environment.readFile(builtInGrammarPath(builtIn));
   return { builtIn, grammar: parseGrammarText({ text, name: builtIn.id }) };
 }
 
 /** The table of one group of grammars: id, aliases, |N|, |Σ|, |P| and description. */
-function formatGroup(group: GrammarGroup, rows: readonly GrammarRow[]): string {
+function formatGroup({
+  group,
+  rows,
+}: {
+  group: GrammarGroup;
+  rows: readonly GrammarRow[];
+}): string {
   const groupRows = rows.filter((row) => row.builtIn.group === group);
   return [
     `${group}:`,
     '',
-    formatTable(
-      ['Grammar', 'Aliases', '|N|', '|Σ|', '|P|', 'Description'],
-      groupRows.map(({ builtIn, grammar }) => [
+    formatTable({
+      header: ['Grammar', 'Aliases', '|N|', '|Σ|', '|P|', 'Description'],
+      rows: groupRows.map(({ builtIn, grammar }) => [
         builtIn.id,
         builtIn.aliases.join(', '),
         String(grammar.nonterminals.size),
@@ -68,6 +77,6 @@ function formatGroup(group: GrammarGroup, rows: readonly GrammarRow[]): string {
         String(grammar.productions.length),
         builtIn.description,
       ]),
-    ),
+    }),
   ].join('\n');
 }

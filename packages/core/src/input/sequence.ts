@@ -18,7 +18,13 @@ export function tokenizeSequence(text: string): SymbolName[] {
  * Checks that every token is a terminal of the grammar, before Earley runs. Returns the
  * error of the first token outside Σ, or null when the whole story is over Σ.
  */
-export function checkAlphabet(tokens: readonly SymbolName[], grammar: Grammar): ParseError | null {
+export function checkAlphabet({
+  tokens,
+  grammar,
+}: {
+  tokens: readonly SymbolName[];
+  grammar: Grammar;
+}): ParseError | null {
   // Checks w ∈ Σ* (every symbol is an existing tag) before asking whether
   // w ∈ L(G), which is Earley's job. Keeping the two errors apart gives better messages.
   const position = tokens.findIndex((token) => !grammar.terminals.has(token));

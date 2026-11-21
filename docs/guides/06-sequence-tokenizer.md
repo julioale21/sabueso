@@ -91,7 +91,7 @@ export function tokenizeSequence(text: string): SymbolName[] {
 - `filter` quita los pedazos vacíos: `' CRI '.split(/\s+/)` da `['', 'CRI', '']`.
 - No valida nada: `cri` y `XYZ` salen como tokens. Separar y validar son dos responsabilidades distintas.
 
-### 5.3 `checkAlphabet(tokens, grammar)`
+### 5.3 `checkAlphabet({ tokens, grammar })`
 
 ```ts
 export function checkAlphabet(tokens: readonly SymbolName[], grammar: Grammar): ParseError | null {

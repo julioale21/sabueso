@@ -22,28 +22,31 @@ export const minYieldCommand: Command = {
   name: 'min-yield',
   description: 'Compute the length of the shortest string each nonterminal derives',
   usage: MIN_YIELD_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, MIN_YIELD_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: MIN_YIELD_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${MIN_YIELD_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${MIN_YIELD_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const minYield = computeMinYield(grammar);
     environment.writeOutput(
       [
         `${grammar.name}: minimum yield (length of the shortest string each nonterminal derives)`,
-        formatMinYieldTable(grammar, minYield),
-        formatShortestSentence(grammar, minYield),
+        formatMinYieldTable({ grammar, minYield }),
+        formatShortestSentence({ grammar, minYield }),
       ].join('\n\n') + '\n',
     );
     return EXIT_CODES.ok;
@@ -51,19 +54,28 @@ export const minYieldCommand: Command = {
 };
 
 /** One row per nonterminal, in the order of the grammar. */
-function formatMinYieldTable(grammar: Grammar, minYield: ReadonlyMap<SymbolName, number>): string {
+function formatMinYieldTable({
+  grammar,
+  minYield,
+}: {
+  grammar: Grammar;
+  minYield: ReadonlyMap<SymbolName, number>;
+}): string {
   const rows = [...grammar.nonterminals].map((nonterminal) => [
     nonterminal,
     formatLength(minYield.get(nonterminal) ?? Infinity),
   ]);
-  return formatTable(['Nonterminal', 'minYield'], rows);
+  return formatTable({ header: ['Nonterminal', 'minYield'], rows });
 }
 
 /** The closing line: the length of the shortest sentence, or that L(G) = ∅. */
-function formatShortestSentence(
-  grammar: Grammar,
-  minYield: ReadonlyMap<SymbolName, number>,
-): string {
+function formatShortestSentence({
+  grammar,
+  minYield,
+}: {
+  grammar: Grammar;
+  minYield: ReadonlyMap<SymbolName, number>;
+}): string {
   const length = minYield.get(grammar.start) ?? Infinity;
   return length === Infinity
     ? `minYield(${grammar.start}) = ∞: the start symbol derives no string, so L(G) = ∅`

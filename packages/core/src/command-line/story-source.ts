@@ -22,10 +22,13 @@ export interface Story {
  * Reads the story: from the --file if there is one, otherwise from the positional words.
  * Returns a usage message if both are given.
  */
-export async function readStory(
-  parsed: ParsedArguments,
-  environment: CommandLineEnvironment,
-): Promise<Story | string> {
+export async function readStory({
+  parsed,
+  environment,
+}: {
+  parsed: ParsedArguments;
+  environment: CommandLineEnvironment;
+}): Promise<Story | string> {
   const path = parsed.values.get(FILE_OPTION);
   if (path === undefined) {
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
@@ -34,12 +37,18 @@ export async function readStory(
   if (parsed.positionals.length > 0) {
     return `Give the story either as words or with ${FILE_OPTION}, not both`;
   }
-  const tokens = tokenizeSequence(await readStoryFile(path, environment));
+  const tokens = tokenizeSequence(await readStoryFile({ path, environment }));
   return { tokens, label: `${tokens.length} events from ${path}` };
 }
 
 /** Reads a --file, turning a missing file into a clear message. */
-async function readStoryFile(path: string, environment: CommandLineEnvironment): Promise<string> {
+async function readStoryFile({
+  path,
+  environment,
+}: {
+  path: string;
+  environment: CommandLineEnvironment;
+}): Promise<string> {
   try {
     return await environment.readFile(path);
   } catch {

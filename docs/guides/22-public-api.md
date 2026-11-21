@@ -87,30 +87,34 @@ Dos formas posibles, según `accepted` (una **unión discriminada**: TypeScript 
 
 ## 5. El código, función por función
 
-### 5.1 `parse(grammar, input, options?)`
+### 5.1 `parse({ grammar, input, options })`
 
 ```ts
 const tokens = typeof input === 'string' ? tokenizeSequence(input) : [...input];
-const unknown = checkAlphabet(tokens, grammar);
+const unknown = checkAlphabet({ tokens, grammar });
 if (unknown !== null) {
   return { accepted: false, tokens, error: unknown, chart: [], trace: [] };
 }
-const recognition = recognize(grammar, tokens, {
-  trace: options.trace ?? false,
-  classicEpsilon: options.classicEpsilon ?? false,
+const recognition = recognize({
+  grammar,
+  tokens,
+  options: {
+    trace: options.trace ?? false,
+    classicEpsilon: options.classicEpsilon ?? false,
+  },
 });
 const { chart, trace } = recognition;
-const error = diagnose(grammar, chart, tokens, recognition.accepted);
+const error = diagnose({ grammar, chart, tokens, accepted: recognition.accepted });
 if (error !== null) {
   return { accepted: false, tokens, error, chart, trace };
 }
-const trees = parseTrees(grammar, recognition, options.maxTrees ?? DEFAULT_TREE_LIMIT);
+const trees = parseTrees({ grammar, recognition, limit: options.maxTrees ?? DEFAULT_TREE_LIMIT });
 const [firstTree] = trees;
 return {
   accepted: true,
   tokens,
   trees,
-  treeCount: (options.countTrees ?? true) ? countTrees(grammar, recognition) : null,
+  treeCount: (options.countTrees ?? true) ? countTrees({ grammar, recognition }) : null,
   derivation: firstTree === undefined ? [] : leftmostDerivation(firstTree),
   chart,
   trace,

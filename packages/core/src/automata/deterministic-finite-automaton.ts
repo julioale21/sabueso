@@ -45,20 +45,40 @@ export type AutomatonEvent<State, TokenKind> =
  * tokens. It reports the state, so each lexer can turn it into a precise message.
  */
 export class AutomatonStoppedError<State extends string> extends Error {
-  constructor(
-    /** The state where the automaton stopped. */
-    readonly state: State,
-    /** The character with no transition, or undefined at the end of the text. */
-    readonly character: string | undefined,
-    /** Position of that character (or of the end of the text). */
-    readonly line: number,
-    readonly column: number,
-    /** Position where the unfinished token started. */
-    readonly tokenLine: number,
-    readonly tokenColumn: number,
-  ) {
+  /** The state where the automaton stopped. */
+  readonly state: State;
+  /** The character with no transition, or undefined at the end of the text. */
+  readonly character: string | undefined;
+  /** Position of that character (or of the end of the text). */
+  readonly line: number;
+  readonly column: number;
+  /** Position where the unfinished token started. */
+  readonly tokenLine: number;
+  readonly tokenColumn: number;
+
+  constructor({
+    state,
+    character,
+    line,
+    column,
+    tokenLine,
+    tokenColumn,
+  }: {
+    state: State;
+    character: string | undefined;
+    line: number;
+    column: number;
+    tokenLine: number;
+    tokenColumn: number;
+  }) {
     super(`The automaton stopped in state "${state}" at line ${line}, column ${column}`);
     this.name = 'AutomatonStoppedError';
+    this.state = state;
+    this.character = character;
+    this.line = line;
+    this.column = column;
+    this.tokenLine = tokenLine;
+    this.tokenColumn = tokenColumn;
   }
 }
 
@@ -79,20 +99,29 @@ export function runDeterministicAutomaton<
   State extends string,
   CharacterClass extends string,
   TokenKind extends string,
->(
-  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>,
-  text: string,
-  onEvent?: (event: AutomatonEvent<State, TokenKind>) => void,
-): AutomatonToken<TokenKind>[] {
+>({
+  automaton,
+  text,
+  onEvent,
+}: {
+  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>;
+  text: string;
+  onEvent?: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined;
+}): AutomatonToken<TokenKind>[] {
   // A DFA only accepts or rejects a string. To use it as a lexer, it runs many
   // times: each token is one run from q0. When δ has no transition, the run ends;
   // if the state ∈ F, what was read is a token, and it goes back to q0 with the rest.
   const tokens: AutomatonToken<TokenKind>[] = [];
   let cursor: Cursor = { index: 0, line: 1, column: 1 };
   while (cursor.index < text.length) {
-    const end = readLongestToken(automaton, text, cursor, onEvent);
+    const end = readLongestToken({ automaton, text, tokenStart: cursor, onEvent });
     const lexeme = text.slice(cursor.index, end.index);
-    const kind = tokenKindOfFinalState(automaton, cursor, end, text[end.index]);
+    const kind = tokenKindOfFinalState({
+      automaton,
+      tokenStart: cursor,
+      end,
+      blockingCharacter: text[end.index],
+    });
     onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
     if (kind !== null) {
       tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
@@ -110,12 +139,17 @@ function readLongestToken<
   State extends string,
   CharacterClass extends string,
   TokenKind extends string,
->(
-  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>,
-  text: string,
-  tokenStart: Cursor,
-  onEvent: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined,
-): Cursor & { state: State } {
+>({
+  automaton,
+  text,
+  tokenStart,
+  onEvent,
+}: {
+  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>;
+  text: string;
+  tokenStart: Cursor;
+  onEvent?: ((event: AutomatonEvent<State, TokenKind>) => void) | undefined;
+}): Cursor & { state: State } {
   // This is δ̂ (the extended transition function) on the longest possible prefix:
   // it advances while δ(q, class(c)) exists. It never backtracks: no token of this
   // format needs to, so taking the longest one (maximal munch) is safe.
@@ -132,7 +166,7 @@ function readLongestToken<
     }
     onEvent?.({ type: 'transition', from: state, character, to: next });
     state = next;
-    cursor = moveCursorPast(cursor, character);
+    cursor = moveCursorPast({ cursor, character });
   }
 }
 
@@ -144,31 +178,36 @@ function tokenKindOfFinalState<
   State extends string,
   CharacterClass extends string,
   TokenKind extends string,
->(
-  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>,
-  tokenStart: Cursor,
-  end: Cursor & { state: State },
-  blockingCharacter: string | undefined,
-): TokenKind | null {
+>({
+  automaton,
+  tokenStart,
+  end,
+  blockingCharacter,
+}: {
+  automaton: DeterministicAutomatonDefinition<State, CharacterClass, TokenKind>;
+  tokenStart: Cursor;
+  end: Cursor & { state: State };
+  blockingCharacter?: string | undefined;
+}): TokenKind | null {
   // Accepting = ending in a state of F. If the state is not in F (for example q6,
   // an unclosed literal), the string read is not a token: it is a lexical error.
   const kind = automaton.acceptingStates[end.state];
   const consumedSomething = end.index > tokenStart.index;
   if (kind === undefined || !consumedSomething) {
-    throw new AutomatonStoppedError(
-      end.state,
-      blockingCharacter,
-      end.line,
-      end.column,
-      tokenStart.line,
-      tokenStart.column,
-    );
+    throw new AutomatonStoppedError({
+      state: end.state,
+      character: blockingCharacter,
+      line: end.line,
+      column: end.column,
+      tokenLine: tokenStart.line,
+      tokenColumn: tokenStart.column,
+    });
   }
   return kind;
 }
 
 /** Moves the cursor past one character, starting a new line after '\n'. */
-function moveCursorPast(cursor: Cursor, character: string): Cursor {
+function moveCursorPast({ cursor, character }: { cursor: Cursor; character: string }): Cursor {
   return character === '\n'
     ? { index: cursor.index + 1, line: cursor.line + 1, column: 1 }
     : { index: cursor.index + 1, line: cursor.line, column: cursor.column + 1 };

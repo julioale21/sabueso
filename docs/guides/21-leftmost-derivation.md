@@ -77,7 +77,7 @@ if (tree.kind !== 'nonterminal') {
 const steps: DerivationStep[] = [{ form: [tree.symbol], production: null }];
 let form: SymbolName[] = [tree.symbol];
 for (const production of productionsInPreorder(tree)) {
-  form = replaceLeftmostNonterminal(form, production);
+  form = replaceLeftmostNonterminal({ form, production });
   steps.push({ form, production });
 }
 return steps;
@@ -99,7 +99,7 @@ return [tree.production, ...tree.children.flatMap(productionsInPreorder)];
 - **El preorden en una línea:** la producción del nodo, seguida de las de sus hijos, de izquierda a derecha.
 - Las hojas (terminales y ε) no aportan producciones.
 
-### 5.3 `replaceLeftmostNonterminal(form, production)`
+### 5.3 `replaceLeftmostNonterminal({ form, production })`
 
 ```ts
 const position = form.indexOf(production.leftSide);

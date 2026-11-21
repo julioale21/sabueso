@@ -25,59 +25,75 @@ export const epsilonTreesCommand: Command = {
   name: 'epsilon-trees',
   description: 'Count and draw the ε-trees of a nullable symbol (none given: every nullable)',
   usage: EPSILON_TREES_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, EPSILON_TREES_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: EPSILON_TREES_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     const [symbol, ...extra] = parsed.positionals;
     if (extra.length > 0) {
-      return reportUsageError(`Usage: ${EPSILON_TREES_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${EPSILON_TREES_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     if (symbol !== undefined && !grammar.nonterminals.has(symbol)) {
-      return reportUsageError(`"${symbol}" is not a nonterminal of ${grammar.name}`, environment);
+      return reportUsageError({
+        message: `"${symbol}" is not a nonterminal of ${grammar.name}`,
+        environment,
+      });
     }
     const nullable = computeNullable({ grammar });
     const text =
       symbol === undefined
-        ? formatAllNullable(grammar, nullable)
-        : formatSymbolTrees(grammar, nullable, symbol);
+        ? formatAllNullable({ grammar, nullable })
+        : formatSymbolTrees({ grammar, nullable, symbol });
     environment.writeOutput(`${text}\n`);
     return EXIT_CODES.ok;
   },
 };
 
 /** One row per nullable symbol with how many ε-trees it has. */
-function formatAllNullable(grammar: Grammar, nullable: ReadonlySet<SymbolName>): string {
+function formatAllNullable({
+  grammar,
+  nullable,
+}: {
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+}): string {
   if (nullable.size === 0) {
     return `${grammar.name}: no nullable symbols, so no ε-trees`;
   }
   const rows = [...nullable].map((symbol) => [
     symbol,
-    formatCount(countEpsilonTrees(grammar, nullable, symbol)),
+    formatCount(countEpsilonTrees({ grammar, nullable, symbol })),
   ]);
-  return `${grammar.name}: ε-trees of each nullable symbol\n\n${formatTable(['Nonterminal', 'ε-trees'], rows)}`;
+  return `${grammar.name}: ε-trees of each nullable symbol\n\n${formatTable({ header: ['Nonterminal', 'ε-trees'], rows })}`;
 }
 
 /** The count of the symbol and each of its ε-trees, numbered. */
-function formatSymbolTrees(
-  grammar: Grammar,
-  nullable: ReadonlySet<SymbolName>,
-  symbol: SymbolName,
-): string {
+function formatSymbolTrees({
+  grammar,
+  nullable,
+  symbol,
+}: {
+  grammar: Grammar;
+  nullable: ReadonlySet<SymbolName>;
+  symbol: SymbolName;
+}): string {
   if (!nullable.has(symbol)) {
     return `${grammar.name}: ${symbol} does not derive ε, so it has no ε-trees`;
   }
-  const count = countEpsilonTrees(grammar, nullable, symbol);
-  const trees = epsilonTrees(grammar, nullable, symbol);
+  const count = countEpsilonTrees({ grammar, nullable, symbol });
+  const trees = epsilonTrees({ grammar, nullable, symbol });
   const header =
     count === 'infinite'
       ? `${grammar.name}: ${symbol} ⇒* ε in infinitely many ways (a cycle). The ${trees.length} without repeated symbols:`

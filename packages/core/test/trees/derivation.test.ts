@@ -7,13 +7,16 @@ import { leftmostDerivation } from '../../src/trees/derivation.js';
 import { parseTrees } from '../../src/trees/enumerate.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
-function derivationsOf(grammarName: string, input: string) {
+function derivationsOf({ grammarName, input }: { grammarName: string; input: string }) {
   const grammar = loadBuiltInGrammar(grammarName);
-  return parseTrees(grammar, recognize(grammar, tokenizeSequence(input))).map(leftmostDerivation);
+  return parseTrees({
+    grammar,
+    recognition: recognize({ grammar, tokens: tokenizeSequence(input) }),
+  }).map(leftmostDerivation);
 }
 
 describe('A1 with G1: the derivation of section 9.2, step by step', () => {
-  const [derivation] = derivationsOf('g1', 'CRI SOS PIS INT REV');
+  const [derivation] = derivationsOf({ grammarName: 'g1', input: 'CRI SOS PIS INT REV' });
 
   it('has the 19 sentential forms of the spec (steps 0 to 18)', () => {
     expect(derivation?.map((step) => step.form.join(' '))).toEqual([
@@ -58,7 +61,7 @@ describe('every leftmost derivation', () => {
     ['parentheses', '( ( ) ) ( )'],
   ])('%s, %s: ends in the input and always replaces the leftmost nonterminal', (name, input) => {
     const grammar = loadBuiltInGrammar(name);
-    for (const derivation of derivationsOf(name, input)) {
+    for (const derivation of derivationsOf({ grammarName: name, input })) {
       expect(derivation.at(-1)?.form).toEqual(tokenizeSequence(input));
       derivation.slice(1).forEach((step, index) => {
         const before = derivation[index]?.form ?? [];
@@ -69,7 +72,7 @@ describe('every leftmost derivation', () => {
   });
 
   it('G0 with A1: 4 trees give 4 different leftmost derivations, the definition of ambiguity', () => {
-    const derivations = derivationsOf('g0', 'CRI SOS PIS INT REV');
+    const derivations = derivationsOf({ grammarName: 'g0', input: 'CRI SOS PIS INT REV' });
     const texts = derivations.map((derivation) =>
       derivation.map((step) => step.form.join(' ')).join(' ⇒ '),
     );
@@ -77,7 +80,7 @@ describe('every leftmost derivation', () => {
   });
 
   it('the empty input of parentheses: S ⇒ ε in one step', () => {
-    const [derivation] = derivationsOf('parentheses', '');
+    const [derivation] = derivationsOf({ grammarName: 'parentheses', input: '' });
     expect(derivation?.map((step) => step.form)).toEqual([['S'], []]);
   });
 });

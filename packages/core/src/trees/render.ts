@@ -14,7 +14,7 @@ import type { ParseTree } from './tree.js';
  *      └─ ε
  */
 export function renderTree(tree: ParseTree): string {
-  return renderLines(tree, '', '').join('\n');
+  return renderLines({ tree, prefix: '', childPrefix: '' }).join('\n');
 }
 
 /**
@@ -22,17 +22,25 @@ export function renderTree(tree: ParseTree): string {
  * `childPrefix` before everything below it, so the vertical bars of the open branches
  * continue down the page.
  */
-function renderLines(tree: ParseTree, prefix: string, childPrefix: string): string[] {
+function renderLines({
+  tree,
+  prefix,
+  childPrefix,
+}: {
+  tree: ParseTree;
+  prefix: string;
+  childPrefix: string;
+}): string[] {
   const lines = [`${prefix}${nodeLabel(tree)}`];
   const children = tree.kind === 'nonterminal' ? tree.children : [];
   children.forEach((child, index) => {
     const isLast = index === children.length - 1;
     lines.push(
-      ...renderLines(
-        child,
-        `${childPrefix}${isLast ? '└─ ' : '├─ '}`,
-        `${childPrefix}${isLast ? '   ' : '│  '}`,
-      ),
+      ...renderLines({
+        tree: child,
+        prefix: `${childPrefix}${isLast ? '└─ ' : '├─ '}`,
+        childPrefix: `${childPrefix}${isLast ? '   ' : '│  '}`,
+      }),
     );
   });
   return lines;

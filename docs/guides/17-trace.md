@@ -112,10 +112,10 @@ recorder: options.trace === true ? new TraceRecorder() : undefined,
 - El registro se crea solo si se pidió la traza. Si no, queda `undefined` en el contexto.
 - Al final, `trace: context.recorder?.events ?? []`: los eventos, o una lista vacía.
 
-### 5.3 `addAndTrace(context, set, production, dot, origin, link, op, cause)`
+### 5.3 `addAndTrace({ context, set, production, dot, origin, link, op, cause })`
 
 ```ts
-const { item, isNew } = addItem(set, production, dot, origin, link);
+const { item, isNew } = addItem({ set, production, dot, origin, link });
 if (context.recorder !== undefined && (isNew || link !== undefined)) {
   context.recorder.record({ set: set.index, op, item: label(item), cause: cause(), isNew });
 }

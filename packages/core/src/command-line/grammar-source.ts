@@ -37,38 +37,48 @@ export const GRAMMAR_OPTION = '--grammar';
  * Chooses the grammar from the parsed arguments: exactly one built-in name (positional) or one
  * --grammar-file. Returns the message of a usage error otherwise.
  */
-export function resolveGrammarSource(
-  parsed: ParsedArguments,
-  usage: string,
-): GrammarSource | string {
+export function resolveGrammarSource({
+  parsed,
+  usage,
+}: {
+  parsed: ParsedArguments;
+  usage: string;
+}): GrammarSource | string {
   const [name, ...extra] = parsed.positionals;
   if (extra.length > 0) {
     return `Usage: ${usage}`;
   }
-  return chooseGrammarSource(name, parsed.values.get(GRAMMAR_FILE_OPTION), usage);
+  return chooseGrammarSource({ name, path: parsed.values.get(GRAMMAR_FILE_OPTION), usage });
 }
 
 /**
  * Like resolveGrammarSource, for the commands that read a story: the name comes with --grammar,
  * because the positional arguments are the story.
  */
-export function resolveGrammarOption(
-  parsed: ParsedArguments,
-  usage: string,
-): GrammarSource | string {
-  return chooseGrammarSource(
-    parsed.values.get(GRAMMAR_OPTION),
-    parsed.values.get(GRAMMAR_FILE_OPTION),
+export function resolveGrammarOption({
+  parsed,
+  usage,
+}: {
+  parsed: ParsedArguments;
+  usage: string;
+}): GrammarSource | string {
+  return chooseGrammarSource({
+    name: parsed.values.get(GRAMMAR_OPTION),
+    path: parsed.values.get(GRAMMAR_FILE_OPTION),
     usage,
-  );
+  });
 }
 
 /** Exactly one of the two: a built-in name or the path of a file. */
-function chooseGrammarSource(
-  name: string | undefined,
-  path: string | undefined,
-  usage: string,
-): GrammarSource | string {
+function chooseGrammarSource({
+  name,
+  path,
+  usage,
+}: {
+  name?: string | undefined;
+  path?: string | undefined;
+  usage: string;
+}): GrammarSource | string {
   if ((path === undefined) === (name === undefined)) {
     return `Usage: ${usage}`;
   }
@@ -85,28 +95,40 @@ function unknownGrammarMessage(id: string): string {
 }
 
 /** Reads the text of the chosen grammar through the injected environment. */
-export async function readGrammarSource(
-  source: GrammarSource,
-  environment: CommandLineEnvironment,
-): Promise<GrammarText> {
+export async function readGrammarSource({
+  source,
+  environment,
+}: {
+  source: GrammarSource;
+  environment: CommandLineEnvironment;
+}): Promise<GrammarText> {
   if (source.kind === 'built-in') {
     const text = await environment.readFile(builtInGrammarPath(source.grammar));
     return { label: source.grammar.id, text };
   }
-  return { label: source.path, text: await readUserFile(source.path, environment) };
+  return { label: source.path, text: await readUserFile({ path: source.path, environment }) };
 }
 
 /** Reads the chosen grammar and builds it with the whole chain: lexer → parser → buildGrammar. */
-export async function readGrammar(
-  source: GrammarSource,
-  environment: CommandLineEnvironment,
-): Promise<Grammar> {
-  const { label, text } = await readGrammarSource(source, environment);
+export async function readGrammar({
+  source,
+  environment,
+}: {
+  source: GrammarSource;
+  environment: CommandLineEnvironment;
+}): Promise<Grammar> {
+  const { label, text } = await readGrammarSource({ source, environment });
   return parseGrammarText({ text, name: label });
 }
 
 /** Reads a --grammar-file, turning a missing file into a clear message. */
-async function readUserFile(path: string, environment: CommandLineEnvironment): Promise<string> {
+async function readUserFile({
+  path,
+  environment,
+}: {
+  path: string;
+  environment: CommandLineEnvironment;
+}): Promise<string> {
   try {
     return await environment.readFile(path);
   } catch {

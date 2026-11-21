@@ -45,7 +45,7 @@ const accepts = ({
 }: {
   grammar: Grammar;
   tokens: readonly SymbolName[];
-}): boolean => recognize(grammar, tokens).accepted;
+}): boolean => recognize({ grammar, tokens }).accepted;
 
 describe('START: a new start symbol S0 → S, only if S appears on some right side', () => {
   it('adds S0 → S first in parentheses, where S is in S → ( S ) S', () => {

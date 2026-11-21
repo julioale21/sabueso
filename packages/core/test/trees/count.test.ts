@@ -7,10 +7,10 @@ import { catalan } from '../helpers/catalan.js';
 import { parseTrees } from '../../src/trees/enumerate.js';
 import { loadBuiltInGrammar, readL1 } from '../helpers/load.js';
 
-function count(grammarName: string, input: string | string[]) {
+function count({ grammarName, input }: { grammarName: string; input: string | string[] }) {
   const grammar = loadBuiltInGrammar(grammarName);
   const tokens = typeof input === 'string' ? tokenizeSequence(input) : input;
-  return countTrees(grammar, recognize(grammar, tokens));
+  return countTrees({ grammar, recognition: recognize({ grammar, tokens }) });
 }
 
 describe('the counts of table 9.1', () => {
@@ -24,25 +24,25 @@ describe('the counts of table 9.1', () => {
     ['I7', 'CRI SOS DSC DSC REV', 4n, 0n],
     ['I1', 'CTX PER PIS REV', 0n, 0n],
   ])('%s: %i trees in G0, %i in G1', (_id, story, inG0, inG1) => {
-    expect(count('g0', story)).toBe(inG0);
-    expect(count('g1', story)).toBe(inG1);
+    expect(count({ grammarName: 'g0', input: story })).toBe(inG0);
+    expect(count({ grammarName: 'g1', input: story })).toBe(inG1);
   });
 });
 
 describe('L1 and the Catalan numbers', () => {
   it('L1 (CRI, 198 × PIS, REV) has C(197) trees in G0, a number of 115 digits', () => {
-    const trees = count('g0', readL1());
+    const trees = count({ grammarName: 'g0', input: readL1() });
     expect(trees).toBe(catalan(197));
     expect(trees.toString()).toHaveLength(115);
   });
 
   it('L1 has exactly 1 tree in G1', () => {
-    expect(count('g1', readL1())).toBe(1n);
+    expect(count({ grammarName: 'g1', input: readL1() })).toBe(1n);
   });
 
   it.each([1, 2, 3, 4, 5, 8, 12])('CRI, %i × PIS, REV has C(n − 1) trees in G0', (n) => {
     const story = ['CRI', ...Array<string>(n).fill('PIS'), 'REV'];
-    expect(count('g0', story)).toBe(catalan(n - 1));
+    expect(count({ grammarName: 'g0', input: story })).toBe(catalan(n - 1));
   });
 
   it('catalan gives 1, 1, 2, 5, 14, 42 and the formula (2n)! / ((n + 1)! n!)', () => {
@@ -60,28 +60,28 @@ describe('the count agrees with the enumeration of step 19', () => {
     ['parentheses', '( ( ) ) ( )'],
   ])('%s, %s', (grammarName, input) => {
     const grammar = loadBuiltInGrammar(grammarName);
-    const recognition = recognize(grammar, tokenizeSequence(input));
-    expect(countTrees(grammar, recognition)).toBe(
-      BigInt(parseTrees(grammar, recognition, 100_000).length),
+    const recognition = recognize({ grammar, tokens: tokenizeSequence(input) });
+    expect(countTrees({ grammar, recognition })).toBe(
+      BigInt(parseTrees({ grammar, recognition, limit: 100_000 }).length),
     );
   });
 });
 
 describe('special cases', () => {
   it('a cyclic grammar gives infinite: test-cyclic with a', () => {
-    expect(count('test-cyclic', 'a')).toBe('infinite');
+    expect(count({ grammarName: 'test-cyclic', input: 'a' })).toBe('infinite');
   });
 
   it('a rejected input has 0 trees', () => {
-    expect(count('g1', 'CRI REV')).toBe(0n);
+    expect(count({ grammarName: 'g1', input: 'CRI REV' })).toBe(0n);
   });
 
   it('the empty input of parentheses has 1 tree', () => {
-    expect(count('parentheses', '')).toBe(1n);
+    expect(count({ grammarName: 'parentheses', input: '' })).toBe(1n);
   });
 
   it('the ambiguous arithmetic: id + id * id has 2 trees (the precedence is not fixed)', () => {
-    expect(count('arithmetic-ambiguous', 'id + id * id')).toBe(2n);
-    expect(count('arithmetic', 'id + id * id')).toBe(1n);
+    expect(count({ grammarName: 'arithmetic-ambiguous', input: 'id + id * id' })).toBe(2n);
+    expect(count({ grammarName: 'arithmetic', input: 'id + id * id' })).toBe(1n);
   });
 });

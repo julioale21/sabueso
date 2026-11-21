@@ -15,14 +15,20 @@ export interface CommandLineProgramOptions {
  */
 export function createCommandLineProgram(
   options: CommandLineProgramOptions,
-): (commandLineArguments: string[], environment: CommandLineEnvironment) => Promise<number> {
+): ({
+  commandLineArguments,
+  environment,
+}: {
+  commandLineArguments: string[];
+  environment: CommandLineEnvironment;
+}) => Promise<number> {
   const { program } = options;
 
   const help: Command = {
     name: 'help',
     description: 'List the available commands',
     usage: `${program} help`,
-    run(_commandArguments, environment) {
+    run({ environment }) {
       environment.writeOutput(`Usage: ${program} <command> [arguments]\n\n`);
       environment.writeOutput(`${commandList()}\n`);
       if (options.helpFooter !== undefined) {
@@ -36,18 +42,18 @@ export function createCommandLineProgram(
 
   /** The table of commands shown by help and after an unknown command. */
   function commandList(): string {
-    return formatTable(
-      ['Command', 'Description', 'Usage'],
-      commands.map((command) => [command.name, command.description, command.usage]),
-    );
+    return formatTable({
+      header: ['Command', 'Description', 'Usage'],
+      rows: commands.map((command) => [command.name, command.description, command.usage]),
+    });
   }
 
   // The program is a pure function of (arguments, environment) → exit code.
   // The environment (writing, reading files) is injected, so tests run in memory.
-  return async (commandLineArguments, environment) => {
+  return async ({ commandLineArguments, environment }) => {
     const [name, ...commandArguments] = commandLineArguments;
     if (name === undefined) {
-      return help.run([], environment);
+      return help.run({ commandArguments: [], environment });
     }
 
     const command = commands.find((candidate) => candidate.name === name);
@@ -57,7 +63,7 @@ export function createCommandLineProgram(
     }
 
     try {
-      return await command.run(commandArguments, environment);
+      return await command.run({ commandArguments, environment });
     } catch (error) {
       // An unexpected failure is reported as a user error instead of a stack trace.
       const message = error instanceof Error ? error.message : String(error);

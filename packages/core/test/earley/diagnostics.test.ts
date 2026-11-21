@@ -6,15 +6,21 @@ import { checkAlphabet, tokenizeSequence } from '../../src/input/sequence.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
 /** The error of an input, as the program reports it: the alphabet first, then Earley. */
-function errorOf(grammarName: string, input: string): ParseError | null {
+function errorOf({
+  grammarName,
+  input,
+}: {
+  grammarName: string;
+  input: string;
+}): ParseError | null {
   const grammar = loadBuiltInGrammar(grammarName);
   const tokens = tokenizeSequence(input);
-  const unknown = checkAlphabet(tokens, grammar);
+  const unknown = checkAlphabet({ tokens, grammar });
   if (unknown !== null) {
     return unknown;
   }
-  const { chart, accepted } = recognize(grammar, tokens);
-  return diagnose(grammar, chart, tokens, accepted);
+  const { chart, accepted } = recognize({ grammar, tokens });
+  return diagnose({ grammar, chart, tokens, accepted });
 }
 
 const ALL_STEPS = ['ATQ', 'CTX', 'DSC', 'ENC', 'HAL', 'INT', 'PER', 'PIS', 'SOS'];
@@ -24,7 +30,7 @@ describe('the errors of table 9.1', () => {
   it.each(['g0', 'g1'])(
     '%s, I1 CTX PER PIS REV: position 2, found PIS, expected CRI or HAL',
     (g) => {
-      expect(errorOf(g, 'CTX PER PIS REV')).toEqual({
+      expect(errorOf({ grammarName: g, input: 'CTX PER PIS REV' })).toEqual({
         kind: 'unexpected-token',
         position: 2,
         found: 'PIS',
@@ -34,7 +40,7 @@ describe('the errors of table 9.1', () => {
   );
 
   it.each(['g0', 'g1'])('%s, I2 (empty): position 0, end of input', (g) => {
-    expect(errorOf(g, '')).toEqual({
+    expect(errorOf({ grammarName: g, input: '' })).toEqual({
       kind: 'unexpected-end',
       position: 0,
       found: null,
@@ -46,7 +52,7 @@ describe('the errors of table 9.1', () => {
     ['g0', ALL_STEPS],
     ['g1', G1_STEPS],
   ])('%s, I3 CRI REV: position 1, found REV (G1 does not expect DSC)', (g, expected) => {
-    expect(errorOf(g, 'CRI REV')).toEqual({
+    expect(errorOf({ grammarName: g, input: 'CRI REV' })).toEqual({
       kind: 'unexpected-token',
       position: 1,
       found: 'REV',
@@ -58,7 +64,7 @@ describe('the errors of table 9.1', () => {
     ['g0', ['ATQ', 'DSC', 'INT', 'PIS', 'REV', 'SOS']],
     ['g1', ['ATQ', 'INT', 'PIS', 'REV', 'SOS']],
   ])('%s, I4 CRI PIS: position 2, end of input', (g, expected) => {
-    expect(errorOf(g, 'CRI PIS')).toEqual({
+    expect(errorOf({ grammarName: g, input: 'CRI PIS' })).toEqual({
       kind: 'unexpected-end',
       position: 2,
       found: null,
@@ -67,7 +73,7 @@ describe('the errors of table 9.1', () => {
   });
 
   it('G1, I5 CRI DSC REV: position 1, found DSC (a discard with no open suspicion)', () => {
-    expect(errorOf('g1', 'CRI DSC REV')).toEqual({
+    expect(errorOf({ grammarName: 'g1', input: 'CRI DSC REV' })).toEqual({
       kind: 'unexpected-token',
       position: 1,
       found: 'DSC',
@@ -76,7 +82,7 @@ describe('the errors of table 9.1', () => {
   });
 
   it.each(['g0', 'g1'])('%s, I6 CRI XYZ REV: unknown symbol at position 1', (g) => {
-    expect(errorOf(g, 'CRI XYZ REV')).toEqual({
+    expect(errorOf({ grammarName: g, input: 'CRI XYZ REV' })).toEqual({
       kind: 'unknown-symbol',
       position: 1,
       found: 'XYZ',
@@ -85,7 +91,7 @@ describe('the errors of table 9.1', () => {
   });
 
   it('G1, I7 CRI SOS DSC DSC REV: position 3, found the second DSC', () => {
-    expect(errorOf('g1', 'CRI SOS DSC DSC REV')).toEqual({
+    expect(errorOf({ grammarName: 'g1', input: 'CRI SOS DSC DSC REV' })).toEqual({
       kind: 'unexpected-token',
       position: 3,
       found: 'DSC',
@@ -94,7 +100,7 @@ describe('the errors of table 9.1', () => {
   });
 
   it('P2 parentheses ( ( ): position 3, end of input, expected ( or )', () => {
-    expect(errorOf('parentheses', '( ( )')).toEqual({
+    expect(errorOf({ grammarName: 'parentheses', input: '( ( )' })).toEqual({
       kind: 'unexpected-end',
       position: 3,
       found: null,
@@ -105,12 +111,12 @@ describe('the errors of table 9.1', () => {
 
 describe('diagnose', () => {
   it('an accepted input has no error', () => {
-    expect(errorOf('g1', 'CRI PIS REV')).toBeNull();
-    expect(errorOf('g0', 'CRI DSC REV')).toBeNull();
+    expect(errorOf({ grammarName: 'g1', input: 'CRI PIS REV' })).toBeNull();
+    expect(errorOf({ grammarName: 'g0', input: 'CRI DSC REV' })).toBeNull();
   });
 
   it('when nothing can come next, expected is empty: the input is incomplete', () => {
-    expect(errorOf('test-empty', '')).toEqual({
+    expect(errorOf({ grammarName: 'test-empty', input: '' })).toEqual({
       kind: 'unexpected-end',
       position: 0,
       found: null,
@@ -119,18 +125,18 @@ describe('diagnose', () => {
   });
 
   it('the error is at the first empty set, even if the input goes on', () => {
-    expect(errorOf('g1', 'CTX PER PIS REV CNF CAP EPI')?.position).toBe(2);
+    expect(errorOf({ grammarName: 'g1', input: 'CTX PER PIS REV CNF CAP EPI' })?.position).toBe(2);
   });
 });
 
 describe('expectedTerminals', () => {
   it('the terminals after the dot in a set, without repeats and sorted', () => {
     const grammar = loadBuiltInGrammar('g1');
-    const { chart } = recognize(grammar, ['CRI']);
-    expect(expectedTerminals(grammar, chart[0])).toEqual(['CRI', 'CTX', 'HAL', 'PER']);
+    const { chart } = recognize({ grammar, tokens: ['CRI'] });
+    expect(expectedTerminals({ grammar, set: chart[0] })).toEqual(['CRI', 'CTX', 'HAL', 'PER']);
   });
 
   it('a missing set gives no terminals', () => {
-    expect(expectedTerminals(loadBuiltInGrammar('g1'), undefined)).toEqual([]);
+    expect(expectedTerminals({ grammar: loadBuiltInGrammar('g1') })).toEqual([]);
   });
 });

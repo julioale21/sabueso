@@ -27,30 +27,37 @@ export const lexCommand: Command = {
   name: 'lex',
   description: 'Split a grammar file into tokens with the DFA (--states: show δ step by step)',
   usage: LEX_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [STATES_FLAG],
-      valueOptions: [GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [STATES_FLAG],
+        valueOptions: [GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarSource(parsed, LEX_USAGE);
+    const source = resolveGrammarSource({ parsed, usage: LEX_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
-    const grammar = await readGrammarSource(source, environment);
-    printLex(grammar, parsed.flags.has(STATES_FLAG), environment);
+    const grammar = await readGrammarSource({ source, environment });
+    printLex({ grammar, showStates: parsed.flags.has(STATES_FLAG), environment });
     return EXIT_CODES.ok;
   },
 };
 
 /** Prints the token table and, with --states, the trace of the first line with content. */
-function printLex(
-  grammar: GrammarText,
-  showStates: boolean,
-  environment: CommandLineEnvironment,
-): void {
+function printLex({
+  grammar,
+  showStates,
+  environment,
+}: {
+  grammar: GrammarText;
+  showStates: boolean;
+  environment: CommandLineEnvironment;
+}): void {
   const tokens = tokenizeGrammar({ text: grammar.text });
   environment.writeOutput(`${grammar.label}: tokens\n\n${formatTokens(tokens)}\n`);
   if (showStates) {
@@ -60,10 +67,10 @@ function printLex(
 
 /** One row per token: its kind, its text and where it starts. */
 function formatTokens(tokens: readonly Token[]): string {
-  return formatTable(
-    ['Token', 'Text', 'Line:column'],
-    tokens.map((token) => [token.kind, token.text, `${token.line}:${token.column}`]),
-  );
+  return formatTable({
+    header: ['Token', 'Text', 'Line:column'],
+    rows: tokens.map((token) => [token.kind, token.text, `${token.line}:${token.column}`]),
+  });
 }
 
 /** One row per lexeme of the line: what it read, the states it went through, the result. */
@@ -88,10 +95,10 @@ function formatFirstLineStates(text: string): string {
   return [
     `DFA states for line ${index + 1}: ${line}`,
     '',
-    formatTable(
-      ['Lexeme', 'States', 'Result'],
-      rows.map((row) => [row.lexeme, row.states, row.result]),
-    ),
+    formatTable({
+      header: ['Lexeme', 'States', 'Result'],
+      rows: rows.map((row) => [row.lexeme, row.states, row.result]),
+    }),
   ].join('\n');
 }
 

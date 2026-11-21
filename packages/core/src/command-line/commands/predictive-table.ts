@@ -32,26 +32,29 @@ export const predictiveTableCommand: Command = {
   description:
     'Build the LL(1) table M[A, a] and list its conflicts: none means LL(1), so unambiguous',
   usage: PREDICTIVE_TABLE_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, PREDICTIVE_TABLE_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: PREDICTIVE_TABLE_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${PREDICTIVE_TABLE_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${PREDICTIVE_TABLE_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const predictive = buildPredictiveTable({ grammar });
     const sections = [
       `${grammar.name}: LL(1) table M[A, a] (each cell: the numbers of its productions)`,
-      formatPredictiveTable(grammar, predictive),
+      formatPredictiveTable({ grammar, predictive }),
       formatProductionList(grammar.productions),
     ];
     if (!predictive.isPredictive) {
@@ -64,7 +67,13 @@ export const predictiveTableCommand: Command = {
 };
 
 /** One row per nonterminal, one column per terminal (sorted) and $; conflicts marked with ✗. */
-function formatPredictiveTable(grammar: Grammar, predictive: PredictiveTable): string {
+function formatPredictiveTable({
+  grammar,
+  predictive,
+}: {
+  grammar: Grammar;
+  predictive: PredictiveTable;
+}): string {
   const columns = [...[...grammar.terminals].sort(), END_OF_INPUT];
   const rows = [...grammar.nonterminals].map((nonterminal) => [
     nonterminal,
@@ -72,7 +81,7 @@ function formatPredictiveTable(grammar: Grammar, predictive: PredictiveTable): s
       formatCell(predictive.table.get(nonterminal)?.get(lookahead) ?? []),
     ),
   ]);
-  return formatTable(['M[A, a]', ...columns], rows);
+  return formatTable({ header: ['M[A, a]', ...columns], rows });
 }
 
 /** '', '12', or '6 7 ✗' when the cell has more than one production. */

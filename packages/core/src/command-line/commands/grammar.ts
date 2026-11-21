@@ -27,30 +27,37 @@ export const grammarCommand: Command = {
   name: 'grammar',
   description: 'Read a grammar file and print G = (N, Σ, P, S) (--parser-trace: show the parser)',
   usage: GRAMMAR_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [TRACE_FLAG],
-      valueOptions: [GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [TRACE_FLAG],
+        valueOptions: [GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarSource(parsed, GRAMMAR_USAGE);
+    const source = resolveGrammarSource({ parsed, usage: GRAMMAR_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
-    const grammar = await readGrammarSource(source, environment);
-    printGrammar(grammar, parsed.flags.has(TRACE_FLAG), environment);
+    const grammar = await readGrammarSource({ source, environment });
+    printGrammar({ source: grammar, showTrace: parsed.flags.has(TRACE_FLAG), environment });
     return EXIT_CODES.ok;
   },
 };
 
 /** Prints the parser trace (if asked) and then the grammar. */
-function printGrammar(
-  source: GrammarText,
-  showTrace: boolean,
-  environment: CommandLineEnvironment,
-): void {
+function printGrammar({
+  source,
+  showTrace,
+  environment,
+}: {
+  source: GrammarText;
+  showTrace: boolean;
+  environment: CommandLineEnvironment;
+}): void {
   const trace: string[] = [];
   const grammar = parseGrammarText({
     text: source.text,

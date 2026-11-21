@@ -27,4 +27,7 @@ function invocationDirectory(): string {
 }
 
 // exitCode instead of process.exit(): lets pending output reach a pipe before exiting.
-process.exitCode = await runCommandLine(process.argv.slice(2), environment);
+process.exitCode = await runCommandLine({
+  commandLineArguments: process.argv.slice(2),
+  environment,
+});

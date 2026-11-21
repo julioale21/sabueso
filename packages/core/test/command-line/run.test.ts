@@ -7,7 +7,7 @@ import { createMemoryEnvironment } from './memory-environment.js';
 describe('sabueso command line', () => {
   it('help lists the commands', async () => {
     const { environment, output } = createMemoryEnvironment();
-    expect(await runCommandLine(['help'], environment)).toBe(0);
+    expect(await runCommandLine({ commandLineArguments: ['help'], environment })).toBe(0);
     expect(output()).toMatch(/^grammar\s/m);
     expect(output()).toMatch(/^help\s/m);
   });
@@ -15,14 +15,16 @@ describe('sabueso command line', () => {
   it('shows the help when called without arguments', async () => {
     const withoutArguments = createMemoryEnvironment();
     const withHelp = createMemoryEnvironment();
-    expect(await runCommandLine([], withoutArguments.environment)).toBe(0);
-    await runCommandLine(['help'], withHelp.environment);
+    expect(
+      await runCommandLine({ commandLineArguments: [], environment: withoutArguments.environment }),
+    ).toBe(0);
+    await runCommandLine({ commandLineArguments: ['help'], environment: withHelp.environment });
     expect(withoutArguments.output()).toBe(withHelp.output());
   });
 
   it('an unknown command writes to the error output, lists the commands and exits with 2', async () => {
     const { environment, output, errors } = createMemoryEnvironment();
-    expect(await runCommandLine(['foo'], environment)).toBe(2);
+    expect(await runCommandLine({ commandLineArguments: ['foo'], environment })).toBe(2);
     expect(output()).toBe('');
     expect(errors()).toContain('Unknown command: foo');
     expect(errors()).toMatch(/^grammar\s/m);
@@ -43,7 +45,7 @@ describe('createCommandLineProgram', () => {
       ],
     });
     const { environment, errors } = createMemoryEnvironment();
-    expect(await run(['boom'], environment)).toBe(1);
+    expect(await run({ commandLineArguments: ['boom'], environment })).toBe(1);
     expect(errors()).toBe('Error: it broke\n');
   });
 });
@@ -51,7 +53,7 @@ describe('createCommandLineProgram', () => {
 describe('help', () => {
   it('ends with the built-in grammars, in their two groups', async () => {
     const { environment, output } = createMemoryEnvironment();
-    await runCommandLine(['help'], environment);
+    await runCommandLine({ commandLineArguments: ['help'], environment });
     expect(output()).toContain('Grammars:\n  Géneros: detective/g1 (g1), detective/g0 (g0)\n');
     expect(output()).toMatch(/^ {2}Desarrollo: meta, arithmetic-ambiguous, /m);
   });
@@ -60,13 +62,13 @@ describe('help', () => {
 describe('format', () => {
   it('formatTable aligns the columns', () => {
     expect(
-      formatTable(
-        ['Symbol', 'Kind'],
-        [
+      formatTable({
+        header: ['Symbol', 'Kind'],
+        rows: [
           ['S', 'nonterminal'],
           ['CRI', 'terminal'],
         ],
-      ),
+      }),
     ).toBe(
       ['Symbol  Kind', '------  -----------', 'S       nonterminal', 'CRI     terminal'].join('\n'),
     );

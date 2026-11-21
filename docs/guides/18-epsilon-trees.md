@@ -111,7 +111,7 @@ export function multiplyCounts(first: TreeCount, second: TreeCount): TreeCount {
 - **Infinito absorbe:** infinitas formas más algo, o por algo, siguen siendo infinitas.
 - **Salvo el cero en un producto:** si una parte no se puede armar de ninguna forma (0), no hay árbol, aunque la otra parte tenga infinitas formas. Por eso el `if` del cero va primero.
 
-### 5.3 `countEpsilonTrees(grammar, nullable, symbol, known?, inProgress?)`
+### 5.3 `countEpsilonTrees({ grammar, nullable, symbol, known, inProgress })`
 
 ```ts
 const remembered = known.get(symbol);
@@ -123,13 +123,16 @@ if (inProgress.has(symbol)) {
 }
 inProgress.add(symbol);
 let total: TreeCount = 0n;
-for (const production of emptyProductionsOf(grammar, nullable, symbol)) {
+for (const production of emptyProductionsOf({ grammar, nullable, symbol })) {
   const ways = production.rightSide.reduce<TreeCount>(
     (product, child) =>
-      multiplyCounts(product, countEpsilonTrees(grammar, nullable, child, known, inProgress)),
+      multiplyCounts({
+        first: product,
+        second: countEpsilonTrees({ grammar, nullable, symbol: child, known, inProgress }),
+      }),
     1n,
   );
-  total = addCounts(total, ways);
+  total = addCounts({ first: total, second: ways });
 }
 inProgress.delete(symbol);
 known.set(symbol, total);
@@ -143,15 +146,17 @@ return total;
 - `total` suma las formas de todas las producciones.
 - Al terminar, el símbolo deja de estar "en curso" y su resultado queda en la memoria.
 
-### 5.4 `epsilonTrees(grammar, nullable, symbol, path?)`
+### 5.4 `epsilonTrees({ grammar, nullable, symbol, path })`
 
 ```ts
 const onPath = new Set([...path, symbol]);
-return emptyProductionsOf(grammar, nullable, symbol)
+return emptyProductionsOf({ grammar, nullable, symbol })
   .filter((production) => production.rightSide.every((child) => !onPath.has(child)))
   .flatMap((production) =>
     combinations(
-      production.rightSide.map((child) => epsilonTrees(grammar, nullable, child, onPath)),
+      production.rightSide.map((child) =>
+        epsilonTrees({ grammar, nullable, symbol: child, path: onPath }),
+      ),
     ).map((children): ParseTree => ({
       kind: 'nonterminal',
       symbol,
@@ -189,11 +194,11 @@ const children = tree.kind === 'nonterminal' ? tree.children : [];
 children.forEach((child, index) => {
   const isLast = index === children.length - 1;
   lines.push(
-    ...renderLines(
-      child,
-      `${childPrefix}${isLast ? '└─ ' : '├─ '}`,
-      `${childPrefix}${isLast ? '   ' : '│  '}`,
-    ),
+    ...renderLines({
+      tree: child,
+      prefix: `${childPrefix}${isLast ? '└─ ' : '├─ '}`,
+      childPrefix: `${childPrefix}${isLast ? '   ' : '│  '}`,
+    }),
   );
 });
 ```

@@ -386,15 +386,20 @@ Error que se lanza cuando el autómata **se detiene en un estado que no acepta**
 
 El ejecutor no sabe qué significa cada estado, así que no puede escribir un mensaje útil. Por eso devuelve el **estado**, y el lexer lo traduce ("detenido en `q6ReadingLiteral`" = "literal sin cerrar").
 
-#### `runDeterministicAutomaton(automaton, text, onEvent?)`
+#### `runDeterministicAutomaton({ automaton, text, onEvent })`
 
 ```ts
 const tokens: AutomatonToken<TokenKind>[] = [];
 let cursor: Cursor = { index: 0, line: 1, column: 1 };
 while (cursor.index < text.length) {
-  const end = readLongestToken(automaton, text, cursor, onEvent);
+  const end = readLongestToken({ automaton, text, tokenStart: cursor, onEvent });
   const lexeme = text.slice(cursor.index, end.index);
-  const kind = tokenKindOfFinalState(automaton, cursor, end, text[end.index]);
+  const kind = tokenKindOfFinalState({
+    automaton,
+    tokenStart: cursor,
+    end,
+    blockingCharacter: text[end.index],
+  });
   onEvent?.({ type: 'accept', state: end.state, text: lexeme, kind });
   if (kind !== null) {
     tokens.push({ kind, text: lexeme, line: cursor.line, column: cursor.column });
@@ -429,7 +434,7 @@ for (;;) {
   }
   onEvent?.({ type: 'transition', from: state, character, to: next });
   state = next;
-  cursor = moveCursorPast(cursor, character);
+  cursor = moveCursorPast({ cursor, character });
 }
 ```
 
@@ -447,14 +452,14 @@ for (;;) {
 const kind = automaton.acceptingStates[end.state];
 const consumedSomething = end.index > tokenStart.index;
 if (kind === undefined || !consumedSomething) {
-  throw new AutomatonStoppedError(
-    end.state,
-    blockingCharacter,
-    end.line,
-    end.column,
-    tokenStart.line,
-    tokenStart.column,
-  );
+  throw new AutomatonStoppedError({
+    state: end.state,
+    character: blockingCharacter,
+    line: end.line,
+    column: end.column,
+    tokenLine: tokenStart.line,
+    tokenColumn: tokenStart.column,
+  });
 }
 return kind;
 ```
@@ -466,7 +471,7 @@ return kind;
 - En este lexer el segundo caso ya queda cubierto por el primero, porque q₀ no está en F. La condición está porque el ejecutor sirve para cualquier tabla: si el estado inicial de otra tabla aceptara, saldría un token vacío, `cursor` no avanzaría y el `while` de `runDeterministicAutomaton` no terminaría nunca.
 - El error guarda dos posiciones: la del carácter que frenó (`end`) y la del comienzo del token (`tokenStart`). El lexer elige cuál mostrar (ver `toSyntaxError`).
 
-#### `moveCursorPast(cursor, character)` (interna)
+#### `moveCursorPast({ cursor, character })` (interna)
 
 ```ts
 return character === '\n'
@@ -612,7 +617,7 @@ La función pública del lexer, en tres pasos:
 
 ```ts
 try {
-  return runDeterministicAutomaton(grammarLexerAutomaton, text, onEvent);
+  return runDeterministicAutomaton({ automaton: grammarLexerAutomaton, text, onEvent });
 } catch (error) {
   if (error instanceof AutomatonStoppedError) {
     throw toSyntaxError(error as AutomatonStoppedError<LexerState>);
@@ -719,7 +724,7 @@ Un comando puede tomar la gramática de dos lugares:
 
 Hay que usar exactamente una de las dos. La opción `--grammar-file` es una decisión del 2026-11-19: el spec original solo aceptaba nombres (ver la sección de Decisiones del SPEC 02).
 
-**`command-line/arguments.ts`**: `parseArguments(commandArguments, rules)` separa los argumentos en tres grupos, según lo que declara cada comando. Así cada comando no tiene que recorrer los argumentos a mano.
+**`command-line/arguments.ts`**: `parseArguments({ commandArguments, rules })` separa los argumentos en tres grupos, según lo que declara cada comando. Así cada comando no tiene que recorrer los argumentos a mano.
 
 | Grupo                        | Ejemplo                         |
 | ---------------------------- | ------------------------------- |
@@ -731,10 +736,10 @@ Devuelve un mensaje de error de uso si aparece una opción que el comando no dec
 
 **`command-line/grammar-source.ts`**: de dónde sale la gramática. El registro de gramáticas incorporadas (nombres, alias, grupos) está en `command-line/built-in-grammars.ts` y se explica en la guía 05. `lex` usa dos funciones de `grammar-source.ts`:
 
-| Función                                  | Qué hace                                                                                                                                                                   |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `resolveGrammarSource(parsed, usage)`    | elige la fuente: un nombre **o** `--grammar-file`, nunca los dos. Devuelve `{ kind: 'built-in', grammar }` o `{ kind: 'file', path }`, o un mensaje de error de uso        |
-| `readGrammarSource(source, environment)` | lee el texto con `environment.readFile` y le pone la etiqueta de la salida (el nombre o la ruta). Si el archivo no se puede leer, lanza `Cannot read the grammar file "…"` |
+| Función                                      | Qué hace                                                                                                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveGrammarSource({ parsed, usage })`    | elige la fuente: un nombre **o** `--grammar-file`, nunca los dos. Devuelve `{ kind: 'built-in', grammar }` o `{ kind: 'file', path }`, o un mensaje de error de uso        |
+| `readGrammarSource({ source, environment })` | lee el texto con `environment.readFile` y le pone la etiqueta de la salida (el nombre o la ruta). Si el archivo no se puede leer, lanza `Cannot read the grammar file "…"` |
 
 La ruta relativa de `--grammar-file` se resuelve en `command-line.ts`, el único archivo que toca Node, desde el directorio donde se ejecutó el comando. `npm run` se mueve a la raíz del proyecto antes de ejecutar el script, pero guarda el directorio original en la variable `INIT_CWD`.
 

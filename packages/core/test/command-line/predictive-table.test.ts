@@ -5,7 +5,12 @@ import { createEnvironmentWithBuiltInGrammars } from './memory-environment.js';
 describe('sabueso predictive-table', () => {
   it('G0: marks the conflicts and ends with "Not LL(1)", exit 0', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
-    expect(await runCommandLine(['predictive-table', '--grammar', 'g0'], environment)).toBe(0);
+    expect(
+      await runCommandLine({
+        commandLineArguments: ['predictive-table', '--grammar', 'g0'],
+        environment,
+      }),
+    ).toBe(0);
     expect(output()).toContain('detective/g0: LL(1) table M[A, a]');
     expect(output()).toMatch(/^Linea\s.*20 21 ✗$/m);
     expect(output()).toContain('M[Pasos, PIS]: Pasos → Paso  |  Pasos → Pasos Pasos');
@@ -14,7 +19,10 @@ describe('sabueso predictive-table', () => {
 
   it('G1: no conflicts, LL(1) so unambiguous', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
-    await runCommandLine(['predictive-table', '--grammar', 'g1'], environment);
+    await runCommandLine({
+      commandLineArguments: ['predictive-table', '--grammar', 'g1'],
+      environment,
+    });
     expect(output()).toContain('LL(1): no cell has two productions, so the grammar is unambiguous');
     expect(output()).not.toContain('✗');
     expect(output()).toContain('Productions:');
@@ -24,7 +32,7 @@ describe('sabueso predictive-table', () => {
     'wrong usage %j exits with 2',
     async (commandArguments) => {
       const { environment, errors } = createEnvironmentWithBuiltInGrammars();
-      expect(await runCommandLine(commandArguments, environment)).toBe(2);
+      expect(await runCommandLine({ commandLineArguments: commandArguments, environment })).toBe(2);
       expect(errors()).not.toBe('');
     },
   );
@@ -33,7 +41,9 @@ describe('sabueso predictive-table', () => {
 describe('sabueso analyze', () => {
   it('G1: one report with every analysis of steps 7 to 12', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
-    expect(await runCommandLine(['analyze', '--grammar', 'g1'], environment)).toBe(0);
+    expect(
+      await runCommandLine({ commandLineArguments: ['analyze', '--grammar', 'g1'], environment }),
+    ).toBe(0);
     expect(output()).toContain('detective/g1: analysis');
     expect(output()).toMatch(/^Size\s+\|N\| = 21, \|Σ\| = 14, \|P\| = 40/m);
     expect(output()).toMatch(/^Shortest sentence\s+length 3/m);
@@ -44,12 +54,15 @@ describe('sabueso analyze', () => {
 
   it('test-cyclic: shows the cycle', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
-    await runCommandLine(['analyze', '--grammar', 'test-cyclic'], environment);
+    await runCommandLine({
+      commandLineArguments: ['analyze', '--grammar', 'test-cyclic'],
+      environment,
+    });
     expect(output()).toMatch(/^Cycles \(A ⇒\+ A\)\s+S ⇒\+ A ⇒\+ S/m);
   });
 
   it('wrong usage exits with 2', async () => {
     const { environment } = createEnvironmentWithBuiltInGrammars();
-    expect(await runCommandLine(['analyze'], environment)).toBe(2);
+    expect(await runCommandLine({ commandLineArguments: ['analyze'], environment })).toBe(2);
   });
 });

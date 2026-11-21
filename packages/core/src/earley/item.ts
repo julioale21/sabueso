@@ -31,20 +31,40 @@ export interface EarleyItem {
 }
 
 /** A new item with no links yet. */
-export function createItem(
-  production: Production,
-  dot: number,
-  origin: number,
-  setIndex: number,
-): EarleyItem {
-  return { production, dot, origin, setIndex, key: itemKey(production, dot, origin), links: [] };
+export function createItem({
+  production,
+  dot,
+  origin,
+  setIndex,
+}: {
+  production: Production;
+  dot: number;
+  origin: number;
+  setIndex: number;
+}): EarleyItem {
+  return {
+    production,
+    dot,
+    origin,
+    setIndex,
+    key: itemKey({ production, dot, origin }),
+    links: [],
+  };
 }
 
 /**
  * The identity of an item inside a set. The set index is not part of it: every item of a
  * set has the same one.
  */
-export function itemKey(production: Production, dot: number, origin: number): string {
+export function itemKey({
+  production,
+  dot,
+  origin,
+}: {
+  production: Production;
+  dot: number;
+  origin: number;
+}): string {
   return `${production.id}:${dot}:${origin}`;
 }
 
@@ -59,7 +79,7 @@ export function isComplete(item: EarleyItem): boolean {
 }
 
 /** 'S → ( • S ) S': the production with the dot at the given position. */
-export function dottedRule(production: Production, dot: number): string {
+export function dottedRule({ production, dot }: { production: Production; dot: number }): string {
   const symbols = [...production.rightSide];
   symbols.splice(dot, 0, '•');
   return `${production.leftSide} → ${symbols.join(' ')}`;
@@ -67,7 +87,7 @@ export function dottedRule(production: Production, dot: number): string {
 
 /** 'E → E + • T, 0': the dotted rule and the origin, as the traces and the chart show them. */
 export function label(item: EarleyItem): string {
-  return `${dottedRule(item.production, item.dot)}, ${item.origin}`;
+  return `${dottedRule({ production: item.production, dot: item.dot })}, ${item.origin}`;
 }
 
 /**

@@ -90,7 +90,7 @@ Si el recorrido llega a un ítem que **todavía se está contando**, ese ítem d
 
 ## 5. El código, función por función
 
-### 5.1 `countTrees(grammar, recognition)`
+### 5.1 `countTrees({ grammar, recognition })`
 
 ```ts
 const accepting = recognition.chart
@@ -106,14 +106,14 @@ const context: CountContext = {
   inProgress: new Set(),
   epsilonCounts: new Map(),
 };
-return countItem(context, accepting);
+return countItem({ context, item: accepting });
 ```
 
 - Busca el ítem de aceptación, como la enumeración. Si la entrada se rechazó, hay 0 árboles.
 - El contexto lleva la **memoria** (`known`), los ítems **en curso** (`inProgress`) y la memoria de los árboles ε (`epsilonCounts`), compartida por todos los enlaces `nullable`.
 - La cuenta del ítem `$S → S •` es la del relato: `$S` tiene un solo hijo, así que no cambia el número.
 
-### 5.2 `countItem(context, item)`
+### 5.2 `countItem({ context, item })`
 
 ```ts
 const remembered = context.known.get(item);
@@ -129,8 +129,11 @@ if (context.inProgress.has(item)) {
 context.inProgress.add(item);
 let total: TreeCount = 0n;
 for (const link of item.links) {
-  const ways = multiplyCounts(countItem(context, link.predecessor), countCause(context, link));
-  total = addCounts(total, ways);
+  const ways = multiplyCounts({
+    first: countItem({ context, item: link.predecessor }),
+    second: countCause({ context, link }),
+  });
+  total = addCounts({ first: total, second: ways });
 }
 context.inProgress.delete(item);
 context.known.set(item, total);
@@ -143,23 +146,28 @@ return total;
 - **El `for`** es la fórmula: para cada enlace, cuenta(predecesor) × cuenta(causa), y se suman. Es `childSequences` (paso 19) con números en lugar de árboles.
 - Al terminar, el ítem sale de "en curso" y su cuenta queda en la memoria.
 
-### 5.3 `countCause(context, link)`
+### 5.3 `countCause({ context, link })`
 
 ```ts
 if (link.kind === 'scan') {
   return 1n;
 }
 if (link.kind === 'complete') {
-  return countItem(context, link.child);
+  return countItem({ context, item: link.child });
 }
-return countEpsilonTrees(context.grammar, context.nullable, link.symbol, context.epsilonCounts);
+return countEpsilonTrees({
+  grammar: context.grammar,
+  nullable: context.nullable,
+  symbol: link.symbol,
+  known: context.epsilonCounts,
+});
 ```
 
 - Un token es una hoja: **1** forma.
 - Un ítem hijo: su propia cuenta (recursiva, con la misma memoria).
 - Un anulable salteado: la cantidad de árboles ε del símbolo (paso 18). En G1 siempre es 1.
 
-### 5.4 `readStory(parsed, environment)` (`command-line/story-source.ts`)
+### 5.4 `readStory({ parsed, environment })` (`command-line/story-source.ts`)
 
 - Si hay `--file`, lee el archivo y lo separa en eventos (como el paso 6). El título dice `200 events from l1.txt`.
 - Si no, usa las palabras de la línea de comandos.

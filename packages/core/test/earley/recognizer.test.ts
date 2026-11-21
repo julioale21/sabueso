@@ -8,8 +8,9 @@ import { loadBuiltInGrammar, readL1 } from '../helpers/load.js';
 
 const g0 = loadBuiltInGrammar('g0');
 
-function accepts(grammarName: string, story: string): boolean {
-  return recognize(loadBuiltInGrammar(grammarName), tokenizeSequence(story)).accepted;
+function accepts({ grammarName, story }: { grammarName: string; story: string }): boolean {
+  return recognize({ grammar: loadBuiltInGrammar(grammarName), tokens: tokenizeSequence(story) })
+    .accepted;
 }
 
 describe('G0 (no ε-productions): the stories of table 9.1', () => {
@@ -22,7 +23,7 @@ describe('G0 (no ε-productions): the stories of table 9.1', () => {
     ['I5', 'CRI DSC REV'],
     ['I7', 'CRI SOS DSC DSC REV'],
   ])('%s is accepted', (_id, story) => {
-    expect(accepts('g0', story)).toBe(true);
+    expect(accepts({ grammarName: 'g0', story })).toBe(true);
   });
 
   it.each([
@@ -31,11 +32,11 @@ describe('G0 (no ε-productions): the stories of table 9.1', () => {
     ['I3', 'CRI REV'],
     ['I4', 'CRI PIS'],
   ])('%s is rejected', (_id, story) => {
-    expect(accepts('g0', story)).toBe(false);
+    expect(accepts({ grammarName: 'g0', story })).toBe(false);
   });
 
   it('L1, with 200 events and C(197) trees, is accepted', () => {
-    expect(recognize(g0, readL1()).accepted).toBe(true);
+    expect(recognize({ grammar: g0, tokens: readL1() }).accepted).toBe(true);
   });
 });
 
@@ -50,20 +51,25 @@ describe('textbook grammars', () => {
     ['parentheses', '( ( ) ) ( )', true],
     ['parentheses', '( ( )', false],
   ])('%s: "%s" → %s', (grammarName, input, expected) => {
-    expect(accepts(grammarName, input)).toBe(expected);
+    expect(accepts({ grammarName, story: input })).toBe(expected);
   });
 
   it('left recursion is no problem: E → E + T is predicted once per set', () => {
-    const { chart } = recognize(loadBuiltInGrammar('arithmetic'), ['id']);
+    const { chart } = recognize({ grammar: loadBuiltInGrammar('arithmetic'), tokens: ['id'] });
     const predictedSums = chart[0]?.items.filter((item) => item.production.id === 0) ?? [];
     expect(predictedSums).toHaveLength(1);
   });
 });
 
 describe('the chart', () => {
-  const { chart } = recognize(loadBuiltInGrammar('arithmetic'), tokenizeSequence('id + id'));
+  const { chart } = recognize({
+    grammar: loadBuiltInGrammar('arithmetic'),
+    tokens: tokenizeSequence('id + id'),
+  });
   const itemsOf = (index: number) =>
-    chart[index]?.items.map((item) => `${dottedRule(item.production, item.dot)}, ${item.origin}`);
+    chart[index]?.items.map(
+      (item) => `${dottedRule({ production: item.production, dot: item.dot })}, ${item.origin}`,
+    );
 
   it('S0 starts with $S → • E and the Predictor adds every production reachable at the start', () => {
     expect(itemsOf(0)).toEqual([
@@ -108,38 +114,43 @@ describe('the chart', () => {
   });
 
   it('a rejected input leaves an empty set: no possibility survives', () => {
-    const rejected = recognize(loadBuiltInGrammar('arithmetic'), tokenizeSequence('id + * id'));
+    const rejected = recognize({
+      grammar: loadBuiltInGrammar('arithmetic'),
+      tokens: tokenizeSequence('id + * id'),
+    });
     expect(rejected.chart[3]?.items).toEqual([]);
   });
 });
 
 describe('the ε fix of Aycock and Horspool (step 15)', () => {
   it('epsilon-trap: S → A A x with A → ε accepts x', () => {
-    expect(accepts('epsilon-trap', 'x')).toBe(true);
+    expect(accepts({ grammarName: 'epsilon-trap', story: 'x' })).toBe(true);
   });
 
   it('with classicEpsilon, the bug of the classic algorithm comes back: x is rejected', () => {
     const grammar = loadBuiltInGrammar('epsilon-trap');
-    expect(recognize(grammar, ['x'], { classicEpsilon: true }).accepted).toBe(false);
+    expect(recognize({ grammar, tokens: ['x'], options: { classicEpsilon: true } }).accepted).toBe(
+      false,
+    );
   });
 
   it('the fix adds S → A A • x with a nullable link; the classic algorithm never does', () => {
     const grammar = loadBuiltInGrammar('epsilon-trap');
     const rulesOf = (classicEpsilon: boolean) =>
-      recognize(grammar, ['x'], { classicEpsilon }).chart[0]?.items.map((item) =>
-        dottedRule(item.production, item.dot),
+      recognize({ grammar, tokens: ['x'], options: { classicEpsilon } }).chart[0]?.items.map(
+        (item) => dottedRule({ production: item.production, dot: item.dot }),
       );
     expect(rulesOf(false)).toContain('S → A A • x');
     expect(rulesOf(true)).not.toContain('S → A A • x');
-    const advanced = recognize(grammar, ['x']).chart[0]?.items.find(
-      (item) => dottedRule(item.production, item.dot) === 'S → A A • x',
+    const advanced = recognize({ grammar, tokens: ['x'] }).chart[0]?.items.find(
+      (item) => dottedRule({ production: item.production, dot: item.dot }) === 'S → A A • x',
     );
     expect(advanced?.links[0]).toMatchObject({ kind: 'nullable', symbol: 'A' });
   });
 
   it('parentheses accepts the empty input and ( ( ) ) ( )', () => {
-    expect(accepts('parentheses', '')).toBe(true);
-    expect(accepts('parentheses', '( ( ) ) ( )')).toBe(true);
+    expect(accepts({ grammarName: 'parentheses', story: '' })).toBe(true);
+    expect(accepts({ grammarName: 'parentheses', story: '( ( ) ) ( )' })).toBe(true);
   });
 });
 
@@ -151,7 +162,7 @@ describe('G1: the stories of table 9.1', () => {
     ['A1', 'CRI SOS PIS INT REV'],
     ['M1', 'CRI PIS REV'],
   ])('%s is accepted', (_id, story) => {
-    expect(accepts('g1', story)).toBe(true);
+    expect(accepts({ grammarName: 'g1', story })).toBe(true);
   });
 
   it.each([
@@ -162,16 +173,19 @@ describe('G1: the stories of table 9.1', () => {
     ['I5', 'CRI DSC REV'],
     ['I7', 'CRI SOS DSC DSC REV'],
   ])('%s is rejected (I5 and I7 are accepted by G0: L(G1) ⊊ L(G0))', (_id, story) => {
-    expect(accepts('g1', story)).toBe(false);
+    expect(accepts({ grammarName: 'g1', story })).toBe(false);
   });
 
   it('L1, with 200 events, is accepted', () => {
-    expect(recognize(loadBuiltInGrammar('g1'), readL1()).accepted).toBe(true);
+    expect(recognize({ grammar: loadBuiltInGrammar('g1'), tokens: readL1() }).accepted).toBe(true);
   });
 });
 
 describe('the chart of CRI PIS REV with G1 is exactly the one of section 9.6', () => {
-  const { chart } = recognize(loadBuiltInGrammar('g1'), tokenizeSequence('CRI PIS REV'));
+  const { chart } = recognize({
+    grammar: loadBuiltInGrammar('g1'),
+    tokens: tokenizeSequence('CRI PIS REV'),
+  });
 
   it('has 8, 19, 16 and 11 items', () => {
     expect(chart.map((set) => set.items.length)).toEqual([8, 19, 16, 11]);
@@ -196,7 +210,7 @@ describe('the chart of CRI PIS REV with G1 is exactly the one of section 9.6', (
     const actual = chart.flatMap((set) =>
       set.items.map((item) => ({
         set: set.index,
-        item: dottedRule(item.production, item.dot),
+        item: dottedRule({ production: item.production, dot: item.dot }),
         origin: item.origin,
         how: how(item),
       })),
@@ -214,7 +228,10 @@ describe('links are never repeated (SPEC 02, section 3.18)', () => {
     ['parentheses', '( ( ) ) ( )'],
     ['epsilon-trap', 'x'],
   ])('%s with "%s": no item has the same (predecessor, cause) twice', (grammarName, story) => {
-    const { chart } = recognize(loadBuiltInGrammar(grammarName), tokenizeSequence(story));
+    const { chart } = recognize({
+      grammar: loadBuiltInGrammar(grammarName),
+      tokens: tokenizeSequence(story),
+    });
     for (const item of chart.flatMap((set) => set.items)) {
       const keys = item.links.map((link) => {
         const cause =

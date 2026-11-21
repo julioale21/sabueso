@@ -31,12 +31,17 @@ export interface ParseError {
  * - If no set is empty but the input was not accepted, it ended too soon: the error is
  *   at n (the end), found is null, and expected are the terminals after the dot in Sn.
  */
-export function diagnose(
-  grammar: Grammar,
-  chart: Chart,
-  tokens: readonly SymbolName[],
-  accepted: boolean,
-): ParseError | null {
+export function diagnose({
+  grammar,
+  chart,
+  tokens,
+  accepted,
+}: {
+  grammar: Grammar;
+  chart: Chart;
+  tokens: readonly SymbolName[];
+  accepted: boolean;
+}): ParseError | null {
   // The chart already holds the answer. Each set Sk lists every possibility still alive
   // at position k, and the terminals right after their dots are exactly the tokens that
   // could come next. The first empty set marks the token that nothing could read.
@@ -50,14 +55,14 @@ export function diagnose(
       kind: 'unexpected-token',
       position,
       found: tokens[position] ?? null,
-      expected: expectedTerminals(grammar, chart[position]),
+      expected: expectedTerminals({ grammar, set: chart[position] }),
     };
   }
   return {
     kind: 'unexpected-end',
     position: tokens.length,
     found: null,
-    expected: expectedTerminals(grammar, chart[tokens.length]),
+    expected: expectedTerminals({ grammar, set: chart[tokens.length] }),
   };
 }
 
@@ -65,7 +70,13 @@ export function diagnose(
  * The terminals right after the dot in the items of a set, without repeats and sorted:
  * the tokens that would have kept some possibility alive at that position.
  */
-export function expectedTerminals(grammar: Grammar, set: EarleySet | undefined): SymbolName[] {
+export function expectedTerminals({
+  grammar,
+  set,
+}: {
+  grammar: Grammar;
+  set?: EarleySet | undefined;
+}): SymbolName[] {
   const terminals = new Set<SymbolName>();
   for (const item of set?.items ?? []) {
     const next = nextSymbol(item);

@@ -33,7 +33,7 @@ G0, `CRI PIS PIS PIS REV` (3 pasos): `Pasos` tiene que agrupar `PIS PIS PIS` de 
 | Qué                | Dónde                                                                             |
 | ------------------ | --------------------------------------------------------------------------------- |
 | Archivo            | `packages/core/src/trees/count.ts`                                                |
-| Función            | `countTrees(grammar, recognition)`                                                |
+| Función            | `countTrees({ grammar, recognition })`                                            |
 | Comando de consola | `npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt` |
 
 ## 4. Qué prueba lo verifica

@@ -4,7 +4,7 @@ import { formatProduction } from '../grammar/build.js';
 import type { Grammar, Production } from '../grammar/types.js';
 
 /** Renders rows as left-aligned columns, with a dashed line under the header. */
-export function formatTable(header: string[], rows: string[][]): string {
+export function formatTable({ header, rows }: { header: string[]; rows: string[][] }): string {
   const columnCount = Math.max(header.length, ...rows.map((row) => row.length));
   const widths = Array.from({ length: columnCount }, (_, column) =>
     Math.max(...[header, ...rows].map((row) => (row[column] ?? '').length)),

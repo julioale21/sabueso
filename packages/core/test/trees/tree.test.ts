@@ -6,22 +6,22 @@ import { loadBuiltInGrammar } from '../helpers/load.js';
 
 describe('addCounts and multiplyCounts', () => {
   it('add and multiply exact counts', () => {
-    expect(addCounts(2n, 3n)).toBe(5n);
-    expect(multiplyCounts(2n, 3n)).toBe(6n);
+    expect(addCounts({ first: 2n, second: 3n })).toBe(5n);
+    expect(multiplyCounts({ first: 2n, second: 3n })).toBe(6n);
   });
 
   it('infinite absorbs a sum and a product', () => {
-    expect(addCounts('infinite', 1n)).toBe('infinite');
-    expect(multiplyCounts(4n, 'infinite')).toBe('infinite');
+    expect(addCounts({ first: 'infinite', second: 1n })).toBe('infinite');
+    expect(multiplyCounts({ first: 4n, second: 'infinite' })).toBe('infinite');
   });
 
   it('a zero wins over infinite in a product: no way to build a part, no tree', () => {
-    expect(multiplyCounts(0n, 'infinite')).toBe(0n);
+    expect(multiplyCounts({ first: 0n, second: 'infinite' })).toBe(0n);
   });
 
   it('works with huge numbers (bigint)', () => {
     const big = 10n ** 100n;
-    expect(multiplyCounts(big, big)).toBe(10n ** 200n);
+    expect(multiplyCounts({ first: big, second: big })).toBe(10n ** 200n);
   });
 });
 

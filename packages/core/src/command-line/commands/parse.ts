@@ -27,30 +27,40 @@ export const parseCommand: Command = {
   name: 'parse',
   description: 'Analyze a story in full: verdict, diagnosis, tree count, trees and derivation',
   usage: PARSE_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [TRACE_FLAG],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, TREES_OPTION, FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [TRACE_FLAG],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, TREES_OPTION, FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, PARSE_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: PARSE_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     const treesToShow = Number(parsed.values.get(TREES_OPTION) ?? '1');
     if (!Number.isInteger(treesToShow) || treesToShow < 1) {
-      return reportUsageError(`${TREES_OPTION} needs a whole number greater than 0`, environment);
+      return reportUsageError({
+        message: `${TREES_OPTION} needs a whole number greater than 0`,
+        environment,
+      });
     }
-    const story = await readStory(parsed, environment);
+    const story = await readStory({ parsed, environment });
     if (typeof story === 'string') {
-      return reportUsageError(story, environment);
+      return reportUsageError({ message: story, environment });
     }
-    const grammar = await readGrammar(source, environment);
-    const result = parse(grammar, story.tokens, {
-      maxTrees: treesToShow,
-      trace: parsed.flags.has(TRACE_FLAG),
+    const grammar = await readGrammar({ source, environment });
+    const result = parse({
+      grammar,
+      input: story.tokens,
+      options: {
+        maxTrees: treesToShow,
+        trace: parsed.flags.has(TRACE_FLAG),
+      },
     });
     const sections = [`${grammar.name}: ${story.label}`, ...formatResult(result)];
     environment.writeOutput(`${sections.join('\n\n')}\n`);

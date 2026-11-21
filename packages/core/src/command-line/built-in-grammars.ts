@@ -32,30 +32,46 @@ const aliases: Readonly<Record<string, readonly string[]>> = {
 
 /** The internal grammars: the format itself, textbook grammars and analysis cases. */
 const developmentGrammars: readonly BuiltInGrammar[] = [
-  developmentGrammar('meta', 'meta.grammar', 'The grammar of the .grammar format (LL(1))'),
-  developmentGrammar(
-    'arithmetic-ambiguous',
-    'test/arithmetic-ambiguous.grammar',
-    'E → E + E | E * E | ( E ) | id: ambiguous',
-  ),
-  developmentGrammar(
-    'arithmetic',
-    'test/arithmetic.grammar',
-    'Arithmetic with precedence: unambiguous, left-recursive',
-  ),
-  developmentGrammar('parentheses', 'test/parentheses.grammar', 'Balanced parentheses, with ε'),
-  developmentGrammar(
-    'epsilon-trap',
-    'test/epsilon-trap.grammar',
-    'S → A A x, A → ε: the case that breaks classic Earley',
-  ),
-  developmentGrammar(
-    'test-useless',
-    'test/useless.grammar',
-    'Useless symbols: A is not productive, C is not reachable',
-  ),
-  developmentGrammar('test-empty', 'test/empty.grammar', 'An empty language: L(G) = ∅'),
-  developmentGrammar('test-cyclic', 'test/cyclic.grammar', 'A cycle S ⇒ A ⇒ S'),
+  developmentGrammar({
+    id: 'meta',
+    file: 'meta.grammar',
+    description: 'The grammar of the .grammar format (LL(1))',
+  }),
+  developmentGrammar({
+    id: 'arithmetic-ambiguous',
+    file: 'test/arithmetic-ambiguous.grammar',
+    description: 'E → E + E | E * E | ( E ) | id: ambiguous',
+  }),
+  developmentGrammar({
+    id: 'arithmetic',
+    file: 'test/arithmetic.grammar',
+    description: 'Arithmetic with precedence: unambiguous, left-recursive',
+  }),
+  developmentGrammar({
+    id: 'parentheses',
+    file: 'test/parentheses.grammar',
+    description: 'Balanced parentheses, with ε',
+  }),
+  developmentGrammar({
+    id: 'epsilon-trap',
+    file: 'test/epsilon-trap.grammar',
+    description: 'S → A A x, A → ε: the case that breaks classic Earley',
+  }),
+  developmentGrammar({
+    id: 'test-useless',
+    file: 'test/useless.grammar',
+    description: 'Useless symbols: A is not productive, C is not reachable',
+  }),
+  developmentGrammar({
+    id: 'test-empty',
+    file: 'test/empty.grammar',
+    description: 'An empty language: L(G) = ∅',
+  }),
+  developmentGrammar({
+    id: 'test-cyclic',
+    file: 'test/cyclic.grammar',
+    description: 'A cycle S ⇒ A ⇒ S',
+  }),
 ];
 
 const builtInGrammars: readonly BuiltInGrammar[] = [
@@ -64,7 +80,15 @@ const builtInGrammars: readonly BuiltInGrammar[] = [
 ];
 
 /** An internal grammar of the Desarrollo group, stored at grammars/<file>. */
-function developmentGrammar(id: string, file: string, description: string): BuiltInGrammar {
+function developmentGrammar({
+  id,
+  file,
+  description,
+}: {
+  id: string;
+  file: string;
+  description: string;
+}): BuiltInGrammar {
   return {
     id,
     aliases: [],
@@ -76,16 +100,24 @@ function developmentGrammar(id: string, file: string, description: string): Buil
 
 /** The official and alternative grammars of a genre, at grammars/genres/<grammar id>.grammar. */
 function genreGrammars(genre: Genre): BuiltInGrammar[] {
-  const official = genreGrammar(genre.officialGrammar, `${genre.name}: official grammar`);
+  const official = genreGrammar({
+    id: genre.officialGrammar,
+    description: `${genre.name}: official grammar`,
+  });
   const alternative =
     genre.alternativeGrammar === undefined
       ? []
-      : [genreGrammar(genre.alternativeGrammar, `${genre.name}: alternative grammar`)];
+      : [
+          genreGrammar({
+            id: genre.alternativeGrammar,
+            description: `${genre.name}: alternative grammar`,
+          }),
+        ];
   return [official, ...alternative];
 }
 
 /** A grammar of a genre, stored at grammars/genres/<id>.grammar, with its aliases if it has any. */
-function genreGrammar(id: string, description: string): BuiltInGrammar {
+function genreGrammar({ id, description }: { id: string; description: string }): BuiltInGrammar {
   return {
     id,
     aliases: aliases[id] ?? [],

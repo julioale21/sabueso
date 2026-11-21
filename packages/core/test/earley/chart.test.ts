@@ -25,8 +25,8 @@ describe('createChart', () => {
 describe('addItem', () => {
   it('adds a new item at the end of the list and indexes it by key', () => {
     const [set] = createChart(0);
-    const first = addItem(set!, sum, 0, 0);
-    const second = addItem(set!, single, 0, 0);
+    const first = addItem({ set: set!, production: sum, dot: 0, origin: 0 });
+    const second = addItem({ set: set!, production: single, dot: 0, origin: 0 });
     expect(first.isNew).toBe(true);
     expect(set?.items.map((item) => item.key)).toEqual(['0:0:0', '1:0:0']);
     expect(set?.byKey.get('1:0:0')).toBe(second.item);
@@ -34,8 +34,8 @@ describe('addItem', () => {
 
   it('the same production, dot and origin is the same item: it is not added twice', () => {
     const [set] = createChart(0);
-    const first = addItem(set!, sum, 0, 0);
-    const again = addItem(set!, sum, 0, 0);
+    const first = addItem({ set: set!, production: sum, dot: 0, origin: 0 });
+    const again = addItem({ set: set!, production: sum, dot: 0, origin: 0 });
     expect(again.isNew).toBe(false);
     expect(again.item).toBe(first.item);
     expect(set?.items).toHaveLength(1);
@@ -43,31 +43,43 @@ describe('addItem', () => {
 
   it('a different origin makes a different item', () => {
     const [set] = createChart(0);
-    addItem(set!, sum, 0, 0);
-    addItem(set!, sum, 0, 1);
+    addItem({ set: set!, production: sum, dot: 0, origin: 0 });
+    addItem({ set: set!, production: sum, dot: 0, origin: 1 });
     expect(set?.items).toHaveLength(2);
   });
 
   it('a second way to reach an item adds one more link: that is how ambiguity is kept', () => {
     const chart = createChart(1);
-    const predecessor = createItem(sum, 0, 0, 0);
+    const predecessor = createItem({ production: sum, dot: 0, origin: 0, setIndex: 0 });
     const firstLink: Link = { kind: 'scan', predecessor, tokenIndex: 0 };
     const secondLink: Link = { kind: 'nullable', predecessor, symbol: 'E' };
-    addItem(chart[1]!, sum, 1, 0, firstLink);
-    const { item } = addItem(chart[1]!, sum, 1, 0, secondLink);
+    addItem({ set: chart[1]!, production: sum, dot: 1, origin: 0, link: firstLink });
+    const { item } = addItem({
+      set: chart[1]!,
+      production: sum,
+      dot: 1,
+      origin: 0,
+      link: secondLink,
+    });
     expect(item.links).toEqual([firstLink, secondLink]);
   });
 
   it('links are appended without looking for repeats: the algorithm never builds one twice', () => {
     const [set] = createChart(0);
-    const link: Link = { kind: 'nullable', predecessor: createItem(sum, 0, 0, 0), symbol: 'E' };
-    addItem(set!, sum, 1, 0, link);
-    addItem(set!, sum, 1, 0, link);
+    const link: Link = {
+      kind: 'nullable',
+      predecessor: createItem({ production: sum, dot: 0, origin: 0, setIndex: 0 }),
+      symbol: 'E',
+    };
+    addItem({ set: set!, production: sum, dot: 1, origin: 0, link });
+    addItem({ set: set!, production: sum, dot: 1, origin: 0, link });
     expect(set?.byKey.get('0:1:0')?.links).toHaveLength(2);
   });
 
   it('the new item gets the index of its set', () => {
     const chart = createChart(2);
-    expect(addItem(chart[2]!, single, 1, 0).item.setIndex).toBe(2);
+    expect(addItem({ set: chart[2]!, production: single, dot: 1, origin: 0 }).item.setIndex).toBe(
+      2,
+    );
   });
 });

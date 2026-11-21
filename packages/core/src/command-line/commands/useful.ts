@@ -28,22 +28,25 @@ export const usefulCommand: Command = {
   description:
     'Find the productive, reachable and useless symbols, and whether L(G) = ∅ (--steps: each round)',
   usage: USEFUL_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [STEPS_FLAG],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [STEPS_FLAG],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, USEFUL_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: USEFUL_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${USEFUL_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${USEFUL_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const rounds: Record<UsefulPhase, ReadonlySet<SymbolName>[]> = {
       productive: [],
       reachable: [],
@@ -55,17 +58,23 @@ export const usefulCommand: Command = {
     const sections = [`${grammar.name}: useful symbols`];
     if (parsed.flags.has(STEPS_FLAG)) {
       sections.push(
-        formatRounds('Productive (A ⇒* w, w ∈ Σ*), round by round:', rounds.productive, []),
+        formatRounds({
+          title: 'Productive (A ⇒* w, w ∈ Σ*), round by round:',
+          rounds: rounds.productive,
+          initial: [],
+        }),
       );
       if (!analysis.isEmpty) {
         sections.push(
-          formatRounds('Reachable from the start symbol, round by round:', rounds.reachable, [
-            grammar.start,
-          ]),
+          formatRounds({
+            title: 'Reachable from the start symbol, round by round:',
+            rounds: rounds.reachable,
+            initial: [grammar.start],
+          }),
         );
       }
     }
-    sections.push(formatSummary(grammar, analysis));
+    sections.push(formatSummary({ grammar, analysis }));
     if (analysis.usefulGrammar !== null && analysis.useless.size > 0) {
       sections.push(`Without useless symbols:\n\n${formatGrammar(analysis.usefulGrammar)}`);
     }
@@ -75,7 +84,13 @@ export const usefulCommand: Command = {
 };
 
 /** The non-productive, unreachable and useless symbols, and whether L(G) = ∅. */
-function formatSummary(grammar: Grammar, analysis: UsefulSymbolsAnalysis): string {
+function formatSummary({
+  grammar,
+  analysis,
+}: {
+  grammar: Grammar;
+  analysis: UsefulSymbolsAnalysis;
+}): string {
   const notProductive = [...grammar.nonterminals].filter(
     (symbol) => !analysis.productive.has(symbol),
   );
@@ -102,11 +117,15 @@ function formatSummary(grammar: Grammar, analysis: UsefulSymbolsAnalysis): strin
  * One row per round: how many symbols so far and which ones it added. A phase that does not
  * start from ∅ (reachable starts from {S}) shows its starting set as round 0.
  */
-function formatRounds(
-  title: string,
-  rounds: readonly ReadonlySet<SymbolName>[],
-  initial: readonly SymbolName[],
-): string {
+function formatRounds({
+  title,
+  rounds,
+  initial,
+}: {
+  title: string;
+  rounds: readonly ReadonlySet<SymbolName>[];
+  initial: readonly SymbolName[];
+}): string {
   const start = new Set(initial);
   const startRow =
     initial.length === 0 ? [] : [['0', String(start.size), `${initial.join(', ')} (start)`]];
@@ -119,7 +138,7 @@ function formatRounds(
       added.length === 0 ? '(none: fixed point)' : added.sort().join(', '),
     ];
   });
-  return `${title}\n\n${formatTable(['Round', 'Symbols so far', 'Added in this round'], [...startRow, ...rows])}`;
+  return `${title}\n\n${formatTable({ header: ['Round', 'Symbols so far', 'Added in this round'], rows: [...startRow, ...rows] })}`;
 }
 
 /** '∅' for no symbols, as in the theory; '{A, B}' otherwise. */

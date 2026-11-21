@@ -6,7 +6,12 @@ import {
 import type { CommandLineEnvironment } from '../../src/command-line/types.js';
 
 /** An in-memory CommandLineEnvironment that records everything the program writes. */
-export function createMemoryEnvironment(files: Record<string, string> = {}) {
+export function createMemoryEnvironment({
+  files = {},
+}: {
+  /** Files the program can read, by path. */
+  files?: Record<string, string> | undefined;
+} = {}) {
   const writtenOutput: string[] = [];
   const writtenErrors: string[] = [];
   const environment: CommandLineEnvironment = {
@@ -31,11 +36,16 @@ export function createMemoryEnvironment(files: Record<string, string> = {}) {
 }
 
 /** A memory environment holding every built-in grammar at its real path, plus extra files. */
-export function createEnvironmentWithBuiltInGrammars(files: Record<string, string> = {}) {
+export function createEnvironmentWithBuiltInGrammars({
+  files = {},
+}: {
+  /** Files the program can read, by path. */
+  files?: Record<string, string> | undefined;
+} = {}) {
   const grammarFiles: Record<string, string> = {};
   for (const grammar of listBuiltInGrammars()) {
     const path = builtInGrammarPath(grammar);
     grammarFiles[path] = readFileSync(path, 'utf8');
   }
-  return createMemoryEnvironment({ ...grammarFiles, ...files });
+  return createMemoryEnvironment({ files: { ...grammarFiles, ...files } });
 }

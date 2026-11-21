@@ -25,40 +25,49 @@ export const treesCommand: Command = {
   name: 'trees',
   description: `Draw the parse trees of a story, numbered (--max: at most n, default ${DEFAULT_TREE_LIMIT})`,
   usage: TREES_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, MAX_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, MAX_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, TREES_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: TREES_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     const limit = parseLimit(parsed.values.get(MAX_OPTION));
     if (limit === undefined) {
-      return reportUsageError(`${MAX_OPTION} needs a whole number greater than 0`, environment);
+      return reportUsageError({
+        message: `${MAX_OPTION} needs a whole number greater than 0`,
+        environment,
+      });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: trees of ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;
-    if (checkAlphabet(tokens, grammar) !== null) {
+    if (checkAlphabet({ tokens, grammar }) !== null) {
       environment.writeOutput(
         `${title}\n\nREJECTED: a symbol is not in Σ, so there are no trees\n`,
       );
       return EXIT_CODES.rejected;
     }
-    const recognition = recognize(grammar, tokens);
-    if (diagnose(grammar, recognition.chart, tokens, recognition.accepted) !== null) {
+    const recognition = recognize({ grammar, tokens });
+    if (
+      diagnose({ grammar, chart: recognition.chart, tokens, accepted: recognition.accepted }) !==
+      null
+    ) {
       environment.writeOutput(
         `${title}\n\nREJECTED: there are no trees (see \`sabueso earley\`)\n`,
       );
       return EXIT_CODES.rejected;
     }
     // One more than the limit, only to know whether the limit cut the list.
-    const trees = parseTrees(grammar, recognition, limit + 1);
+    const trees = parseTrees({ grammar, recognition, limit: limit + 1 });
     const shown = trees.slice(0, limit);
     const summary =
       trees.length > limit

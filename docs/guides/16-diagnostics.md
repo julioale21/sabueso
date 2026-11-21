@@ -68,7 +68,7 @@ Si S(k+1) está vacío, todos los siguientes también: el Scanner no puede pasar
 | `parse` (paso 22)          | `diagnose`                   | el error, dentro del resultado de `parse` |
 | web (SPEC 03)              | `parse`                      | el error, para marcar el evento           |
 
-`diagnose(grammar, chart, tokens, accepted)` devuelve un `ParseError` o `null` si la entrada se aceptó.
+`diagnose({ grammar, chart, tokens, accepted })` devuelve un `ParseError` o `null` si la entrada se aceptó.
 
 ---
 
@@ -87,7 +87,7 @@ export interface ParseError {
 
 Ya existía desde el paso 6, que lo usaba para `unknown-symbol`. Este paso agrega las funciones que arman los otros dos tipos.
 
-### 5.2 `diagnose(grammar, chart, tokens, accepted)`
+### 5.2 `diagnose({ grammar, chart, tokens, accepted })`
 
 ```ts
 if (accepted) {
@@ -100,14 +100,14 @@ if (firstEmpty !== -1) {
     kind: 'unexpected-token',
     position,
     found: tokens[position] ?? null,
-    expected: expectedTerminals(grammar, chart[position]),
+    expected: expectedTerminals({ grammar, set: chart[position] }),
   };
 }
 return {
   kind: 'unexpected-end',
   position: tokens.length,
   found: null,
-  expected: expectedTerminals(grammar, chart[tokens.length]),
+  expected: expectedTerminals({ grammar, set: chart[tokens.length] }),
 };
 ```
 
@@ -117,7 +117,7 @@ return {
 - `found` es ese evento (`tokens[position]`), y `expected` sale del conjunto **anterior** al vacío, `chart[position]` (Sk): ahí estaban las posibilidades que no pudieron seguir.
 - Si no hay ningún conjunto vacío pero no se aceptó, el relato se cortó: la posición es el final (`tokens.length`), no hay evento encontrado (`null`), y `expected` sale del último conjunto.
 
-### 5.3 `expectedTerminals(grammar, set)`
+### 5.3 `expectedTerminals({ grammar, set })`
 
 ```ts
 const terminals = new Set<SymbolName>();

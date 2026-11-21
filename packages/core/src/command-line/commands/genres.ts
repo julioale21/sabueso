@@ -13,9 +13,9 @@ export const genresCommand: Command = {
   name: 'genres',
   description: 'List the genres of the catalog, with their grammars and tags',
   usage: 'sabueso genres',
-  run(commandArguments, environment) {
+  run({ commandArguments, environment }) {
     if (commandArguments.length > 0) {
-      return Promise.resolve(reportUsageError('Usage: sabueso genres', environment));
+      return Promise.resolve(reportUsageError({ message: 'Usage: sabueso genres', environment }));
     }
     environment.writeOutput(`${genres.map(formatGenre).join('\n\n')}\n`);
     return Promise.resolve(EXIT_CODES.ok);
@@ -36,10 +36,10 @@ function formatGenre(genre: Genre): string {
     '',
     `Tags (|Σ| = ${genre.tags.length}):`,
     '',
-    formatTable(
-      ['Tag', 'Function', 'Example'],
-      genre.tags.map((tag) => [tag.tag, tag.narrativeFunction, tag.example]),
-    ),
+    formatTable({
+      header: ['Tag', 'Function', 'Example'],
+      rows: genre.tags.map((tag) => [tag.tag, tag.narrativeFunction, tag.example]),
+    }),
   ].join('\n');
 }
 

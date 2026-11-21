@@ -21,7 +21,7 @@ export type ParseTree =
 export type TreeCount = bigint | 'infinite';
 
 /** The sum of two counts: alternatives, "one way or the other". Infinite absorbs. */
-export function addCounts(first: TreeCount, second: TreeCount): TreeCount {
+export function addCounts({ first, second }: { first: TreeCount; second: TreeCount }): TreeCount {
   return first === 'infinite' || second === 'infinite' ? 'infinite' : first + second;
 }
 
@@ -29,7 +29,13 @@ export function addCounts(first: TreeCount, second: TreeCount): TreeCount {
  * The product of two counts: independent choices, "one way and then the other". A zero
  * wins over infinite (no way to build the first part means no tree at all).
  */
-export function multiplyCounts(first: TreeCount, second: TreeCount): TreeCount {
+export function multiplyCounts({
+  first,
+  second,
+}: {
+  first: TreeCount;
+  second: TreeCount;
+}): TreeCount {
   if (first === 0n || second === 0n) {
     return 0n;
   }

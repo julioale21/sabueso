@@ -37,7 +37,7 @@ Además, los conjuntos de Earley dejan registrado **dónde** se trabó la entrad
 | traza (paso 17)            | `recognize` | cada operación, en orden             |
 | árboles y conteo (18 a 21) | `recognize` | los enlaces de los ítems             |
 
-`recognize(grammar, tokens)` devuelve `{ accepted, chart, startProduction }`. Los tokens tienen que estar en Σ: el comando llama antes a `checkAlphabet` (paso 6).
+`recognize({ grammar, tokens })` devuelve `{ accepted, chart, startProduction }`. Los tokens tienen que estar en Σ: el comando llama antes a `checkAlphabet` (paso 6).
 
 ---
 
@@ -87,14 +87,14 @@ Para verlo de forma gráfica, ítem por ítem, abrir [`docs/interactive/earley-g
 
 ## 5. El código, función por función
 
-### 5.1 `recognize(grammar, tokens)`
+### 5.1 `recognize({ grammar, tokens })`
 
 ```ts
 const chart = createChart(tokens.length);
 const startProduction = augmentedStartProduction(grammar);
 const firstSet = chart[0];
 if (firstSet !== undefined) {
-  addItem(firstSet, startProduction, 0, 0);
+  addItem({ set: firstSet, production: startProduction, dot: 0, origin: 0 });
 }
 for (const set of chart) {
   for (let position = 0; position < set.items.length; position++) {
@@ -105,7 +105,8 @@ for (const set of chart) {
   }
 }
 const lastSet = chart[tokens.length];
-const accepted = lastSet?.byKey.has(itemKey(startProduction, 1, 0)) ?? false;
+const accepted =
+  lastSet?.byKey.has(itemKey({ production: startProduction, dot: 1, origin: 0 })) ?? false;
 return { accepted, chart, startProduction };
 ```
 
@@ -130,7 +131,7 @@ return { id: -1, leftSide: AUGMENTED_START, rightSide: [grammar.start] };
 ```ts
 const next = nextSymbol(item);
 if (next === undefined) {
-  complete(chart, item);
+  complete({ context: chart, item });
 } else if (grammar.nonterminals.has(next)) {
   predict(grammar, chart, item, next);
 } else {
@@ -144,7 +145,7 @@ if (next === undefined) {
 
 ```ts
 for (const production of grammar.productionsByLeftSide.get(symbol) ?? []) {
-  addItem(set, production, 0, item.setIndex);
+  addItem({ set, production, dot: 0, origin: item.setIndex });
 }
 ```
 
@@ -161,10 +162,16 @@ const nextSet = chart[tokenIndex + 1];
 if (tokens[tokenIndex] !== terminal || nextSet === undefined) {
   return;
 }
-addItem(nextSet, item.production, item.dot + 1, item.origin, {
-  kind: 'scan',
-  predecessor: item,
-  tokenIndex,
+addItem({
+  set: nextSet,
+  production: item.production,
+  dot: item.dot + 1,
+  origin: item.origin,
+  link: {
+    kind: 'scan',
+    predecessor: item,
+    tokenIndex,
+  },
 });
 ```
 
@@ -180,10 +187,16 @@ const originSet = chart[item.origin];
 const set = chart[item.setIndex];
 for (const waiting of [...originSet.items]) {
   if (nextSymbol(waiting) === item.production.leftSide) {
-    addItem(set, waiting.production, waiting.dot + 1, waiting.origin, {
-      kind: 'complete',
-      predecessor: waiting,
-      child: item,
+    addItem({
+      set,
+      production: waiting.production,
+      dot: waiting.dot + 1,
+      origin: waiting.origin,
+      link: {
+        kind: 'complete',
+        predecessor: waiting,
+        child: item,
+      },
     });
   }
 }

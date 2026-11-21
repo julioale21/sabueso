@@ -72,11 +72,11 @@ En G0 un relato puede tener muchísimos árboles: L1 tiene C(197), un número de
 
 ## 5. El código, función por función
 
-### 5.1 `parseTrees(grammar, recognition, limit?)`
+### 5.1 `parseTrees({ grammar, recognition, limit })`
 
 ```ts
 const trees: ParseTree[] = [];
-for (const tree of enumerateTrees(grammar, recognition)) {
+for (const tree of enumerateTrees({ grammar, recognition })) {
   if (trees.length >= limit) {
     break;
   }
@@ -88,7 +88,7 @@ return trees;
 - Pide árboles al generador hasta juntar `limit`. El `break` corta el generador: los árboles que siguen **nunca se arman**.
 - Por eso funciona con L1: pedir 3 árboles cuesta lo mismo que armar 3, no C(197).
 
-### 5.2 `enumerateTrees(grammar, recognition)`
+### 5.2 `enumerateTrees({ grammar, recognition })`
 
 ```ts
 const accepting = recognition.chart
@@ -98,7 +98,7 @@ if (!recognition.accepted || accepting === undefined) {
   return;
 }
 const context: TreeContext = { grammar, nullable: computeNullable({ grammar }), onPath: new Set() };
-for (const root of treesOfItem(context, accepting)) {
+for (const root of treesOfItem({ context, item: accepting })) {
   const [story] = root.kind === 'nonterminal' ? root.children : [];
   if (story !== undefined) {
     yield story;
@@ -111,14 +111,14 @@ for (const root of treesOfItem(context, accepting)) {
 - `computeNullable` hace falta para los árboles ε.
 - El árbol que arma `treesOfItem` tiene raíz `$S`; el del relato es su único hijo (`children[0]`, que se toma con `const [story] = …`).
 
-### 5.3 `treesOfItem(context, item)`
+### 5.3 `treesOfItem({ context, item })`
 
 ```ts
 if (context.onPath.has(item)) {
   return;
 }
 context.onPath.add(item);
-for (const children of childSequences(context, item)) {
+for (const children of childSequences({ context, item })) {
   yield {
     kind: 'nonterminal',
     symbol: item.production.leftSide,
@@ -133,7 +133,7 @@ context.onPath.delete(item);
 - `onPath`: si el ítem ya está en el camino actual, se llegó a él desde sí mismo (un ciclo): esta rama no da árboles. Se agrega antes de bajar y se saca al terminar, para que otras ramas sí puedan usarlo.
 - Una producción vacía (`B → ε`) tiene cero hijos: el nodo lleva una hoja ε.
 
-### 5.4 `childSequences(context, item)`
+### 5.4 `childSequences({ context, item })`
 
 ```ts
 if (item.dot === 0) {
@@ -141,8 +141,8 @@ if (item.dot === 0) {
   return;
 }
 for (const link of item.links) {
-  for (const before of childSequences(context, link.predecessor)) {
-    for (const child of causeTrees(context, link)) {
+  for (const before of childSequences({ context, item: link.predecessor })) {
+    for (const child of causeTrees({ context, link })) {
       yield [...before, child];
     }
   }
@@ -153,12 +153,12 @@ for (const link of item.links) {
 - **Caso base:** con el punto en 0, todavía no se reconoció nada: una sola lista, vacía.
 - **Caso general**, para cada enlace:
   - `childSequences(link.predecessor)`: las listas de hijos del mismo ítem con el punto un lugar antes (todos los símbolos anteriores);
-  - `causeTrees(link)`: los árboles posibles del símbolo que se reconoció en este avance;
+  - `causeTrees({ link })`: los árboles posibles del símbolo que se reconoció en este avance;
   - cada combinación (`[...before, child]`) es una lista de hijos posible.
 - **Los tres `for` anidados recorren todas las combinaciones:** varios enlaces, varias listas del predecesor, varios árboles de la causa. Es exactamente donde se multiplica la ambigüedad.
 - La recursión va hacia atrás (hacia el punto 0), pero la lista se arma hacia adelante: `before` tiene los hijos de la izquierda y `child` se agrega a la derecha.
 
-### 5.5 `causeTrees(context, link)`
+### 5.5 `causeTrees({ context, link })`
 
 ```ts
 if (link.kind === 'scan') {
@@ -168,9 +168,9 @@ if (link.kind === 'scan') {
     tokenIndex: link.tokenIndex,
   };
 } else if (link.kind === 'complete') {
-  yield* treesOfItem(context, link.child);
+  yield* treesOfItem({ context, item: link.child });
 } else {
-  yield* epsilonTrees(context.grammar, context.nullable, link.symbol);
+  yield* epsilonTrees({ grammar: context.grammar, nullable: context.nullable, symbol: link.symbol });
 }
 ```
 

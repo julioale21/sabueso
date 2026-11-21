@@ -15,10 +15,13 @@ export interface ParsedArguments {
 }
 
 /** Returns the parsed arguments, or the message of a usage error. */
-export function parseArguments(
-  commandArguments: readonly string[],
-  rules: ArgumentRules,
-): ParsedArguments | string {
+export function parseArguments({
+  commandArguments,
+  rules,
+}: {
+  commandArguments: readonly string[];
+  rules: ArgumentRules;
+}): ParsedArguments | string {
   const parsed: ParsedArguments = { positionals: [], flags: new Set(), values: new Map() };
   for (let index = 0; index < commandArguments.length; index++) {
     const argument = commandArguments[index] ?? '';

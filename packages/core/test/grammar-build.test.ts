@@ -66,68 +66,74 @@ describe('buildGrammar', () => {
 });
 
 describe('buildGrammar errors', () => {
-  function expectBuildError(build: () => unknown, message: RegExp): void {
+  function expectBuildError({ build, message }: { build: () => unknown; message: RegExp }): void {
     expect(build).toThrow(GrammarBuildError);
     expect(build).toThrow(message);
   }
 
   it('rejects a grammar without rules', () => {
-    expectBuildError(() => buildGrammar({ name: 'nothing', rules: [] }), /has no rules/);
+    expectBuildError({
+      build: () => buildGrammar({ name: 'nothing', rules: [] }),
+      message: /has no rules/,
+    });
   });
 
   it('rejects a start symbol that is not a nonterminal', () => {
-    expectBuildError(
-      () => buildGrammar({ name: 'expressions', rules: expressionRules, start: 'X' }),
-      /Start symbol "X"/,
-    );
+    expectBuildError({
+      build: () => buildGrammar({ name: 'expressions', rules: expressionRules, start: 'X' }),
+      message: /Start symbol "X"/,
+    });
   });
 
   it('names an undeclared identifier when %terminals is present', () => {
     const rules = [{ leftSide: 'Relato', rightSide: ['CRI', 'Pistas'] }];
-    expectBuildError(
-      () => buildGrammar({ name: 'story', rules, declaredTerminals: ['CRI'] }),
-      /Undeclared symbol "Pistas"/,
-    );
+    expectBuildError({
+      build: () => buildGrammar({ name: 'story', rules, declaredTerminals: ['CRI'] }),
+      message: /Undeclared symbol "Pistas"/,
+    });
   });
 
   it('rejects a declared terminal that is also a left-hand side', () => {
     const rules = [{ leftSide: 'Relato', rightSide: ['CRI'] }];
-    expectBuildError(
-      () => buildGrammar({ name: 'story', rules, declaredTerminals: ['CRI', 'Relato'] }),
-      /"Relato" is declared as a terminal/,
-    );
+    expectBuildError({
+      build: () => buildGrammar({ name: 'story', rules, declaredTerminals: ['CRI', 'Relato'] }),
+      message: /"Relato" is declared as a terminal/,
+    });
   });
 
   it('rejects duplicate productions', () => {
     const rules = [...expressionRules, { leftSide: 'T', rightSide: ['id'] }];
-    expectBuildError(
-      () => buildGrammar({ name: 'expressions', rules }),
-      /Duplicate production: T → id/,
-    );
+    expectBuildError({
+      build: () => buildGrammar({ name: 'expressions', rules }),
+      message: /Duplicate production: T → id/,
+    });
   });
 
   it('rejects a literal with the name of a nonterminal', () => {
     const rules = [{ leftSide: 'E', rightSide: [{ literal: 'E' }] }];
-    expectBuildError(() => buildGrammar({ name: 'clash', rules }), /Literal 'E'/);
+    expectBuildError({
+      build: () => buildGrammar({ name: 'clash', rules }),
+      message: /Literal 'E'/,
+    });
   });
 
   it("rejects '$', reserved for FOLLOW and $S", () => {
-    expectBuildError(
-      () =>
+    expectBuildError({
+      build: () =>
         buildGrammar({ name: 'dollar', rules: [{ leftSide: 'S', rightSide: [{ literal: '$' }] }] }),
-      /reserved/,
-    );
-    expectBuildError(
-      () => buildGrammar({ name: 'dollar', rules: [{ leftSide: '$S', rightSide: ['a'] }] }),
-      /reserved/,
-    );
+      message: /reserved/,
+    });
+    expectBuildError({
+      build: () => buildGrammar({ name: 'dollar', rules: [{ leftSide: '$S', rightSide: ['a'] }] }),
+      message: /reserved/,
+    });
   });
 
   it('rejects an empty literal', () => {
-    expectBuildError(
-      () =>
+    expectBuildError({
+      build: () =>
         buildGrammar({ name: 'empty', rules: [{ leftSide: 'S', rightSide: [{ literal: '' }] }] }),
-      /ε/,
-    );
+      message: /ε/,
+    });
   });
 });

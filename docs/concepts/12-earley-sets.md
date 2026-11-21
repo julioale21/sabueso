@@ -27,7 +27,7 @@ Versión gráfica, paso a paso: [`docs/interactive/earley-g0.html`](../interacti
 | Qué       | Dónde                                                                                   |
 | --------- | --------------------------------------------------------------------------------------- |
 | Archivo   | `packages/core/src/earley/chart.ts`                                                     |
-| Funciones | `createChart(tokenCount)` y `addItem(set, production, dot, origin, link?)`              |
+| Funciones | `createChart(tokenCount)` y `addItem({ set, production, dot, origin, link })`           |
 | Consola   | desde el paso 14: `npm run sabueso -- earley --grammar … --chart` imprime los conjuntos |
 
 ## 4. Qué prueba lo verifica

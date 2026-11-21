@@ -13,7 +13,13 @@ import { countEpsilonTrees } from './epsilon.js';
 import { addCounts, multiplyCounts, type TreeCount } from './tree.js';
 
 /** How many trees the input has: 0n if it was rejected, 'infinite' if the grammar has a cycle on it. */
-export function countTrees(grammar: Grammar, recognition: Recognition): TreeCount {
+export function countTrees({
+  grammar,
+  recognition,
+}: {
+  grammar: Grammar;
+  recognition: Recognition;
+}): TreeCount {
   // The trees of an item are, for each of its links, the trees of the items before the
   // dot (its predecessor) times the trees of what the link recognized (its cause). So the
   // count follows the same links as the enumeration of step 19, but multiplies and adds
@@ -32,7 +38,7 @@ export function countTrees(grammar: Grammar, recognition: Recognition): TreeCoun
     inProgress: new Set(),
     epsilonCounts: new Map(),
   };
-  return countItem(context, accepting);
+  return countItem({ context, item: accepting });
 }
 
 /** What the count needs besides the item: the memory and the items being counted now. */
@@ -52,7 +58,7 @@ interface CountContext {
  * count(predecessor) × count(cause). Meeting an item that is still being counted means
  * a cycle: infinitely many trees.
  */
-function countItem(context: CountContext, item: EarleyItem): TreeCount {
+function countItem({ context, item }: { context: CountContext; item: EarleyItem }): TreeCount {
   const remembered = context.known.get(item);
   if (remembered !== undefined) {
     return remembered;
@@ -66,8 +72,11 @@ function countItem(context: CountContext, item: EarleyItem): TreeCount {
   context.inProgress.add(item);
   let total: TreeCount = 0n;
   for (const link of item.links) {
-    const ways = multiplyCounts(countItem(context, link.predecessor), countCause(context, link));
-    total = addCounts(total, ways);
+    const ways = multiplyCounts({
+      first: countItem({ context, item: link.predecessor }),
+      second: countCause({ context, link }),
+    });
+    total = addCounts({ first: total, second: ways });
   }
   context.inProgress.delete(item);
   context.known.set(item, total);
@@ -75,12 +84,17 @@ function countItem(context: CountContext, item: EarleyItem): TreeCount {
 }
 
 /** The trees of what a link recognized: 1 for a token, the child's count, or the ε-trees. */
-function countCause(context: CountContext, link: Link): TreeCount {
+function countCause({ context, link }: { context: CountContext; link: Link }): TreeCount {
   if (link.kind === 'scan') {
     return 1n;
   }
   if (link.kind === 'complete') {
-    return countItem(context, link.child);
+    return countItem({ context, item: link.child });
   }
-  return countEpsilonTrees(context.grammar, context.nullable, link.symbol, context.epsilonCounts);
+  return countEpsilonTrees({
+    grammar: context.grammar,
+    nullable: context.nullable,
+    symbol: link.symbol,
+    known: context.epsilonCounts,
+  });
 }

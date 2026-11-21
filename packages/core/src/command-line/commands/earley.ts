@@ -29,36 +29,39 @@ export const earleyCommand: Command = {
   description:
     'Decide with Earley whether a story is in L(G) (--chart: the sets S0 … Sn; --no-epsilon-fix: the classic bug)',
   usage: EARLEY_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [CHART_FLAG, NO_EPSILON_FIX_FLAG],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [CHART_FLAG, NO_EPSILON_FIX_FLAG],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, EARLEY_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: EARLEY_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;
-    const unknown = checkAlphabet(tokens, grammar);
+    const unknown = checkAlphabet({ tokens, grammar });
     if (unknown !== null) {
       environment.writeOutput(`${title}\n\n${formatRejection(unknown)}\n`);
       return EXIT_CODES.rejected;
     }
     const classicEpsilon = parsed.flags.has(NO_EPSILON_FIX_FLAG);
-    const { accepted, chart } = recognize(grammar, tokens, { classicEpsilon });
+    const { accepted, chart } = recognize({ grammar, tokens, options: { classicEpsilon } });
     const sections = [title];
     if (classicEpsilon) {
       sections.push('Without the ε fix: the classic algorithm of Earley (1970), for comparison');
     }
     if (parsed.flags.has(CHART_FLAG)) {
-      sections.push(formatChart(chart, tokens, classicEpsilon));
+      sections.push(formatChart({ chart, tokens, classicEpsilon }));
     }
-    const error = diagnose(grammar, chart, tokens, accepted);
+    const error = diagnose({ grammar, chart, tokens, accepted });
     sections.push(
       error === null ? 'ACCEPTED: the input is a sentence of L(G)' : formatRejection(error),
     );
@@ -68,26 +71,39 @@ export const earleyCommand: Command = {
 };
 
 /** Every set, in order: 'S1 (after CRI)' and a table of its items. */
-function formatChart(chart: Chart, tokens: readonly SymbolName[], classicEpsilon: boolean): string {
-  return chart.map((set) => formatSet(chart, set, tokens, classicEpsilon)).join('\n\n');
+function formatChart({
+  chart,
+  tokens,
+  classicEpsilon,
+}: {
+  chart: Chart;
+  tokens: readonly SymbolName[];
+  classicEpsilon: boolean;
+}): string {
+  return chart.map((set) => formatSet({ chart, set, tokens, classicEpsilon })).join('\n\n');
 }
 
 /** One row per item, in the order it was added: number, dotted rule, origin and how it got there. */
-function formatSet(
-  chart: Chart,
-  set: EarleySet,
-  tokens: readonly SymbolName[],
-  classicEpsilon: boolean,
-): string {
+function formatSet({
+  chart,
+  set,
+  tokens,
+  classicEpsilon,
+}: {
+  chart: Chart;
+  set: EarleySet;
+  tokens: readonly SymbolName[];
+  classicEpsilon: boolean;
+}): string {
   const token = tokens[set.index - 1];
   const title = token === undefined ? `S${set.index}` : `S${set.index} (after ${token})`;
   const rows = set.items.map((item, index) => [
     String(index + 1),
-    dottedRule(item.production, item.dot),
+    dottedRule({ production: item.production, dot: item.dot }),
     String(item.origin),
-    describeOrigin(chart, item, classicEpsilon),
+    describeOrigin({ chart, item, classicEpsilon }),
   ]);
-  return `${title}: ${set.items.length} items\n\n${formatTable(['#', 'Item', 'Origin', 'How'], rows)}`;
+  return `${title}: ${set.items.length} items\n\n${formatTable({ header: ['#', 'Item', 'Origin', 'How'], rows })}`;
 }
 
 /**
@@ -95,7 +111,15 @@ function formatSet(
  * separated by '; ' when the item has several links. A predicted item that already derives
  * ε is marked 'P (ignored)': with the fix, the Completer skips it.
  */
-function describeOrigin(chart: Chart, item: EarleyItem, classicEpsilon: boolean): string {
+function describeOrigin({
+  chart,
+  item,
+  classicEpsilon,
+}: {
+  chart: Chart;
+  item: EarleyItem;
+  classicEpsilon: boolean;
+}): string {
   if (item.links.length === 0) {
     if (item.production.id === -1) {
       return 'initial';
@@ -104,20 +128,20 @@ function describeOrigin(chart: Chart, item: EarleyItem, classicEpsilon: boolean)
       ? 'P (ignored)'
       : 'P';
   }
-  return item.links.map((link) => describeLink(chart, link)).join('; ');
+  return item.links.map((link) => describeLink({ chart, link })).join('; ');
 }
 
 /** One link: which operation advanced the dot and, for S and C, from which item. */
-function describeLink(chart: Chart, link: Link): string {
+function describeLink({ chart, link }: { chart: Chart; link: Link }): string {
   if (link.kind === 'nullable') {
     return 'ε';
   }
   const operation = link.kind === 'scan' ? 'S' : 'C';
-  return `${operation} from ${position(chart, link.predecessor)}`;
+  return `${operation} from ${position({ chart, item: link.predecessor })}`;
 }
 
 /** 'S0#5': the set of the item and its number inside the set, from 1. */
-function position(chart: Chart, item: EarleyItem): string {
+function position({ chart, item }: { chart: Chart; item: EarleyItem }): string {
   const index = chart[item.setIndex]?.items.indexOf(item) ?? -1;
   return `S${item.setIndex}#${index + 1}`;
 }

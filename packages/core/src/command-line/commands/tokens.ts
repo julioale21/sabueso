@@ -23,33 +23,40 @@ export const tokensCommand: Command = {
   name: 'tokens',
   description: 'Split a story into tokens and check that every one is in Σ of the grammar',
   usage: TOKENS_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, TOKENS_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: TOKENS_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     // The story can come as one quoted argument or as several words: both mean the same.
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
-    const error = checkAlphabet(tokens, grammar);
-    environment.writeOutput(`${formatTokens(grammar, tokens, error)}\n`);
+    const error = checkAlphabet({ tokens, grammar });
+    environment.writeOutput(`${formatTokens({ grammar, tokens, error })}\n`);
     return error === null ? EXIT_CODES.ok : EXIT_CODES.rejected;
   },
 };
 
 /** The table of the tokens of the story (position, token, in Σ) and the closing line. */
-function formatTokens(
-  grammar: Grammar,
-  tokens: readonly SymbolName[],
-  error: ParseError | null,
-): string {
+function formatTokens({
+  grammar,
+  tokens,
+  error,
+}: {
+  grammar: Grammar;
+  tokens: readonly SymbolName[];
+  error: ParseError | null;
+}): string {
   const title = `${grammar.name}: tokens of the story`;
   if (tokens.length === 0) {
     return `${title}\n\nThe story is empty: 0 tokens (the empty string ε)`;
@@ -62,14 +69,14 @@ function formatTokens(
   return [
     title,
     '',
-    formatTable(['Position', 'Token', 'In Σ'], rows),
+    formatTable({ header: ['Position', 'Token', 'In Σ'], rows }),
     '',
-    error === null ? `${tokens.length} tokens, all in Σ` : formatUnknownSymbol(grammar, error),
+    error === null ? `${tokens.length} tokens, all in Σ` : formatUnknownSymbol({ grammar, error }),
   ].join('\n');
 }
 
 /** 'Unknown symbol XYZ at position 1 (event 2): it is not in Σ', followed by Σ. */
-function formatUnknownSymbol(grammar: Grammar, error: ParseError): string {
+function formatUnknownSymbol({ grammar, error }: { grammar: Grammar; error: ParseError }): string {
   return [
     `Unknown symbol ${error.found ?? ''} at position ${error.position} (event ${error.position + 1}): it is not in Σ`,
     `Σ = ${formatSet(grammar.terminals)}`,

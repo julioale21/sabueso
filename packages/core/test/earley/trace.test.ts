@@ -5,12 +5,16 @@ import { recognize } from '../../src/earley/recognizer.js';
 import { tokenizeSequence } from '../../src/input/sequence.js';
 import { loadBuiltInGrammar } from '../helpers/load.js';
 
-function traceOf(grammarName: string, input: string) {
-  return recognize(loadBuiltInGrammar(grammarName), tokenizeSequence(input), { trace: true });
+function traceOf({ grammarName, input }: { grammarName: string; input: string }) {
+  return recognize({
+    grammar: loadBuiltInGrammar(grammarName),
+    tokens: tokenizeSequence(input),
+    options: { trace: true },
+  });
 }
 
 describe('the trace of G1 with CRI PIS REV', () => {
-  const { trace, chart } = traceOf('g1', 'CRI PIS REV');
+  const { trace, chart } = traceOf({ grammarName: 'g1', input: 'CRI PIS REV' });
 
   it('the first event is a predict in set 0', () => {
     expect(trace[0]).toMatchObject({ set: 0, op: 'predict' });
@@ -64,11 +68,13 @@ describe('the trace of G1 with CRI PIS REV', () => {
 
 describe('the trace in other cases', () => {
   it('A1 with G1: the last event happens in S5 (the criterion of the web player)', () => {
-    expect(traceOf('g1', 'CRI SOS PIS INT REV').trace.at(-1)?.set).toBe(5);
+    expect(traceOf({ grammarName: 'g1', input: 'CRI SOS PIS INT REV' }).trace.at(-1)?.set).toBe(5);
   });
 
   it('G0 is ambiguous: some items are reached again, with one more link', () => {
-    const repeated = traceOf('g0', 'CRI SOS PIS INT REV').trace.filter((event) => !event.isNew);
+    const repeated = traceOf({ grammarName: 'g0', input: 'CRI SOS PIS INT REV' }).trace.filter(
+      (event) => !event.isNew,
+    );
     expect(repeated.length).toBeGreaterThan(0);
     expect(repeated.every((event) => event.op === 'complete' || event.op === 'nullable')).toBe(
       true,
@@ -77,6 +83,6 @@ describe('the trace in other cases', () => {
 
   it('without the trace option, there are no events', () => {
     const grammar = loadBuiltInGrammar('g1');
-    expect(recognize(grammar, ['CRI', 'PIS', 'REV']).trace).toEqual([]);
+    expect(recognize({ grammar, tokens: ['CRI', 'PIS', 'REV'] }).trace).toEqual([]);
   });
 });

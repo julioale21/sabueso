@@ -21,30 +21,39 @@ export const analyzeCommand: Command = {
   name: 'analyze',
   description: 'Report every analysis of the grammar: nullable, minYield, useless, cycles, LL(1)',
   usage: ANALYZE_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, ANALYZE_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: ANALYZE_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${ANALYZE_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${ANALYZE_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
-    const report = formatReport(grammar, analyzeGrammar(grammar));
+    const grammar = await readGrammar({ source, environment });
+    const report = formatReport({ grammar, analysis: analyzeGrammar(grammar) });
     environment.writeOutput(`${grammar.name}: analysis\n\n${report}\n`);
     return EXIT_CODES.ok;
   },
 };
 
 /** One row per analysis: what it found, and the step and command that explain it. */
-function formatReport(grammar: Grammar, analysis: GrammarAnalysis): string {
+function formatReport({
+  grammar,
+  analysis,
+}: {
+  grammar: Grammar;
+  analysis: GrammarAnalysis;
+}): string {
   const shortest = analysis.minYield.get(grammar.start) ?? Infinity;
   const { conflicts, isPredictive } = analysis.predictiveTable;
   const rows = [
@@ -68,7 +77,7 @@ function formatReport(grammar: Grammar, analysis: GrammarAnalysis): string {
       'predictive-table',
     ],
   ];
-  return formatTable(['Analysis', 'Result', 'Details'], rows);
+  return formatTable({ header: ['Analysis', 'Result', 'Details'], rows });
 }
 
 /** '∅' for no symbols, as in the theory; '{A, B}' otherwise. */

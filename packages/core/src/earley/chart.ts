@@ -39,18 +39,24 @@ export function createChart(tokenCount: number): Chart {
  * Either way, the link (if any) is appended to the item's links, without looking for a
  * repeated one: the algorithm never builds the same link twice (SPEC 02, section 3.18).
  */
-export function addItem(
-  set: EarleySet,
-  production: Production,
-  dot: number,
-  origin: number,
-  link?: Link,
-): AddedItem {
+export function addItem({
+  set,
+  production,
+  dot,
+  origin,
+  link,
+}: {
+  set: EarleySet;
+  production: Production;
+  dot: number;
+  origin: number;
+  link?: Link | undefined;
+}): AddedItem {
   // An item is identified by productionId:dot:origin. If it is already in the set, it is not
   // added again (that keeps every set finite), but the new way of reaching it is kept as
   // one more link: that is how a set records that a part of the input has several trees.
-  const existing = set.byKey.get(itemKey(production, dot, origin));
-  const item = existing ?? createItem(production, dot, origin, set.index);
+  const existing = set.byKey.get(itemKey({ production, dot, origin }));
+  const item = existing ?? createItem({ production, dot, origin, setIndex: set.index });
   if (link !== undefined) {
     item.links.push(link);
   }

@@ -794,7 +794,7 @@ Además, cada paso deja `npm test` en verde y es un commit propio. Cada paso que
 
 La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLine` con `environment` inyectado, `format.ts`, el comando `help`, el script `npm run sabueso` y los códigos de salida) **la crea el SPEC 01**. Este spec la usa y le agrega `command-line/built-in-grammars.ts` y `command-line/grammar-source.ts`, las opciones `--grammar`, `--file` y `--steps`, y un comando por paso. Se repite la descripción completa como referencia.
 
-- `src/command-line.ts` es el único archivo que toca `node:*`. Lee `process.argv`, arma un objeto `environment` con `writeOutput`, `writeError` y `readFile` (basado en `node:fs`) y llama a `runCommandLine(commandLineArguments, environment)`.
+- `src/command-line.ts` es el único archivo que toca `node:*`. Lee `process.argv`, arma un objeto `environment` con `writeOutput`, `writeError` y `readFile` (basado en `node:fs`) y llama a `runCommandLine({ commandLineArguments, environment })`.
 - `src/command-line/run.ts` contiene `createCommandLineProgram(commands)`, que devuelve `runCommandLine(commandLineArguments, environment): Promise<number>`. `createCommandLineProgram`, el tipo `Command` y `cli/format.ts` se exportan desde `index.ts` para que `@sabueso/natural-language` (SPEC 04) registre sus comandos con la misma infraestructura. Busca el comando en el registro, interpreta las opciones comunes (`--grammar`, `--file` y `--steps`) y devuelve el código de salida.
 - `src/command-line/commands/<comando>.ts` tiene **un archivo por comando**. Cada uno exporta `{ name, description, usage, run(commandArguments, environment) }`. Los comandos no importan `node:*`: leen archivos solo a través de `environment.readFile`. Así se prueban en memoria, sin lanzar procesos.
 - `src/command-line/grammar-source.ts` resuelve `--grammar`, y también `--grammar-file <ruta>` para un archivo `.grammar` propio (ver Decisiones). Como nombre acepta **solo identificadores de gramáticas incorporadas**, registradas en `src/command-line/built-in-grammars.ts`: las de género del catálogo (`detective/g1`, `detective/g0`, y sus alias `g1` y `g0`), y las internas de desarrollo (`meta`, `arithmetic-ambiguous`, `arithmetic`, `parentheses`, `epsilon-trap`, `test-useless`, `test-empty` y `test-cyclic`). `help` las lista en dos grupos: "Géneros" y "Desarrollo". Las rutas van siempre por `--grammar-file`, nunca como nombre. Un nombre desconocido termina con código 2 y lista los nombres válidos.
@@ -858,7 +858,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - `help` muestra los grupos mediante una opción nueva y compatible de `createCommandLineProgram`: `helpFooter`.
 
 6. **Tokenizador de secuencias.**
-   - `input/sequence.ts`: `tokenizeSequence(text)` separa por espacios. `checkAlphabet(tokens, grammar)` devuelve un `ParseError` `unknown-symbol` o `null`.
+   - `input/sequence.ts`: `tokenizeSequence(text)` separa por espacios. `checkAlphabet({ tokens, grammar })` devuelve un `ParseError` `unknown-symbol` o `null`.
    - Prueba: el caso I6.
    - **Consola:** `npm run sabueso -- tokens --grammar g1 "CRI XYZ REV"` lista los tokens con su posición y termina con código 1, informando `XYZ` en la posición 1.
    - **Decisiones (2026-11-20):**
@@ -878,7 +878,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
      - La función se llama `computeNullable(grammar, onIteration?)` y devuelve `Set<SymbolName>`. En el paso 23 pasa a recibir un objeto: `computeNullable({ grammar, onRound })`.
      - El punto fijo es **por rondas** (cada ronda mira solo el conjunto de la anterior), no "agregar sobre la marcha". Así la ronda i tiene significado teórico (altura del árbol ε más bajo) y la cantidad de rondas no depende del orden de las producciones. La última ronda no agrega nada: es la verificación del punto fijo. G1 da 2 rondas.
      - Con `--steps` la tabla muestra, por ronda, cuántos anulables hay y cuáles se agregaron (el conjunto completo solo al final, para que la tabla no sea demasiado ancha). El conjunto vacío se imprime ∅.
-     - `readGrammar(source, environment)` en `grammar-source.ts` lee y construye la gramática elegida; la comparten `tokens`, `nullable` y los análisis siguientes.
+     - `readGrammar({ source, environment })` en `grammar-source.ts` lee y construye la gramática elegida; la comparten `tokens`, `nullable` y los análisis siguientes.
      - Ejemplo nuevo `examples/grammars/nullable-chain.grammar`, con un anulable por ronda, para mostrar cómo crece el punto fijo.
      - Refactor (2026-11-20): el esquema de punto fijo por rondas se escribe una sola vez, `leastFixedPoint(start, newSymbolsOfRound, onIteration?)` en `analysis/fixed-point.ts` (en el paso 23 se renombra `repeatRuleUntilNoChange` y pasa a recibir un objeto: `repeatRuleUntilNoChange({ start, newSymbolsOfRound, onIteration })`), junto con `leftSidesWhere` (renombrada `nonterminalsWithProductionMatching({ productions, condition })` en el paso 23). Lo usan los anulables, los productivos y los alcanzables; cada análisis solo aporta su regla. minYield (números, no conjuntos) mantiene su propio ciclo.
 
@@ -942,7 +942,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:** `npm run sabueso -- items --grammar parentheses` lista todas las reglas punteadas posibles de la gramática (por ejemplo, `S → ( • S ) S`). Es el universo finito de ítems, y explica por qué Earley siempre termina.
     - **Decisiones (2026-11-20):**
       - `item.ts`: `createItem`, `itemKey`, `nextSymbol`, `isComplete`, `dottedRule` (la regla con el punto, `A → •` para ε), `label` (`E → E + • T, 0`) y `dottedRulesOf` (el universo de reglas punteadas, para el comando). "Avanzar" no es una función aparte: el reconocedor del paso 14 agrega el ítem con `dot + 1` mediante `addItem`, que ya deduplica.
-      - `chart.ts`: `createChart(tokenCount)` y `addItem(set, production, dot, origin, link?)`, que devuelve `{ item, isNew }`. El enlace se agrega también cuando el ítem ya estaba (es otro camino: ambigüedad); `isNew` dice si hay que procesarlo.
+      - `chart.ts`: `createChart(tokenCount)` y `addItem({ set, production, dot, origin, link })`, que devuelve `{ item, isNew }`. El enlace se agrega también cuando el ítem ya estaba (es otro camino: ambigüedad); `isNew` dice si hay que procesarlo.
       - El comando `items` muestra, además, qué operación dispara cada regla punteada (Predictor, Scanner o Completer).
 
 14. **Reconocedor sin ε.**
@@ -952,7 +952,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - `npm run sabueso -- earley --grammar arithmetic "id + id * id"` imprime `ACEPTA` o `RECHAZA` y termina con código 0 o 1.
       - Con `--chart`, imprime los conjuntos S0…Sn con todos sus ítems: `S2: E → E + • T, 0`.
     - **Decisiones (2026-11-20):**
-      - `recognize(grammar, tokens)` devuelve `{ accepted, chart, startProduction }`. La producción $S → S se arma en el reconocedor con `id: -1`, para que su clave no choque con ninguna producción real.
+      - `recognize({ grammar, tokens })` devuelve `{ accepted, chart, startProduction }`. La producción $S → S se arma en el reconocedor con `id: -1`, para que su clave no choque con ninguna producción real.
       - `predict`, `scan` y `complete` quedan exportadas (una ficha cada una). El Completer recorre una copia de la lista del conjunto de origen: los ítems que esperaban cuando B se completó. Es el comportamiento clásico, y por eso `epsilon-trap` todavía rechaza `x` (una prueba lo fija; se invierte en el paso 15).
       - Salida en inglés, como el resto: `ACCEPTED: the input is a sentence of L(G)` / `REJECTED: …` en lugar de `ACEPTA` / `RECHAZA`. Con `--chart`, cada conjunto es una tabla con #, ítem, origen y cómo llegó (`initial`, `P`, `S from Sk#i`, `C from Sk#i`; varios separados por `;` si el ítem tiene varios enlaces). Un símbolo fuera de Σ se informa antes de correr Earley.
 
@@ -980,7 +980,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - Pruebas: I1 a I7 y P2, con posición, `found` y `expected` exactos. Ficha 17.
     - **Consola:** `npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"` imprime `RECHAZA · posición 2 (evento 3) · se encontró PIS · se esperaba: CRI, HAL` y termina con código 1.
     - **Decisiones (2026-11-20):**
-      - `diagnose(grammar, chart, tokens, accepted)` devuelve `ParseError | null`, y `expectedTerminals(grammar, set)` los terminales después del punto de un conjunto, sin repetir y ordenados.
+      - `diagnose({ grammar, chart, tokens, accepted })` devuelve `ParseError | null`, y `expectedTerminals({ grammar, set })` los terminales después del punto de un conjunto, sin repetir y ordenados.
       - El mensaje sigue en inglés, como el resto de la salida: `REJECTED · position 2 (event 3) · found PIS · expected: CRI, HAL`. Para el fin de entrada: `position n (end of input) · expected: …` o `incomplete input`; para un símbolo fuera de Σ: `XYZ is not in Σ`.
       - Todos los casos de error de la tabla 9.1 (I1 a I7, con G0 y G1) y P2 coinciden exactamente con el spec.
 
@@ -1000,7 +1000,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - **Consola:** `npm run sabueso -- epsilon-trees --grammar g1 CuerpoLinea` imprime la cantidad de árboles ε y los árboles en ASCII.
     - **Decisiones (2026-11-20):**
       - Se adelantan dos archivos del paso 19, porque este paso ya los necesita: `trees/tree.ts` (el tipo `ParseTree`, `TreeCount` y la aritmética `addCounts`/`multiplyCounts`, donde `'infinite'` absorbe salvo frente a 0) y `trees/render.ts` (`renderTree`, el dibujo con `├─` y `└─`).
-      - `countEpsilonTrees(grammar, nullable, symbol)` cuenta con memoización y detecta ciclos con el conjunto de símbolos "en curso" (`'infinite'`). `epsilonTrees(grammar, nullable, symbol)` genera los árboles saltando las producciones que repetirían un símbolo del camino: con un ciclo, lista solo los árboles sin símbolos repetidos.
+      - `countEpsilonTrees({ grammar, nullable, symbol })` cuenta con memoización y detecta ciclos con el conjunto de símbolos "en curso" (`'infinite'`). `epsilonTrees({ grammar, nullable, symbol })` genera los árboles saltando las producciones que repetirían un símbolo del camino: con un ciclo, lista solo los árboles sin símbolos repetidos.
       - Sin símbolo, el comando lista la cuenta de cada anulable. Ejemplo nuevo `examples/grammars/epsilon-choices.grammar` (un símbolo con 4 árboles ε).
 
 19. **Enumeración y render de árboles.**
@@ -1008,7 +1008,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - Pruebas: A1 con G0 da 4 árboles distintos. Con límite 2 da 2. El render de un árbol chico coincide con un texto esperado. Fichas 18 y 21 (borrador).
     - **Consola:** `npm run sabueso -- trees --grammar g0 "CRI SOS PIS INT REV" [--max 50]` imprime cada árbol numerado.
     - **Decisiones (2026-11-20):**
-      - `enumerateTrees(grammar, recognition)` es un generador que sigue los enlaces desde ($S → S •, 0); `parseTrees(grammar, recognition, limit = 50)` junta hasta el límite. El árbol que se entrega es el de S (sin la raíz $S).
+      - `enumerateTrees({ grammar, recognition })` es un generador que sigue los enlaces desde ($S → S •, 0); `parseTrees(grammar, recognition, limit = 50)` junta hasta el límite. El árbol que se entrega es el de S (sin la raíz $S).
       - Ciclos: se lleva el conjunto de ítems del camino y se saltea la rama que vuelve a uno; así la enumeración siempre termina (el conteo del paso 20 dirá `'infinite'`).
       - El comando avisa si `--max` cortó la lista (pide un árbol más que el límite para saberlo) y, si hay más de uno, que la gramática es ambigua para esa entrada.
       - La ficha 21 queda en borrador; se completa en el paso 27.
@@ -1020,7 +1020,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - `npm run sabueso -- count --grammar g0 "CTX HAL ENC INT SOS PIS DSC REV CNF CAP"` imprime `8 árboles`.
       - `npm run sabueso -- count --grammar g0 --file packages/core/test/fixtures/l1.txt` imprime el número completo con su cantidad de dígitos y el tiempo empleado.
     - **Decisiones (2026-11-20):**
-      - `countTrees(grammar, recognition)` recorre los mismos enlaces que la enumeración, con memoria por ítem (`Map<EarleyItem, TreeCount>`) y el conjunto de ítems en curso para detectar ciclos. Los enlaces `nullable` cuentan los árboles ε del paso 18, con una memoria compartida.
+      - `countTrees({ grammar, recognition })` recorre los mismos enlaces que la enumeración, con memoria por ítem (`Map<EarleyItem, TreeCount>`) y el conjunto de ítems en curso para detectar ciclos. Los enlaces `nullable` cuentan los árboles ε del paso 18, con una memoria compartida.
       - La fórmula de Catalan vive solo en las pruebas (`test/helpers/catalan.ts`), para comparar L1 con C(197): el motor cuenta sin ella. En la documentación y la defensa, el crecimiento de G0 se presenta como exponencial, y Catalan queda como nota opcional (no es teoría de la materia).
       - La opción `--file` vive en `command-line/story-source.ts` (`readStory`), para que la usen también `parse` y `bench`.
       - Mensajes en inglés: `8 trees: the grammar is ambiguous for this input`, el número completo con `(a number of 115 digits)`, `1 tree: unambiguous…`, `Infinitely many trees…`, y el tiempo.
@@ -1038,7 +1038,7 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
     - Prueba de integración que usa solo la API pública.
     - **Consola:** `npm run sabueso -- parse --grammar g0 [--trees N] [--trace] "CRI SOS PIS INT REV"` combina reconocimiento, diagnóstico, conteo, árboles y derivación del primer árbol. Es el comando "completo" que usa la API pública.
     - **Decisiones (2026-11-20):**
-      - `parse(grammar, input, options)` vive en `src/parse.ts`: la entrada puede ser el texto o los tokens. Con un símbolo fuera de Σ devuelve el error sin correr Earley (`chart: []`). Con `countTrees: false`, `treeCount` es `null`. La derivación es la del primer árbol.
+      - `parse({ grammar, input, options })` vive en `src/parse.ts`: la entrada puede ser el texto o los tokens. Con un símbolo fuera de Σ devuelve el error sin correr Earley (`chart: []`). Con `countTrees: false`, `treeCount` es `null`. La derivación es la del primer árbol.
       - `renderDerivation(steps)` se agrega a `trees/derivation.ts`. El mensaje de rechazo de la consola (`formatRejection`) pasa a `command-line/format.ts`, compartido por `earley` y `parse`.
       - `index.ts` exporta, además de lo pedido: `formatProduction`, `tokenizeGrammar`, `GrammarSyntaxError`, `AUGMENTED_START`, `tokenizeSequence`, `checkAlphabet`, `dottedRule`, `label`, `EXIT_CODES`, `formatTable`, `formatSet` y los tipos de cada resultado.
       - El comando `parse` muestra un árbol por defecto (`--trees n` para más) y acepta `--file`.

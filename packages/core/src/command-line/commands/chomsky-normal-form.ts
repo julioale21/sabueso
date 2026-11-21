@@ -58,35 +58,38 @@ export const chomskyNormalFormCommand: Command = {
   name: 'chomsky-normal-form',
   description: `Convert a grammar to Chomsky normal form step by step (${STEP_NAMES.join(', ')})`,
   usage: CHOMSKY_NORMAL_FORM_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, UNTIL_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, UNTIL_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, CHOMSKY_NORMAL_FORM_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: CHOMSKY_NORMAL_FORM_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${CHOMSKY_NORMAL_FORM_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${CHOMSKY_NORMAL_FORM_USAGE}`, environment });
     }
     const until = (parsed.values.get(UNTIL_OPTION) ?? STEP_NAMES.at(-1) ?? '').toUpperCase();
     const lastStep = STEP_NAMES.indexOf(until);
     if (lastStep === -1) {
-      return reportUsageError(
-        `${UNTIL_OPTION} must be one of: ${STEP_NAMES.join(', ')}`,
+      return reportUsageError({
+        message: `${UNTIL_OPTION} must be one of: ${STEP_NAMES.join(', ')}`,
         environment,
-      );
+      });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const sections = [`${grammar.name}: conversion to Chomsky normal form`];
     let current = grammar;
     CONVERSION_STEPS.slice(0, lastStep + 1).forEach((step, index) => {
       const next = step.apply(current);
-      sections.push(formatStep(index + 1, step, current, next));
+      sections.push(formatStep({ number: index + 1, step, before: current, after: next }));
       current = next;
     });
     environment.writeOutput(`${sections.join('\n\n')}\n`);
@@ -95,24 +98,42 @@ export const chomskyNormalFormCommand: Command = {
 };
 
 /** The title of the step, the productions it added and removed, and the grammar it left. */
-function formatStep(number: number, step: ConversionStep, before: Grammar, after: Grammar): string {
+function formatStep({
+  number,
+  step,
+  before,
+  after,
+}: {
+  number: number;
+  step: ConversionStep;
+  before: Grammar;
+  after: Grammar;
+}): string {
   const title = `Step ${number} · ${step.name}: ${step.summary}`;
   if (after === before && step.unchangedReason !== undefined) {
     return [title, `Nothing to do: ${step.unchangedReason(before)}`].join('\n');
   }
-  const added = difference(after.productions, before.productions);
-  const removed = difference(before.productions, after.productions);
+  const added = difference({ productions: after.productions, others: before.productions });
+  const removed = difference({ productions: before.productions, others: after.productions });
   return [
     title,
-    formatChanges('Added', '+', added),
-    formatChanges('Removed', '-', removed),
+    formatChanges({ title: 'Added', mark: '+', productions: added }),
+    formatChanges({ title: 'Removed', mark: '-', productions: removed }),
     `After ${step.name} (${after.productions.length} productions):`,
     formatGrammar(after),
   ].join('\n');
 }
 
 /** 'Added (2):' and one '+ A → α' per production, or 'Added: none'. */
-function formatChanges(title: string, mark: string, productions: readonly Production[]): string {
+function formatChanges({
+  title,
+  mark,
+  productions,
+}: {
+  title: string;
+  mark: string;
+  productions: readonly Production[];
+}): string {
   if (productions.length === 0) {
     return `${title}: none`;
   }
@@ -123,10 +144,13 @@ function formatChanges(title: string, mark: string, productions: readonly Produc
 }
 
 /** The productions of the first list that the second one does not have, compared by symbols. */
-function difference(
-  productions: readonly Production[],
-  others: readonly Production[],
-): Production[] {
+function difference({
+  productions,
+  others,
+}: {
+  productions: readonly Production[];
+  others: readonly Production[];
+}): Production[] {
   const otherKeys = new Set(others.map(productionKey));
   return productions.filter((production) => !otherKeys.has(productionKey(production)));
 }

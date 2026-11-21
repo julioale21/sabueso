@@ -8,7 +8,7 @@ import {
 describe('sabueso grammars', () => {
   it('lists every built-in grammar with its sizes, in the two groups', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
-    expect(await runCommandLine(['grammars'], environment)).toBe(0);
+    expect(await runCommandLine({ commandLineArguments: ['grammars'], environment })).toBe(0);
     expect(output()).toMatch(/^Géneros:$/m);
     expect(output()).toMatch(/^Desarrollo:$/m);
     expect(output()).toMatch(/^detective\/g1\s+g1\s+21\s+14\s+40\s+/m);
@@ -20,7 +20,7 @@ describe('sabueso grammars', () => {
 
   it('takes no arguments: exit code 2', async () => {
     const { environment, errors } = createMemoryEnvironment();
-    expect(await runCommandLine(['grammars', 'g1'], environment)).toBe(2);
+    expect(await runCommandLine({ commandLineArguments: ['grammars', 'g1'], environment })).toBe(2);
     expect(errors()).toBe('Usage: sabueso grammars\n');
   });
 });

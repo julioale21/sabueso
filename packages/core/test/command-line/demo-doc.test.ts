@@ -41,7 +41,10 @@ describe('docs/console-demo.md', () => {
 
   it.each(commands)('%s is a valid invocation', async (command) => {
     const { environment, errors } = createMemoryEnvironment();
-    const exitCode = await runCommandLine(parseArguments(command), environment);
+    const exitCode = await runCommandLine({
+      commandLineArguments: parseArguments(command),
+      environment,
+    });
     expect(exitCode, errors()).not.toBe(EXIT_CODES.usage);
   });
 });

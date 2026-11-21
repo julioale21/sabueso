@@ -17,7 +17,13 @@ export interface Command {
   /** Example invocation, e.g. 'sabueso grammar g1'. */
   usage: string;
   /** Runs the command and resolves to its exit code (see EXIT_CODES). */
-  run(commandArguments: string[], environment: CommandLineEnvironment): Promise<number>;
+  run({
+    commandArguments,
+    environment,
+  }: {
+    commandArguments: string[];
+    environment: CommandLineEnvironment;
+  }): Promise<number>;
 }
 
 /** Exit codes shared by every command of every package. */
@@ -31,7 +37,13 @@ export const EXIT_CODES = {
 } as const;
 
 /** Writes a usage error (the message and a line break) and returns its exit code. */
-export function reportUsageError(message: string, environment: CommandLineEnvironment): number {
+export function reportUsageError({
+  message,
+  environment,
+}: {
+  message: string;
+  environment: CommandLineEnvironment;
+}): number {
   environment.writeError(`${message}\n`);
   return EXIT_CODES.usage;
 }

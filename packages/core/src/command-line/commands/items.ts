@@ -22,34 +22,37 @@ export const itemsCommand: Command = {
   name: 'items',
   description: 'List every dotted rule A → α • β: the finite universe of Earley items',
   usage: ITEMS_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, ITEMS_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: ITEMS_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${ITEMS_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${ITEMS_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const rules = dottedRulesOf(grammar);
     environment.writeOutput(
       [
         `${grammar.name}: dotted rules (the universe of Earley items)`,
-        formatTable(
-          ['Production', 'Dotted rule', 'What Earley does with it'],
-          rules.map(({ production, dot }) => [
+        formatTable({
+          header: ['Production', 'Dotted rule', 'What Earley does with it'],
+          rows: rules.map(({ production, dot }) => [
             String(production.id),
-            dottedRule(production, dot),
-            operationFor(grammar, production, dot),
+            dottedRule({ production, dot }),
+            operationFor({ grammar, production, dot }),
           ]),
-        ),
+        }),
         `${rules.length} dotted rules. An item is a dotted rule plus its origin j (0 … n), so for an input of n tokens each set holds at most ${rules.length} × (n + 1) items: a finite number, which is why Earley always ends.`,
       ].join('\n\n') + '\n',
     );
@@ -58,7 +61,15 @@ export const itemsCommand: Command = {
 };
 
 /** What the symbol after the dot makes Earley do: predict a nonterminal, scan a terminal, or complete. */
-function operationFor(grammar: Grammar, production: Production, dot: number): string {
+function operationFor({
+  grammar,
+  production,
+  dot,
+}: {
+  grammar: Grammar;
+  production: Production;
+  dot: number;
+}): string {
   const next = production.rightSide[dot];
   if (next === undefined) {
     return `Completer: ${production.leftSide} is recognized`;

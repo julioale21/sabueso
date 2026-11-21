@@ -24,12 +24,12 @@ Resultado: error en la posición 2 (evento 3), se encontró PIS, se esperaba CRI
 
 ## 3. Dónde está en el código
 
-| Qué                | Dónde                                                                            |
-| ------------------ | -------------------------------------------------------------------------------- |
-| Archivo            | `packages/core/src/earley/diagnostics.ts`                                        |
-| Funciones          | `diagnose(grammar, chart, tokens, accepted)` y `expectedTerminals(grammar, set)` |
-| Tipo               | `ParseError { kind, position, found, expected }`                                 |
-| Comando de consola | `npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"`                       |
+| Qué                | Dónde                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| Archivo            | `packages/core/src/earley/diagnostics.ts`                                                |
+| Funciones          | `diagnose({ grammar, chart, tokens, accepted })` y `expectedTerminals({ grammar, set })` |
+| Tipo               | `ParseError { kind, position, found, expected }`                                         |
+| Comando de consola | `npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"`                               |
 
 ## 4. Qué prueba lo verifica
 

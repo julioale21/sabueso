@@ -24,22 +24,25 @@ export const cyclesCommand: Command = {
   name: 'cycles',
   description: 'Find the cycles A ⇒+ A, which give infinitely many trees (--graph: the unit graph)',
   usage: CYCLES_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [GRAPH_FLAG],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [GRAPH_FLAG],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, CYCLES_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: CYCLES_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
     if (parsed.positionals.length > 0) {
-      return reportUsageError(`Usage: ${CYCLES_USAGE}`, environment);
+      return reportUsageError({ message: `Usage: ${CYCLES_USAGE}`, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const sections = [`${grammar.name}: cycles A ⇒+ A`];
     if (parsed.flags.has(GRAPH_FLAG)) {
       sections.push(
@@ -58,7 +61,7 @@ function formatUnitGraph(graph: UnitGraph): string {
     symbol,
     targets.length === 0 ? '—' : targets.join(', '),
   ]);
-  return `Unit graph (A → B when A → α B β with α and β nullable):\n\n${formatTable(['From', 'To'], rows)}`;
+  return `Unit graph (A → B when A → α B β with α and β nullable):\n\n${formatTable({ header: ['From', 'To'], rows })}`;
 }
 
 /** The cycles found, one per line, or a line saying there are none. */

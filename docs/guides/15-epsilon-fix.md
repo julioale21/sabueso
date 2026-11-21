@@ -128,17 +128,23 @@ const context: RecognizerContext = {
 - **En modo clásico, `nullable` es un conjunto vacío.** Así el Predictor no avanza sobre ningún símbolo, sin necesitar un `if` aparte: el mismo código hace el algoritmo clásico.
 - Fuera de eso, el bucle es el del paso 14.
 
-### 5.3 `predict(context, item, symbol)`: el arreglo
+### 5.3 `predict({ context, item, symbol })`: el arreglo
 
 ```ts
 for (const production of context.grammar.productionsByLeftSide.get(symbol) ?? []) {
-  addItem(set, production, 0, item.setIndex);
+  addItem({ set, production, dot: 0, origin: item.setIndex });
 }
 if (context.nullable.has(symbol)) {
-  addItem(set, item.production, item.dot + 1, item.origin, {
-    kind: 'nullable',
-    predecessor: item,
-    symbol,
+  addItem({
+    set,
+    production: item.production,
+    dot: item.dot + 1,
+    origin: item.origin,
+    link: {
+      kind: 'nullable',
+      predecessor: item,
+      symbol,
+    },
   });
 }
 ```
@@ -149,7 +155,7 @@ if (context.nullable.has(symbol)) {
 - **El orden importa para el chart:** primero las reglas de B (en el orden del archivo) y **después** el avance. Es la convención que fija el spec (sección 9.6) para que el chart sea reproducible.
 - Si el ítem avanzado ya estaba, `addItem` no lo duplica: solo le suma el enlace (otro camino).
 
-### 5.4 `complete(context, item)`: ignorar lo vacío
+### 5.4 `complete({ context, item })`: ignorar lo vacío
 
 ```ts
 if (!context.classicEpsilon && isEmptySpan(item)) {

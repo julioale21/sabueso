@@ -47,34 +47,42 @@ export type ParseResult =
  * A rejected story comes with its error; an accepted one, with its trees, their count and
  * the derivation of the first tree.
  */
-export function parse(
-  grammar: Grammar,
-  input: string | readonly SymbolName[],
-  options: ParseOptions = {},
-): ParseResult {
+export function parse({
+  grammar,
+  input,
+  options = {},
+}: {
+  grammar: Grammar;
+  input: string | readonly SymbolName[];
+  options?: ParseOptions | undefined;
+}): ParseResult {
   // Each piece already exists and does one thing; this function only runs them in order.
   // A symbol outside Σ stops everything before Earley runs (there is no chart then).
   const tokens = typeof input === 'string' ? tokenizeSequence(input) : [...input];
-  const unknown = checkAlphabet(tokens, grammar);
+  const unknown = checkAlphabet({ tokens, grammar });
   if (unknown !== null) {
     return { accepted: false, tokens, error: unknown, chart: [], trace: [] };
   }
-  const recognition = recognize(grammar, tokens, {
-    trace: options.trace ?? false,
-    classicEpsilon: options.classicEpsilon ?? false,
+  const recognition = recognize({
+    grammar,
+    tokens,
+    options: {
+      trace: options.trace ?? false,
+      classicEpsilon: options.classicEpsilon ?? false,
+    },
   });
   const { chart, trace } = recognition;
-  const error = diagnose(grammar, chart, tokens, recognition.accepted);
+  const error = diagnose({ grammar, chart, tokens, accepted: recognition.accepted });
   if (error !== null) {
     return { accepted: false, tokens, error, chart, trace };
   }
-  const trees = parseTrees(grammar, recognition, options.maxTrees ?? DEFAULT_TREE_LIMIT);
+  const trees = parseTrees({ grammar, recognition, limit: options.maxTrees ?? DEFAULT_TREE_LIMIT });
   const [firstTree] = trees;
   return {
     accepted: true,
     tokens,
     trees,
-    treeCount: (options.countTrees ?? true) ? countTrees(grammar, recognition) : null,
+    treeCount: (options.countTrees ?? true) ? countTrees({ grammar, recognition }) : null,
     derivation: firstTree === undefined ? [] : leftmostDerivation(firstTree),
     chart,
     trace,

@@ -15,13 +15,18 @@ import type { ParseTree } from './tree.js';
 export const DEFAULT_TREE_LIMIT = 50;
 
 /** The trees of an accepted input, up to the limit, in a fixed order. None if it was rejected. */
-export function parseTrees(
-  grammar: Grammar,
-  recognition: Recognition,
+export function parseTrees({
+  grammar,
+  recognition,
   limit = DEFAULT_TREE_LIMIT,
-): ParseTree[] {
+}: {
+  grammar: Grammar;
+  recognition: Recognition;
+  /** At most this many trees are built. */
+  limit?: number | undefined;
+}): ParseTree[] {
   const trees: ParseTree[] = [];
-  for (const tree of enumerateTrees(grammar, recognition)) {
+  for (const tree of enumerateTrees({ grammar, recognition })) {
     if (trees.length >= limit) {
       break;
     }
@@ -34,7 +39,13 @@ export function parseTrees(
  * Every tree of an accepted input, one by one, without building the next one until it is
  * asked for. The order follows the order in which the links were added.
  */
-export function* enumerateTrees(grammar: Grammar, recognition: Recognition): Generator<ParseTree> {
+export function* enumerateTrees({
+  grammar,
+  recognition,
+}: {
+  grammar: Grammar;
+  recognition: Recognition;
+}): Generator<ParseTree> {
   // Each complete item (A → γ •, i) in Sk says "A derives the input from i to k". Its links
   // say how the dot moved over each symbol of γ: a scanned token, a complete child item, or
   // a nullable symbol. Following them backwards, from ($S → S •, 0) in the last set, gives
@@ -51,7 +62,7 @@ export function* enumerateTrees(grammar: Grammar, recognition: Recognition): Gen
     nullable: computeNullable({ grammar }),
     onPath: new Set(),
   };
-  for (const root of treesOfItem(context, accepting)) {
+  for (const root of treesOfItem({ context, item: accepting })) {
     // The root is $S → S; the tree of the story is its only child, S.
     const [story] = root.kind === 'nonterminal' ? root.children : [];
     if (story !== undefined) {
@@ -69,12 +80,18 @@ interface TreeContext {
 }
 
 /** The trees of a complete item (B → γ •, i): a node B whose children follow its links. */
-function* treesOfItem(context: TreeContext, item: EarleyItem): Generator<ParseTree> {
+function* treesOfItem({
+  context,
+  item,
+}: {
+  context: TreeContext;
+  item: EarleyItem;
+}): Generator<ParseTree> {
   if (context.onPath.has(item)) {
     return; // a cycle (A ⇒+ A): this branch would never end, so it gives no tree
   }
   context.onPath.add(item);
-  for (const children of childSequences(context, item)) {
+  for (const children of childSequences({ context, item })) {
     yield {
       kind: 'nonterminal',
       symbol: item.production.leftSide,
@@ -90,14 +107,20 @@ function* treesOfItem(context: TreeContext, item: EarleyItem): Generator<ParseTr
  * the dot at 0 has none yet: one empty list. Otherwise, for each link: every list of its
  * predecessor (the dot one place before), extended with every tree of the link's cause.
  */
-function* childSequences(context: TreeContext, item: EarleyItem): Generator<ParseTree[]> {
+function* childSequences({
+  context,
+  item,
+}: {
+  context: TreeContext;
+  item: EarleyItem;
+}): Generator<ParseTree[]> {
   if (item.dot === 0) {
     yield [];
     return;
   }
   for (const link of item.links) {
-    for (const before of childSequences(context, link.predecessor)) {
-      for (const child of causeTrees(context, link)) {
+    for (const before of childSequences({ context, item: link.predecessor })) {
+      for (const child of causeTrees({ context, link })) {
         yield [...before, child];
       }
     }
@@ -105,7 +128,13 @@ function* childSequences(context: TreeContext, item: EarleyItem): Generator<Pars
 }
 
 /** The trees of what a link recognized: a token leaf, a child item, or an ε-subtree. */
-function* causeTrees(context: TreeContext, link: Link): Generator<ParseTree> {
+function* causeTrees({
+  context,
+  link,
+}: {
+  context: TreeContext;
+  link: Link;
+}): Generator<ParseTree> {
   if (link.kind === 'scan') {
     yield {
       kind: 'terminal',
@@ -113,8 +142,12 @@ function* causeTrees(context: TreeContext, link: Link): Generator<ParseTree> {
       tokenIndex: link.tokenIndex,
     };
   } else if (link.kind === 'complete') {
-    yield* treesOfItem(context, link.child);
+    yield* treesOfItem({ context, item: link.child });
   } else {
-    yield* epsilonTrees(context.grammar, context.nullable, link.symbol);
+    yield* epsilonTrees({
+      grammar: context.grammar,
+      nullable: context.nullable,
+      symbol: link.symbol,
+    });
   }
 }

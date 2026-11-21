@@ -6,10 +6,10 @@ describe('sabueso chomsky-normal-form', () => {
   it('with --until UNIT, prints G1 after START, DEL and UNIT, with what each step changed', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(
-      await runCommandLine(
-        ['chomsky-normal-form', '--grammar', 'g1', '--until', 'UNIT'],
+      await runCommandLine({
+        commandLineArguments: ['chomsky-normal-form', '--grammar', 'g1', '--until', 'UNIT'],
         environment,
-      ),
+      }),
     ).toBe(0);
     expect(output()).toContain('detective/g1: conversion to Chomsky normal form');
     expect(output()).toContain('Step 1 · START');
@@ -33,7 +33,10 @@ describe('sabueso chomsky-normal-form', () => {
 
   it('with --until DEL, stops after DEL', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
-    await runCommandLine(['chomsky-normal-form', '--grammar', 'g1', '--until', 'del'], environment);
+    await runCommandLine({
+      commandLineArguments: ['chomsky-normal-form', '--grammar', 'g1', '--until', 'del'],
+      environment,
+    });
     expect(output()).toContain('After DEL (46 productions):');
     expect(output()).not.toContain('UNIT');
   });
@@ -41,7 +44,10 @@ describe('sabueso chomsky-normal-form', () => {
   it('keeps S0 → ε for parentheses, whose language contains ε', async () => {
     const { environment, output } = createEnvironmentWithBuiltInGrammars();
     expect(
-      await runCommandLine(['chomsky-normal-form', '--grammar', 'parentheses'], environment),
+      await runCommandLine({
+        commandLineArguments: ['chomsky-normal-form', '--grammar', 'parentheses'],
+        environment,
+      }),
     ).toBe(0);
     expect(output()).toContain('After START (3 productions):');
     expect(output()).toMatch(/Step 2 · DEL.*\nAdded \(4\):\n {2}\+ S0 → ε/);
@@ -58,7 +64,7 @@ describe('sabueso chomsky-normal-form', () => {
     [['chomsky-normal-form', '--grammar', 'g1', '--steps']],
   ])('wrong usage %j exits with 2', async (commandArguments) => {
     const { environment, errors } = createEnvironmentWithBuiltInGrammars();
-    expect(await runCommandLine(commandArguments, environment)).toBe(2);
+    expect(await runCommandLine({ commandLineArguments: commandArguments, environment })).toBe(2);
     expect(errors()).not.toBe('');
   });
 });

@@ -25,30 +25,36 @@ export const countCommand: Command = {
   description:
     'Count the parse trees of a story without building them (--file: read it from a file)',
   usage: COUNT_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, COUNT_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: COUNT_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
-    const story = await readStory(parsed, environment);
+    const story = await readStory({ parsed, environment });
     if (typeof story === 'string') {
-      return reportUsageError(story, environment);
+      return reportUsageError({ message: story, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const title = `${grammar.name}: ${story.label}`;
-    if (checkAlphabet(story.tokens, grammar) !== null) {
+    if (checkAlphabet({ tokens: story.tokens, grammar }) !== null) {
       environment.writeOutput(`${title}\n\n0 trees: a symbol is not in Σ\n`);
       return EXIT_CODES.rejected;
     }
     const started = performance.now();
-    const count = countTrees(grammar, recognize(grammar, story.tokens));
+    const count = countTrees({
+      grammar,
+      recognition: recognize({ grammar, tokens: story.tokens }),
+    });
     const milliseconds = Math.round(performance.now() - started);
     environment.writeOutput(`${title}\n\n${formatCount(count)}\nTime: ${milliseconds} ms\n`);
     return count === 0n ? EXIT_CODES.rejected : EXIT_CODES.ok;

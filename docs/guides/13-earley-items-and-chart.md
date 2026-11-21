@@ -139,7 +139,7 @@ Si un ítem se puede alcanzar de **dos formas** (dos agrupaciones distintas de l
 
 El tipo `Link` tiene tres variantes, una por cada forma de avanzar el punto: `scan` (se leyó un token), `complete` (se terminó un hijo) y `nullable` (se salteó un símbolo anulable, en el paso 15). Todas guardan el `predecessor`: el mismo ítem con el punto un lugar antes.
 
-### 5.2 `createItem(production, dot, origin, setIndex)` e `itemKey(production, dot, origin)`
+### 5.2 `createItem({ production, dot, origin, setIndex })` e `itemKey({ production, dot, origin })`
 
 ```ts
 export function itemKey(production: Production, dot: number, origin: number): string {
@@ -167,7 +167,7 @@ export function isComplete(item: EarleyItem): boolean {
 - Una producción ε (`rightSide` vacío) está completa apenas se predice: `0 === 0`.
 - Estas dos funciones deciden qué operación aplicar: no terminal → Predictor, terminal → Scanner, completo → Completer.
 
-### 5.4 `dottedRule(production, dot)` y `label(item)`
+### 5.4 `dottedRule({ production, dot })` y `label(item)`
 
 ```ts
 const symbols = [...production.rightSide];
@@ -195,11 +195,11 @@ return grammar.productions.flatMap((production) =>
 
 Crea n + 1 conjuntos vacíos, S0 … Sn: uno por cada posición **entre** tokens (antes del primero, entre cada par, y después del último). Con la entrada vacía hay uno solo, S0.
 
-### 5.7 `addItem(set, production, dot, origin, link?)`
+### 5.7 `addItem({ set, production, dot, origin, link })`
 
 ```ts
-const existing = set.byKey.get(itemKey(production, dot, origin));
-const item = existing ?? createItem(production, dot, origin, set.index);
+const existing = set.byKey.get(itemKey({ production, dot, origin }));
+const item = existing ?? createItem({ production, dot, origin, setIndex: set.index });
 if (link !== undefined) {
   item.links.push(link);
 }

@@ -32,29 +32,32 @@ export const traceCommand: Command = {
   name: 'trace',
   description: 'Show every step of Earley in order: what was added, by which operation and why',
   usage: TRACE_USAGE,
-  async run(commandArguments, environment) {
-    const parsed = parseArguments(commandArguments, {
-      flags: [],
-      valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+  async run({ commandArguments, environment }) {
+    const parsed = parseArguments({
+      commandArguments,
+      rules: {
+        flags: [],
+        valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
+      },
     });
     if (typeof parsed === 'string') {
-      return reportUsageError(parsed, environment);
+      return reportUsageError({ message: parsed, environment });
     }
-    const source = resolveGrammarOption(parsed, TRACE_USAGE);
+    const source = resolveGrammarOption({ parsed, usage: TRACE_USAGE });
     if (typeof source === 'string') {
-      return reportUsageError(source, environment);
+      return reportUsageError({ message: source, environment });
     }
-    const grammar = await readGrammar(source, environment);
+    const grammar = await readGrammar({ source, environment });
     const tokens = tokenizeSequence(parsed.positionals.join(' '));
     const title = `${grammar.name}: trace of ${tokens.length === 0 ? '(empty input)' : tokens.join(' ')}`;
-    const unknown = checkAlphabet(tokens, grammar);
+    const unknown = checkAlphabet({ tokens, grammar });
     if (unknown !== null) {
       environment.writeOutput(`${title}\n\nREJECTED · ${unknown.found ?? ''} is not in Σ\n`);
       return EXIT_CODES.rejected;
     }
-    const { accepted, chart, trace } = recognize(grammar, tokens, { trace: true });
+    const { accepted, chart, trace } = recognize({ grammar, tokens, options: { trace: true } });
     const verdict =
-      diagnose(grammar, chart, tokens, accepted) === null
+      diagnose({ grammar, chart, tokens, accepted }) === null
         ? 'ACCEPTED: the input is a sentence of L(G)'
         : 'REJECTED: see `sabueso earley` for where and why';
     environment.writeOutput(
@@ -78,5 +81,5 @@ function formatTrace(trace: readonly TraceEvent[]): string {
     event.isNew ? event.item : `${event.item} (again: one more link)`,
     `← ${event.cause}`,
   ]);
-  return formatTable(['Event', 'Set', 'Operation', 'Item added', 'Cause'], rows);
+  return formatTable({ header: ['Event', 'Set', 'Operation', 'Item added', 'Cause'], rows });
 }
