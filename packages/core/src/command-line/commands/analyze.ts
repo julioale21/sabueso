@@ -4,15 +4,14 @@
  */
 import { analyzeGrammar, type GrammarAnalysis } from '../../analysis/index.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatCycle, formatSet, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const ANALYZE_USAGE = `sabueso analyze ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path>`;
 
@@ -21,23 +20,20 @@ export const analyzeCommand: Command = {
   description: 'Report every analysis of the grammar: nullable, minYield, useless, cycles, LL(1)',
   usage: ANALYZE_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: ANALYZE_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: ANALYZE_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${ANALYZE_USAGE}`, environment });
-    }
+    const { source } = input;
     const grammar = await readGrammar({ source, environment });
     const report = formatReport({ grammar, analysis: analyzeGrammar(grammar) });
     environment.writeOutput(`${grammar.name}: analysis\n\n${report}\n`);

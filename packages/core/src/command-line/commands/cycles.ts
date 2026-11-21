@@ -6,15 +6,14 @@
 import { computeNullable } from '../../analysis/nullable.js';
 import { buildUnitGraph, findCycles, type UnitGraph } from '../../analysis/cycles.js';
 import type { SymbolName } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatCycle, formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const GRAPH_FLAG = '--graph';
 const CYCLES_USAGE = `sabueso cycles ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${GRAPH_FLAG}]`;
@@ -24,23 +23,20 @@ export const cyclesCommand: Command = {
   description: 'Find the cycles A ⇒+ A, which give infinitely many trees (--graph: the unit graph)',
   usage: CYCLES_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [GRAPH_FLAG],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: CYCLES_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: CYCLES_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${CYCLES_USAGE}`, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const sections = [`${grammar.name}: cycles A ⇒+ A`];
     if (parsed.flags.has(GRAPH_FLAG)) {

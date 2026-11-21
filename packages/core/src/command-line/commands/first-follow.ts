@@ -5,15 +5,14 @@
  */
 import { computeFirstFollow } from '../../analysis/first-follow.js';
 import type { Grammar } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatSet, formatSetsRounds, formatTable, type SetsSnapshot } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const STEPS_FLAG = '--steps';
 const FIRST_FOLLOW_USAGE = `sabueso first-follow ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${STEPS_FLAG}]`;
@@ -25,23 +24,20 @@ export const firstFollowCommand: Command = {
   description: 'Compute FIRST and FOLLOW of each nonterminal (--steps: each round)',
   usage: FIRST_FOLLOW_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [STEPS_FLAG],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: FIRST_FOLLOW_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: FIRST_FOLLOW_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${FIRST_FOLLOW_USAGE}`, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const sets = computeFirstFollow(grammar);
     const sections = [`${grammar.name}: FIRST and FOLLOW`];

@@ -6,15 +6,14 @@
 import { lastRound } from '../../analysis/fixed-point.js';
 import { nullableRounds } from '../../analysis/nullable.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatSet, formatSymbolRounds } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const STEPS_FLAG = '--steps';
 const NULLABLE_USAGE = `sabueso nullable ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${STEPS_FLAG}]`;
@@ -24,23 +23,20 @@ export const nullableCommand: Command = {
   description: 'Compute the nullable symbols, A ⇒* ε (--steps: each round of the fixed point)',
   usage: NULLABLE_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [STEPS_FLAG],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: NULLABLE_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: NULLABLE_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${NULLABLE_USAGE}`, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const rounds = nullableRounds(grammar);
     const nullableSymbols = lastRound(rounds);

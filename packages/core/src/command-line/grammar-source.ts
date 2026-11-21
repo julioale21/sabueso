@@ -4,14 +4,14 @@
  */
 import { parseGrammarText } from '../grammar-format/parser.js';
 import type { Grammar } from '../grammar/types.js';
-import type { ParsedArguments } from './arguments.js';
+import { parseArguments, type ArgumentRules, type ParsedArguments } from './arguments.js';
 import {
   builtInGrammarIds,
   builtInGrammarPath,
   findBuiltInGrammar,
   type BuiltInGrammar,
 } from './built-in-grammars.js';
-import type { CommandLineEnvironment } from './types.js';
+import { reportUsageError, type CommandLineEnvironment } from './types.js';
 
 /** A grammar chosen on the command line: by name, or by the path of a file. */
 export type GrammarSource =
@@ -86,6 +86,47 @@ function chooseGrammarSource({
   }
   const grammar = findBuiltInGrammar(name ?? '');
   return grammar === undefined ? unknownGrammarMessage(name ?? '') : { kind: 'built-in', grammar };
+}
+
+/** What a command that reads a grammar gets from its arguments, once they are valid. */
+export interface GrammarCommandArguments {
+  parsed: ParsedArguments;
+  source: GrammarSource;
+}
+
+/**
+ * The start every command with --grammar or --grammar-file repeats: parse the arguments,
+ * choose the grammar and, for the commands that take no story, reject leftover arguments.
+ * Returns the arguments and the source, or the exit code of the usage error it reported.
+ * It does not read the grammar: each command still checks its own options first, so the
+ * order of its error messages stays the same.
+ */
+export function readGrammarCommandArguments({
+  commandArguments,
+  rules,
+  usage,
+  environment,
+  allowsPositionals = true,
+}: {
+  commandArguments: readonly string[];
+  rules: ArgumentRules;
+  usage: string;
+  environment: CommandLineEnvironment;
+  /** False for the commands that take nothing but options. */
+  allowsPositionals?: boolean;
+}): GrammarCommandArguments | number {
+  const parsed = parseArguments({ commandArguments, rules });
+  if (typeof parsed === 'string') {
+    return reportUsageError({ message: parsed, environment });
+  }
+  const source = resolveGrammarOption({ parsed, usage });
+  if (typeof source === 'string') {
+    return reportUsageError({ message: source, environment });
+  }
+  if (!allowsPositionals && parsed.positionals.length > 0) {
+    return reportUsageError({ message: `Usage: ${usage}`, environment });
+  }
+  return { parsed, source };
 }
 
 /** A built-in grammar by name, or the usage error that lists the valid names. */

@@ -12,13 +12,12 @@ import {
 import { productionKey } from '../../grammar/productions.js';
 import { formatProduction } from '../../grammar/build.js';
 import type { Grammar, Production } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatGrammar } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
 import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
 
@@ -66,23 +65,20 @@ export const chomskyNormalFormCommand: Command = {
   description: `Convert a grammar to Chomsky normal form step by step (${STEP_NAMES.join(', ')})`,
   usage: CHOMSKY_NORMAL_FORM_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION, UNTIL_OPTION],
       },
+      usage: CHOMSKY_NORMAL_FORM_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: CHOMSKY_NORMAL_FORM_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${CHOMSKY_NORMAL_FORM_USAGE}`, environment });
-    }
+    const { parsed, source } = input;
     const until = (parsed.values.get(UNTIL_OPTION) ?? STEP_NAMES.at(-1) ?? '').toUpperCase();
     const lastStep = STEP_NAMES.findIndex((name) => name === until);
     if (lastStep === -1) {

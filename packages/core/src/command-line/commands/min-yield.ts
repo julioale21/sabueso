@@ -5,15 +5,14 @@
  */
 import { computeMinYield } from '../../analysis/min-yield.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const MIN_YIELD_USAGE = `sabueso min-yield ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path>`;
 
@@ -22,23 +21,20 @@ export const minYieldCommand: Command = {
   description: 'Compute the length of the shortest string each nonterminal derives',
   usage: MIN_YIELD_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: MIN_YIELD_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: MIN_YIELD_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${MIN_YIELD_USAGE}`, environment });
-    }
+    const { source } = input;
     const grammar = await readGrammar({ source, environment });
     const minYield = computeMinYield(grammar);
     environment.writeOutput(

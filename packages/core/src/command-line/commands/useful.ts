@@ -5,15 +5,14 @@
  */
 import { analyzeUsefulSymbols, type UsefulSymbolsAnalysis } from '../../analysis/useful.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatGrammar, formatSet, formatSymbolRounds } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const STEPS_FLAG = '--steps';
 const USEFUL_USAGE = `sabueso useful ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path> [${STEPS_FLAG}]`;
@@ -24,23 +23,20 @@ export const usefulCommand: Command = {
     'Find the productive, reachable and useless symbols, and whether L(G) = ∅ (--steps: each round)',
   usage: USEFUL_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [STEPS_FLAG],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: USEFUL_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: USEFUL_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${USEFUL_USAGE}`, environment });
-    }
+    const { parsed, source } = input;
     const grammar = await readGrammar({ source, environment });
     const analysis = analyzeUsefulSymbols(grammar);
     const sections = [`${grammar.name}: useful symbols`];

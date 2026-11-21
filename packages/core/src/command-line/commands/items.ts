@@ -5,15 +5,14 @@
  */
 import { dottedRule, dottedRulesOf } from '../../earley/item.js';
 import type { Grammar, Production } from '../../grammar/types.js';
-import { parseArguments } from '../arguments.js';
 import { formatTable } from '../format.js';
 import {
   GRAMMAR_FILE_OPTION,
   GRAMMAR_OPTION,
   readGrammar,
-  resolveGrammarOption,
+  readGrammarCommandArguments,
 } from '../grammar-source.js';
-import { EXIT_CODES, reportUsageError, type Command } from '../types.js';
+import { EXIT_CODES, type Command } from '../types.js';
 
 const ITEMS_USAGE = `sabueso items ${GRAMMAR_OPTION} <grammar> | ${GRAMMAR_FILE_OPTION} <path>`;
 
@@ -22,23 +21,20 @@ export const itemsCommand: Command = {
   description: 'List every dotted rule A → α • β: the finite universe of Earley items',
   usage: ITEMS_USAGE,
   async run({ commandArguments, environment }) {
-    const parsed = parseArguments({
+    const input = readGrammarCommandArguments({
       commandArguments,
       rules: {
         flags: [],
         valueOptions: [GRAMMAR_OPTION, GRAMMAR_FILE_OPTION],
       },
+      usage: ITEMS_USAGE,
+      environment,
+      allowsPositionals: false,
     });
-    if (typeof parsed === 'string') {
-      return reportUsageError({ message: parsed, environment });
+    if (typeof input === 'number') {
+      return input;
     }
-    const source = resolveGrammarOption({ parsed, usage: ITEMS_USAGE });
-    if (typeof source === 'string') {
-      return reportUsageError({ message: source, environment });
-    }
-    if (parsed.positionals.length > 0) {
-      return reportUsageError({ message: `Usage: ${ITEMS_USAGE}`, environment });
-    }
+    const { source } = input;
     const grammar = await readGrammar({ source, environment });
     const rules = dottedRulesOf(grammar);
     environment.writeOutput(
