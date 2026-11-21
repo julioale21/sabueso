@@ -104,7 +104,7 @@ Con `Inicio → CRI HAL | CRI | HAL`, las dos primeras reglas empiezan con CRI: 
 ```ts
 export function buildPredictiveTable(
   grammar: Grammar,
-  sets: FirstFollowSets = computeFirstFollow(grammar),
+  sets: FirstFollowSets = computeFirstFollow({ grammar }),
 ): PredictiveTable {
   const table = new Map<SymbolName, Map<SymbolName, Production[]>>();
   for (const nonterminal of grammar.nonterminals) {
@@ -121,7 +121,7 @@ export function buildPredictiveTable(
 }
 ```
 
-- `sets = computeFirstFollow(grammar)`: si quien llama ya tiene FIRST y FOLLOW (como `analyzeGrammar`), los pasa y no se calculan dos veces.
+- `sets = computeFirstFollow({ grammar })`: si quien llama ya tiene FIRST y FOLLOW (como `analyzeGrammar`), los pasa y no se calculan dos veces.
 - Primero crea una fila vacía por no terminal, así todo no terminal aparece en la tabla aunque no tenga casillas.
 - Para cada producción, `predictionSet` dice en qué columnas va. `row.get(lookahead) ?? []` toma lo que ya había en la casilla (o nada) y le agrega esta producción: **por eso una casilla puede terminar con dos**, y eso es el conflicto.
 - No se detiene en el primer conflicto: llena la tabla entera, así se pueden listar todos.
@@ -130,7 +130,7 @@ export function buildPredictiveTable(
 ### 5.2 `predictionSet(production, sets)`
 
 ```ts
-const firstOfRightSide = firstOfSequence(production.rightSide, sets.first);
+const firstOfRightSide = firstOfSequence({ symbols: production.rightSide, first: sets.first });
 const lookaheads = new Set([...firstOfRightSide].filter((member) => member !== EMPTY_STRING));
 if (firstOfRightSide.has(EMPTY_STRING)) {
   for (const member of sets.follow.get(production.leftSide) ?? []) {
@@ -153,7 +153,7 @@ Recorre las filas y las casillas en orden y junta las que tienen más de una pro
 
 ```ts
 const useful = analyzeUsefulSymbols({ grammar });
-const sets = computeFirstFollow(grammar);
+const sets = computeFirstFollow({ grammar });
 return {
   nullable: computeNullable({ grammar }),
   minYield: computeMinYield({ grammar }),

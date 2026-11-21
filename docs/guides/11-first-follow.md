@@ -138,7 +138,7 @@ return [...sets.values()].reduce((total, members) => total + members.size, 0);
 - ¿Por qué alcanza con el total? Porque los conjuntos solo crecen: `knownAfter` parte de una copia de `knownBefore` y solo se le agrega.
 - Entonces cada conjunto de `knownAfter` tiene al menos lo mismo que en `knownBefore`. Si la suma no cambió, ninguno creció: no hubo cambios.
 
-### 5.2 `firstOfSequence(symbols, first)`
+### 5.2 `firstOfSequence({ symbols, first })`
 
 ```ts
 const result = new Set<SymbolName>();
@@ -162,37 +162,36 @@ return result;
 - Si el ciclo termina sin `return`, todos pudieron ser ε (o la secuencia estaba vacía): se agrega ε.
 - Es exportada porque el paso 12 la usa para FIRST(α) de cada lado derecho.
 
-### 5.3 `computeFirst(grammar, onRound?)`
+### 5.3 `computeFirst({ grammar, onRound })`
 
 ```ts
 return repeatRuleOnSetsUntilNoChange({
-  start: emptySetFor(grammar.nonterminals),
+  start: emptySetFor({ symbols: grammar.nonterminals }),
   newMembersOfRound: (first) =>
     grammar.productions.flatMap((production) =>
-      [...firstOfSequence(production.rightSide, first)].map((member): [SymbolName, SymbolName] => [
-        production.leftSide,
-        member,
-      ]),
+      [...firstOfSequence({ symbols: production.rightSide, first })].map(
+        (member): [SymbolName, SymbolName] => [production.leftSide, member],
+      ),
     ),
   onRound,
 });
 ```
 
-- `start: emptySetFor(grammar.nonterminals)`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
-- `firstOfSequence(production.rightSide, first)`: para A → α, calcula FIRST(α) con los conjuntos de la ronda anterior (regla de la sección 3.1).
+- `start: emptySetFor({ symbols: grammar.nonterminals })`: empieza con un FIRST vacío por no terminal. Los terminales no están en el mapa: `firstOfSequence` los trata como su propio FIRST.
+- `firstOfSequence({ symbols: production.rightSide, first })`: para A → α, calcula FIRST(α) con los conjuntos de la ronda anterior (regla de la sección 3.1).
 - `.map((member) => [production.leftSide, member])`: convierte cada elemento en un par "este elemento entra en FIRST(A)".
 - `flatMap` junta los pares de todas las producciones en una sola lista. Es el formato que espera `repeatRuleOnSetsUntilNoChange`.
 - ε entra en FIRST(A) solo si `firstOfSequence` lo devuelve, es decir, si todo α puede desaparecer.
 
-### 5.4 `computeFollow(grammar, first, onRound?)`
+### 5.4 `computeFollow({ grammar, first, onRound })`
 
 ```ts
-const start = emptySetFor(grammar.nonterminals);
+const start = emptySetFor({ symbols: grammar.nonterminals });
 start.get(grammar.start)?.add(END_OF_INPUT);
 return repeatRuleOnSetsUntilNoChange({
   start,
   newMembersOfRound: (follow) =>
-    grammar.productions.flatMap((production) => followPairs(production, first, follow)),
+    grammar.productions.flatMap((production) => followPairs({ production, first, follow })),
   onRound,
 });
 ```
@@ -202,14 +201,14 @@ return repeatRuleOnSetsUntilNoChange({
 - `first` es fijo: ya se calculó entero antes. Lo que cambia entre rondas es `follow`.
 - `flatMap` junta los pares de todas las producciones, igual que en `computeFirst`.
 
-### 5.5 `followPairs(production, first, follow)`
+### 5.5 `followPairs({ production, first, follow })`
 
 ```ts
 production.rightSide.forEach((symbol, position) => {
   if (!first.has(symbol)) {
     return;
   }
-  const rest = firstOfSequence(production.rightSide.slice(position + 1), first);
+  const rest = firstOfSequence({ symbols: production.rightSide.slice(position + 1), first });
   for (const member of rest) {
     if (member !== EMPTY_STRING) {
       pairs.push([symbol, member]);
@@ -231,9 +230,9 @@ production.rightSide.forEach((symbol, position) => {
 - `rest.has(EMPTY_STRING)`: si β puede desaparecer (o está vacío), Xᵢ puede ser lo último de A. Entonces lo que sigue a A sigue también a Xᵢ: todo FOLLOW(A) entra en FOLLOW(Xᵢ).
 - `follow.get(production.leftSide) ?? []`: lee FOLLOW(A) de la ronda anterior. Por eso hace falta un punto fijo: FOLLOW(A) puede seguir creciendo.
 
-### 5.6 `computeFirstFollow(grammar, onRound?)`
+### 5.6 `computeFirstFollow({ grammar, onRound })`
 
-Corre los dos en orden (FOLLOW necesita FIRST) y le pasa a `onRound` la fase (`'first'` o `'follow'`), para que `--steps` muestre las dos tablas.
+Corre los dos en orden (FOLLOW necesita FIRST) y le pasa a `onRound` un objeto `{ phase, round, setsSoFar }`, donde `phase` es `'first'` o `'follow'`, para que `--steps` muestre las dos tablas. Su tipo es `FirstFollowRoundListener`.
 
 ### 5.7 El comando `first-follow`
 
