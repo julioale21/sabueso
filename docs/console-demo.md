@@ -204,3 +204,12 @@ Paso 22. El comando que usa la API pública: veredicto, diagnóstico, cantidad d
 npm run sabueso -- parse --grammar g0 "CRI SOS PIS INT REV"
 npm run sabueso -- parse --grammar g1 "CTX PER PIS REV"
 ```
+
+## Forma Normal de Chomsky: START, DEL y UNIT
+
+Paso 23. Los tres primeros pasos de la conversión a FNC, con las producciones que agrega y quita cada uno. En G1, START no hace nada (`Relato` no aparece a la derecha), DEL borra las 10 producciones ε y UNIT las 10 unitarias. En `parentheses`, START agrega S0 → S, y queda S0 → ε porque su lenguaje contiene la cadena vacía.
+
+```sh
+npm run sabueso -- chomsky-normal-form --grammar g1 --until UNIT
+npm run sabueso -- chomsky-normal-form --grammar parentheses
+```
