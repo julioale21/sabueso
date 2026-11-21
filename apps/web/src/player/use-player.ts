@@ -21,12 +21,18 @@ export interface Player {
 export function usePlayer({
   last,
   initialInterval = 600,
+  initialStep = 0,
+  autoplay = false,
 }: {
   last: number;
   initialInterval?: number;
+  /** Where it starts: 0, or `last` to show the whole sequence at once. */
+  initialStep?: number;
+  /** Starts playing by itself, once. */
+  autoplay?: boolean;
 }): Player {
-  const [step, setStep] = useState(0);
-  const [wantsToPlay, setWantsToPlay] = useState(false);
+  const [step, setStep] = useState(initialStep);
+  const [wantsToPlay, setWantsToPlay] = useState(autoplay);
   const [interval, setIntervalMs] = useState(initialInterval);
   const [sequenceLength, setSequenceLength] = useState(last);
 

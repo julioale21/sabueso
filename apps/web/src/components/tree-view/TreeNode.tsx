@@ -33,7 +33,11 @@ export function TreeNode({ node, isHighlighted }: { node: LayoutNode; isHighligh
   const width = pillWidth(node.label);
   const styles = pillStyles[node.kind];
   return (
-    <g data-node={node.id} data-highlighted={isHighlighted || undefined}>
+    <g
+      data-node={node.id}
+      data-highlighted={isHighlighted || undefined}
+      className="motion-safe:animate-node-in"
+    >
       <rect
         x={left - width / 2}
         y={top - NODE_HALF_HEIGHT}

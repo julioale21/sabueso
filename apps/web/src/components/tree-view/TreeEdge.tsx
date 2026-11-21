@@ -12,7 +12,7 @@ export function TreeEdge({ from, to }: { from: LayoutNode; to: LayoutNode }) {
       x2={end.left}
       y2={end.top - NODE_HALF_HEIGHT}
       strokeWidth={1.5}
-      className="stroke-slate-300 dark:stroke-slate-600"
+      className="stroke-slate-300 motion-safe:animate-node-in dark:stroke-slate-600"
     />
   );
 }

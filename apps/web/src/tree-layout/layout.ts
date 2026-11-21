@@ -132,3 +132,22 @@ export function layoutTree({
 export function allNodes(node: LayoutNode): LayoutNode[] {
   return [node, ...node.children.flatMap(allNodes)];
 }
+
+/**
+ * The nodes drawn at step k of the leftmost derivation (step 0 is the start symbol alone): the
+ * root, and the children of every node whose expansion number is below k. So the tree grows in
+ * preorder, the order in which the leftmost derivation expands it (SPEC 03, step 18).
+ */
+export function visibleAtStep({ root, step }: { root: LayoutNode; step: number }): Set<string> {
+  const visible = new Set<string>();
+  const visit = (node: LayoutNode) => {
+    visible.add(node.id);
+    const isExpanded =
+      node.kind === 'nonterminal' && node.expansions !== null && node.expansions.first < step;
+    if (isExpanded) {
+      node.children.forEach(visit);
+    }
+  };
+  visit(root);
+  return visible;
+}

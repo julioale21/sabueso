@@ -2,6 +2,7 @@
  * The analysis of the story (SPEC 03, sections 3.1 and 3.4): the verdict; if accepted, the
  * trees to browse with their derivations; if rejected, the diagnosis. Concepts: cards 17 to 21.
  */
+import { useState } from 'react';
 import type { StoryAnalysis } from '../../analysis/service';
 import { DiagnosticPanel } from '../diagnostic-panel/DiagnosticPanel';
 import { TreeAndDerivation } from '../derivation-view/TreeAndDerivation';
@@ -27,6 +28,8 @@ export function ResultPanel({
   onSelectTree: (index: number) => void;
   onToggleCollapseEpsilon: () => void;
 }) {
+  // The tree builds itself only when the result arrives, not after browsing to another tree.
+  const [hasBrowsed, setHasBrowsed] = useState(false);
   if (isAnalyzing) {
     return <MutedText>Analizando…</MutedText>;
   }
@@ -52,7 +55,14 @@ export function ResultPanel({
         treesShown={result.trees.length}
       />
       <div className="flex flex-wrap items-center gap-4">
-        <TreePager index={index} count={result.trees.length} onSelect={onSelectTree} />
+        <TreePager
+          index={index}
+          count={result.trees.length}
+          onSelect={(next) => {
+            setHasBrowsed(true);
+            onSelectTree(next);
+          }}
+        />
         <CheckboxField
           label="Colapsar ε"
           checked={collapseEpsilon}
@@ -66,6 +76,7 @@ export function ResultPanel({
           derivation={derivation}
           alphabet={alphabet}
           collapseEpsilon={collapseEpsilon}
+          autoplay={!hasBrowsed}
         />
       )}
     </div>

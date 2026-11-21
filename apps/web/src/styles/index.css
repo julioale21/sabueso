@@ -40,3 +40,13 @@
     }
   }
 }
+
+/* A node or an edge of the tree that appears while the derivation builds it (SPEC 03, step 18). */
+@theme {
+  --animate-node-in: node-in 250ms ease-out;
+  @keyframes node-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
