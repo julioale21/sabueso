@@ -6,6 +6,7 @@ import { AnalysisServiceProvider } from '../src/analysis/context';
 import { createLocalAnalysisService } from '../src/analysis/local-service';
 import { appReducer, createInitialState } from '../src/state/app-state';
 import { Ll1View } from '../src/views/Ll1View';
+import { noAnalysis } from './no-analysis';
 
 const service = createLocalAnalysisService();
 
@@ -13,7 +14,7 @@ function Harness() {
   const [state, dispatch] = useReducer(appReducer, null, createInitialState);
   return (
     <AnalysisServiceProvider value={service}>
-      <Ll1View state={state} dispatch={dispatch} />
+      <Ll1View state={state} dispatch={dispatch} analysis={noAnalysis} />
     </AnalysisServiceProvider>
   );
 }

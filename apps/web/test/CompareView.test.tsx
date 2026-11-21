@@ -6,13 +6,14 @@ import { createLocalAnalysisService } from '../src/analysis/local-service';
 import { sentenceText, treeCountText } from '../src/domain/bounded';
 import { createInitialState } from '../src/state/app-state';
 import { CompareView } from '../src/views/CompareView';
+import { noAnalysis } from './no-analysis';
 
 const service = createLocalAnalysisService();
 
 function renderView(value = service) {
   render(
     <AnalysisServiceProvider value={value}>
-      <CompareView state={createInitialState()} dispatch={() => undefined} />
+      <CompareView state={createInitialState()} dispatch={() => undefined} analysis={noAnalysis} />
     </AnalysisServiceProvider>,
   );
 }

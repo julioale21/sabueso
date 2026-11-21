@@ -6,6 +6,7 @@ import { createLocalAnalysisService } from '../src/analysis/local-service';
 import { inputLeft, stackText } from '../src/domain/pushdown';
 import { createInitialState } from '../src/state/app-state';
 import { PdaView } from '../src/views/PdaView';
+import { noAnalysis } from './no-analysis';
 
 const service = createLocalAnalysisService();
 
@@ -13,7 +14,7 @@ function renderView({ input, grammarId = 'detective/g1' }: { input: string; gram
   const state = { ...createInitialState(), input, analyzedInput: input, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
-      <PdaView state={state} dispatch={() => undefined} />
+      <PdaView state={state} dispatch={() => undefined} analysis={noAnalysis} />
     </AnalysisServiceProvider>,
   );
 }

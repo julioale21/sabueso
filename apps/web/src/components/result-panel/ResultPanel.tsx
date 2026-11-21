@@ -12,6 +12,7 @@ import { VerdictBanner } from './VerdictBanner';
 
 export function ResultPanel({
   result,
+  isNewResult,
   alphabet,
   selectedTree,
   collapseEpsilon,
@@ -19,6 +20,8 @@ export function ResultPanel({
   onToggleCollapseEpsilon,
 }: {
   result: StoryAnalysis;
+  /** Arrived after the view was mounted: only then the tree builds itself (SPEC 06, W2). */
+  isNewResult: boolean;
   alphabet: ReadonlySet<string>;
   selectedTree: number;
   collapseEpsilon: boolean;
@@ -67,7 +70,7 @@ export function ResultPanel({
           derivation={derivation}
           alphabet={alphabet}
           collapseEpsilon={collapseEpsilon}
-          autoplay={!hasBrowsed}
+          autoplay={isNewResult && !hasBrowsed}
         />
       )}
     </div>

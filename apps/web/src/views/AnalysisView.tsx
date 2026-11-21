@@ -4,7 +4,7 @@
  * 10), and the result: verdict, trees, derivation and diagnosis (cards 17 to 21).
  */
 import { useGrammars } from '../analysis/use-grammars';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ResultPanel } from '../components/result-panel/ResultPanel';
 import { GrammarPanel } from '../components/grammar-panel/GrammarPanel';
 import { SequenceInput } from '../components/sequence-input/SequenceInput';
@@ -12,6 +12,7 @@ import { MutedText } from '../components/ui/MutedText';
 import { Panel } from '../components/ui/Panel';
 import { EXAMPLES } from '../domain/examples';
 import type { ViewProps } from '../state/app-state';
+import { cx } from '../utils/cx';
 
 export function AnalysisView({ state, dispatch, analysis }: ViewProps) {
   const catalog = useGrammars();
@@ -70,11 +71,16 @@ export function AnalysisView({ state, dispatch, analysis }: ViewProps) {
         </Panel>
       </div>
       {result !== null && !isAnalyzing && (
-        // A new key per result replays the slide-in animation.
-        <div key={runCount} ref={resultRef} className="scroll-mt-4 motion-safe:animate-result-in">
+        // A new key per result replays the slide-in animation, only for a new result.
+        <div
+          key={runCount}
+          ref={resultRef}
+          className={cx('scroll-mt-4', isNewResult && 'motion-safe:animate-result-in')}
+        >
           <Panel title="Resultado">
             <ResultPanel
               result={result}
+              isNewResult={isNewResult}
               alphabet={new Set(grammar?.alphabet)}
               selectedTree={state.selectedTree}
               collapseEpsilon={state.collapseEpsilon}

@@ -6,6 +6,7 @@ import { createLocalAnalysisService } from '../src/analysis/local-service';
 import { chartAfter, splitItem } from '../src/domain/earley-events';
 import { createInitialState } from '../src/state/app-state';
 import { EarleyPlayerView } from '../src/views/EarleyPlayerView';
+import { noAnalysis } from './no-analysis';
 
 const service = createLocalAnalysisService();
 
@@ -22,7 +23,7 @@ function renderPlayer({
   const state = { ...createInitialState(), input, analyzedInput, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
-      <EarleyPlayerView state={state} dispatch={() => undefined} />
+      <EarleyPlayerView state={state} dispatch={() => undefined} analysis={noAnalysis} />
     </AnalysisServiceProvider>,
   );
 }

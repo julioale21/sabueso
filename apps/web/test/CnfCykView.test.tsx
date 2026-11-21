@@ -7,6 +7,7 @@ import { createLocalAnalysisService } from '../src/analysis/local-service';
 import { stepChanges } from '../src/domain/normal-form';
 import { createInitialState } from '../src/state/app-state';
 import { CnfCykView } from '../src/views/CnfCykView';
+import { noAnalysis } from './no-analysis';
 
 const service = createLocalAnalysisService();
 
@@ -14,7 +15,7 @@ function renderView({ input, grammarId = 'detective/g1' }: { input: string; gram
   const state = { ...createInitialState(), input, analyzedInput: input, grammarId };
   render(
     <AnalysisServiceProvider value={service}>
-      <CnfCykView state={state} dispatch={() => undefined} />
+      <CnfCykView state={state} dispatch={() => undefined} analysis={noAnalysis} />
     </AnalysisServiceProvider>,
   );
 }

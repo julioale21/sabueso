@@ -1,4 +1,4 @@
-// The Analysis view end to end, with the real core (SPEC 03, step 9).
+// The Analysis view end to end, with the real core (SPEC 03, step 9; SPEC 06, W2).
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { App } from '../src/App';
@@ -124,6 +124,24 @@ describe('App', () => {
     expect(earley).toBeEnabled();
     fireEvent.click(earley);
     expect(await screen.findByText('CRI PIS REV')).toBeInTheDocument();
+  });
+
+  it('coming back to Análisis shows the last result at once, without analyzing again', async () => {
+    await analyze({ input: 'CRI SOS PIS INT REV', grammar: 'detective/g1' });
+    fireEvent.click(screen.getByRole('tab', { name: 'LL(1)' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Análisis' }));
+    // Right away: if the page analyzed again, the button would say "Analizando…" and the
+    // result would be hidden for a moment.
+    expect(screen.getByRole('button', { name: 'Analizar' })).toBeEnabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Aceptado · 1 árbol');
+    expect(screen.getByText('Derivación más a la izquierda (18 pasos)')).toBeInTheDocument();
+  });
+
+  it('pressing Analizar again with the same story analyzes again', async () => {
+    await analyze({ input: 'CRI PIS REV', grammar: 'detective/g1' });
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar' }));
+    expect(screen.getByRole('button', { name: /Analizando/ })).toBeDisabled();
+    expect(await screen.findByRole('status')).toHaveTextContent('Aceptado');
   });
 
   it('changing the grammar redoes the last analysis', async () => {

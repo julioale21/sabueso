@@ -12,6 +12,7 @@ describe('createInitialState', () => {
       analyzedInput: null,
       selectedTree: 0,
       collapseEpsilon: false,
+      analysisRequest: 0,
     });
   });
 });
@@ -50,6 +51,13 @@ describe('appReducer', () => {
   it('select-tree picks a tree, never below 0', () => {
     expect(appReducer(state, { type: 'select-tree', index: 1 }).selectedTree).toBe(1);
     expect(appReducer(state, { type: 'select-tree', index: -1 }).selectedTree).toBe(0);
+  });
+
+  it('analyze counts the request, so the same story can be analyzed again', () => {
+    const once = appReducer({ ...state, input: 'CRI PIS REV' }, { type: 'analyze' });
+    const twice = appReducer(once, { type: 'analyze' });
+    expect([once.analysisRequest, twice.analysisRequest]).toEqual([1, 2]);
+    expect(twice.analyzedInput).toBe('CRI PIS REV');
   });
 
   it('toggle-collapse-epsilon flips the option', () => {
