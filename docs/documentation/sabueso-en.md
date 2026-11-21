@@ -250,6 +250,7 @@ The classic algorithm rejects `x` with `epsilon-trap` (`S → A A x`, `A → ε`
 ## 7.5 Diagnosis and trace
 
 - `diagnose({ grammar, chart, tokens, accepted })` reads the chart and returns a `ParseError`: `unexpected-token` if some set ended up empty (nothing could read that tag), or `unexpected-end` if the story ended too early. `expected` is the terminals that follow the dot in the last live set. For example, G0 rejects `CRI REV` at event 2 and expects, among others, `PIS` or `SOS`.
+- `openItemsAt({ chart, error })` (SPEC 05) takes the set of the error and returns the items left open: the structures already started (something before the dot) and the predicted rules that would have read an expected tag. With I1 in G1: `Planteo → Marco • Hecho, 0`. `parse()` returns it in `openItems`, and the console and the web show it: it explains the rejection when there is no tree.
 - With the `trace` option, the recognizer records every added item, in order, with its operation and its cause (`TraceEvent`). The cause is passed as data (`TraceCause`) and turned into text with `describeCause` only when there is a trace: without the option, it costs nothing.
 
 **Detail:** guides 13 to 17 · cards 11 to 17.

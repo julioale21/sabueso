@@ -22,14 +22,16 @@ G1, `CTX PER PIS REV` (falta el crimen):
 
 Resultado: error en la posición 2 (evento 3), se encontró PIS, se esperaba CRI o HAL. En palabras del género: el relato tiene marco, pero no tiene crimen.
 
+**Los ítems abiertos (SPEC 05):** un relato rechazado no tiene árbol, pero el conjunto del error dice qué estructuras quedaron a medias. `openItemsAt` separa dos grupos: los ítems con algo antes del punto (estructuras empezadas que no pudieron seguir) y los ítems predichos con el punto al principio que habrían leído una etiqueta esperada (de ahí sale "se esperaba: …"). Con I1 en G1, en S2: `Planteo → Marco • Hecho, 0` quedó esperando el hecho, y esperaban `Hecho → • CRI HallazgoOpc, 2` y `Hecho → • HAL, 2`.
+
 ## 3. Dónde está en el código
 
-| Qué                | Dónde                                                                                    |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| Archivo            | `packages/core/src/earley/diagnostics.ts`                                                |
-| Funciones          | `diagnose({ grammar, chart, tokens, accepted })` y `expectedTerminals({ grammar, set })` |
-| Tipo               | `ParseError { kind, position, found, expected }`                                         |
-| Comando de consola | `npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"`                               |
+| Qué                | Dónde                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Archivo            | `packages/core/src/earley/diagnostics.ts`                                                                                 |
+| Funciones          | `diagnose({ grammar, chart, tokens, accepted })`, `expectedTerminals({ grammar, set })` y `openItemsAt({ chart, error })` |
+| Tipos              | `ParseError { kind, position, found, expected }` y `OpenItems { set, started, waiting }`                                  |
+| Comando de consola | `npm run sabueso -- earley --grammar g1 "CTX PER PIS REV"` y `parse` (con los ítems abiertos)                             |
 
 ## 4. Qué prueba lo verifica
 
@@ -37,6 +39,7 @@ Resultado: error en la posición 2 (evento 3), se encontró PIS, se esperaba CRI
 | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | `packages/core/test/earley/diagnostics.test.ts`  | I1 a I7 con G0 y G1, y P2 con `parentheses`: posición, `found` y `expected` exactos |
 | `packages/core/test/command-line/earley.test.ts` | los mensajes: evento, fin de entrada, entrada incompleta y símbolo fuera de Σ       |
+| `packages/core/test/earley/open-items.test.ts`   | los ítems abiertos de I1, del relato vacío y de un símbolo fuera de Σ               |
 
 ## 5. Referencia bibliográfica
 

@@ -250,6 +250,7 @@ El algoritmo clásico rechaza `x` con `epsilon-trap` (`S → A A x`, `A → ε`)
 ## 7.5 Diagnóstico y traza
 
 - `diagnose({ grammar, chart, tokens, accepted })` lee el chart y devuelve un `ParseError`: `unexpected-token` si algún conjunto quedó vacío (nada pudo leer esa etiqueta), o `unexpected-end` si el relato terminó antes de tiempo. `expected` son los terminales que siguen al punto en el último conjunto vivo. Por ejemplo, G0 rechaza `CRI REV` en el evento 2 y espera, entre otras, `PIS` o `SOS`.
+- `openItemsAt({ chart, error })` (SPEC 05) toma el conjunto del error y devuelve los ítems que quedaron abiertos: las estructuras empezadas (algo antes del punto) y las reglas predichas que habrían leído una etiqueta esperada. Con I1 en G1: `Planteo → Marco • Hecho, 0`. `parse()` lo devuelve en `openItems`, y la consola y la web lo muestran: explica el rechazo cuando no hay árbol.
 - Con la opción `trace`, el reconocedor registra cada ítem agregado, en orden, con su operación y su causa (`TraceEvent`). La causa se pasa como dato (`TraceCause`) y se convierte en texto con `describeCause` solo cuando hay traza: sin la opción, no cuesta nada.
 
 **Detalle:** guías 13 a 17 · fichas 11 a 17.

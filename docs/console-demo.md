@@ -118,7 +118,7 @@ npm run sabueso -- items --grammar parentheses
 
 ## Earley: el reconocedor
 
-Paso 14. Earley decide si la entrada pertenece a L(G): `ACCEPTED` con código 0 o `REJECTED` con código 1. Con `--chart`, los conjuntos S0 … Sn con cada ítem y cómo llegó (P, S o C).
+Paso 14. Earley decide si la entrada pertenece a L(G): `ACCEPTED` con código 0 o `REJECTED` con código 1. Con `parse`, un rechazo muestra además los ítems de Earley que quedaron abiertos donde falló el relato (SPEC 05). Con `--chart`, los conjuntos S0 … Sn con cada ítem y cómo llegó (P, S o C).
 
 ```sh
 npm run sabueso -- earley --grammar arithmetic "id + id * id"

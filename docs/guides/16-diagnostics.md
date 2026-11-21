@@ -135,6 +135,29 @@ return [...terminals].sort();
 - Un `Set` evita repetidos (varios ítems pueden esperar el mismo evento) y `sort()` ordena alfabéticamente.
 - `set?.items ?? []`: si el conjunto no existe, no hay esperados.
 
+### 5.3b `openItemsAt({ chart, error })` (agregado en el SPEC 05)
+
+```ts
+const set = chart[error.position];
+if (set === undefined) {
+  return null;
+}
+const expected = new Set(error.expected);
+const open = set.items.filter((item) => !isComplete(item));
+return {
+  set: error.position,
+  started: open.filter((item) => item.dot > 0),
+  waiting: open.filter((item) => item.dot === 0 && expected.has(nextSymbol(item) ?? '')),
+};
+```
+
+- `chart[error.position]` es S_k, el conjunto donde falló el relato: tiene todos los ítems que llegaron hasta ahí.
+- Si es `undefined`, Earley no corrió (una etiqueta fuera de Σ lo corta antes) y no hay ítems: `null`.
+- `open` son los ítems **incompletos**: los que todavía esperaban algo.
+- `started` son los que tienen algo antes del punto: una parte del relato que **había empezado** y no pudo seguir. Con I1: `Planteo → Marco • Hecho, 0`.
+- `waiting` son los predichos (punto al principio) cuyo próximo símbolo es una etiqueta esperada: de ellos sale "se esperaba: CRI, HAL". Con I1: `Hecho → • CRI HallazgoOpc, 2` y `Hecho → • HAL, 2`.
+- `parse()` lo agrega a todo resultado rechazado como `openItems`; el comando `parse` y la web lo muestran con `label()`.
+
 ### 5.4 `formatRejection(error)` (en el comando)
 
 - `unknown-symbol`: `REJECTED · position 1 (event 2) · XYZ is not in Σ`.
