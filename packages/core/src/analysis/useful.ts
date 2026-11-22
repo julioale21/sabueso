@@ -1,6 +1,6 @@
 /**
  * Concept: productive, reachable and useless symbols, and the emptiness of L(G).
- * Card: docs/concepts/08-useless-symbols-and-emptiness.md
+ * Guide: docs/guides/09-simbolos-inutiles-y-vacuidad.md
  */
 import { buildGrammar } from '../grammar/build.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

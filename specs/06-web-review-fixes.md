@@ -92,7 +92,7 @@ Cada paso deja la web funcionando: pasan `npx tsc -p apps/web --noEmit`, `npx es
 
 0. **Punto de partida.**
    - En `ui_fixes`, anotar la cantidad de pruebas de la web y del núcleo.
-   - Recorrer en el navegador A1, I1, el relato vacío y las seis vistas, y anotar los valores clave (los mismos de `docs/web-manual-check.md`), para compararlos al final.
+   - Recorrer en el navegador A1, I1, el relato vacío y las seis vistas, y anotar los valores clave (los mismos de `docs/verificacion-manual-web.md`), para compararlos al final.
 1. **Código muerto (W3).**
    - Borrar `components/PendingView.tsx`.
    - Corregir los comentarios de `views/view-tabs.tsx`, `views/AnalysisView.tsx` ("the result arrives in step 9") y `components/cnf-cyk/TreeComparison.tsx` ("on by default").

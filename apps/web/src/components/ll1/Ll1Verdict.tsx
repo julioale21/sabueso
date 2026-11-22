@@ -1,4 +1,4 @@
-/** LL(1) ✓ ⇒ no ambigua, or how many conflicts: the conclusion of the table (card 06). */
+/** LL(1) ✓ ⇒ no ambigua, or how many conflicts: the conclusion of the table (guide 12). */
 import { Badge } from '../ui/Badge';
 
 export function Ll1Verdict({ conflicts }: { conflicts: number }) {

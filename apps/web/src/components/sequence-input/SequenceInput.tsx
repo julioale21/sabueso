@@ -2,7 +2,7 @@
  * The story as a sequence of tags (SPEC 03, section 3.7): a free text field with the unknown
  * words marked while typing. The palette of valid tags and the examples are folded, so the
  * first view shows only the story ("Foco en el relato"). Concept: the alphabet Σ and a string
- * over it (card 01).
+ * over it (guide 06).
  */
 import type { TagInfo } from '@sabueso/core';
 import { useState } from 'react';

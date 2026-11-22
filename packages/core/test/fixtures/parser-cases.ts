@@ -1,5 +1,5 @@
 // Texts for the .grammar parser suite. Each case states what it demonstrates; the same cases
-// are documented in docs/guides/04-predictive-recursive-descent-parser.md, "Suite de casos".
+// are documented in docs/guides/04-parser-ll1.md, "Suite de casos".
 
 export interface ValidParserCase {
   name: string;

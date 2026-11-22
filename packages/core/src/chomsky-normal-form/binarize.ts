@@ -1,7 +1,7 @@
 /**
  * Concept: BIN, the last step of the Chomsky normal form: each right side of length k ≥ 3
  * is split into a chain of k − 1 productions of length 2, with new nonterminals X1, X2, …
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/24-fnc-useless-term-bin.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
 import { rewriteGrammar, type NewProduction } from './rewrite.js';

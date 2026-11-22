@@ -2,7 +2,7 @@
  * Concept: differential testing: three recognizers built in different ways (Earley on G, CYK
  * on the Chomsky normal form of G, the pushdown automaton of G) must accept exactly the same
  * strings. Any disagreement means a bug in one of them.
- * Card: docs/concepts/23-cocke-younger-kasami.md
+ * Guide: docs/guides/28-pruebas-diferenciales-y-rendimiento.md
  */
 import { toChomskyNormalForm } from '../chomsky-normal-form/index.js';
 import { recognizeCockeYoungerKasami } from '../cocke-younger-kasami/recognizer.js';

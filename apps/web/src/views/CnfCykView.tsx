@@ -1,7 +1,7 @@
 /**
  * FNC y CYK (SPEC 03, section 3.4): the six steps that bring the grammar to Chomsky normal form,
  * the triangular CYK table of the analyzed story, and the CYK tree next to the Earley tree.
- * Concepts: Chomsky normal form and CYK (cards 22 and 23). Everything comes from the core.
+ * Concepts: Chomsky normal form and CYK (guides 23 and 25). Everything comes from the core.
  */
 import { useAnalysisService } from '../analysis/context';
 import { useServiceResult } from '../analysis/use-service-result';

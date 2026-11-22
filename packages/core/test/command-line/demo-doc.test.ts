@@ -1,4 +1,4 @@
-// Keeps docs/console-demo.md honest: every `npm run sabueso -- …` line in its code blocks
+// Keeps docs/demo-consola.md honest: every `npm run sabueso -- …` line in its code blocks
 // must be a valid invocation (exit code other than 2).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -6,7 +6,7 @@ import { runCommandLine } from '../../src/command-line/program.js';
 import { EXIT_CODES } from '../../src/command-line/types.js';
 import { createMemoryEnvironment } from './memory-environment.js';
 
-const DEMO_PATH = new URL('../../../../docs/console-demo.md', import.meta.url);
+const DEMO_PATH = new URL('../../../../docs/demo-consola.md', import.meta.url);
 const COMMAND_PREFIX = 'npm run sabueso -- ';
 
 /** Returns the `npm run sabueso -- …` lines found inside fenced code blocks. */
@@ -34,7 +34,7 @@ function parseArguments(command: string): string[] {
 
 const commands = demoCommands(readFileSync(DEMO_PATH, 'utf8'));
 
-describe('docs/console-demo.md', () => {
+describe('docs/demo-consola.md', () => {
   it('contains at least one sabueso command', () => {
     expect(commands.length).toBeGreaterThan(0);
   });

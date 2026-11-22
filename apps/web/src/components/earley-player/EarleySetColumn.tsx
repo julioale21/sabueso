@@ -1,4 +1,4 @@
-/** One Earley set Sj: its items, in the order they were added (card 12). */
+/** One Earley set Sj: its items, in the order they were added (guide 13). */
 import type { ChartEntry } from '../../domain/earley-events';
 import { cx } from '../../utils/cx';
 import { ChartItem } from './ChartItem';

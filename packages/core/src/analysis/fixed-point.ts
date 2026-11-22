@@ -1,7 +1,7 @@
 /**
  * Concept: the least fixed point, the scheme behind most grammar analyses (nullable,
  * productive, reachable…): start from a set and apply a rule until nothing changes.
- * Card: docs/concepts/07-nullable-symbols.md
+ * Guide: docs/guides/07-simbolos-anulables.md
  */
 import type { SymbolName } from '../grammar/types.js';
 

@@ -1,6 +1,6 @@
 /**
  * The CYK tree (over the grammar in FNC) next to the Earley tree (over the grammar as written),
- * and the nonterminals only one of them has (card 23): the FNC tree loses the categories of
+ * and the nonterminals only one of them has (guide 25): the FNC tree loses the categories of
  * the genre (unit and ε steps disappear) and gains the chain symbols of BIN.
  */
 import type { ParseTree } from '@sabueso/core';

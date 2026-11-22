@@ -1,5 +1,5 @@
 /**
- * The six steps of the Chomsky normal form as the view shows them (card 22): what each step
+ * The six steps of the Chomsky normal form as the view shows them (guide 23): what each step
  * does, and which productions it added and removed, compared as text.
  */
 import type { Grammar, ParseTree } from '@sabueso/core';

@@ -5,7 +5,7 @@ Una lista para revisar la web a mano, vista por vista. Cada caso dice qué hacer
 - **En línea:** [julioale21.github.io/sabueso](https://julioale21.github.io/sabueso/).
 - **En local:** `npm run dev -w @sabueso/web`.
 
-Los valores salen de las pruebas de `apps/web/test` y de los comandos de la [demo por consola](console-demo.md). Si algo no coincide, compara con su comando.
+Los valores salen de las pruebas de `apps/web/test` y de los comandos de la [demo por consola](demo-consola.md). Si algo no coincide, compara con su comando.
 
 Revisa la lista en **Chrome** y en **Firefox**, en sus versiones actuales:
 

@@ -1,7 +1,7 @@
 /**
  * Concept: USELESS, the step of the Chomsky normal form that removes the useless symbols:
  * the nonterminals that derive no string of terminals or that S never reaches.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/24-fnc-useless-term-bin.md
  */
 import { analyzeUsefulSymbols } from '../analysis/useful.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

@@ -1,6 +1,6 @@
 /**
  * Concept: a genre is a language L(G) over its own alphabet of narrative tags.
- * Card: docs/concepts/01-alphabet-and-language.md
+ * Guide: docs/guides/05-gramaticas-del-proyecto.md
  */
 
 /** One tag of a genre: a terminal of its grammar, with its narrative meaning. */

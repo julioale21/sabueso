@@ -1,7 +1,7 @@
 /**
  * Concept: the lexer of the .grammar format as an explicit DFA table (states q0…q12).
- * Card: docs/concepts/03-finite-automaton-lexer.md
- * Guide (state graph and δ table): docs/guides/03-finite-automaton-lexer.md
+ * Guide: docs/guides/03-lexer-afd.md
+ * Guide (state graph and δ table): docs/guides/03-lexer-afd.md
  */
 import {
   AutomatonStoppedError,

@@ -1,5 +1,5 @@
 /**
- * How the pushdown automaton is written on screen (card 24): its transitions, the stack and
+ * How the pushdown automaton is written on screen (guide 26): its transitions, the stack and
  * the input still to read. The automaton and its run come from the core.
  */
 import type { PushdownAutomaton, PushdownTransition, SymbolName } from '@sabueso/core';

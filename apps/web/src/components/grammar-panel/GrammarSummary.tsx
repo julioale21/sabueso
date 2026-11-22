@@ -1,7 +1,7 @@
 /**
  * The analysis of the active grammar at a glance (SPEC 03, section 3.5): whether it is LL(1)
  * (so unambiguous), and how many nullable and useless symbols and cycles it has. Concepts:
- * cards 06 to 10.
+ * guides 07 to 12.
  */
 import type { GrammarAnalysis } from '@sabueso/core';
 import { Badge } from '../ui/Badge';

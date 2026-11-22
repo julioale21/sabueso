@@ -1,6 +1,6 @@
 /**
  * Concept: cycles A ⇒+ A, the grammars with infinitely many trees for some string.
- * Card: docs/concepts/09-cycles.md
+ * Guide: docs/guides/10-ciclos.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import { computeNullable } from './nullable.js';

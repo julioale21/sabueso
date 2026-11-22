@@ -1,7 +1,7 @@
 /**
  * Concept: TERM, the step of the Chomsky normal form that leaves terminals only in A → a:
  * each terminal a in a right side of length 2 or more is replaced by a new T_a → a.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/24-fnc-useless-term-bin.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
 import { freshSymbol, rewriteGrammar } from './rewrite.js';

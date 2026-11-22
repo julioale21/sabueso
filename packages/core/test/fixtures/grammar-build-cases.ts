@@ -1,5 +1,5 @@
 // Grammars for the buildGrammar suite. Each case states what it demonstrates; the same
-// cases are documented in docs/guides/02-grammar-construction.md, section "Suite de casos".
+// cases are documented in docs/guides/02-gramatica-libre-de-contexto.md, section "Suite de casos".
 import type { GrammarRule, RightSideSymbol } from '../../src/grammar/build.js';
 
 /** A literal as written in a .grammar file: 'x'. */

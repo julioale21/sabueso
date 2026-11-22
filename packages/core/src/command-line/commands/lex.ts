@@ -1,6 +1,6 @@
 /**
  * Concept: the DFA lexer shown on a real grammar file: its tokens and, with --states, δ step by step.
- * Card: docs/concepts/03-finite-automaton-lexer.md
+ * Guide: docs/guides/03-lexer-afd.md
  */
 import {
   lexerEvents,

@@ -1,4 +1,4 @@
-/** LL(1) ✓ (so unambiguous) or LL(1) ✗ with its conflicts: the grammar at a glance (card 06). */
+/** LL(1) ✓ (so unambiguous) or LL(1) ✗ with its conflicts: the grammar at a glance (guide 12). */
 import { Badge } from '../ui/Badge';
 
 export function Ll1Badge({ conflicts }: { conflicts: number }) {

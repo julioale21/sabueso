@@ -1,7 +1,7 @@
 /**
  * Why a story was rejected (SPEC 03, section 3.1): the sequence with the error marked, and the
  * position and the expected tags, as the core diagnoses them, and the Earley items left open
- * there. Concept: acceptance and errors (card 17).
+ * there. Concept: acceptance and errors (guide 16).
  */
 import type { OpenItems as OpenItemsData, ParseError } from '@sabueso/core';
 import { diagnosticMessage } from '../../domain/diagnostic-message';

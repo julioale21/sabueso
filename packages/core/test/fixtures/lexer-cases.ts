@@ -1,5 +1,5 @@
 // Texts for the .grammar lexer suite. Each case states what it demonstrates; the same cases
-// are documented in docs/guides/03-finite-automaton-lexer.md, section "Suite de casos".
+// are documented in docs/guides/03-lexer-afd.md, section "Suite de casos".
 
 export interface ValidLexerCase {
   name: string;

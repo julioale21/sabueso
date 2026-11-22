@@ -1,7 +1,7 @@
 /**
  * Concept: the grammar G' that each step of the Chomsky normal form builds from G. Σ never
  * changes; N only grows (S0, and later T_a and Xi), and P is rewritten.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/23-fnc-start-del-unit.md
  */
 import { groupByLeftSide, productionKey } from '../grammar/productions.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

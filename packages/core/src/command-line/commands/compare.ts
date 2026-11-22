@@ -1,7 +1,7 @@
 /**
  * Concept: two languages compared up to a length k: the sentences only one grammar
  * generates. A difference proves L(G) ≠ L(H); none up to k proves nothing.
- * Card: docs/concepts/25-bounded-searches.md
+ * Guide: docs/guides/27-busquedas-acotadas.md
  */
 import { compareLanguages } from '../../bounded/compare.js';
 import type { SymbolName } from '../../grammar/types.js';

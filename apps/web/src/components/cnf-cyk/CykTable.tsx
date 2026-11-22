@@ -1,5 +1,5 @@
 /**
- * The triangular CYK table (card 23): row l has the cells T[0][l] … T[n−l][l], under the tag
+ * The triangular CYK table (guide 25): row l has the cells T[0][l] … T[n−l][l], under the tag
  * where each substring starts. The top cell, T[0][n], decides: it must contain the start symbol.
  */
 import { CykCell, type CykCellState } from './CykCell';

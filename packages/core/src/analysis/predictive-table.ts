@@ -1,7 +1,7 @@
 /**
  * Concept: the LL(1) predictive table M[A, a] and its conflicts. A grammar is LL(1) when no
  * cell has two productions, and every LL(1) grammar is unambiguous.
- * Card: docs/concepts/06-predictive-table-and-unambiguity.md
+ * Guide: docs/guides/12-tabla-ll1-y-no-ambiguedad.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import {

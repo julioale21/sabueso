@@ -1,7 +1,7 @@
 /**
  * Concept: a story as a string w ∈ Σ*: its tokens with their position, and the check that
  * every one of them is in Σ of the grammar (the unknown-symbol error of case I6).
- * Card: docs/concepts/01-alphabet-and-language.md
+ * Guide: docs/guides/06-relato-como-cadena.md
  */
 import type { ParseError } from '../../earley/diagnostics.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';

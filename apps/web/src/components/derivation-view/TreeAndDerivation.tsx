@@ -1,5 +1,5 @@
 /**
- * The tree, full width, and its leftmost derivation below, in sync (card 20). A player walks the
+ * The tree, full width, and its leftmost derivation below, in sync (guide 21). A player walks the
  * derivation: at step k the tree shows the root and the children of expansions 0 … k − 1, so it
  * grows in preorder, and the node of expansion k − 1 is highlighted (SPEC 03, step 18). A short
  * derivation builds itself once when it arrives; selecting a step moves the same player.

@@ -1,7 +1,7 @@
 /**
  * The main view: the story, and its analysis (SPEC 03, sections 3.1 and 3.4). Concepts: the
- * alphabet and a string over it (card 01), the grammar and its analysis (cards 02 and 06 to
- * 10), and the result: verdict, trees, derivation and diagnosis (cards 17 to 21).
+ * alphabet and a string over it (guide 06), the grammar and its analysis (guides 02 and 07 to
+ * 12), and the result: verdict, trees, derivation and diagnosis (guides 16 and 19 to 21).
  */
 import { useGrammars } from '../analysis/use-grammars';
 import { useEffect, useRef, useState } from 'react';

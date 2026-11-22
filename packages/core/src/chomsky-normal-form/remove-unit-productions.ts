@@ -1,7 +1,7 @@
 /**
  * Concept: UNIT, the step of the Chomsky normal form that removes the unit productions
  * A → B, using the unit pairs.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/23-fnc-start-del-unit.md
  */
 import { lastRound, repeatRuleUntilNoChange } from '../analysis/fixed-point.js';
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';

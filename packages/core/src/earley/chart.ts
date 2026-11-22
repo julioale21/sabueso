@@ -2,7 +2,7 @@
  * Concept: the Earley sets S0 … Sn (the chart), one per position between tokens. Each set
  * is an append-only list with an index by key; walking it with a growing index is the
  * work queue of the algorithm.
- * Card: docs/concepts/12-earley-sets.md
+ * Guide: docs/guides/13-earley-items-y-conjuntos.md
  */
 import type { Production } from '../grammar/types.js';
 import { createItem, itemKey, type EarleyItem, type Link } from './item.js';

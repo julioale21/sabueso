@@ -183,16 +183,18 @@ Cada tanda deja la documentación coherente: pasan `npm run format:check`, `npm 
 - **No:** dejar fichas y guías separadas, con una nota que aclare la diferencia. Seguían la doble numeración y las secciones repetidas.
 - **Sí:** nombres de archivo en español; la carpeta sigue siendo `docs/guides/` (2026-11-21). Los nombres ayudan a quien lee; la ruta de la carpeta casi no se ve y se evita otro cambio grande.
 - **Sí:** la estructura corta: Teoría, Por qué así, El código, Consola y pruebas, Referencias (2026-11-21). Una sola versión de cada cosa.
+- **Sí:** la teoría, mínima y sencilla (2026-11-21, pedido durante la implementación): solo los conceptos simples e importantes, con la definición corta y un ejemplo. Se dejan afuera los teoremas secundarios, las demostraciones largas, los casos borde y los ejemplos extra.
 - **No:** agregar la teoría al principio sin recortar el resto. Las guías quedaban casi tan largas como hoy.
 - **Sí:** las preguntas de la defensa pasan al archivo privado (2026-11-21). Las guías públicas quedan con teoría y código; las preguntas son material de preparación.
 - **Sí:** el README explica el desarrollo guiado por specs (2026-11-21, pedido al revisar este spec). Es la forma en que se hizo todo el proyecto, y quien lee el repositorio tiene que entender qué son los archivos de `specs/` y cómo se usaron.
 - **Sí:** un spec y una rama, por tandas (2026-11-21). Son más de 100 archivos con referencias; cada tanda se verifica con el chequeo de enlaces.
+- **Cierre (2026-11-21):** 30 guías (02 a 31) más `_plantilla.md`; de 99 453 a 50 915 palabras. La guía 22 no tiene Referencias (no tiene concepto nuevo), y las guías 30 y 31 no tienen código. Las menciones a fichas que quedan están en specs ya cerrados (01, 02, 05) o en el SPEC 04, que todavía es un borrador y se ajusta cuando se trabaje.
 
 ---
 
 ## 7. Riesgos identificados
 
-- **Perder teoría al recortar.** Una definición o un ejemplo de una ficha podría quedar afuera. Mitigación: en cada tanda, la teoría de la ficha se copia primero y recién después se recorta lo que repite; se lee una guía por tanda.
+- **Recortar de más.** Con la teoría mínima, un concepto importante podría quedar afuera. Mitigación: se lee una guía por tanda para controlar que estén los conceptos centrales de cada tema.
 - **Enlaces rotos.** Más de 100 archivos citan rutas de `docs/`. Mitigación: el chequeo de enlaces del paso 0, corrido después de cada tanda, incluido el material privado.
 - **La prueba de la demo.** `demo-doc.test.ts` lee `docs/console-demo.md`; si la ruta no se actualiza en el mismo paso, falla. Mitigación: se cambia en el paso 1, junto con el renombre.
 - **URLs públicas que cambian.** Los enlaces de GitHub a guías y fichas dejan de andar. Mitigación: aceptado; el README y el documento oficial apuntan a las rutas nuevas.

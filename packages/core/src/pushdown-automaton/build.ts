@@ -2,7 +2,7 @@
  * Concept: from a context-free grammar to a pushdown automaton that accepts the same
  * language by empty stack, with a single state: expand a nonterminal on top of the stack,
  * or match a terminal on top with the next token.
- * Card: docs/concepts/24-pushdown-automaton.md
+ * Guide: docs/guides/26-automata-de-pila.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 
@@ -30,7 +30,7 @@ export type PushdownTransition =
   | { kind: 'expand'; top: SymbolName; push: SymbolName[]; production: Production }
   | { kind: 'match'; terminal: SymbolName };
 
-/** The pushdown automaton of the grammar (card 24): N(P) = L(G). */
+/** The pushdown automaton of the grammar (guide 26): N(P) = L(G). */
 export function buildPushdownAutomaton(grammar: Grammar): PushdownAutomaton {
   // The stack is the part of a leftmost sentential form still to be derived: expanding
   // the top is a step of a leftmost derivation, and matching consumes the terminals that

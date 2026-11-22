@@ -1,4 +1,4 @@
-/** How the leftmost derivation is read on screen (card 20). */
+/** How the leftmost derivation is read on screen (guide 21). */
 
 /** The position of the leftmost nonterminal of a form: the first symbol outside Σ, or null. */
 export function leftmostNonterminal({

@@ -1,7 +1,7 @@
 /**
  * FIRST, FOLLOW and the LL(1) predictive table of the active grammar (SPEC 03, section 3.4):
  * why G1 is unambiguous and where G0 fails. A property of the grammar, not of the story.
- * Concepts: cards 05 and 06.
+ * Concepts: guides 11 and 12.
  */
 import { useGrammars } from '../analysis/use-grammars';
 import { ConflictList } from '../components/ll1/ConflictList';

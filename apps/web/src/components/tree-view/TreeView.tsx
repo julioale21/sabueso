@@ -1,6 +1,6 @@
 /**
  * The parse tree drawn in SVG, like on the blackboard (SPEC 03, section 3.3). The positions
- * come from layoutTree; the tree itself comes from the core. Concept: parse trees (card 18).
+ * come from layoutTree; the tree itself comes from the core. Concept: parse trees (guide 19).
  */
 import type { ParseTree } from '@sabueso/core';
 import { canvasSize } from '../../tree-layout/geometry';

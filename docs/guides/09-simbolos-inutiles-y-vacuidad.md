@@ -1,69 +1,38 @@
-# Guía de estudio: 09 — Símbolos productivos, alcanzables, inútiles y vacuidad
+# 09 — Símbolos inútiles y vacuidad
 
-> **Paso 9 del SPEC 02.** Archivos: `packages/core/src/analysis/useful.ts` y `packages/core/src/command-line/commands/useful.ts`.
-> Ficha teórica relacionada: [`docs/concepts/08-useless-symbols-and-emptiness.md`](../concepts/08-useless-symbols-and-emptiness.md).
+> Archivos: `packages/core/src/analysis/useful.ts` y `packages/core/src/command-line/commands/useful.ts`.
 
----
+## 1. Teoría
 
-## 1. El problema que resuelve
+- A es **productivo** si deriva alguna cadena de terminales (A ⇒\* w).
+- A es **alcanzable** si aparece en alguna derivación desde S (S ⇒\* αAβ).
+- A es **útil** si es las dos cosas. Si no, es **inútil**, y se puede quitar sin cambiar el lenguaje.
+- **Orden** (Hopcroft 7.1.1, ver sección 5): primero se quitan los no productivos, después los no alcanzables.
+- **Vacuidad:** L(G) = ∅ si y solo si S no es productivo. Es un problema decidible.
 
-Una gramática puede tener símbolos que **no sirven para nada**: no aparecen en ninguna derivación de una oración. Hay dos formas de ser inútil:
+Los dos conjuntos se calculan por punto fijo: los productivos desde ∅, los alcanzables desde {S}.
 
-| Problema      | Qué significa                                  | Ejemplo en `test-useless`             |
-| ------------- | ---------------------------------------------- | ------------------------------------- |
-| No productivo | nunca termina: no deriva ninguna cadena de Σ\* | `A → A a`: cada paso vuelve a poner A |
-| No alcanzable | ninguna derivación desde S lo menciona         | `C → c`: nadie usa C                  |
+**Ejemplo: `test-useless`.** `S → A a | b`, `A → A a`, `C → c`.
 
-Y una pregunta más fuerte: **¿la gramática genera alguna oración?** Si S no es productivo, L(G) = ∅. Es la **vacuidad**, uno de los pocos problemas sobre gramáticas libres de contexto que son **decidibles** (a diferencia de la ambigüedad o la equivalencia).
+| Fase        | Cálculo                                            | Resultado               |
+| ----------- | -------------------------------------------------- | ----------------------- |
+| Productivos | S (por `S → b`) y C (por `C → c`); A nunca termina | {S, C}                  |
+| Se quitan   | las producciones que usan A                        | quedan `S → b`, `C → c` |
+| Alcanzables | desde S no se llega a C                            | {S}                     |
+| Resultado   | inútiles = {A, C}                                  | `S → b`                 |
 
-Para el proyecto sirve como **validador**: alguien que escribe un `.grammar` con una regla que nunca termina se entera acá. Además, la Forma Normal de Chomsky (paso 24) tiene un paso USELESS que usa exactamente esto.
+## 2. Por qué así
 
----
+- **Para qué sirve:** es un **validador** (quien escribe un `.grammar` con una regla que nunca termina se entera acá), alimenta el informe `analyze` ([guía 12](12-tabla-ll1-y-no-ambiguedad.md)) y el paso USELESS de la Forma Normal de Chomsky ([guía 24](24-fnc-useless-term-bin.md)).
+- **Dos puntos fijos por rondas**, con el mismo esquema que los anulables ([guía 07](07-simbolos-anulables.md)). Productivos es igual a anulables, pero los terminales cuentan como "buenos". Alcanzables es una búsqueda en anchura sobre el grafo "A usa a B": la ronda i son los símbolos a distancia i de S.
+- **Vacuidad gratis:** sale del primer punto fijo, L(G) = ∅ ⇔ S ∉ productivos.
+- **Por qué importa el orden:** quitar un no productivo borra producciones, y eso puede dejar a otro símbolo sin camino desde S. En `examples/grammars/useless-order.grammar` (`S → A B | a`, `A → b`, `B → B c`), al quitar B se va `S → A B` y A queda inalcanzable. Al revés, A pasaría el filtro de alcanzables y se quedaría.
 
-## 2. Por qué esta herramienta
+## 3. El código, función por función
 
-- **Qué se eligió:** dos puntos fijos por rondas, como los anulables del paso 7, en el orden de Hopcroft 7.1.1: primero productivos, después alcanzables sobre lo que queda.
-- **Productivos:** la base son los terminales (ya son cadenas de Σ\*). A es productivo si tiene una producción con todo el lado derecho productivo o terminal. Es igual al cálculo de anulables, pero los terminales cuentan como "buenos".
-- **Alcanzables:** se recorre desde arriba. Se parte de {S} y cada ronda agrega los no terminales que aparecen en lados derechos de los ya alcanzados. Es una búsqueda en anchura sobre el grafo "A usa a B": la ronda i son los símbolos a distancia i de S.
-- **Por qué el orden:** quitar un no productivo borra producciones, y eso puede dejar a otro símbolo sin camino desde S. Si se calculan los alcanzables primero, ese símbolo ya pasó el filtro y se queda (ver el ejemplo de la sección 6).
-- **Vacuidad:** sale gratis del primer punto fijo: L(G) = ∅ ⇔ S ∉ productivos.
+### 3.1 `analyzeUsefulSymbols(grammar)`
 
----
-
-## 3. Cómo se usa en el programa
-
-| Quién                       | Llama a                | Recibe                                          |
-| --------------------------- | ---------------------- | ----------------------------------------------- |
-| comando `useful` (paso 9)   | `analyzeUsefulSymbols` | los conjuntos, la vacuidad, la gramática limpia |
-| `analyzeGrammar` (paso 12)  | `analyzeUsefulSymbols` | los conjuntos, en el informe                    |
-| FNC, paso USELESS (paso 24) | `usefulGrammar`        | la gramática sin inútiles                       |
-
-`analyzeUsefulSymbols` devuelve:
-
-| Campo           | Qué es                                                            |
-| --------------- | ----------------------------------------------------------------- |
-| `productive`    | los no terminales que derivan alguna cadena de terminales         |
-| `reachable`     | los alcanzables desde S, **después** de quitar los no productivos |
-| `useless`       | los no terminales que no son productivos o no son alcanzables     |
-| `isEmpty`       | L(G) = ∅                                                          |
-| `usefulGrammar` | G sin los inútiles (mismo lenguaje), o `null` si L(G) = ∅         |
-
----
-
-## 4. Cómo funciona
-
-1. **Productivos**, por rondas: un A entra si tiene una producción cuyos símbolos son todos terminales o productivos de la ronda anterior. Hasta que una ronda no agrega nada.
-2. **Vacuidad:** si S no es productivo, L(G) = ∅ y se termina: no hay nada útil.
-3. **Se filtran las producciones:** quedan solo las que usan terminales y productivos.
-4. **Alcanzables**, por rondas, sobre esas producciones: se parte de {S}; cada ronda agrega los no terminales de los lados derechos de los ya alcanzados.
-5. **Inútiles** = N menos (productivos ∩ alcanzables).
-6. **Gramática útil:** las producciones del paso 3 cuyo lado izquierdo es alcanzable, construidas de nuevo con `buildGrammar`. Σ se achica sola: solo quedan los terminales que se usan.
-
----
-
-## 5. El código, función por función
-
-### 5.1 `analyzeUsefulSymbols(grammar)`
+Devuelve `productive`, `reachable` (calculados **después** de quitar los no productivos), `useless`, `isEmpty`, `usefulGrammar` (G sin inútiles, o `null` si L(G) = ∅) y las rondas de cada fase (`productiveRounds`, `reachableRounds`, para `--steps`).
 
 ```ts
 const productiveRoundList = productiveRounds(grammar);
@@ -79,16 +48,14 @@ const useless = new Set(
 );
 ```
 
-- El orden es el de Hopcroft 7.1.1: primero productivos, después se filtran las producciones, y recién entonces alcanzables. Al revés puede quedar un inútil (sección 6).
-- `isEmpty = !productive.has(grammar.start)`: es la prueba de vacuidad. L(G) = ∅ si y solo si S no es productivo.
-- `grammar.productions.filter(... usesOnly({ production, nonterminals: productive, grammar }))`: se quedan solo las producciones que usan terminales y productivos. Una producción con un no productivo nunca termina en una cadena de Σ\*, así que se descarta.
-- `reachableRounds({ start: grammar.start, productions })`: recibe las producciones **filtradas**. Así, un símbolo que solo se alcanzaba a través de una producción descartada queda como no alcanzable.
-- `isEmpty ? [] : ...`: si L(G) = ∅, no corre la fase de alcanzables (no hay rondas). Ningún símbolo es útil, y el conjunto vacío hace que todos queden inútiles.
+- El orden es el de Hopcroft 7.1.1: productivos, se filtran las producciones, y recién entonces alcanzables.
+- `isEmpty = !productive.has(grammar.start)`: la prueba de vacuidad.
+- `filter(... usesOnly(...))`: se quedan solo las producciones con terminales y productivos. Una producción con un no productivo nunca termina en una cadena de Σ\*.
+- `reachableRounds` recibe las producciones **filtradas**. Así, un símbolo que solo se alcanzaba por una producción descartada queda como no alcanzable.
+- `isEmpty ? [] : ...`: si L(G) = ∅, no corre la fase de alcanzables. El conjunto vacío deja a todos inútiles.
 - `!productive.has(symbol) || !reachable.has(symbol)`: la definición de inútil. Útil exige las dos cosas, así que basta con que falle una.
-- `productiveRounds` y `reachableRounds` devuelven todas las rondas de cada fase; `lastRound` toma el resultado. El análisis las devuelve en los campos `productiveRounds` y `reachableRounds`, y con eso `--steps` arma dos tablas.
-- Devuelve también `usefulGrammar`: `null` si L(G) = ∅; si no, el resultado de `buildUsefulGrammar` (sección 5.5).
 
-### 5.2 `productiveRounds(grammar)`
+### 3.2 `productiveRounds(grammar)` y su regla
 
 ```ts
 return repeatRuleUntilNoChange({
@@ -97,10 +64,9 @@ return repeatRuleUntilNoChange({
 });
 ```
 
-- `productiveRounds` devuelve todas las rondas; la última es el conjunto de los productivos. `analyzeUsefulSymbols` la toma con `lastRound`. (Hasta el SPEC 05 existía también `computeProductive`, que devolvía solo la última ronda; nadie la usaba y se borró.)
+- El mismo `repeatRuleUntilNoChange` de la guía 07, desde ∅. La última ronda es el conjunto de productivos.
 
-- Usa el mismo `repeatRuleUntilNoChange` que los anulables (guía 07, sección 5.1). Parte de `start: []`, es decir, de ∅.
-- La regla de cada ronda es `newProductiveSymbols`, definida justo debajo:
+La regla de cada ronda, `newProductiveSymbols`:
 
 ```ts
 return grammar.productions
@@ -108,11 +74,11 @@ return grammar.productions
   .map((production) => production.leftSide);
 ```
 
-- `filter` con `usesOnly`: se queda con las producciones cuyo lado derecho tiene solo terminales o productivos ya conocidos.
-- `map`: toma sus lados izquierdos. Son los productivos que encuentra esta ronda.
-- La única diferencia con los anulables es esa regla: `usesOnly` acepta terminales, porque un terminal ya es una cadena de Σ\*. En la ronda 1 entran los A con lado derecho de solo terminales (o ε).
+- `filter` con `usesOnly`: las producciones con lado derecho de terminales o productivos ya conocidos.
+- `map`: sus lados izquierdos son los productivos de esta ronda.
+- La única diferencia con los anulables es que `usesOnly` acepta terminales.
 
-### 5.3 `usesOnly({ production, nonterminals, grammar })`
+### 3.3 `usesOnly({ production, nonterminals, grammar })`
 
 ```ts
 return production.rightSide.every(
@@ -120,9 +86,9 @@ return production.rightSide.every(
 );
 ```
 
-¿Todos los símbolos son terminales o están en el conjunto dado? Con ε (lado derecho vacío), `every` da `true`. Se usa dos veces: para decidir si una producción hace productivo a su lado izquierdo, y para filtrar las producciones antes de los alcanzables.
+¿Todos los símbolos son terminales o están en el conjunto dado? Con ε, `every` da `true`. Se usa dos veces: en la regla de productivos y para filtrar las producciones antes de los alcanzables.
 
-### 5.4 `reachableRounds({ start, productions })` y `nonterminalsUsedBy`
+### 3.4 `reachableRounds({ start, productions })` y `nonterminalsUsedBy`
 
 ```ts
 const nonterminals = new Set(productions.map((production) => production.leftSide));
@@ -133,11 +99,11 @@ return repeatRuleUntilNoChange({
 });
 ```
 
-- Otra vez `repeatRuleUntilNoChange`, pero arranca con `start: [start]` en lugar de ∅: S es alcanzable sin aplicar ninguna regla.
-- Recibe las **producciones** (no la gramática) porque trabaja sobre las que quedaron después de quitar los no productivos.
-- `nonterminals` sale de los lados izquierdos de esas producciones. Sirve para separar no terminales de terminales en el lado derecho.
+- Arranca con `start: [start]`: S es alcanzable sin aplicar ninguna regla.
+- Recibe las **producciones** (no la gramática), porque trabaja sobre las que quedaron.
+- `nonterminals` sale de sus lados izquierdos: sirve para separar no terminales de terminales.
 
-La regla de cada ronda es `nonterminalsUsedBy({ symbols, productions, nonterminals })`:
+La regla de cada ronda, `nonterminalsUsedBy`:
 
 ```ts
 return productions
@@ -146,12 +112,11 @@ return productions
   .filter((symbol) => nonterminals.has(symbol));
 ```
 
-- `filter(... symbols.has(production.leftSide))`: las producciones de los símbolos ya alcanzados.
-- `flatMap(... production.rightSide)`: junta todos sus lados derechos en una sola lista de símbolos.
-- `filter(... nonterminals.has(symbol))`: se queda con los no terminales. Si S ⇒\* αAβ, A es alcanzable.
-- La ronda i agrega los no terminales a distancia i de S.
+- Primer `filter`: las producciones de los símbolos ya alcanzados.
+- `flatMap`: junta todos sus lados derechos en una sola lista.
+- Segundo `filter`: se queda con los no terminales. Si S ⇒\* αAβ, A es alcanzable.
 
-### 5.5 `buildUsefulGrammar({ grammar, productiveProductions, reachable })`
+### 3.5 `buildUsefulGrammar({ grammar, productiveProductions, reachable })`
 
 ```ts
 const rules = productiveProductions
@@ -164,55 +129,23 @@ return buildGrammar({
 });
 ```
 
-- Parte de las producciones productivas y se queda con las de lado izquierdo alcanzable.
-- `.map(({ leftSide, rightSide }) => ...)`: tira el resto de los campos (como el id) y deja solo la regla.
-- `buildGrammar` vuelve a construir la gramática: las producciones se numeran de nuevo y Σ queda solo con los terminales que se usan.
+- Se queda con las producciones productivas de lado izquierdo alcanzable.
+- `.map(...)` tira el resto de los campos (como el id) y deja solo la regla.
+- `buildGrammar` numera de nuevo las producciones, y Σ queda solo con los terminales que se usan.
 
-### 5.6 El comando `useful`
+### 3.6 El comando `useful`
 
-- Lee `--grammar` o `--grammar-file`, y `--steps`.
-- Con `--steps`, una tabla por fase. La de alcanzables muestra S como ronda 0, porque no parte de ∅.
-- Muestra los no productivos, los no alcanzables y los inútiles. Si hay inútiles, imprime la gramática sin ellos. Si L(G) = ∅, lo dice y no sigue.
+- Lee `--grammar` o `--grammar-file`, y `--steps` (una tabla por fase; la de alcanzables muestra S como ronda 0).
+- Muestra los no productivos, los no alcanzables y los inútiles, y la gramática sin ellos. Si L(G) = ∅, lo dice y no sigue.
+- Ninguna función lanza errores: una gramática con inútiles o vacía es válida (código 0). Los errores de uso son los comunes (código 2).
 
----
-
-## 6. Ejemplo recorrido a mano: por qué importa el orden
-
-`examples/grammars/useless-order.grammar`: `S → A B | a`, `A → b`, `B → B c`.
-
-| Paso                             | Estado                                                    |
-| -------------------------------- | --------------------------------------------------------- |
-| productivos, ronda 1             | S (por `S → a`) y A (por `A → b`). B solo tiene `B → B c` |
-| productivos, ronda 2             | nada nuevo: {S, A}                                        |
-| se quitan las producciones con B | `S → A B` y `B → B c`. Quedan `S → a` y `A → b`           |
-| alcanzables, ronda 0             | {S}                                                       |
-| alcanzables, ronda 1             | `S → a` no menciona no terminales: nada nuevo             |
-| inútiles                         | B (no productivo) y A (no alcanzable)                     |
-| gramática útil                   | `S → a`                                                   |
-
-**Al revés** (alcanzables primero): S llega a A y a B por `S → A B`, así que los tres pasan. Después se quita B y, con él, `S → A B`. Pero A ya pasó el filtro y queda `A → b`, un símbolo al que nadie llega. Una prueba lo verifica.
-
-```sh
-npm run sabueso -- useful --grammar-file examples/grammars/useless-order.grammar --steps
-```
-
----
-
-## 7. Errores
-
-Ninguna función lanza errores: toda gramática construida tiene sus conjuntos. Una gramática con inútiles o con L(G) = ∅ es válida; el comando la informa y termina con código 0. Los errores de uso son los de los demás análisis (código 2).
-
----
-
-## 8. Consola y pruebas
+## 4. Consola y pruebas
 
 ```sh
 npm run sabueso -- useful --grammar test-useless --steps
 ```
 
 ```text
-test-useless: useful symbols
-
 Productive (A ⇒* w, w ∈ Σ*), round by round:
 
 Round  Symbols so far  Added in this round
@@ -233,48 +166,18 @@ Useless: {A, C}
 L(G) ≠ ∅
 
 Without useless symbols:
-
-test-useless without useless symbols: G = (N, Σ, P, S)
-N = {S}
-Σ = {b}
-S = S
+…
 P:
    0  S → b
 ```
 
-Con `--grammar test-empty` imprime `L(G) = ∅: the start symbol S is not productive…`. Con `--grammar g1 --steps` se ven 4 rondas de productivos (Relato entra en la cuarta) y 5 de alcanzables (Descarte, el más profundo, en la quinta). G1 no tiene inútiles.
+Con `--grammar test-empty` imprime `L(G) = ∅: the start symbol S is not productive…`. Con `--grammar g1 --steps`, Relato entra en la cuarta ronda de productivos y Descarte en la quinta de alcanzables: G1 no tiene inútiles.
 
-**`test/analysis/useful.test.ts`:**
+| Prueba                                           | Qué verifica                                                                                                                                                                                                                              |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/test/analysis/useful.test.ts`     | `test-useless` da no productivos {A}, no alcanzables {C}, gramática útil `S → b` con Σ = {b}; `test-empty` es vacía; G0, G1 y otras cinco no tienen inútiles; el ejemplo del orden; las rondas de G1 (12, 18, 20, 21 y 4, 10, 18, 20, 21) |
+| `packages/core/test/command-line/useful.test.ts` | los inútiles y la gramática limpia, las dos tablas de `--steps`, L(G) = ∅, G1 sin inútiles y los errores de uso                                                                                                                           |
 
-| Prueba               | Qué verifica                                                                       |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| `test-useless`       | no productivos {A}, no alcanzables {C}, inútiles {A, C}, gramática útil `S → b`    |
-| `test-empty`         | L(G) = ∅, sin gramática útil                                                       |
-| G0, G1 y otras cinco | sin inútiles, L(G) ≠ ∅, la gramática útil conserva todas las producciones          |
-| el orden             | el ejemplo de la sección 6 da `S → a`; al revés, A parecería alcanzable            |
-| Σ se achica          | la gramática útil de `test-useless` tiene Σ = {b}                                  |
-| rondas               | G1: 12, 18, 20, 21 productivos y 4, 10, 18, 20, 21 alcanzables; las fases en orden |
+## 5. Referencias
 
-**`test/command-line/useful.test.ts`:** los inútiles y la gramática limpia de `test-useless`, las dos tablas de `--steps`, L(G) = ∅, G1 sin inútiles y los errores de uso.
-
----
-
-## 9. Preguntas probables en la defensa
-
-**¿Qué es un símbolo inútil?**
-Uno que no aparece en ninguna derivación de una oración: o no es productivo (nunca termina en terminales) o no es alcanzable desde S.
-
-**¿Por qué primero los no productivos y después los no alcanzables?**
-Porque quitar un no productivo borra producciones, y eso puede dejar a otro símbolo sin camino desde S. En `S → A B | a`, `A → b`, `B → B c`: al quitar B se va `S → A B`, y A queda inalcanzable. Al revés, A pasaría el filtro de alcanzables y se quedaría.
-
-**¿Cómo se decide si L(G) = ∅?**
-L(G) = ∅ ⇔ S no es productivo. El cálculo de productivos siempre termina (a lo sumo |N| + 1 rondas), así que es un problema decidible. En cambio, otros problemas sobre GLC, como la ambigüedad o la equivalencia, son indecidibles.
-
-**¿Quitar los inútiles cambia el lenguaje?**
-No. Un símbolo inútil no participa en ninguna derivación de una oración, así que sacarlo no quita ninguna. La gramática útil genera exactamente L(G).
-
-**¿Qué relación tiene con minYield?**
-minYield(A) = ∞ exactamente cuando A no es productivo. Son el mismo hecho visto como número o como sí/no.
-
-**¿G0 o G1 tienen símbolos inútiles?**
-No: todos sus no terminales son productivos y alcanzables. Una prueba lo verifica. En G1, el productivo más "alto" es Relato (ronda 4) y el alcanzable más lejano es Descarte (distancia 5 desde Relato).
+- Hopcroft, Motwani y Ullman, _Introducción a la teoría de autómatas, lenguajes y computación_, secciones 7.1.1 (eliminación de símbolos inútiles), 7.1.2 (cálculo de generadores y alcanzables) y 7.4.3 (comprobación de que un LIC es vacío).

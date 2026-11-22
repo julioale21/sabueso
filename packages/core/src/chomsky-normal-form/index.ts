@@ -1,7 +1,7 @@
 /**
  * Concept: the Chomsky normal form (FNC): every production is A → B C or A → a, plus S → ε
  * for the start symbol S when ε ∈ L(G). The conversion chains the six steps in order.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/23-fnc-start-del-unit.md
  */
 import type { Grammar, Production } from '../grammar/types.js';
 import { addNewStart, appearsOnSomeRightSide } from './add-new-start.js';
@@ -21,7 +21,7 @@ export interface ChomskyNormalFormStep {
 }
 
 /**
- * The six steps, in order (where each one comes from is in the card). The order matters: DEL creates unit
+ * The six steps, in order (where each one comes from is in the guide). The order matters: DEL creates unit
  * productions (A → B C with C nullable gives A → B), UNIT and DEL can leave useless symbols,
  * and TERM must go before BIN so that BIN only sees nonterminals.
  */

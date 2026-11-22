@@ -1,5 +1,5 @@
 /**
- * The trace of Earley read for the player (card 12): which items each set has after k events.
+ * The trace of Earley read for the player (guide 13): which items each set has after k events.
  * The trace itself comes from the core; this only splits and groups its text.
  */
 import type { TraceEvent, TraceOperation } from '@sabueso/core';

@@ -1,66 +1,41 @@
-# Guía de estudio: 07 — Símbolos anulables
+# 07 — Símbolos anulables
 
-> **Paso 7 del SPEC 02.** Archivos: `packages/core/src/analysis/nullable.ts`, `packages/core/src/analysis/fixed-point.ts`, `packages/core/src/command-line/commands/nullable.ts` y `readGrammar` en `packages/core/src/command-line/grammar-source.ts`.
-> Ficha teórica relacionada: [`docs/concepts/07-nullable-symbols.md`](../concepts/07-nullable-symbols.md).
+> Archivos: `packages/core/src/analysis/nullable.ts`, `packages/core/src/analysis/fixed-point.ts`, `packages/core/src/command-line/commands/nullable.ts` y `readGrammar` en `packages/core/src/command-line/grammar-source.ts`.
 
----
+## 1. Teoría
 
-## 1. El problema que resuelve
+Un no terminal A es **anulable** si A ⇒\* ε: puede derivar la cadena vacía. Un terminal nunca es anulable.
 
-Es el primer **análisis de la gramática**: ya no se lee un texto, se estudia G. La pregunta es: ¿qué no terminales pueden desaparecer, es decir, derivar ε?
+Se calcula por rondas, como **menor punto fijo** (Hopcroft 7.1.3, ver sección 5):
 
-Sin esta respuesta no funcionan tres piezas que vienen:
+- **Base:** si A → ε ∈ P, A es anulable.
+- **Inducción:** si A → X₁…Xₖ ∈ P y todos los Xᵢ son anulables, A es anulable.
+- Se repite hasta que una ronda no agrega nada. Como el conjunto solo crece y está acotado por N, termina.
 
-| Quién                   | Para qué necesita los anulables                                                         | Paso |
-| ----------------------- | --------------------------------------------------------------------------------------- | ---- |
-| FIRST y FOLLOW          | FIRST(X Y) incluye FIRST(Y) solo si X es anulable                                       | 11   |
-| Earley, arreglo de ε    | si el punto está antes de un anulable B, el ítem tiene que poder saltar B sin leer nada | 15   |
-| Forma Normal de Chomsky | para eliminar las producciones ε hay que saber qué símbolos pueden borrarse             | 23   |
+**Ejemplo.** `S → A B x | B B`, `B → A A | b`, `A → a | ε` (`examples/grammars/nullable-chain.grammar`):
 
-En G1 importa mucho: sus 10 partes opcionales (`MarcoOpc`, `Cierre`…) son anulables. Un relato como `CRI PIS REV` no tiene marco, ni hallazgo, ni epílogo: todas esas partes derivan ε.
+| Ronda | Qué regla dispara     | Anulables |
+| ----- | --------------------- | --------- |
+| 1     | `A → ε`               | {A}       |
+| 2     | `B → A A` (A ya está) | {A, B}    |
+| 3     | `S → B B` (B ya está) | {A, B, S} |
+| 4     | ninguna nueva         | {A, B, S} |
 
----
+`S → A B x` nunca dispara: x es terminal. En G1, las 10 partes opcionales (`MarcoOpc`, `Cierre`…) son anulables; G0 no tiene ninguno.
 
-## 2. Por qué esta herramienta
+## 2. Por qué así
 
-- **Qué se eligió:** un **punto fijo** por rondas. Se parte de ∅ y se aplica la regla "A es anulable si tiene una producción con todo el lado derecho anulable" hasta que el conjunto deja de crecer.
-- **Por qué un punto fijo:** la definición es recursiva (A es anulable si sus símbolos lo son), y puede haber recursión entre símbolos. El punto fijo **mínimo** da exactamente los que derivan ε: arranca sin suponer nada y solo agrega lo que se puede justificar.
-- **Por qué termina:** el conjunto solo crece, y no puede tener más de |N| elementos. Como cada ronda que sigue agrega al menos uno, hay a lo sumo |N| + 1 rondas.
-- **Por qué rondas y no "agregar sobre la marcha":** agregar en el momento converge igual (a veces en menos vueltas), pero la cantidad de vueltas depende del orden de las producciones. Con rondas, la ronda i tiene un significado teórico: son los símbolos cuyo árbol de derivación a ε más bajo tiene altura i. Es la definición inductiva de Hopcroft (base e inducción), y se puede mostrar con `--steps`.
-- **Alternativa descartada: probar derivaciones.** Buscar A ⇒\* ε derivando no termina si la gramática tiene recursión (`S → S S | ε`). El punto fijo nunca deriva: solo mira producciones.
+- **Quién lo necesita:** FIRST y FOLLOW ([guía 11](11-first-y-follow.md): FIRST(X Y) incluye FIRST(Y) solo si X es anulable), el arreglo de ε de Earley ([guía 15](15-arreglo-de-epsilon.md)) y la Forma Normal de Chomsky ([guía 23](23-fnc-start-del-unit.md)). `computeNullable` solo necesita P: no conoce Earley ni la consola.
+- **Un punto fijo, porque la definición es recursiva** y puede haber recursión entre símbolos. El punto fijo **mínimo** da exactamente los que derivan ε: arranca de ∅ y solo agrega lo que se puede justificar. En `test-cyclic` (S → A, A → S), {S, A} también "cumple" la regla, pero el mínimo es ∅.
+- **Rondas y no "agregar sobre la marcha":** agregar en el momento converge igual, pero la cantidad de vueltas depende del orden de las producciones. Con rondas, cada ronda tiene un significado fijo (la ronda i encuentra los símbolos cuyo árbol a ε más bajo tiene altura i) y se puede mostrar con `--steps`.
+- **Descartado: probar derivaciones.** Buscar A ⇒\* ε derivando no termina si hay recursión (`S → S S | ε`). El punto fijo nunca deriva: solo mira producciones.
+- **Costo:** cada ronda recorre P una vez (O(|P|·k), con k el largo máximo de un lado derecho), y hay a lo sumo |N| + 1 rondas.
 
----
+## 3. El código, función por función
 
-## 3. Cómo se usa en el programa
+### 3.1 `repeatRuleUntilNoChange({ start, newSymbolsOfRound })` y `lastRound` (`fixed-point.ts`)
 
-| Quién                       | Llama a           | Recibe                         |
-| --------------------------- | ----------------- | ------------------------------ |
-| comando `nullable` (paso 7) | `computeNullable` | el conjunto y cada ronda       |
-| FIRST/FOLLOW (paso 11)      | `computeNullable` | el conjunto                    |
-| `analyzeGrammar` (paso 12)  | `computeNullable` | el conjunto, en el informe     |
-| Earley (paso 15)            | el conjunto       | para el avance sobre anulables |
-
-`computeNullable` solo necesita P: recorre las producciones, nada más. No conoce Earley ni la consola.
-
----
-
-## 4. Cómo funciona
-
-1. `nullable` = ∅.
-2. Ronda: para cada producción A → X₁…Xₖ, si **todos** los Xᵢ están en el conjunto de la ronda anterior, A entra. Una producción ε (k = 0) cumple siempre: "todos los de una lista vacía" es verdadero.
-3. Si la ronda no agregó nada, es el punto fijo: se devuelve el conjunto. Si no, se repite.
-
-Un terminal nunca entra al conjunto, así que una producción con un terminal nunca dispara.
-
-Costo: cada ronda recorre P una vez (O(|P|·k), con k el largo máximo de un lado derecho), y hay a lo sumo |N| + 1 rondas.
-
----
-
-## 5. El código, función por función
-
-### 5.1 `repeatRuleUntilNoChange({ start, newSymbolsOfRound })` y `lastRound` (`src/analysis/fixed-point.ts`)
-
-El esquema de punto fijo se escribe **una sola vez**, con nombre propio: repite la regla hasta que no cambia nada. En la teoría se llama **menor punto fijo** (_least fixed point_). Lo usan los anulables y, en el paso 9, los productivos y los alcanzables. Cada análisis solo aporta su regla.
+El esquema de punto fijo se escribe **una sola vez**: repite la regla hasta que no cambia nada. Lo usan los anulables y, en la [guía 09](09-simbolos-inutiles-y-vacuidad.md), los productivos y los alcanzables. Cada análisis solo aporta su regla.
 
 ```ts
 export function repeatRuleUntilNoChange({
@@ -88,15 +63,14 @@ export function repeatRuleUntilNoChange({
 | `start`             | el conjunto inicial: ∅ para anulables y productivos, {S} para alcanzables    |
 | `newSymbolsOfRound` | **la regla**: dado lo que se sabía antes de la ronda, qué símbolos encuentra |
 
-- **Devuelve todas las rondas, en orden:** `rounds[0]` es lo que se sabe después de la ronda 1, `rounds[1]` después de la 2, y así. La tabla de `--steps` las imprime tal cual. La **última** no agregó nada: es el resultado, el menor punto fijo.
-- **`lastRound(rounds)`** devuelve esa última ronda. Es lo que usan los análisis cuando solo quieren el resultado: `computeNullable(grammar)` es `lastRound(nullableRounds(grammar))`.
+- **Devuelve todas las rondas, en orden:** `rounds[0]` es lo que se sabe después de la ronda 1, y así. `--steps` las imprime tal cual. La **última** no agregó nada: es el menor punto fijo.
+- **`lastRound(rounds)`** devuelve esa última ronda, para los análisis que solo quieren el resultado.
+- **Dos conjuntos por ronda:** la regla lee `knownBefore` y lo nuevo va a `knownAfter`. Así, un símbolo descubierto en esta ronda recién cuenta en la siguiente.
+- **`new Set([...knownBefore, ...nuevos])`** arma un conjunto con los elementos de los dos (no un conjunto de conjuntos). Los repetidos se descartan solos.
+- **Comparar tamaños alcanza:** `knownAfter` contiene a `knownBefore`. Si el tamaño no cambió, la ronda no agregó nada.
+- **Por qué termina:** el conjunto solo crece y no puede tener más símbolos que N.
 
-- **Dos conjuntos por ronda:** la regla lee `knownBefore` (lo que se sabía al terminar la ronda anterior) y lo nuevo va a `knownAfter`. Así, un símbolo descubierto en esta ronda recién cuenta en la siguiente, y la ronda i tiene significado: los símbolos que necesitan i aplicaciones de la regla.
-- **`new Set([...knownBefore, ...nuevos])`** arma un conjunto con los elementos de los dos: no es un conjunto de conjuntos. Los repetidos se descartan solos.
-- **Comparar tamaños alcanza:** `knownAfter` contiene a `knownBefore` y nunca pierde elementos. Si el tamaño no cambió, la ronda no agregó nada: es el punto fijo.
-- **Por qué termina:** el conjunto solo crece y no puede tener más símbolos que N. Hay a lo sumo |N| + 1 rondas.
-
-### 5.2 `computeNullable(grammar)` y `nullableRounds(grammar)`
+### 3.2 `computeNullable(grammar)` y `nullableRounds(grammar)`
 
 ```ts
 export function computeNullable(grammar: Grammar): Set<SymbolName> {
@@ -111,9 +85,8 @@ export function nullableRounds(grammar: Grammar): Set<SymbolName>[] {
 }
 ```
 
-- **Dos funciones, una para cada uso:** `nullableRounds` devuelve todas las rondas (para `--steps`); `computeNullable` devuelve solo el resultado (para Earley, los árboles, los ciclos y la FNC).
+- **Dos funciones, una para cada uso:** `nullableRounds` devuelve todas las rondas (para `--steps`); `computeNullable`, solo el resultado (para Earley, los árboles, los ciclos y la FNC).
 - Se lee como la definición: "parto de ∅ y, en cada ronda, aplico la regla `newNullableSymbols`".
-- `newSymbolsOfRound` recibe los anulables conocidos al final de la ronda anterior y le pasa ese conjunto a la regla. La regla tiene nombre y está definida justo debajo, en el mismo archivo.
 
 **La regla de una ronda, `newNullableSymbols({ grammar, nullableSymbols })`:**
 
@@ -123,11 +96,11 @@ return grammar.productions
   .map((production) => production.leftSide);
 ```
 
-- `filter`: se queda con las producciones A → X1…Xk que ya derivan ε, es decir, con todos sus Xi anulables (sección 5.3).
-- `map`: de cada una toma el lado izquierdo A. Esos son los anulables que encuentra esta ronda.
-- Puede repetir un símbolo (A con dos producciones anulables): no importa, porque `repeatRuleUntilNoChange` los junta en un `Set`.
+- `filter`: se queda con las producciones A → X₁…Xₖ con todos sus Xᵢ anulables.
+- `map`: de cada una toma el lado izquierdo A. Esos son los anulables de esta ronda.
+- Puede repetir un símbolo (A con dos producciones anulables): no importa, `repeatRuleUntilNoChange` los junta en un `Set`.
 
-### 5.3 `derivesEmptyString({ production, nullableSymbols })`
+### 3.3 `derivesEmptyString({ production, nullableSymbols })`
 
 ```ts
 return production.rightSide.every((symbol) => nullableSymbols.has(symbol));
@@ -136,29 +109,13 @@ return production.rightSide.every((symbol) => nullableSymbols.has(symbol));
 - `every` sobre una lista vacía da `true`: así A → ε entra en la ronda 1 sin un caso especial.
 - Un terminal nunca está en `nullableSymbols`, así que con un terminal da `false`.
 
-### 5.4 El comando `nullable`
+### 3.4 El comando `nullable`
 
-1. Lee `--grammar <nombre>` o `--grammar-file <ruta>`, y `--steps`. No acepta argumentos sueltos.
-2. Lee la gramática con `readGrammar` (lexer → parser → `buildGrammar`). `readGrammar` es nueva en este paso: la comparten `tokens`, `nullable` y los análisis que vienen.
-3. Llama a `nullableRounds(grammar)`, que devuelve todas las rondas, y toma el resultado con `lastRound`.
-4. Con `--steps` imprime una fila por ronda: cuántos anulables hay y cuáles se agregaron. La última dice `(none: fixed point)`.
-5. Imprime el resultado. Un conjunto vacío se escribe ∅, como en la teoría.
+- Lee `--grammar <nombre>` o `--grammar-file <ruta>`, y `--steps`. Lee la gramática con `readGrammar` (lexer → parser → `buildGrammar`), que comparten todos los análisis.
+- Llama a `nullableRounds` y toma el resultado con `lastRound`. Con `--steps` imprime una fila por ronda; la última dice `(none: fixed point)`. Un conjunto vacío se escribe ∅.
+- `computeNullable` no lanza errores. El comando tiene los errores de uso comunes (código 2): falta la gramática, vienen las dos opciones, un nombre desconocido, una opción que no existe o un argumento suelto.
 
----
-
-## 6. Ejemplo recorrido a mano
-
-`examples/grammars/nullable-chain.grammar`: `S → A B x | B B`, `B → A A | b`, `A → a | ε`.
-
-| Ronda | Producción que mira | ¿Todo el lado derecho en la ronda anterior? | Resultado  |
-| ----- | ------------------- | ------------------------------------------- | ---------- |
-| 1     | `A → ε`             | sí (lista vacía)                            | A entra    |
-| 1     | `B → A A`           | no: A todavía no estaba                     | —          |
-| 2     | `B → A A`           | sí                                          | B entra    |
-| 3     | `S → B B`           | sí                                          | S entra    |
-| 4     | todas               | no agrega nada                              | punto fijo |
-
-`S → A B x` no dispara nunca: `x` es terminal.
+## 4. Consola y pruebas
 
 ```sh
 npm run sabueso -- nullable --grammar-file examples/grammars/nullable-chain.grammar --steps
@@ -175,65 +132,15 @@ Round  Nullable so far  Added in this round
 Nullable = {A, B, S} (3 of 3 nonterminals)
 ```
 
----
+Con `--grammar g1 --steps` todo entra en la ronda 1 (los 10 de 21 no terminales). Con `--grammar g0` imprime `Nullable = ∅ (0 of 10 nonterminals)`.
 
-## 7. Errores
+| Prueba                                             | Qué verifica                                                                                                                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/test/analysis/fixed-point.test.ts`  | el esquema general termina, un símbolo cuenta recién en la ronda siguiente, cada ronda es un conjunto propio y `lastRound` devuelve la última                                                  |
+| `packages/core/test/analysis/nullable.test.ts`     | G0 da ∅, `parentheses` {S}, `epsilon-trap` {A}, G1 los 10; la cadena ronda por ronda; `S → A x` no es anulable; `test-cyclic` da ∅; las rondas de `nullableRounds` (la última es el resultado) |
+| `packages/core/test/command-line/nullable.test.ts` | el resultado de G1, las rondas con `--steps`, ∅ para G0, la cadena con `--grammar-file` y los errores de uso                                                                                   |
 
-`computeNullable` no lanza errores: toda gramática construida tiene un conjunto de anulables (quizás ∅). El comando comparte los errores de uso de `tokens` (código 2): falta la gramática, vienen las dos opciones, un nombre desconocido, una opción que no existe, o un argumento suelto.
+## 5. Referencias
 
----
-
-## 8. Consola y pruebas
-
-```sh
-npm run sabueso -- nullable --grammar g1 --steps
-```
-
-```text
-detective/g1: nullable symbols (A ⇒* ε)
-
-Round  Nullable so far  Added in this round
------  ---------------  ------------------------------------------------------------------------------------------
-1      10               CapOpc, Cierre, CtxOpc, CuerpoLinea, EpiOpc, HallazgoOpc, Libres, Lineas, MarcoOpc, PerOpc
-2      10               (none: fixed point)
-
-Nullable = {CapOpc, Cierre, CtxOpc, CuerpoLinea, EpiOpc, HallazgoOpc, Libres, Lineas, MarcoOpc, PerOpc} (10 of 21 nonterminals)
-```
-
-En G1 todo entra en la ronda 1, porque cada parte opcional tiene su propia producción ε y ningún anulable depende de otro. Con `--grammar g0` imprime `Nullable = ∅ (0 of 10 nonterminals)`.
-
-**`test/analysis/fixed-point.test.ts`:** el esquema general: termina, un símbolo descubierto cuenta recién en la ronda siguiente, cada ronda es un conjunto propio (las siguientes no lo cambian) y `lastRound` devuelve la última.
-
-**`test/analysis/nullable.test.ts`:**
-
-| Prueba                                | Qué verifica                                                                       |
-| ------------------------------------- | ---------------------------------------------------------------------------------- |
-| G0, `parentheses`, `epsilon-trap`, G1 | los valores del spec: ∅, {S}, {A} y los 10 de G1                                   |
-| la cadena                             | un símbolo entra una ronda después que los suyos                                   |
-| terminales                            | `S → A x` con A anulable: S no es anulable                                         |
-| ciclo sin salida                      | `test-cyclic` (S ⇒ A ⇒ S, sin ε) da ∅                                              |
-| `nullableRounds`                      | las rondas de la cadena, las dos de G1 y la única de G0; la última es el resultado |
-
-**`test/command-line/nullable.test.ts`:** el resultado de G1, las rondas con `--steps`, ∅ para G0, la cadena con `--grammar-file` y los errores de uso.
-
----
-
-## 9. Preguntas probables en la defensa
-
-**¿Qué es un símbolo anulable?**
-Un no terminal A con A ⇒\* ε: puede derivar la cadena vacía. En G1, `MarcoOpc` lo es: un relato puede no tener marco.
-
-**¿Por qué un punto fijo y no probar derivaciones?**
-Porque derivar puede no terminar (`S → S S | ε`). El punto fijo solo mira producciones, el conjunto solo crece y está acotado por |N|: termina en a lo sumo |N| + 1 rondas.
-
-**¿Por qué "mínimo"?**
-Porque se arranca de ∅ y solo se agrega lo que tiene justificación. En `test-cyclic` (S → A, A → S) el conjunto {S, A} también "cumple" la regla, pero no es real: ninguno deriva ε. El mínimo es ∅.
-
-**¿Qué significa la ronda i?**
-Los símbolos cuyo árbol de derivación a ε más bajo tiene altura i. En la cadena de ejemplo, A tiene un árbol de altura 1 (A → ε), B de altura 2 y S de altura 3.
-
-**¿Para qué sirve en el proyecto?**
-Para FIRST y FOLLOW (paso 11), para el arreglo de ε de Earley (paso 15) y para la Forma Normal de Chomsky (paso 23). En Earley, el Earley clásico puede perder derivaciones cuando un símbolo anulable se completa antes de que otro ítem lo espere (el caso `epsilon-trap`). Conociendo los anulables, el Predictor salta esos símbolos de entrada.
-
-**¿Por qué un terminal no puede ser anulable?**
-Porque siempre aporta exactamente un símbolo a la cadena: nunca deriva ε.
+- Hopcroft, Motwani y Ullman, _Introducción a la teoría de autómatas, lenguajes y computación_, sección 7.1.3 (eliminación de producciones ε).
+- Augusto, sección 2.3.

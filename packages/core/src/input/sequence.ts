@@ -1,6 +1,6 @@
 /**
  * Concept: a story is a string w ∈ Σ*: a sequence of tags separated by spaces.
- * Card: docs/concepts/01-alphabet-and-language.md
+ * Guide: docs/guides/06-relato-como-cadena.md
  *
  * Unlike a grammar file, a story needs no automaton: its only separator is the space, so
  * splitting by whitespace is enough. Every word is one symbol.

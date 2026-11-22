@@ -1,7 +1,7 @@
 /**
  * Concept: P, the productions of G = (N, Σ, P, S): a set, so each production is told apart by
  * its symbols, and grouped by left side, so an algorithm finds every A → α of a nonterminal A.
- * Card: docs/concepts/02-context-free-grammar.md
+ * Guide: docs/guides/02-gramatica-libre-de-contexto.md
  */
 import type { Production, SymbolName } from './types.js';
 

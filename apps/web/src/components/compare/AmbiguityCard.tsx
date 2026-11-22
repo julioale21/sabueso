@@ -1,5 +1,5 @@
 /**
- * The ambiguity witness of one grammar up to k (card 25): a sentence with two or more trees
+ * The ambiguity witness of one grammar up to k (guide 27): a sentence with two or more trees
  * proves the grammar ambiguous; finding none proves nothing, because ambiguity is undecidable.
  */
 import type { AmbiguityWitness } from '@sabueso/core';

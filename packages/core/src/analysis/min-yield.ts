@@ -1,7 +1,7 @@
 /**
  * Concept: the minimum yield of a symbol, the length of the shortest string of terminals it
  * derives. Computed as a fixed point, like the nullable symbols.
- * Card: docs/concepts/10-minimum-yield.md
+ * Guide: docs/guides/08-longitud-minima-derivable.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 

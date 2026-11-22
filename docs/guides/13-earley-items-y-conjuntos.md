@@ -1,132 +1,49 @@
-# Guía de estudio: 13 — Earley: ítems y conjuntos
+# 13 — Earley: ítems y conjuntos
 
-> **Paso 13 del SPEC 02.** Archivos: `packages/core/src/earley/item.ts`, `packages/core/src/earley/chart.ts` y `packages/core/src/command-line/commands/items.ts`.
-> Fichas teóricas relacionadas: [`11-earley-item.md`](../concepts/11-earley-item.md) y [`12-earley-sets.md`](../concepts/12-earley-sets.md).
+> Archivos: `packages/core/src/earley/item.ts`, `packages/core/src/earley/chart.ts` y `packages/core/src/command-line/commands/items.ts`.
 
----
+## 1. Teoría
 
-## 1. El problema que resuelve
+Earley decide si una cadena pertenece a L(G) para **cualquier** gramática libre de contexto: ambigua (G0), con ε (G1) o con recursión a izquierda. LL(1) mira un evento y **elige** una regla; Earley **no elige**: sigue todas las posibilidades a la vez y descarta las que dejan de encajar. Este paso arma sus dos estructuras; el algoritmo llega en la [guía 14](14-reconocedor-de-earley.md).
 
-Es la primera pieza de **Earley**, el algoritmo que decide si un relato pertenece a L(G). A diferencia de LL(1), Earley funciona con **cualquier** gramática libre de contexto: ambigua (G0), con ε (G1) o con recursión a izquierda (`arithmetic`).
+- **Ítem:** una regla con un punto y un **origen**, (A → α • β, j). Se lee: "estoy reconociendo A, ya reconocí α desde la posición j, y me falta β". Está **completo** cuando el punto llega al final (A → α •).
+- **Qué hacer con un ítem** lo decide el símbolo después del punto: un no terminal → **Predictor**; un terminal → **Scanner**; nada → **Completer**.
+- **Conjuntos:** para una entrada de n tokens hay n + 1 conjuntos S0 … Sn, uno por cada posición **entre** tokens. Sk guarda los ítems que llegaron hasta la posición k.
+- Se arranca con S0 = { ($S → • S, 0) } y la entrada se **acepta** si ($S → S •, 0) está en Sn. `$S` es un símbolo inicial nuevo (`$` está reservado).
+- Un mismo ítem se anota **una sola vez** por conjunto; si llega por otro camino, se le suma un **enlace** (así queda la ambigüedad). Como hay finitos ítems posibles, Earley **siempre termina**.
 
-Este paso arma las dos estructuras de datos del algoritmo. El algoritmo en sí (Predictor, Scanner, Completer) llega en el paso 14.
+### Ejemplo
 
-| Estructura             | Qué es                                             | Archivo           |
-| ---------------------- | -------------------------------------------------- | ----------------- |
-| **Ítem**               | una regla con un punto y un origen: (A → α • β, j) | `earley/item.ts`  |
-| **Conjunto** (S0 … Sn) | los ítems que llegan a una posición de la entrada  | `earley/chart.ts` |
+`Relato → CRI Pistas REV`, `Pistas → PIS Pistas | PIS`, entrada `CRI PIS REV`:
 
----
+| Conjunto     | Ítem                         | Cómo llegó                                                                            |
+| ------------ | ---------------------------- | ------------------------------------------------------------------------------------- |
+| S0           | $S → • Relato, 0             | arranque                                                                              |
+| S0           | Relato → • CRI Pistas REV, 0 | Predictor: después del punto hay un Relato                                            |
+| S1 (leí CRI) | Relato → CRI • Pistas REV, 0 | Scanner: el evento era CRI                                                            |
+| S1           | Pistas → • PIS Pistas, 1     | Predictor: hace falta un Pistas                                                       |
+| S1           | Pistas → • PIS, 1            | Predictor: la otra regla de Pistas                                                    |
+| S2 (leí PIS) | Pistas → PIS • Pistas, 1     | Scanner: la primera regla sigue viva                                                  |
+| S2           | Pistas → PIS •, 1            | Scanner: la segunda también, y está **completa**                                      |
+| S2           | Pistas → • PIS Pistas, 2     | Predictor: tal vez viene otra pista                                                   |
+| S2           | Pistas → • PIS, 2            | Predictor                                                                             |
+| S2           | Relato → CRI Pistas • REV, 0 | Completer: terminé un Pistas que empezó en 1; vuelvo a S1 y avanzo al que lo esperaba |
+| S3 (leí REV) | Relato → CRI Pistas REV •, 0 | Scanner: el evento era REV                                                            |
+| S3           | **$S → Relato •, 0**         | Completer: terminé un Relato que empezó en 0 (**acepta**)                             |
 
-## 2. Explicado simple: cómo funciona Earley
+En S1 se ve la diferencia con LL(1): **las dos reglas de Pistas quedan anotadas**. Si un conjunto queda vacío, ningún camino sigue vivo y el relato es inválido. Versión gráfica, con G0: [`docs/interactive/earley-g0.html`](../interactive/earley-g0.html) (sus pasos en texto: [`docs/interactive/earley-g0-cri-pis-rev.md`](../interactive/earley-g0-cri-pis-rev.md)).
 
-### 2.1 La idea
-
-LL(1) mira un evento y **elige** una regla. Si la gramática tiene dos reglas posibles, LL(1) no puede. Earley **no elige**: sigue **todas las posibilidades a la vez**, y descarta las que dejan de encajar con lo que va leyendo.
-
-Para no perderse, lleva una libreta por cada posición del relato (los **conjuntos** S0, S1, …). En cada libreta anota "lo que podría estar pasando" en ese punto: los **ítems**.
-
-### 2.2 El ítem: una regla con un punto
-
-`(Relato → CRI • Pistas REV, 0)` se lee:
-
-- "estoy reconociendo un **Relato**";
-- "ya reconocí **CRI**" (lo que está antes del punto);
-- "me falta **Pistas REV**" (lo que está después);
-- "empecé en la posición **0**" (el origen).
-
-El punto avanza a medida que se reconocen símbolos. Cuando llega al final, la regla está **completa**.
-
-### 2.3 Las tres operaciones
-
-Mirando el símbolo que está **justo después del punto**, siempre hay una sola cosa para hacer:
-
-| Después del punto hay… | Operación     | Qué hace                                                                                                       |
-| ---------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
-| un **no terminal** B   | **Predictor** | "voy a necesitar un B": agrega todas las reglas B → • γ, con origen en la posición actual                      |
-| un **terminal** a      | **Scanner**   | si el próximo evento es a, copia el ítem al conjunto siguiente con el punto un lugar adelante                  |
-| **nada** (completo)    | **Completer** | "terminé un A que empezó en j": vuelve al conjunto j, busca los ítems que esperaban un A y les avanza el punto |
-
-El **origen** es lo que le dice al Completer a qué conjunto volver.
-
-### 2.4 Un ejemplo completo
-
-Gramática chica: `Relato → CRI Pistas REV`, `Pistas → PIS Pistas | PIS`. Relato: `CRI PIS REV`. Se agrega una regla de arranque `$S → Relato`.
-
-**S0** (antes de leer nada):
-
-| Ítem                         | Cómo llegó                                 |
-| ---------------------------- | ------------------------------------------ |
-| $S → • Relato, 0             | arranque                                   |
-| Relato → • CRI Pistas REV, 0 | Predictor: después del punto hay un Relato |
-
-**S1** (leí CRI):
-
-| Ítem                         | Cómo llegó                         |
-| ---------------------------- | ---------------------------------- |
-| Relato → CRI • Pistas REV, 0 | Scanner: el evento era CRI         |
-| Pistas → • PIS Pistas, 1     | Predictor: hace falta un Pistas    |
-| Pistas → • PIS, 1            | Predictor: la otra regla de Pistas |
-
-Acá se ve la diferencia con LL(1): **las dos reglas de Pistas quedan anotadas**. Earley no decide todavía si hay una pista o varias.
-
-**S2** (leí PIS):
-
-| Ítem                         | Cómo llegó                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| Pistas → PIS • Pistas, 1     | Scanner: la primera regla sigue viva                                                  |
-| Pistas → PIS •, 1            | Scanner: la segunda también, y está **completa**                                      |
-| Pistas → • PIS Pistas, 2     | Predictor (por el primer ítem): tal vez viene otra pista                              |
-| Pistas → • PIS, 2            | Predictor                                                                             |
-| Relato → CRI Pistas • REV, 0 | Completer: terminé un Pistas que empezó en 1; vuelvo a S1 y avanzo al que lo esperaba |
-
-**S3** (leí REV):
-
-| Ítem                         | Cómo llegó                                   |
-| ---------------------------- | -------------------------------------------- |
-| Relato → CRI Pistas REV •, 0 | Scanner: el evento era REV                   |
-| $S → Relato •, 0             | Completer: terminé un Relato que empezó en 0 |
-
-**Resultado:** el último conjunto tiene `$S → Relato •, 0`: se reconoció un Relato completo desde el principio. **El relato es válido.** Los ítems que esperaban otra pista (`Pistas → • PIS …, 2`) simplemente no avanzaron: eran caminos que no se dieron.
-
-Si en algún momento un conjunto queda **vacío**, ningún camino sigue vivo: el relato es inválido, y el error está en ese evento.
-
-Para verlo de forma gráfica, con el motor real y G0 (`CRI PIS REV` y `CRI REV`), abrir [`docs/interactive/earley-g0.html`](../interactive/earley-g0.html) en el navegador: las libretas se llenan ítem por ítem, con un color por operación. El mismo recorrido, explicado paso a paso en texto: [`docs/interactive/earley-g0-cri-pis-rev.md`](../interactive/earley-g0-cri-pis-rev.md).
-
-### 2.5 Por qué siempre termina
-
-Un ítem es una regla con punto (hay finitas) más un origen (entre 0 y n). En cada conjunto, un mismo ítem se anota **una sola vez**. Entonces cada conjunto es finito, y hay n + 1 conjuntos: el algoritmo termina siempre, aunque la gramática tenga recursión a izquierda o sea ambigua. Es lo que muestra el comando `items`.
-
-### 2.6 Y la ambigüedad
-
-Si un ítem se puede alcanzar de **dos formas** (dos agrupaciones distintas de los mismos eventos), no se anota dos veces: se le agrega un **enlace** más, que recuerda de dónde vino. Un ítem con varios enlaces es exactamente una ambigüedad. Con esos enlaces, los pasos 19 y 20 reconstruyen y cuentan los árboles.
-
----
-
-## 3. Por qué estas estructuras
+## 2. Por qué así
 
 - **El ítem guarda el origen** porque el Completer necesita saber a qué conjunto volver. Sin origen, un Pistas terminado no sabría a quién avanzar.
-- **La clave `productionId:dot:origin`** identifica un ítem dentro de un conjunto. Es lo que permite anotar cada ítem una sola vez, y eso garantiza que el algoritmo termina.
-- **Cada conjunto es una lista que solo crece, más un índice por clave.** La lista conserva el orden en que llegaron los ítems y, recorrida con un índice que avanza mientras la lista crece, hace de **cola de trabajo**: los ítems que se agregan mientras se procesa el conjunto también se procesan. El índice (`byKey`) responde en O(1) si un ítem ya está.
-- **Los enlaces se agregan sin buscar repetidos.** El algoritmo nunca construye dos veces el mismo enlace (sección 3.18 del spec), y buscar repetidos haría el algoritmo mucho más lento en G0.
-- **Alternativa descartada: un árbol compartido (SPPF).** Es la representación más compacta de todos los árboles, pero mucho más compleja de construir y explicar. Los enlaces alcanzan para reconstruir y contar los árboles.
+- **La clave `productionId:dot:origin`** identifica un ítem dentro de un conjunto. Permite anotar cada ítem una sola vez, y eso garantiza que el algoritmo termina.
+- **Cada conjunto es una lista que solo crece, más un índice por clave.** La lista conserva el orden de llegada y, recorrida con un índice que avanza mientras crece, hace de **cola de trabajo**: los ítems que se agregan durante el recorrido también se procesan. El índice (`byKey`) responde en O(1) si un ítem ya está.
+- **Los enlaces se agregan sin buscar repetidos.** El algoritmo nunca construye dos veces el mismo enlace (sección 3.18 del SPEC 02), y buscar repetidos lo haría mucho más lento en G0.
+- **Alternativa descartada: un árbol compartido (SPPF).** Es la representación más compacta de todos los árboles, pero mucho más compleja de construir y explicar. Los enlaces alcanzan para reconstruir y contar los árboles (guías 19 y 20).
 
----
+## 3. El código, función por función
 
-## 4. Cómo se usa en el programa
-
-| Quién                                    | Usa                                                  | Para qué                                 |
-| ---------------------------------------- | ---------------------------------------------------- | ---------------------------------------- |
-| comando `items` (paso 13)                | `dottedRulesOf`, `dottedRule`                        | mostrar el universo de reglas punteadas  |
-| reconocedor (paso 14)                    | `createChart`, `addItem`, `nextSymbol`, `isComplete` | el algoritmo                             |
-| traza y chart en consola (pasos 14 y 17) | `label`                                              | escribir los ítems como `E → E + • T, 0` |
-| árboles y conteo (pasos 18 a 21)         | los `links` de cada ítem                             | reconstruir y contar los árboles         |
-
----
-
-## 5. El código, función por función
-
-### 5.1 El tipo `EarleyItem`
+### 3.1 El tipo `EarleyItem`
 
 | Campo        | Qué es                                                                      |
 | ------------ | --------------------------------------------------------------------------- |
@@ -137,9 +54,9 @@ Si un ítem se puede alcanzar de **dos formas** (dos agrupaciones distintas de l
 | `key`        | `'productionId:dot:origin'`                                                 |
 | `links`      | cómo llegó el punto hasta acá; vacío en un ítem recién predicho             |
 
-El tipo `Link` tiene tres variantes, una por cada forma de avanzar el punto: `scan` (se leyó un token), `complete` (se terminó un hijo) y `nullable` (se salteó un símbolo anulable, en el paso 15). Todas guardan el `predecessor`: el mismo ítem con el punto un lugar antes.
+El tipo `Link` tiene tres variantes, una por cada forma de avanzar el punto: `scan` (se leyó un token), `complete` (se terminó un hijo) y `nullable` (se salteó un símbolo anulable, en la [guía 15](15-arreglo-de-epsilon.md)). Todas guardan el `predecessor`: el mismo ítem con el punto un lugar antes.
 
-### 5.2 `createItem({ production, dot, origin, setIndex })` e `itemKey({ production, dot, origin })`
+### 3.2 `createItem({ production, dot, origin, setIndex })` e `itemKey({ production, dot, origin })`
 
 ```ts
 export function itemKey(production: Production, dot: number, origin: number): string {
@@ -150,7 +67,7 @@ export function itemKey(production: Production, dot: number, origin: number): st
 - La clave usa el `id` de la producción, no su texto: es corta y única.
 - **No incluye el conjunto:** todos los ítems de un conjunto tienen el mismo `setIndex`, así que no sirve para distinguirlos. El mismo ítem puede aparecer en dos conjuntos distintos, y ahí son ítems diferentes.
 
-### 5.3 `nextSymbol(item)` e `isComplete(item)`
+### 3.3 `nextSymbol(item)` e `isComplete(item)`
 
 ```ts
 export function nextSymbol(item: EarleyItem): SymbolName | undefined {
@@ -167,7 +84,7 @@ export function isComplete(item: EarleyItem): boolean {
 - Una producción ε (`rightSide` vacío) está completa apenas se predice: `0 === 0`.
 - Estas dos funciones deciden qué operación aplicar: no terminal → Predictor, terminal → Scanner, completo → Completer.
 
-### 5.4 `dottedRule({ production, dot })` y `label(item)`
+### 3.4 `dottedRule({ production, dot })` y `label(item)`
 
 ```ts
 const symbols = [...production.rightSide];
@@ -179,7 +96,7 @@ return `${production.leftSide} → ${symbols.join(' ')}`;
 - Para A → ε da `A → •`.
 - `label` le agrega el origen: `E → E + • T, 0`, el formato del chart y de la traza.
 
-### 5.5 `dottedRulesOf(grammar)`
+### 3.5 `dottedRulesOf(grammar)`
 
 ```ts
 return grammar.productions.flatMap((production) =>
@@ -191,11 +108,11 @@ return grammar.productions.flatMap((production) =>
 - `flatMap` junta las de todas las producciones en una sola lista.
 - Es el universo finito de reglas punteadas. Un ítem solo le agrega un origen.
 
-### 5.6 `createChart(tokenCount)`
+### 3.6 `createChart(tokenCount)`
 
-Crea n + 1 conjuntos vacíos, S0 … Sn: uno por cada posición **entre** tokens (antes del primero, entre cada par, y después del último). Con la entrada vacía hay uno solo, S0.
+Crea n + 1 conjuntos vacíos, S0 … Sn: uno por cada posición **entre** tokens (antes del primero, entre cada par y después del último). Con la entrada vacía hay uno solo, S0.
 
-### 5.7 `addItem({ set, production, dot, origin, link })`
+### 3.7 `addItem({ set, production, dot, origin, link })`
 
 ```ts
 const existing = set.byKey.get(itemKey({ production, dot, origin }));
@@ -214,15 +131,13 @@ return { item, isNew: existing === undefined };
 - `existing ?? createItem(...)`: si ya está, trabaja con ese; si no, crea uno nuevo.
 - **El enlace se agrega en los dos casos.** Si el ítem ya estaba, este es un **segundo camino** para llegar a él: queda como un enlace más. Así se registra la ambigüedad sin duplicar ítems.
 - Solo si es nuevo se agrega a la lista (al final, como en una cola) y al índice.
-- `isNew` le dice al algoritmo (paso 14) si hay que procesarlo: un ítem que ya estaba no se procesa otra vez. Es lo que garantiza que el algoritmo termina.
+- `isNew` le dice al algoritmo ([guía 14](14-reconocedor-de-earley.md)) si hay que procesarlo: un ítem que ya estaba no se procesa otra vez. Es lo que garantiza que el algoritmo termina.
 
-### 5.8 El comando `items`
+### 3.8 El comando `items`
 
-Para cada regla punteada, muestra su producción, la regla con el punto y **qué operación dispara**: `Predictor: expect S`, `Scanner: read the token (` o `Completer: S is recognized` (`operationFor`). Termina con la cuenta del universo de ítems.
+Para cada regla punteada, muestra su producción, la regla con el punto y **qué operación dispara** (`operationFor`): `Predictor: expect S`, `Scanner: read the token (` o `Completer: S is recognized`. Termina con la cuenta del universo de ítems. Ninguna función del paso lanza errores; el comando tiene los errores de uso de los análisis (código 2).
 
----
-
-## 6. Ejemplo recorrido a mano
+## 4. Consola y pruebas
 
 ```sh
 npm run sabueso -- items --grammar parentheses
@@ -241,42 +156,16 @@ Production  Dotted rule    What Earley does with it
 6 dotted rules. An item is a dotted rule plus its origin j (0 … n), so for an input of n tokens each set holds at most 6 × (n + 1) items: a finite number, which is why Earley always ends.
 ```
 
-Para `( )` (n = 2) hay 3 conjuntos con a lo sumo 6 × 3 = 18 ítems cada uno: el algoritmo no puede seguir agregando para siempre.
+Para `( )` (n = 2) hay 3 conjuntos con a lo sumo 6 × 3 = 18 ítems cada uno: el algoritmo no puede seguir agregando para siempre. Desde la guía 14, `npm run sabueso -- earley --grammar … --chart` imprime los conjuntos.
 
----
+| Prueba                                          | Qué verifica                                                                                                                                                            |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/test/earley/item.test.ts`        | la clave (y que no incluye el conjunto), `nextSymbol` e `isComplete` (también para ε), `dottedRule` y `label` (`E → E + • T, 0`), y las 6 reglas de `parentheses`       |
+| `packages/core/test/earley/chart.test.ts`       | n + 1 conjuntos; un ítem nuevo va al final y al índice; sin ítems repetidos; otro origen es otro ítem; un segundo camino agrega un enlace; los enlaces no se deduplican |
+| `packages/core/test/command-line/items.test.ts` | las 6 reglas de `parentheses` con su operación, y los errores de uso                                                                                                    |
 
-## 7. Errores
+## 5. Referencias
 
-Ninguna función lanza errores. El comando tiene los errores de uso de los análisis (código 2).
-
----
-
-## 8. Consola y pruebas
-
-**`test/earley/item.test.ts`:** la clave (y que no incluye el conjunto), `nextSymbol` e `isComplete` (también para ε), `dottedRule` y `label` (`E → E + • T, 0`), y las 6 reglas punteadas de `parentheses`.
-
-**`test/earley/chart.test.ts`:** n + 1 conjuntos; un ítem nuevo va al final y al índice; el mismo ítem no se agrega dos veces; otro origen es otro ítem; un segundo camino agrega un enlace; los enlaces no se deduplican.
-
-**`test/command-line/items.test.ts`:** las 6 reglas de `parentheses` con su operación, y los errores de uso.
-
----
-
-## 9. Preguntas probables en la defensa
-
-**¿Qué es un ítem de Earley?**
-Una regla punteada con origen, (A → α • β, j): estoy reconociendo A, ya reconocí α desde la posición j, y me falta β.
-
-**¿Para qué sirve el origen?**
-Para el Completer: cuando A se completa, hay que volver al conjunto j, donde alguien esperaba un A, y avanzarle el punto.
-
-**¿Por qué Earley siempre termina?**
-Porque hay finitas reglas punteadas, el origen va de 0 a n, y cada ítem se anota una sola vez por conjunto. Cada conjunto es finito, y hay n + 1.
-
-**¿Cuál es la diferencia con LL(1)?**
-LL(1) elige una regla mirando un símbolo; con dos reglas posibles, no puede. Earley anota todas las posibilidades y descarta las que no encajan. Por eso sirve para cualquier gramática libre de contexto, incluida G0.
-
-**¿Dónde queda la ambigüedad?**
-En los enlaces. Si un ítem se alcanza de dos formas, no se duplica: se le agrega otro enlace. Un ítem con varios enlaces marca una parte de la entrada con varios árboles.
-
-**¿Por qué cada conjunto es una lista y no un `Set`?**
-Porque el orden importa: la lista es la cola de trabajo. Se recorre con un índice que avanza mientras la lista crece, y así se procesan también los ítems que se agregan durante el recorrido. El índice por clave responde en O(1) si un ítem ya está.
+- Earley, J., "An efficient context-free parsing algorithm", _Communications of the ACM_ 13(2), 1970.
+- Aho, Lam, Sethi y Ullman, _Compiladores_ (2.ª ed.), sección 4.6 (ítems LR, la misma idea de regla punteada).
+- SPEC 02, secciones 3.12 y 3.18.

@@ -2,7 +2,7 @@
  * Concept: counting the parse trees of an input without building them, by dynamic
  * programming over the links of the Earley items. With Pasos → Pasos Pasos, the count of G0
  * grows exponentially with the number of steps.
- * Card: docs/concepts/19-tree-count-catalan.md
+ * Guide: docs/guides/20-conteo-de-arboles.md
  */
 import { computeNullable } from '../analysis/nullable.js';
 import type { EarleyItem, Link } from '../earley/item.js';

@@ -1,7 +1,7 @@
 /**
  * Concept: why a story is rejected, as data: where it fails, what was found and what was
  * expected, and which Earley items were left open there. Read straight from the Earley chart.
- * Cards: docs/concepts/17-acceptance-and-errors.md, 11-earley-item.md, 12-earley-sets.md
+ * Guides: docs/guides/16-diagnostico-de-errores.md, 13-earley-items-y-conjuntos.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
 import type { Chart, EarleySet } from './chart.js';

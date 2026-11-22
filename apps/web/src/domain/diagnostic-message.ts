@@ -1,5 +1,5 @@
 /**
- * The diagnosis of a rejected story in words (card 17): where the error is and what was
+ * The diagnosis of a rejected story in words (guide 16): where the error is and what was
  * expected there. Positions count from 0, as in the core; events from 1, as a person does.
  */
 import type { ParseError } from '@sabueso/core';

@@ -20,7 +20,7 @@ import type {
 /** A built-in grammar of a genre: 'detective/g1', 'detective/g0'. */
 export type GrammarId = string;
 
-/** The analysis of a story, plus the leftmost derivation of each tree built (card 20). */
+/** The analysis of a story, plus the leftmost derivation of each tree built (guide 21). */
 export type StoryAnalysis = ParseResult & {
   /** One derivation per tree in `trees`, in the same order; empty when rejected. */
   derivations: DerivationStep[][];

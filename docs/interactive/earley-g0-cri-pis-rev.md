@@ -1,7 +1,7 @@
 # Recorrido completo: Earley con G0 sobre `CRI PIS REV`
 
 > Los 60 pasos de Earley, uno por uno, para seguirlos con calma. Es exactamente lo que hace el programa: se generó con el motor real (`recognize` del paso 14) y coincide con la página interactiva [`earley-g0.html`](earley-g0.html) (en esta misma carpeta) y con `npm run sabueso -- earley --grammar g0 --chart "CRI PIS REV"`.
-> Guías relacionadas: [13 — ítems y conjuntos](../guides/13-earley-items-and-chart.md) y [14 — el reconocedor](../guides/14-earley-recognizer.md).
+> Guías relacionadas: [13 — ítems y conjuntos](../guides/13-earley-items-y-conjuntos.md) y [14 — el reconocedor](../guides/14-reconocedor-de-earley.md).
 
 ---
 

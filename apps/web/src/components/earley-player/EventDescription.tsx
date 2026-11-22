@@ -1,4 +1,4 @@
-/** What the current event did: the operation, the item added and why (cards 13 to 16). */
+/** What the current event did: the operation, the item added and why (guides 14 and 15). */
 import type { TraceEvent } from '@sabueso/core';
 import { OPERATION_NAMES } from '../../domain/earley-events';
 

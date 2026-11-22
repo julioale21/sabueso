@@ -1,4 +1,4 @@
-/** The six steps of the conversion to Chomsky normal form, in order (card 22). */
+/** The six steps of the conversion to Chomsky normal form, in order (guide 23). */
 import type { ChomskyNormalFormResult, Grammar } from '@sabueso/core';
 import { STEP_DESCRIPTIONS, stepChanges } from '../../domain/normal-form';
 import { NormalFormStep } from './NormalFormStep';

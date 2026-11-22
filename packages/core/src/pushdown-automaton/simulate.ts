@@ -2,7 +2,7 @@
  * Concept: running a nondeterministic pushdown automaton: a breadth-first search over its
  * instantaneous descriptions, with the configurations already seen skipped, the ones that
  * need more tokens than are left pruned (minYield), and a step limit.
- * Card: docs/concepts/24-pushdown-automaton.md
+ * Guide: docs/guides/26-automata-de-pila.md
  */
 import { computeMinYield, minYieldOfSequence } from '../analysis/min-yield.js';
 import type { Grammar, SymbolName } from '../grammar/types.js';

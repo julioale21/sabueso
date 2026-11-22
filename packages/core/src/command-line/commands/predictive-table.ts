@@ -1,7 +1,7 @@
 /**
  * Concept: the LL(1) table M[A, a] of a grammar, its conflicts, and the verdict: with no
  * conflicts the grammar is LL(1), and therefore unambiguous.
- * Card: docs/concepts/06-predictive-table-and-unambiguity.md
+ * Guide: docs/guides/12-tabla-ll1-y-no-ambiguedad.md
  */
 import {
   buildPredictiveTable,

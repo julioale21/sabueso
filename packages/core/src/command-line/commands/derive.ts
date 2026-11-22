@@ -2,7 +2,7 @@
  * Concept: the leftmost derivation of a story, S ⇒ … ⇒ w, one numbered sentential form per
  * step with the production applied. With --tree, the derivation of another tree: two
  * different leftmost derivations of the same story mean the grammar is ambiguous.
- * Card: docs/concepts/20-leftmost-derivation.md
+ * Guide: docs/guides/21-derivacion-mas-a-la-izquierda.md
  */
 import { recognize } from '../../earley/recognizer.js';
 import { formatProduction } from '../../grammar/build.js';

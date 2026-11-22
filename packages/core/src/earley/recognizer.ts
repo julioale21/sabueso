@@ -1,8 +1,7 @@
 /**
  * Concept: the Earley recognizer: Predictor, Scanner and Completer over the sets S0 … Sn,
  * deciding w ∈ L(G) for any context-free grammar, with the ε fix of Aycock and Horspool.
- * Cards: docs/concepts/13-predictor.md, 14-scanner.md, 15-completer.md,
- * 16-epsilon-aycock-horspool.md
+ * Guides: docs/guides/14-reconocedor-de-earley.md, 15-arreglo-de-epsilon.md
  */
 import { computeNullable } from '../analysis/nullable.js';
 import {

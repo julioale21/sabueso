@@ -19,7 +19,7 @@ To answer it, Sabueso implements the **Earley** algorithm (Earley, 1970) from sc
 
 The project includes two grammars for the whodunit. **G0**, the one from the project proposal, is natural but **ambiguous**. **G1**, the official one, is **LL(1)** and therefore unambiguous. Comparing them with the same tools is one of the main themes of the project.
 
-This document describes the complete core (SPEC 02) and the web interface that shows it (SPEC 03). Each section explains what a component does, its key functions and how it connects with the others. The details of each component (the code line by line and the theory) are in the study guides (`docs/guides/`) and in the concept cards (`docs/concepts/`); each section ends with the reference. The study guides and concept cards are written in Spanish.
+This document describes the complete core (SPEC 02) and the web interface that shows it (SPEC 03). Each section explains what a component does, its key functions and how it connects with the others. The details of each component (the code line by line and the theory) are in the study guides (`docs/guides/`) (each one with the theory first and then the code); each section ends with the reference. The study guides are written in Spanish.
 
 # 2. Architecture
 
@@ -99,7 +99,7 @@ G0 and G1 share the alphabet of 14 tags and the skeleton `Relato → Planteo Inv
 
 The catalog (`genres`) is data with each genre, its grammars and the meaning of each tag (`TagInfo`). The engine does not depend on it: adding a genre means adding its grammars and an entry in the catalog.
 
-**Detail:** guides 02 and 05 · cards 02 and 21.
+**Detail:** guides 02, 05 and 19.
 
 # 4. Reading the `.grammar` format
 
@@ -129,7 +129,7 @@ The lexer of the format (`grammarLexerAutomaton`) recognizes the shape of a dire
 
 It returns the rules, the directives and `trace`, the list of the parser's decisions with their depth (`ParserTraceStep`), which `grammar --parser-trace` shows. The parser does not classify symbols: `buildGrammar` does that.
 
-**Detail:** guides 03 and 04 · cards 03 and 04.
+**Detail:** guides 03 and 04.
 
 # 5. The story
 
@@ -142,7 +142,7 @@ It returns the rules, the directives and `trace`, the list of the parser's decis
 
 Separating "w ∈ Σ\*?" from "w ∈ L(G)?" gives better messages: a tag that does not exist and a badly built sequence are different errors.
 
-**Detail:** guide 06 · card 01.
+**Detail:** guide 06.
 
 # 6. Grammar analysis
 
@@ -194,7 +194,7 @@ Three results matter for the rest of the project:
 - **G1 has 0 conflicts, so it is LL(1), and every LL(1) grammar is unambiguous:** at each step of a leftmost derivation, the next token determines the production. G1's unambiguity is proved by a computation, not only checked with examples. G0 has 13 conflicts; since the implication only goes one way, its ambiguity is shown separately, by counting trees (section 8).
 - **Ambiguous is not the same as cyclic:** G0 is ambiguous but has no cycles, so each story has a finite number of trees. A cyclic grammar (`test-cyclic`) has infinitely many.
 
-**Detail:** guides 07 to 12 · cards 05 to 10.
+**Detail:** guides 07 to 12.
 
 # 7. The Earley recognizer
 
@@ -254,7 +254,7 @@ The classic algorithm rejects `x` with `epsilon-trap` (`S → A A x`, `A → ε`
 - `openItemsAt({ chart, error })` (SPEC 05) takes the set of the error and returns the items left open: the structures already started (something before the dot) and the predicted rules that would have read an expected tag. With I1 in G1: `Planteo → Marco • Hecho, 0`. `parse()` returns it in `openItems`, and the console and the web show it: it explains the rejection when there is no tree.
 - With the `trace` option, the recognizer records every added item, in order, with its operation and its cause (`TraceEvent`). The cause is passed as data (`TraceCause`) and turned into text with `describeCause` only when there is a trace: without the option, it costs nothing.
 
-**Detail:** guides 13 to 17 · cards 11 to 17.
+**Detail:** guides 13 to 17.
 
 # 8. Trees and ambiguity
 
@@ -310,7 +310,7 @@ function countItem({ context, item }) {
 
 G0 is ambiguous because `Pasos → Pasos Pasos` groups the steps in every possible way, and the number grows exponentially. A grammar is ambiguous if and only if some string has two different leftmost derivations: `derive --grammar g0 --tree 2` shows the second one for the same story. In G1 the count is always 1, as the LL(1) table predicts.
 
-**Detail:** guides 18 to 21 · cards 18 to 21.
+**Detail:** guides 18 to 21.
 
 # 9. The public API
 
@@ -376,7 +376,7 @@ The conversion has six transformations. Each one is a function that takes a gram
 
 **Connects with:** receives the output of `toChomskyNormalForm` and returns a `ParseTree`, the same type as Earley, rebuilt from the table. This way the `cocke-younger-kasami --compare` command draws both trees side by side: with `CRI PIS REV` and G1, the CYK tree has `X1` and loses ten categories of the genre (`Hecho`, `MarcoOpc`, `Pasos`…). This is the comparison that justifies using Earley. The tests check that CYK on CNF(G) and Earley on G accept exactly the same short strings.
 
-**Detail:** guides 23, 24 and 25 · cards 22 and 23.
+**Detail:** guides 23, 24 and 25.
 
 ## 10.2 Pushdown automaton
 
@@ -384,7 +384,7 @@ The conversion has six transformations. Each one is a function that takes a gram
 
 **Connects with:** uses minYield (section 6) to prune. Its accepting path checks a theorem in code: the expansions, in order, are the leftmost derivation (section 8); with A1 and G1, 18 against 18. It is a third recognizer, independent of Earley and CYK: the tests check that it accepts the same short strings as Earley. And it explains Earley: an item A → α • β, j is a piece of shared stack.
 
-**Detail:** guide 26 · card 24.
+**Detail:** guide 26.
 
 ## 10.3 Bounded searches
 
@@ -392,7 +392,7 @@ The conversion has six transformations. Each one is a function that takes a gram
 
 **Connects with:** uses minYield (section 6) to prune, and Earley with tree counting (sections 7 and 8) for the witness. With G0 it finds `CRI SOS ATQ REV` (2 trees); with G1, nothing up to length 7: what proves that G1 is unambiguous is the LL(1) table (section 6). `compare g0 g1` finds `CRI DSC REV` and `HAL DSC REV`: L(G0) ≠ L(G1).
 
-**Detail:** guide 27 · cards 21 and 25.
+**Detail:** guides 19 and 27.
 
 # 11. The console
 
@@ -413,7 +413,7 @@ The `sabueso` console shows each component of the engine separately: each comman
 | `generate`, `ambiguity`, `compare`                                                         | the sentences up to length k, the ambiguity witness and the difference between two languages | 10.3    |
 | `differential`, `bench`                                                                    | the three recognizers on all strings up to length k; the time of each stage for one story    | 13      |
 
-The complete walkthrough, with the output of each command, is in `docs/console-demo.md`. A test checks that every command in that document is still valid.
+The complete walkthrough, with the output of each command, is in `docs/demo-consola.md`. A test checks that every command in that document is still valid.
 
 # 12. The web interface
 
@@ -455,7 +455,7 @@ The web (`apps/web`, published at `https://julioale21.github.io/sabueso/`) shows
 - **Chomsky hierarchy:** the lexer recognizes a regular language (type 3) with a DFA; the project grammars are context-free (type 2) and their machine is the pushdown automaton (section 10.2). Some rules of the genre are outside every CFG: "there are as many suspicions as discards and as interrogations" (proved with the pumping lemma, intersecting with a regular language) and "the culprit appeared earlier", if the names are not bounded.
 - **Decidability:** for a CFG, membership (Earley), emptiness (`isEmpty`) and "is LL(1)" (`buildPredictiveTable`) are decidable, and each one has a decider in the core. Ambiguity and equivalence are undecidable: the core only semidecides them with bounded searches (section 10.3). By the Church–Turing thesis, each function of the core is a Turing machine that always halts.
 
-**Detail:** cards 26 and 27.
+**Detail:** guides 30 and 31.
 
 # 15. References
 

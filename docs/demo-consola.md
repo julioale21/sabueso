@@ -1,6 +1,6 @@
 # Guion de la demo por consola
 
-Los comandos de la demo, un bloque por concepto, en el orden en que se construyó el núcleo: de la lectura de la gramática a los límites del modelo. Cada concepto tiene su ficha en `docs/concepts/` (el índice está en el README).
+Los comandos de la demo, un bloque por concepto, en el orden en que se construyó el núcleo: de la lectura de la gramática a los límites del modelo. Cada concepto tiene su guía en `docs/guides/` (el índice está en el README).
 
 La prueba `packages/core/test/command-line/demo-doc.test.ts` ejecuta todas las líneas `npm run sabueso -- …` de los bloques de código de este archivo, y falla si alguna termina con código 2 (uso incorrecto). Así el guion siempre corresponde a comandos que existen.
 

@@ -2,7 +2,7 @@
  * Concept: the pushdown automaton of a grammar, run on a story: the result, how many
  * configurations the search explored, and the accepting path as a table of instantaneous
  * descriptions (input left, stack). With --transitions, δ itself.
- * Card: docs/concepts/24-pushdown-automaton.md
+ * Guide: docs/guides/26-automata-de-pila.md
  */
 import { formatProduction } from '../../grammar/build.js';
 import type { SymbolName } from '../../grammar/types.js';

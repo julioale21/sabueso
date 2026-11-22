@@ -1,6 +1,6 @@
 /**
  * The LL(1) predictive table M[A, a]: a row per nonterminal, a column per terminal and $.
- * A cell with two or more productions is a conflict (card 06).
+ * A cell with two or more productions is a conflict (guide 12).
  */
 import type { PredictiveTable } from '@sabueso/core';
 import { PredictiveCell } from './PredictiveCell';

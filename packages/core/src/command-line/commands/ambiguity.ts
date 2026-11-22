@@ -2,7 +2,7 @@
  * Concept: the bounded search for a witness of ambiguity: the shortest sentence with two or
  * more trees, and its first two trees. A semidecision: a witness proves the grammar
  * ambiguous; none up to k proves nothing.
- * Card: docs/concepts/25-bounded-searches.md
+ * Guide: docs/guides/27-busquedas-acotadas.md
  */
 import { findAmbiguityWitness } from '../../bounded/ambiguity.js';
 import { recognize } from '../../earley/recognizer.js';

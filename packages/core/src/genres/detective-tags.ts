@@ -1,6 +1,6 @@
 /**
  * Concept: the alphabet Σ of the detective story, |Σ| = 14 (table of the project proposal).
- * Card: docs/concepts/01-alphabet-and-language.md
+ * Guide: docs/guides/05-gramaticas-del-proyecto.md
  *
  * The tags, their meaning and the examples are domain data, so they stay in Spanish.
  */

@@ -1,7 +1,7 @@
 /**
  * Concept: FIRST and FOLLOW of each nonterminal and, with --steps, how both fixed points
  * grow round by round.
- * Card: docs/concepts/05-first-follow.md
+ * Guide: docs/guides/11-first-y-follow.md
  */
 import { computeFirstFollow } from '../../analysis/first-follow.js';
 import type { Grammar } from '../../grammar/types.js';

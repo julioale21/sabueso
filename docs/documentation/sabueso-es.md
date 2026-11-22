@@ -19,7 +19,7 @@ Para responderla, Sabueso implementa desde cero el algoritmo de **Earley** (Earl
 
 El proyecto trae dos gramáticas del policial. **G0**, la del anteproyecto, es natural pero **ambigua**. **G1**, la oficial, es **LL(1)** y por lo tanto no ambigua. Compararlas con las mismas herramientas es uno de los ejes del proyecto.
 
-Este documento describe el núcleo completo (SPEC 02) y la interfaz web que lo muestra (SPEC 03). Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) y en las fichas teóricas (`docs/concepts/`); cada sección termina con la referencia.
+Este documento describe el núcleo completo (SPEC 02) y la interfaz web que lo muestra (SPEC 03). Cada sección explica qué hace una pieza, sus funciones clave y cómo se conecta con las demás. El detalle de cada pieza (el código línea por línea y la teoría) está en las guías de estudio (`docs/guides/`) (cada una con la teoría primero y después el código); cada sección termina con la referencia.
 
 # 2. Arquitectura
 
@@ -99,7 +99,7 @@ G0 y G1 comparten el alfabeto de 14 etiquetas y el esqueleto `Relato → Planteo
 
 El catálogo (`genres`) es un dato con cada género, sus gramáticas y el significado de cada etiqueta (`TagInfo`). El motor no depende de él: agregar un género es agregar sus gramáticas y una entrada en el catálogo.
 
-**Detalle:** guías 02 y 05 · fichas 02 y 21.
+**Detalle:** guías 02, 05 y 19.
 
 # 4. Lectura del formato `.grammar`
 
@@ -129,7 +129,7 @@ El lexer del formato (`grammarLexerAutomaton`) reconoce la forma de una directiv
 
 Devuelve las reglas, las directivas y `trace`, la lista de las decisiones del parser con su profundidad (`ParserTraceStep`), que muestra `grammar --parser-trace`. El parser no clasifica símbolos: eso lo hace `buildGrammar`.
 
-**Detalle:** guías 03 y 04 · fichas 03 y 04.
+**Detalle:** guías 03 y 04.
 
 # 5. El relato
 
@@ -142,7 +142,7 @@ Devuelve las reglas, las directivas y `trace`, la lista de las decisiones del pa
 
 Separar "¿w ∈ Σ\*?" de "¿w ∈ L(G)?" da mejores mensajes: una etiqueta que no existe y una secuencia mal armada son errores distintos.
 
-**Detalle:** guía 06 · ficha 01.
+**Detalle:** guía 06.
 
 # 6. Análisis de la gramática
 
@@ -194,7 +194,7 @@ Tres resultados importan para el resto del proyecto:
 - **G1 tiene 0 conflictos, así que es LL(1), y toda gramática LL(1) es no ambigua:** en cada paso de una derivación más a la izquierda, el próximo token determina la producción. La no ambigüedad de G1 queda demostrada por un cálculo, no solo comprobada con ejemplos. G0 tiene 13 conflictos; como la implicación va en un solo sentido, su ambigüedad se muestra aparte, contando árboles (sección 8).
 - **Ambigua no es lo mismo que cíclica:** G0 es ambigua pero sin ciclos, así que cada relato tiene una cantidad finita de árboles. Una gramática cíclica (`test-cyclic`) tiene infinitos.
 
-**Detalle:** guías 07 a 12 · fichas 05 a 10.
+**Detalle:** guías 07 a 12.
 
 # 7. El reconocedor de Earley
 
@@ -254,7 +254,7 @@ El algoritmo clásico rechaza `x` con `epsilon-trap` (`S → A A x`, `A → ε`)
 - `openItemsAt({ chart, error })` (SPEC 05) toma el conjunto del error y devuelve los ítems que quedaron abiertos: las estructuras empezadas (algo antes del punto) y las reglas predichas que habrían leído una etiqueta esperada. Con I1 en G1: `Planteo → Marco • Hecho, 0`. `parse()` lo devuelve en `openItems`, y la consola y la web lo muestran: explica el rechazo cuando no hay árbol.
 - Con la opción `trace`, el reconocedor registra cada ítem agregado, en orden, con su operación y su causa (`TraceEvent`). La causa se pasa como dato (`TraceCause`) y se convierte en texto con `describeCause` solo cuando hay traza: sin la opción, no cuesta nada.
 
-**Detalle:** guías 13 a 17 · fichas 11 a 17.
+**Detalle:** guías 13 a 17.
 
 # 8. Árboles y ambigüedad
 
@@ -310,7 +310,7 @@ function countItem({ context, item }) {
 
 G0 es ambigua porque `Pasos → Pasos Pasos` agrupa los pasos de todas las formas posibles, y la cantidad crece exponencialmente. Una gramática es ambigua si y solo si alguna cadena tiene dos derivaciones más a la izquierda distintas: `derive --grammar g0 --tree 2` muestra la segunda del mismo relato. En G1 el conteo siempre da 1, como predice la tabla LL(1).
 
-**Detalle:** guías 18 a 21 · fichas 18 a 21.
+**Detalle:** guías 18 a 21.
 
 # 9. La API pública
 
@@ -376,7 +376,7 @@ La conversión tiene seis transformaciones. Cada una es una función que recibe 
 
 **Se conecta con:** recibe la salida de `toChomskyNormalForm` y devuelve un `ParseTree`, el mismo tipo que Earley, reconstruido desde la tabla. Así el comando `cocke-younger-kasami --compare` dibuja los dos árboles lado a lado: con `CRI PIS REV` y G1, el de CYK tiene `X1` y pierde diez categorías del género (`Hecho`, `MarcoOpc`, `Pasos`…). Es la comparación que justifica usar Earley. Las pruebas verifican que CYK sobre FNC(G) y Earley sobre G aceptan exactamente las mismas cadenas cortas.
 
-**Detalle:** guías 23, 24 y 25 · fichas 22 y 23.
+**Detalle:** guías 23, 24 y 25.
 
 ## 10.2 Autómata de pila
 
@@ -384,7 +384,7 @@ La conversión tiene seis transformaciones. Cada una es una función que recibe 
 
 **Se conecta con:** usa minYield (sección 6) para podar. Su camino de aceptación verifica en código un teorema: las expansiones, en orden, son la derivación más a la izquierda (sección 8); con A1 y G1, 18 contra 18. Es un tercer reconocedor, independiente de Earley y de CYK: las pruebas verifican que acepta las mismas cadenas cortas que Earley. Y explica a Earley: un ítem A → α • β, j es un pedazo de pila compartido.
 
-**Detalle:** guía 26 · ficha 24.
+**Detalle:** guía 26.
 
 ## 10.3 Búsquedas acotadas
 
@@ -392,7 +392,7 @@ La conversión tiene seis transformaciones. Cada una es una función que recibe 
 
 **Se conecta con:** usa minYield (sección 6) para podar, y Earley con el conteo de árboles (secciones 7 y 8) para el testigo. Con G0 encuentra `CRI SOS ATQ REV` (2 árboles); con G1, nada hasta largo 7: lo que demuestra que G1 no es ambigua es la tabla LL(1) (sección 6). `compare g0 g1` encuentra `CRI DSC REV` y `HAL DSC REV`: L(G0) ≠ L(G1).
 
-**Detalle:** guía 27 · fichas 21 y 25.
+**Detalle:** guías 19 y 27.
 
 # 11. La consola
 
@@ -413,7 +413,7 @@ La consola `sabueso` muestra cada pieza del motor por separado: cada comando lla
 | `generate`, `ambiguity`, `compare`                                                         | las oraciones hasta largo k, el testigo de ambigüedad y la diferencia entre dos lenguajes          | 10.3    |
 | `differential`, `bench`                                                                    | los tres reconocedores sobre todas las cadenas hasta largo k; el tiempo de cada etapa de un relato | 13      |
 
-El recorrido completo, con la salida de cada comando, está en `docs/console-demo.md`. Una prueba verifica que cada comando de ese documento siga siendo válido.
+El recorrido completo, con la salida de cada comando, está en `docs/demo-consola.md`. Una prueba verifica que cada comando de ese documento siga siendo válido.
 
 # 12. La interfaz web
 
@@ -455,7 +455,7 @@ La web (`apps/web`, publicada en `https://julioale21.github.io/sabueso/`) muestr
 - **Jerarquía de Chomsky:** el lexer reconoce un lenguaje regular (tipo 3) con un AFD; las gramáticas del proyecto son libres de contexto (tipo 2) y su máquina es el autómata de pila (sección 10.2). Algunas reglas del género quedan fuera de toda GLC: "hay tantas sospechas como descartes y como interrogatorios" (se demuestra con el lema de bombeo, intersecando con un regular) y "el culpable apareció antes", si los nombres no están acotados.
 - **Decidibilidad:** sobre una GLC, la pertenencia (Earley), la vacuidad (`isEmpty`) y "es LL(1)" (`buildPredictiveTable`) son decidibles, y cada uno tiene un decisor en el núcleo. La ambigüedad y la equivalencia son indecidibles: el núcleo solo las semidecide con búsquedas acotadas (sección 10.3). Por la tesis de Church-Turing, cada función del núcleo es una máquina de Turing que siempre se detiene.
 
-**Detalle:** fichas 26 y 27.
+**Detalle:** guías 30 y 31.
 
 # 15. Referencias
 

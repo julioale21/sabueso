@@ -1,6 +1,6 @@
 /**
  * Concept: nullable symbols, A ⇒* ε, computed as a least fixed point.
- * Card: docs/concepts/07-nullable-symbols.md
+ * Guide: docs/guides/07-simbolos-anulables.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 import { lastRound, repeatRuleUntilNoChange } from './fixed-point.js';

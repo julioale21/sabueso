@@ -1,6 +1,6 @@
 /**
  * Concept: DEL, the step of the Chomsky normal form that removes the ε-productions A → ε.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/23-fnc-start-del-unit.md
  */
 import { computeNullable } from '../analysis/nullable.js';
 import type { Grammar, SymbolName } from '../grammar/types.js';

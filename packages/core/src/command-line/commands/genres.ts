@@ -1,6 +1,6 @@
 /**
  * Concept: the genres the program can identify, each one a language over its own tags.
- * Card: docs/concepts/01-alphabet-and-language.md
+ * Guide: docs/guides/05-gramaticas-del-proyecto.md
  */
 import { genres } from '../../genres/catalog.js';
 import type { Genre } from '../../genres/types.js';

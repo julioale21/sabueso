@@ -1,6 +1,6 @@
 /**
  * Concept: context-free grammar G = (N, Σ, P, S).
- * Card: docs/concepts/02-context-free-grammar.md
+ * Guide: docs/guides/02-gramatica-libre-de-contexto.md
  */
 
 /** A grammar symbol: a nonterminal ('Pasos'), a tag ('CTX') or a literal ('+'). */

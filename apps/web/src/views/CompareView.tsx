@@ -1,7 +1,7 @@
 /**
  * G0 vs G1 (SPEC 03, section 3.4): bounded searches over the two grammars of the genre, up to
  * the length k: an ambiguity witness for each, and the sentences only one of them generates.
- * Finding something proves; finding nothing up to k proves nothing (cards 21 and 25).
+ * Finding something proves; finding nothing up to k proves nothing (guides 19 and 27).
  */
 import type { AmbiguityWitness, LanguageComparison } from '@sabueso/core';
 import { useState } from 'react';

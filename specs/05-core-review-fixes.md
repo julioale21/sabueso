@@ -33,7 +33,7 @@ Los arreglos de la web (W1 a W5) van en un spec aparte. Este solo toca la web en
 - **N9 · Inicio común de los comandos.** Un ayudante en `command-line/grammar-source.ts` reemplaza el inicio repetido de unos 23 comandos.
 - **N10 · `formatRounds` en un solo lugar,** y el comando `chomsky-normal-form` usa los pasos de `toChomskyNormalForm`.
 - **N11 · Sin referencias en las cabeceras del código** (sumado el 2026-11-21). Se borra la línea `Reference:` de las cabeceras de `packages/core/src`. La bibliografía vive solo en las fichas (`docs/concepts/`), a las que cada cabecera ya apunta con `Card:`. Antes de borrar, cada cita de un libro o artículo que falte en su ficha se pasa a la ficha.
-- **Documentación afectada:** las fichas, las guías, el documento oficial (español e inglés), `docs/console-demo.md` y el guion privado que nombren algo de lo que cambia. Sin guía nueva.
+- **Documentación afectada:** las fichas, las guías, el documento oficial (español e inglés), `docs/demo-consola.md` y el guion privado que nombren algo de lo que cambia. Sin guía nueva.
 - **Validación final:** se comprueba que todo funciona igual, con una comparación de la salida de la consola antes y después.
 
 **Fuera de alcance (para otros specs):**
@@ -111,11 +111,11 @@ export interface Recognition {
 Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`, `npm run format:check` y `npm test`. Los pasos que no cambian resultados se comprueban además contra la línea de base del paso 0.
 
 0. **Línea de base (antes de tocar nada).**
-   - En la rama `core_fixes`, guardar en una carpeta fuera del repositorio (no se commitea) la salida de cada comando de `docs/console-demo.md` y de `npm run sabueso -- help`: un archivo por comando, con su código de salida.
+   - En la rama `core_fixes`, guardar en una carpeta fuera del repositorio (no se commitea) la salida de cada comando de `docs/demo-consola.md` y de `npm run sabueso -- help`: un archivo por comando, con su código de salida.
    - Agregar a la línea de base estos comandos, que los pasos tocan de cerca: `parse`, `trees` y `count` sobre G0 y G1 con A1, I1 y `CRI PIS REV`; `nullable --steps`, `useful --steps`, `first-follow --steps` y `cycles --graph` sobre G1 y G0; `chomsky-normal-form` con y sin `--until`.
    - Anotar la cantidad de pruebas del núcleo y de la web.
 1. **Comentarios y citas (N2, N3, N4).**
-   - N2: en `chomsky-normal-form/index.ts`, `add-new-start.ts`, `remove-useless-symbols.ts`, `binarize.ts` e `isolate-terminals.ts`, citar a Sipser (sección 2.1, Teorema 2.9) para START y los nombres de los pasos, y a Hopcroft 7.1 (7.1.1 a 7.1.5) para el resto. Lo mismo en `docs/concepts/22-chomsky-normal-form.md` y `docs/guides/24-chomsky-normal-form-useless-term-bin.md`. Antes, confirmar las secciones con la edición de los libros de la bibliografía.
+   - N2: en `chomsky-normal-form/index.ts`, `add-new-start.ts`, `remove-useless-symbols.ts`, `binarize.ts` e `isolate-terminals.ts`, citar a Sipser (sección 2.1, Teorema 2.9) para START y los nombres de los pasos, y a Hopcroft 7.1 (7.1.1 a 7.1.5) para el resto. Lo mismo en `docs/concepts/22-chomsky-normal-form.md` y `docs/guides/24-fnc-useless-term-bin.md`. Antes, confirmar las secciones con la edición de los libros de la bibliografía.
    - N3: corregir el comentario de `cycles` en `analysis/index.ts`, y revisar la ficha y la guía de ciclos. Agregar una prueba con A→B, B→C, C→A, A→C que documente que se informa un ciclo por arista de retroceso.
    - N4: corregir el comentario de `nonterminals` en `grammar/types.ts`.
    - Verificación: la salida de la consola es idéntica a la línea de base.
@@ -127,7 +127,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
 2. **Código muerto (N8).**
    - Borrar `computeProductive` (`analysis/useful.ts`), `computeFirst` y `computeFollow` (`analysis/first-follow.ts`).
    - Pasar sus pruebas a `analyzeUsefulSymbols`, `productiveRounds`, `computeFirstFollow`, `firstRounds` o `followRounds`, con los mismos valores esperados.
-   - Actualizar `docs/guides/09-useless-symbols-and-emptiness.md` (sección 5.2), `docs/concepts/08-useless-symbols-and-emptiness.md` y las guías de FIRST y FOLLOW que los nombren.
+   - Actualizar `docs/guides/09-simbolos-inutiles-y-vacuidad.md` (sección 5.2), `docs/concepts/08-useless-symbols-and-emptiness.md` y las guías de FIRST y FOLLOW que los nombren.
    - Verificación: consola idéntica a la línea de base.
 3. **El ítem que acepta (N5).**
    - `recognize` busca `($S → S •, 0)` una sola vez en el último conjunto y devuelve `acceptingItem`; `accepted` sale de ahí.
@@ -145,7 +145,7 @@ Cada paso deja el sistema funcionando: pasan `npm run typecheck`, `npm run lint`
    - El comando `parse` muestra, después del diagnóstico, los ítems abiertos del conjunto del error (en inglés, como el resto de la consola), con `label()`.
    - Mover `apps/web/test/open-items.test.ts` al núcleo (`test/earley/open-items.test.ts`), con los tres casos: I1, el relato vacío y una etiqueta fuera de Σ. Agregar una prueba del comando `parse` con I1.
    - **Web, solo lo mínimo:** borrar `apps/web/src/domain/open-items.ts`. `DiagnosticPanel` recibe `openItems` del resultado y lo pasa a `OpenItems`, que escribe cada ítem con `label()`. Las pruebas de la web que miran los ítems abiertos siguen pasando con los mismos textos.
-   - Actualizar la ficha del diagnóstico, la guía 16, el documento oficial (español e inglés), `docs/console-demo.md` y la sección de I1 del guion privado.
+   - Actualizar la ficha del diagnóstico, la guía 16, el documento oficial (español e inglés), `docs/demo-consola.md` y la sección de I1 del guion privado.
    - Verificación: toda la consola es idéntica **salvo** `parse` con un relato rechazado, que suma los ítems abiertos. Ese cambio se revisa a mano y se anota.
 7. **`formatRounds` y los pasos de la FNC en la consola (N10).**
    - Las rondas, en `command-line/format.ts`: `formatSymbolRounds` (un conjunto de símbolos, para `nullable` y `useful`) y `formatSetsRounds` (un conjunto por no terminal, para `first-follow`). Ver la decisión en la sección 6.

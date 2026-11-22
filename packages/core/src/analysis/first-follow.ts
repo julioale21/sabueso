@@ -1,7 +1,7 @@
 /**
  * Concept: FIRST and FOLLOW, the sets an LL(1) parser looks at to choose a production
  * with one token of lookahead.
- * Card: docs/concepts/05-first-follow.md
+ * Guide: docs/guides/11-first-y-follow.md
  */
 import type { Grammar, SymbolName } from '../grammar/types.js';
 import { lastRound, repeatRuleOnSetsUntilNoChange, type SetsBySymbol } from './fixed-point.js';

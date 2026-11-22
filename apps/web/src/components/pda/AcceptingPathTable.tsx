@@ -1,6 +1,6 @@
 /**
  * The accepting path as a table of instantaneous descriptions, from (q, w, S) to (q, ε, ε).
- * The stack is the part of the leftmost derivation still to derive (card 24).
+ * The stack is the part of the leftmost derivation still to derive (guide 26).
  */
 import type { PathStep, PushdownAutomaton } from '@sabueso/core';
 import { inputLeft, stackText, stepTransitionText } from '../../domain/pushdown';

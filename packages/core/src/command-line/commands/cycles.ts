@@ -1,7 +1,7 @@
 /**
  * Concept: the cycles A ⇒+ A of a grammar, which give some string infinitely many trees,
  * and the unit graph where they are found.
- * Card: docs/concepts/09-cycles.md
+ * Guide: docs/guides/10-ciclos.md
  */
 import { computeNullable } from '../../analysis/nullable.js';
 import { buildUnitGraph, findCycles, type UnitGraph } from '../../analysis/cycles.js';

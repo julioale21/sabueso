@@ -1,7 +1,7 @@
 /**
  * The leftmost derivation, one sentential form per step (SPEC 03, section 3.4). Selecting a
  * step highlights the nonterminal it replaced and, in the tree, the node it expanded.
- * Concept: leftmost derivation (card 20).
+ * Concept: leftmost derivation (guide 21).
  */
 import type { DerivationStep } from '@sabueso/core';
 import { leftmostNonterminal } from '../../domain/derivation';

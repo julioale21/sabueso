@@ -1,7 +1,7 @@
 /**
  * Concept: the dotted rules of a grammar, the finite universe of Earley items, and which of
  * the three operations each one triggers: Predictor, Scanner or Completer.
- * Card: docs/concepts/11-earley-item.md
+ * Guide: docs/guides/13-earley-items-y-conjuntos.md
  */
 import { dottedRule, dottedRulesOf } from '../../earley/item.js';
 import type { Grammar, Production } from '../../grammar/types.js';

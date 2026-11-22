@@ -1,7 +1,7 @@
 /**
  * Concept: how long each stage of the analysis of one story takes: recognition (the chart),
  * one tree, its leftmost derivation and the tree count.
- * Card: docs/concepts/19-tree-count-catalan.md
+ * Guide: docs/guides/28-pruebas-diferenciales-y-rendimiento.md
  */
 import { recognize } from '../earley/recognizer.js';
 import type { Grammar, SymbolName } from '../grammar/types.js';

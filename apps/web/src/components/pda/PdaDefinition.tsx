@@ -1,4 +1,4 @@
-/** P = ({q}, Σ, Γ, δ, q, S), with the size of each part (card 24, Hopcroft 6.3.1). */
+/** P = ({q}, Σ, Γ, δ, q, S), with the size of each part (guide 26, Hopcroft 6.3.1). */
 import type { PushdownAutomaton } from '@sabueso/core';
 
 export function PdaDefinition({ automaton }: { automaton: PushdownAutomaton }) {

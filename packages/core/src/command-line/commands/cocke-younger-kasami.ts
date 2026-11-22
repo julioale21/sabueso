@@ -2,7 +2,7 @@
  * Concept: CYK on a story: the grammar is converted to Chomsky normal form, the triangular
  * table T[i][l] is filled, and one tree in FNC is drawn. With --compare, the Earley tree of
  * the grammar as written goes next to it: the FNC changes the shape of the trees.
- * Card: docs/concepts/23-cocke-younger-kasami.md
+ * Guide: docs/guides/25-cyk.md
  */
 import { toChomskyNormalForm } from '../../chomsky-normal-form/index.js';
 import {

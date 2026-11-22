@@ -33,7 +33,7 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
 - Esqueleto de `@sabueso/natural-language`: dependencia de `core`, CLI propia con `version` y `help`, prueba de humo.
 - Esqueleto de `@sabueso/web`: Vite + React 19, una pantalla que muestra "Sabueso" y la versión del núcleo, Vitest con jsdom y Testing Library, prueba de humo.
 - Scripts raíz: `build`, `test`, `lint`, `format`, `format:check`, `typecheck`, `sabueso` y `sabueso-natural-language`.
-- Estructura de documentación: `docs/concepts/` con una plantilla de ficha, y `docs/console-demo.md` con su prueba automática.
+- Estructura de documentación: `docs/concepts/` con una plantilla de ficha, y `docs/demo-consola.md` con su prueba automática.
 - Hooks de git nativos (`.githooks/`): `pre-commit` con formato y lint, `pre-push` con pruebas.
 - CI en GitHub Actions: lint, formato, typecheck, build y pruebas en cada push y pull request.
 
@@ -69,7 +69,7 @@ Los specs 02 (núcleo), 03 (interfaz) y 04 (español controlado) empezaban cada 
   specs/                          # ya existe
   docs/
     concepts/_template.md
-    console-demo.md
+    demo-consola.md
   packages/
     core/
       package.json                # @sabueso/core
@@ -282,9 +282,9 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 
 7. **Estructura de documentación.**
    - `docs/concepts/_template.md`, con las cinco partes de una ficha: definición formal, ejemplo resuelto a mano, dónde está en el código (archivo, función y comando de consola), qué prueba lo verifica, y referencia bibliográfica.
-   - `docs/console-demo.md`, con un bloque de código que contiene `npm run sabueso -- version`.
+   - `docs/demo-consola.md`, con un bloque de código que contiene `npm run sabueso -- version`.
    - **Prueba:** `packages/core/test/command-line/demo-doc.test.ts`:
-     - lee `docs/console-demo.md` y extrae las líneas `npm run sabueso -- …` de los bloques de código;
+     - lee `docs/demo-consola.md` y extrae las líneas `npm run sabueso -- …` de los bloques de código;
      - ejecuta cada una con `runCommandLine` y un `environment` en memoria, y verifica que ninguna devuelva 2;
      - ignora las líneas de `sabueso-natural-language` hasta que el SPEC 04 extienda la prueba.
    - **Verificación:** `npm test` incluye la prueba del guion.
@@ -354,7 +354,7 @@ Cada paso es un commit y deja el repositorio funcionando. Siguiendo la regla del
 - **Sí:** solo herramientas de calidad como `devDependencies` (TypeScript, Vitest, ESLint, Prettier, Testing Library, Vite). No tienen lógica de dominio, así que no violan la regla del anteproyecto de no usar bibliotecas que resuelvan los conceptos.
 - **Sí:** todo el código en inglés: identificadores, comentarios y nombres de las pruebas (`describe`/`it`). La documentación (`docs/`, specs, README) sigue en español. Los specs 02–04, que piden comentarios en español, adoptan esta regla cuando se trabaje cada uno.
 - **No:** identificadores ni comentarios en español. Obligaría a traducir todo después.
-- **Sí:** nombres de archivos y carpetas en inglés (`presentation-guide.md`, `docs/concepts/`, `docs/console-demo.md`), aunque su contenido esté en español. Es la misma razón que con los identificadores. Los specs 02–04 adoptan la regla cuando se trabaje cada uno.
+- **Sí:** nombres de archivos y carpetas en inglés (`presentation-guide.md`, `docs/concepts/`, `docs/demo-consola.md`), aunque su contenido esté en español. Es la misma razón que con los identificadores. Los specs 02–04 adoptan la regla cuando se trabaje cada uno.
 
 **CLI**
 

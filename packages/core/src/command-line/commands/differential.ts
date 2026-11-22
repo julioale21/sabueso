@@ -1,7 +1,7 @@
 /**
  * Concept: the three recognizers on every string up to a length k: how many strings, how
  * many sentences, and the disagreements (there must be none).
- * Card: docs/concepts/23-cocke-younger-kasami.md
+ * Guide: docs/guides/28-pruebas-diferenciales-y-rendimiento.md
  */
 import { runDifferential, type Discrepancy } from '../../differential/differential.js';
 import {

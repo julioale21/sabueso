@@ -1,4 +1,4 @@
-/** FIRST and FOLLOW of each nonterminal (card 05). */
+/** FIRST and FOLLOW of each nonterminal (guide 11). */
 import { setText } from '../../domain/productions';
 
 export function FirstFollowTable({

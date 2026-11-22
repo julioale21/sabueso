@@ -1,5 +1,5 @@
 /**
- * What the comparison up to k proves (card 25): one sentence in a single language proves
+ * What the comparison up to k proves (guide 27): one sentence in a single language proves
  * L(G0) ≠ L(G1); none proves nothing, because equivalence is undecidable.
  */
 export function ComparisonVerdict({

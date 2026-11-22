@@ -50,7 +50,7 @@ El autor pidió incluir LL(k), LR(k) o la Máquina de Turing **solo si el proyec
 - Construcción GLC → AP de un estado (aceptación por pila vacía) y simulador acotado con traza de descripciones instantáneas.
 - Búsquedas acotadas: generación de oraciones hasta longitud k, testigo de ambigüedad y comparación de lenguajes.
 - CLI `sabueso` que crece paso a paso: **cada módulo tiene su comando de consola y la prueba de ese comando** (sección 8.1). Ejemplos: `lex`, `grammar`, `nullable`, `first-follow`, `predictive-table`, `earley`, `trace`, `trees`, `count`, `derive`, `parse`, `chomsky-normal-form`, `cocke-younger-kasami`, `pushdown-automaton`, `ambiguity`, `compare`, `differential` y `bench`.
-- Guion de consola `docs/console-demo.md`, verificado por una prueba que ejecuta cada comando.
+- Guion de consola `docs/demo-consola.md`, verificado por una prueba que ejecuta cada comando.
 - Batería de pruebas con Vitest: unitarias, valores esperados calculados a mano, diferenciales Earley/CYK/AP y rendimiento.
 - Fichas de exposición `docs/concepts/NN-*.md`, una por concepto atómico.
 - Todo el código en inglés, incluidos los comentarios, con prioridad en los algoritmos (regla del SPEC 01).
@@ -658,7 +658,7 @@ Los archivos de la raíz, los esqueletos de los paquetes y la infraestructura de
     02-core-earley-engine.md
     .spec-config.yml
   docs/concepts/              # una ficha por concepto (tabla 7.1)
-  docs/console-demo.md         # guion de exposición por consola (paso 29)
+  docs/demo-consola.md         # guion de exposición por consola (paso 29)
   packages/core/
     package.json               # @sabueso/core, "type": "module", bin: { sabueso: dist/command-line.js }
     tsconfig.json
@@ -786,7 +786,7 @@ Cada paso termina con cuatro cosas, y ningún paso se da por cerrado sin ellas:
 1. **Una prueba automatizada** del módulo, con los valores esperados de la sección 9.
 2. **Un comando de consola** que ejecuta el módulo sobre una entrada real y muestra su resultado de forma legible. Así cada concepto se puede demostrar en vivo apenas se implementa, sin esperar a la API final ni a la UI.
 3. **Una prueba del comando:** que la salida contenga lo esperado y que el código de salida sea el correcto.
-4. **Una guía de estudio** en `docs/guides/NN-nombre.md` (plantilla en `docs/guides/_template.md`). Documenta las decisiones del paso: qué problema resuelve, por qué se eligió esa herramienta y no otra, cómo se usa en el programa, cómo funciona y cada función del código, con un ejemplo recorrido a mano y las preguntas probables de la defensa. La ficha del concepto (`docs/concepts/`) es el resumen teórico; la guía es la explicación completa del código y de sus decisiones.
+4. **Una guía de estudio** en `docs/guides/NN-nombre.md` (plantilla en `docs/guides/_plantilla.md`). Documenta las decisiones del paso: qué problema resuelve, por qué se eligió esa herramienta y no otra, cómo se usa en el programa, cómo funciona y cada función del código, con un ejemplo recorrido a mano y las preguntas probables de la defensa. La ficha del concepto (`docs/concepts/`) es el resumen teórico; la guía es la explicación completa del código y de sus decisiones.
 
 Además, cada paso deja `npm test` en verde y es un commit propio. Cada paso que introduce un concepto incluye su ficha. **Antes de cada paso de algoritmo, el autor simula el caso a mano** (metodología del anteproyecto).
 
@@ -1128,9 +1128,9 @@ La infraestructura (`command-line.ts`, `createCommandLineProgram`, `runCommandLi
       - Medido con L1: G1 en unos 24 ms (22 709 ítems) y G0 en unos 245 ms (43 006 ítems; la mitad es el conteo de 115 dígitos).
 
 29. **Guion de consola completo.**
-    - Completar `docs/console-demo.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.
+    - Completar `docs/demo-consola.md` (creado vacío en el SPEC 01) con el recorrido de la exposición: un comando por concepto, en el orden de las fichas.
     - La prueba `demo-doc.test.ts` del SPEC 01 ya ejecuta cada comando del documento con `runCommandLine` y verifica que ninguno termine con código 2. Este paso no la modifica: solo agrega comandos al guion.
-    - **Decisión (2026-11-21):** el paso quedó cubierto de forma incremental: cada paso agregó su sección a `docs/console-demo.md`, con su explicación y sus comandos, siguiendo el orden de construcción (que acompaña al de las fichas). No se reordenó: el orden de la exposición, con lo que se dice en cada momento, vive en el guion privado del autor. Se cerró en el paso 30 con dos ajustes: la introducción ya no depende del número de paso, y el rendimiento quedó en una línea (criterio: la materia evalúa conceptos; la prueba diferencial queda para las preguntas). Se sumó un bloque final para las fichas 26 y 27.
+    - **Decisión (2026-11-21):** el paso quedó cubierto de forma incremental: cada paso agregó su sección a `docs/demo-consola.md`, con su explicación y sus comandos, siguiendo el orden de construcción (que acompaña al de las fichas). No se reordenó: el orden de la exposición, con lo que se dice en cada momento, vive en el guion privado del autor. Se cerró en el paso 30 con dos ajustes: la introducción ya no depende del número de paso, y el rendimiento quedó en una línea (criterio: la materia evalúa conceptos; la prueba diferencial queda para las preguntas). Se sumó un bloque final para las fichas 26 y 27.
 
 30. **Fichas teóricas y README.**
     - Fichas 26 y 27.
@@ -1369,7 +1369,7 @@ Estos specs **no** están definidos. Se crean con `/spec` cuando este esté impl
 - [ ] `npm run sabueso -- help` lista todos los comandos de la sección 8.3.
 - [ ] `npm run sabueso -- earley --grammar epsilon-trap "x" --no-epsilon-fix` imprime `RECHAZA`, y sin la opción imprime `ACEPTA`.
 - [ ] `npm run sabueso -- nullable --grammar g1 --steps` muestra al menos dos iteraciones y termina con los 10 anulables.
-- [ ] La prueba `demo-doc.test.ts` ejecuta todos los comandos de `docs/console-demo.md` y ninguno termina con código 2.
+- [ ] La prueba `demo-doc.test.ts` ejecuta todos los comandos de `docs/demo-consola.md` y ninguno termina con código 2.
 - [ ] Existen las 27 fichas de la tabla 7.1, cada una con las cinco partes de la sección 7.1.
 - [ ] Cada archivo de `src/` empieza con el bloque de comentario en inglés de la sección 7.2 (concepto, referencia y ficha).
 - [ ] El README contiene el índice concepto → archivo → ficha y los comandos de la CLI.

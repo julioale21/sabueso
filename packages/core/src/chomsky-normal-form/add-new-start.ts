@@ -1,7 +1,7 @@
 /**
  * Concept: START, the first step of the Chomsky normal form: a new start symbol S0 → S, only
  * when S appears on some right side.
- * Card: docs/concepts/22-chomsky-normal-form.md
+ * Guide: docs/guides/23-fnc-start-del-unit.md
  */
 import type { Grammar } from '../grammar/types.js';
 import { freshSymbol, rewriteGrammar } from './rewrite.js';

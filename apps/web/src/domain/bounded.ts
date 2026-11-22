@@ -1,4 +1,4 @@
-/** How the bounded searches are written on screen (card 25): sentences and tree counts. */
+/** How the bounded searches are written on screen (guide 27): sentences and tree counts. */
 import type { TreeCount } from '@sabueso/core';
 
 /** The k the view offers: up to 6 the searches answer at once (SPEC 03, section 3.4). */

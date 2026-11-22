@@ -1,7 +1,7 @@
 /**
  * Concept: productive, reachable and useless symbols, and whether L(G) = ∅. With --steps,
  * the rounds of both fixed points; at the end, the grammar without useless symbols.
- * Card: docs/concepts/08-useless-symbols-and-emptiness.md
+ * Guide: docs/guides/09-simbolos-inutiles-y-vacuidad.md
  */
 import { analyzeUsefulSymbols, type UsefulSymbolsAnalysis } from '../../analysis/useful.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';

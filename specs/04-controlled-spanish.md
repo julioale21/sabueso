@@ -759,7 +759,7 @@ En la UI (pasos 16 a 19), "ejecutable" significa visible en `npm run dev -w @sab
     - **Consola:** cada caso de la tabla 8.3 se puede reproducir con `etiquetar --texto "<relato>"`, que analiza un texto pasado como argumento en lugar de un archivo.
 
 15. **Guion de consola.**
-    - Bloque "Español controlado" agregado a `docs/console-demo.md`, en el orden de las fichas 28 a 35: `lex-texto` → `mealy` → `palabra` → `oracion` → `marco` → `etiqueta` → `etiquetar` → `culpable`.
+    - Bloque "Español controlado" agregado a `docs/demo-consola.md`, en el orden de las fichas 28 a 35: `lex-texto` → `mealy` → `palabra` → `oracion` → `marco` → `etiqueta` → `etiquetar` → `culpable`.
     - La prueba `demo-doc.test.ts` del núcleo se extiende para ejecutar también los comandos `sabueso-natural-language` del documento.
 
 16. **Worker de la UI.**
@@ -866,7 +866,7 @@ Ninguna de estas ampliaciones toca `@sabueso/core`. Esa es la prueba de que el m
 - [ ] Cada paso de la sección 7.2 (1 a 15) tiene su comando `sabueso-natural-language` y una prueba en `test/command-line/` que verifica la salida y el código de salida.
 - [ ] `npm run sabueso-natural-language -- mealy temió` muestra la lectura paso a paso y las dos salidas (`ó` e `ió`).
 - [ ] `npm run sabueso-natural-language -- palabra policía` muestra el candidato `policer` (o `policir`) descartado por la validación y el resultado por identidad.
-- [ ] `docs/console-demo.md` incluye el bloque "Español controlado", y su prueba ejecuta esos comandos sin código 2.
+- [ ] `docs/demo-consola.md` incluye el bloque "Español controlado", y su prueba ejecuta esos comandos sin código 2.
 - [ ] `node packages/natural-language/dist/command-line.js etiquetar packages/natural-language/data/relatos/banquero.txt` imprime la secuencia `CTX PER HAL ENC INT REV CNF`, "relato válido" y la advertencia sobre `socio`.
 - [ ] En la UI, en modo "Español controlado", el ejemplo `ashby.txt` muestra 10 filas con sus etiquetas, y la vista Análisis muestra el árbol del relato con G1.
 - [ ] En la UI, seleccionar la oración 1 de `ashby.txt` muestra 2 árboles y la nota de ambigüedad coincidente.

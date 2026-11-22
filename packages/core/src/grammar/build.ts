@@ -1,6 +1,6 @@
 /**
  * Concept: building G = (N, Σ, P, S) from its rules, with the .grammar terminal convention.
- * Card: docs/concepts/02-context-free-grammar.md
+ * Guide: docs/guides/02-gramatica-libre-de-contexto.md
  */
 import { groupByLeftSide, productionKey } from './productions.js';
 import type { Grammar, Production, SymbolName } from './types.js';

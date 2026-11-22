@@ -1,4 +1,4 @@
-/** How the CYK table is explained while it fills by length (card 23). */
+/** How the CYK table is explained while it fills by length (guide 25). */
 
 /** What step l of the filling does, in words: l = 0 is the empty table, l = n the top cell. */
 export function stepText({ step, n }: { step: number; n: number }): string {

@@ -1,7 +1,7 @@
 /**
  * Earley step by step (SPEC 03, section 3.4): the sets S0 … Sn fill up event by event, with the
  * operation and the cause of each item. Concepts: items, sets, Predictor, Scanner, Completer and
- * the ε fix (cards 11 to 16). The trace comes from the core.
+ * the ε fix (guides 13 to 15). The trace comes from the core.
  */
 import type { ParseResult } from '@sabueso/core';
 import { useAnalysisService } from '../analysis/context';

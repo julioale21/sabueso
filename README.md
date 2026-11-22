@@ -20,6 +20,7 @@ Laboratorio Integrador Final de **Fundamentos Teóricos de Informática** · Lic
 - [Cómo funciona](#cómo-funciona)
 - [Decisiones de diseño](#decisiones-de-diseño)
 - [Estado](#estado)
+- [Cómo se desarrolló: specs](#cómo-se-desarrolló-specs)
 - [Primeros pasos](#primeros-pasos)
 - [Uso](#uso)
 - [Conceptos de la materia en el código](#conceptos-de-la-materia-en-el-código)
@@ -197,7 +198,29 @@ El detalle de cada pieza, con sus funciones clave, está en la [documentación d
 
 **Sigue, como ampliación opcional:** el relato en español controlado (SPEC 04).
 
-El proyecto avanza por specs, en orden:
+El proyecto avanza por specs: ver [Cómo se desarrolló: specs](#cómo-se-desarrolló-specs).
+
+---
+
+## Cómo se desarrolló: specs
+
+El proyecto se desarrolló **guiado por specs** (_spec-driven development_). Antes de escribir código, cada etapa se describe en un **spec**: un documento corto en `specs/` que dice qué se construye, qué queda afuera, el plan en pasos y cómo se verifica que está terminado. El código sigue al spec, y no al revés.
+
+Cada spec tiene estas partes:
+
+- **Objetivo:** una sola oración. Si no entra en una oración, el spec es demasiado grande y se divide.
+- **Alcance:** lo que entra y, sobre todo, lo que **no** entra.
+- **Plan de implementación:** pasos numerados; cada uno deja el sistema funcionando.
+- **Criterios de aceptación:** una lista que se puede verificar, sin frases como "que funcione bien".
+- **Decisiones tomadas y descartadas:** el porqué de cada elección, que es lo que más vale con el tiempo.
+
+**El ciclo de un spec:**
+
+1. **Escribir.** Se plantea la etapa y se responden las preguntas abiertas (alcance, datos, riesgos) antes de redactar. El spec queda en estado _Borrador_.
+2. **Revisar y aprobar.** El autor lo relee y lo cambia a _Aprobado_. Solo un spec aprobado se implementa.
+3. **Implementar.** En una rama propia, paso por paso, en el orden del plan. Si aparece algo que el spec no resuelve, se decide y se anota en el spec, no en el código por sorpresa.
+4. **Verificar.** Se revisan los criterios de aceptación uno por uno (pruebas, chequeos, la salida de la consola o de la web).
+5. **Cerrar.** El spec pasa a _Implementado_ (o _Terminado_), se agrega una nota de cierre y la rama se integra a `main`.
 
 | Spec                                                            | Contenido                                                                      | Estado               |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------- |
@@ -205,6 +228,9 @@ El proyecto avanza por specs, en orden:
 | [02 — Núcleo y motor de Earley](specs/02-core-earley-engine.md) | Librería de gramáticas y analizador de Earley (`@sabueso/core`)                | Terminado (30 pasos) |
 | [03 — Interfaz web](specs/03-web-interface.md)                  | Análisis visual y vistas didácticas (`apps/web`)                               | Terminado            |
 | [04 — Español controlado](specs/04-controlled-spanish.md)       | Del texto del relato a la secuencia de etiquetas (`@sabueso/natural-language`) | Borrador             |
+| [05 — Arreglos del núcleo](specs/05-core-review-fixes.md)       | Lo que encontró la revisión de código del núcleo                               | Implementado         |
+| [06 — Arreglos de la web](specs/06-web-review-fixes.md)         | Lo que encontró la revisión de código de la web                                | Implementado         |
+| [07 — Una sola guía por tema](specs/07-docs-merge.md)           | Fichas y guías fusionadas, en español y sin repetir                            | En curso             |
 
 ---
 
@@ -246,7 +272,7 @@ npm run sabueso -- compare g0 g1 --max-length 3               # lo que acepta G0
 
 Las gramáticas incluidas son las del género (`g0` y `g1`), la del formato (`meta`) y siete de prueba (`arithmetic`, `parentheses`, `epsilon-trap`, …). `npm run sabueso -- grammars` las lista. Para usar una gramática propia: `--grammar-file <ruta>`.
 
-El recorrido completo de la demo está en [`docs/console-demo.md`](docs/console-demo.md).
+El recorrido completo de la demo está en [`docs/demo-consola.md`](docs/demo-consola.md).
 
 ### La interfaz web
 
@@ -263,37 +289,37 @@ Para publicarla en un fork:
 
 ## Conceptos de la materia en el código
 
-Cada concepto tiene una ficha teórica, un lugar en el código y un comando de consola que lo muestra. Las fichas 26 y 27 no tienen código propio: ubican en la teoría lo que el resto ya hace.
+Cada concepto tiene su guía (con la teoría primero y después el código), un lugar en el código y un comando de consola que lo muestra. Las guías 30 y 31 no tienen código propio: ubican en la teoría lo que el resto ya hace.
 
-| #   | Concepto                                     | Código (`packages/core/src/`)                                           | Ficha                                                               | Comando (`npm run sabueso -- …`)                               |
-| --- | -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 01  | Alfabeto, cadena y lenguaje                  | `input/sequence.ts`                                                     | [ficha 01](docs/concepts/01-alphabet-and-language.md)               | `tokens --grammar g1 "CRI XYZ REV"`                            |
-| 02  | Gramática libre de contexto G = (N, Σ, P, S) | `grammar/build.ts`                                                      | [ficha 02](docs/concepts/02-context-free-grammar.md)                | `grammar g1`                                                   |
-| 03  | Autómata finito determinista (lexer)         | `automata/deterministic-finite-automaton.ts`, `grammar-format/lexer.ts` | [ficha 03](docs/concepts/03-finite-automaton-lexer.md)              | `lex g1 --states`                                              |
-| 04  | Análisis descendente predictivo              | `grammar-format/parser.ts`                                              | [ficha 04](docs/concepts/04-predictive-recursive-descent-parser.md) | `grammar arithmetic --parser-trace`                            |
-| 05  | FIRST y FOLLOW (punto fijo)                  | `analysis/first-follow.ts`                                              | [ficha 05](docs/concepts/05-first-follow.md)                        | `first-follow --grammar g1 --steps`                            |
-| 06  | Tabla LL(1): LL(1) ⇒ no ambigua              | `analysis/predictive-table.ts`                                          | [ficha 06](docs/concepts/06-predictive-table-and-unambiguity.md)    | `predictive-table --grammar g1`                                |
-| 07  | Símbolos anulables                           | `analysis/nullable.ts`                                                  | [ficha 07](docs/concepts/07-nullable-symbols.md)                    | `nullable --grammar g1 --steps`                                |
-| 08  | Símbolos inútiles y vacuidad                 | `analysis/useful.ts`                                                    | [ficha 08](docs/concepts/08-useless-symbols-and-emptiness.md)       | `useful --grammar test-useless --steps`                        |
-| 09  | Ciclos A ⇒+ A                                | `analysis/cycles.ts`                                                    | [ficha 09](docs/concepts/09-cycles.md)                              | `cycles --grammar test-cyclic --graph`                         |
-| 10  | Longitud mínima derivable                    | `analysis/min-yield.ts`                                                 | [ficha 10](docs/concepts/10-minimum-yield.md)                       | `min-yield --grammar g1`                                       |
-| 11  | Ítem de Earley (regla punteada)              | `earley/item.ts`                                                        | [ficha 11](docs/concepts/11-earley-item.md)                         | `items --grammar parentheses`                                  |
-| 12  | Conjuntos de Earley (chart)                  | `earley/chart.ts`                                                       | [ficha 12](docs/concepts/12-earley-sets.md)                         | `earley --grammar g1 --chart "CRI PIS REV"`                    |
-| 13  | Predictor                                    | `earley/recognizer.ts`                                                  | [ficha 13](docs/concepts/13-predictor.md)                           | `trace --grammar g1 "CRI PIS REV"`                             |
-| 14  | Scanner                                      | `earley/recognizer.ts`                                                  | [ficha 14](docs/concepts/14-scanner.md)                             | `trace --grammar g1 "CRI PIS REV"`                             |
-| 15  | Completer                                    | `earley/recognizer.ts`                                                  | [ficha 15](docs/concepts/15-completer.md)                           | `trace --grammar g1 "CRI PIS REV"`                             |
-| 16  | El arreglo de ε (Aycock y Horspool)          | `earley/recognizer.ts`                                                  | [ficha 16](docs/concepts/16-epsilon-aycock-horspool.md)             | `earley --grammar epsilon-trap --chart --no-epsilon-fix "x"`   |
-| 17  | Aceptación y diagnóstico de errores          | `earley/diagnostics.ts`                                                 | [ficha 17](docs/concepts/17-acceptance-and-errors.md)               | `earley --grammar g0 "CRI REV"`                                |
-| 18  | Árboles de derivación (enlaces)              | `trees/enumerate.ts`                                                    | [ficha 18](docs/concepts/18-backpointers-and-trees.md)              | `trees --grammar g0 "CRI SOS PIS INT REV"`                     |
-| 19  | Conteo de árboles (Catalan)                  | `trees/count.ts`                                                        | [ficha 19](docs/concepts/19-tree-count-catalan.md)                  | `count --grammar g0 --file packages/core/test/fixtures/l1.txt` |
-| 20  | Derivación más a la izquierda                | `trees/derivation.ts`                                                   | [ficha 20](docs/concepts/20-leftmost-derivation.md)                 | `derive --grammar g1 "CRI SOS PIS INT REV"`                    |
-| 21  | Ambigüedad: G0 contra G1                     | `packages/core/grammars/genres/detective/`                              | [ficha 21](docs/concepts/21-ambiguity-g0-vs-g1.md)                  | `count --grammar g0 "CRI SOS PIS INT REV"`                     |
-| 22  | Forma Normal de Chomsky                      | `chomsky-normal-form/`                                                  | [ficha 22](docs/concepts/22-chomsky-normal-form.md)                 | `chomsky-normal-form --grammar g1`                             |
-| 23  | CYK                                          | `cocke-younger-kasami/recognizer.ts`                                    | [ficha 23](docs/concepts/23-cocke-younger-kasami.md)                | `cocke-younger-kasami --grammar g1 --compare "CRI PIS REV"`    |
-| 24  | Autómata de pila (GLC → AP)                  | `pushdown-automaton/`                                                   | [ficha 24](docs/concepts/24-pushdown-automaton.md)                  | `pushdown-automaton --grammar g1 "CRI PIS REV"`                |
-| 25  | Búsquedas acotadas (semidecisión)            | `bounded/`                                                              | [ficha 25](docs/concepts/25-bounded-searches.md)                    | `ambiguity --grammar g0 --max-length 4`                        |
-| 26  | Jerarquía de Chomsky y límites de las GLC    | (sin código propio)                                                     | [ficha 26](docs/concepts/26-chomsky-hierarchy-and-cfg-limits.md)    | `pushdown-automaton --grammar parentheses "( ( ) )"`           |
-| 27  | Decidibilidad y máquina de Turing            | (sin código propio)                                                     | [ficha 27](docs/concepts/27-decidability-and-turing.md)             | `compare g0 g1 --max-length 3`                                 |
+| #   | Concepto                                     | Código (`packages/core/src/`)                                           | Guía                                                        | Comando (`npm run sabueso -- …`)                               |
+| --- | -------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| 01  | Alfabeto, cadena y lenguaje                  | `input/sequence.ts`                                                     | [guía 06](docs/guides/06-relato-como-cadena.md)             | `tokens --grammar g1 "CRI XYZ REV"`                            |
+| 02  | Gramática libre de contexto G = (N, Σ, P, S) | `grammar/build.ts`                                                      | [guía 02](docs/guides/02-gramatica-libre-de-contexto.md)    | `grammar g1`                                                   |
+| 03  | Autómata finito determinista (lexer)         | `automata/deterministic-finite-automaton.ts`, `grammar-format/lexer.ts` | [guía 03](docs/guides/03-lexer-afd.md)                      | `lex g1 --states`                                              |
+| 04  | Análisis descendente predictivo              | `grammar-format/parser.ts`                                              | [guía 04](docs/guides/04-parser-ll1.md)                     | `grammar arithmetic --parser-trace`                            |
+| 05  | FIRST y FOLLOW (punto fijo)                  | `analysis/first-follow.ts`                                              | [guía 11](docs/guides/11-first-y-follow.md)                 | `first-follow --grammar g1 --steps`                            |
+| 06  | Tabla LL(1): LL(1) ⇒ no ambigua              | `analysis/predictive-table.ts`                                          | [guía 12](docs/guides/12-tabla-ll1-y-no-ambiguedad.md)      | `predictive-table --grammar g1`                                |
+| 07  | Símbolos anulables                           | `analysis/nullable.ts`                                                  | [guía 07](docs/guides/07-simbolos-anulables.md)             | `nullable --grammar g1 --steps`                                |
+| 08  | Símbolos inútiles y vacuidad                 | `analysis/useful.ts`                                                    | [guía 09](docs/guides/09-simbolos-inutiles-y-vacuidad.md)   | `useful --grammar test-useless --steps`                        |
+| 09  | Ciclos A ⇒+ A                                | `analysis/cycles.ts`                                                    | [guía 10](docs/guides/10-ciclos.md)                         | `cycles --grammar test-cyclic --graph`                         |
+| 10  | Longitud mínima derivable                    | `analysis/min-yield.ts`                                                 | [guía 08](docs/guides/08-longitud-minima-derivable.md)      | `min-yield --grammar g1`                                       |
+| 11  | Ítem de Earley (regla punteada)              | `earley/item.ts`                                                        | [guía 13](docs/guides/13-earley-items-y-conjuntos.md)       | `items --grammar parentheses`                                  |
+| 12  | Conjuntos de Earley (chart)                  | `earley/chart.ts`                                                       | [guía 13](docs/guides/13-earley-items-y-conjuntos.md)       | `earley --grammar g1 --chart "CRI PIS REV"`                    |
+| 13  | Predictor                                    | `earley/recognizer.ts`                                                  | [guía 14](docs/guides/14-reconocedor-de-earley.md)          | `trace --grammar g1 "CRI PIS REV"`                             |
+| 14  | Scanner                                      | `earley/recognizer.ts`                                                  | [guía 14](docs/guides/14-reconocedor-de-earley.md)          | `trace --grammar g1 "CRI PIS REV"`                             |
+| 15  | Completer                                    | `earley/recognizer.ts`                                                  | [guía 14](docs/guides/14-reconocedor-de-earley.md)          | `trace --grammar g1 "CRI PIS REV"`                             |
+| 16  | El arreglo de ε (Aycock y Horspool)          | `earley/recognizer.ts`                                                  | [guía 15](docs/guides/15-arreglo-de-epsilon.md)             | `earley --grammar epsilon-trap --chart --no-epsilon-fix "x"`   |
+| 17  | Aceptación y diagnóstico de errores          | `earley/diagnostics.ts`                                                 | [guía 16](docs/guides/16-diagnostico-de-errores.md)         | `earley --grammar g0 "CRI REV"`                                |
+| 18  | Árboles de derivación (enlaces)              | `trees/enumerate.ts`                                                    | [guía 19](docs/guides/19-arboles-de-un-relato.md)           | `trees --grammar g0 "CRI SOS PIS INT REV"`                     |
+| 19  | Conteo de árboles (Catalan)                  | `trees/count.ts`                                                        | [guía 20](docs/guides/20-conteo-de-arboles.md)              | `count --grammar g0 --file packages/core/test/fixtures/l1.txt` |
+| 20  | Derivación más a la izquierda                | `trees/derivation.ts`                                                   | [guía 21](docs/guides/21-derivacion-mas-a-la-izquierda.md)  | `derive --grammar g1 "CRI SOS PIS INT REV"`                    |
+| 21  | Ambigüedad: G0 contra G1                     | `packages/core/grammars/genres/detective/`                              | [guía 19](docs/guides/19-arboles-de-un-relato.md)           | `count --grammar g0 "CRI SOS PIS INT REV"`                     |
+| 22  | Forma Normal de Chomsky                      | `chomsky-normal-form/`                                                  | [guía 23](docs/guides/23-fnc-start-del-unit.md)             | `chomsky-normal-form --grammar g1`                             |
+| 23  | CYK                                          | `cocke-younger-kasami/recognizer.ts`                                    | [guía 25](docs/guides/25-cyk.md)                            | `cocke-younger-kasami --grammar g1 --compare "CRI PIS REV"`    |
+| 24  | Autómata de pila (GLC → AP)                  | `pushdown-automaton/`                                                   | [guía 26](docs/guides/26-automata-de-pila.md)               | `pushdown-automaton --grammar g1 "CRI PIS REV"`                |
+| 25  | Búsquedas acotadas (semidecisión)            | `bounded/`                                                              | [guía 27](docs/guides/27-busquedas-acotadas.md)             | `ambiguity --grammar g0 --max-length 4`                        |
+| 26  | Jerarquía de Chomsky y límites de las GLC    | (sin código propio)                                                     | [guía 30](docs/guides/30-jerarquia-de-chomsky-y-limites.md) | `pushdown-automaton --grammar parentheses "( ( ) )"`           |
+| 27  | Decidibilidad y máquina de Turing            | (sin código propio)                                                     | [guía 31](docs/guides/31-decidibilidad-y-turing.md)         | `compare g0 g1 --max-length 3`                                 |
 
 ---
 
@@ -332,9 +358,8 @@ sabueso/
 ├── docs/
 │   ├── documentation/                 # documentación del núcleo (sabueso-es.md y su PDF)
 │   ├── guides/                        # una guía por paso del SPEC 02, y la 29 de la web
-│   ├── concepts/                      # fichas teóricas, una por concepto
 │   ├── interactive/                   # páginas paso a paso: Earley y el autómata de pila
-│   └── console-demo.md                # los comandos de la demo, en orden
+│   └── demo-consola.md                # los comandos de la demo, en orden
 ├── examples/grammars/                 # gramáticas chicas para mostrar casos por consola
 ├── specs/                             # los specs del proyecto, uno por etapa
 ├── .github/workflows/ci.yml           # integración continua
@@ -369,16 +394,15 @@ sabueso/
 
 ## Documentación
 
-| Documento                                                                                                      | Para qué                                                   |
-| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [Documentación del núcleo y la web](docs/documentation/sabueso-es.md)                                          | Arquitectura, piezas, funciones clave y cómo se conectan   |
-| [Core and web documentation (English)](docs/documentation/sabueso-en.md)                                       | La misma documentación, en inglés                          |
-| [Guías de estudio](docs/guides/)                                                                               | El código de cada paso, función por función, y la web (29) |
-| [Fichas teóricas](docs/concepts/)                                                                              | La teoría de cada concepto, con referencias bibliográficas |
-| [Demo por consola](docs/console-demo.md)                                                                       | Los comandos de la exposición, en orden                    |
-| [Verificación manual de la web](docs/web-manual-check.md)                                                      | La lista para revisar la web a mano, vista por vista       |
-| [Specs](specs/)                                                                                                | Qué se construye en cada etapa y por qué                   |
-| [Anteproyecto](Romero%20Julio%20-%20Ante%20proyecto%20Fundamentos%20Te%C3%B3ricos%20de%20la%20informatica.pdf) | La propuesta original del trabajo                          |
+| Documento                                                                                                      | Para qué                                                 |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [Documentación del núcleo y la web](docs/documentation/sabueso-es.md)                                          | Arquitectura, piezas, funciones clave y cómo se conectan |
+| [Core and web documentation (English)](docs/documentation/sabueso-en.md)                                       | La misma documentación, en inglés                        |
+| [Guías de estudio](docs/guides/)                                                                               | La teoría y el código de cada tema, y la web (29)        |
+| [Demo por consola](docs/demo-consola.md)                                                                       | Los comandos de la exposición, en orden                  |
+| [Verificación manual de la web](docs/verificacion-manual-web.md)                                               | La lista para revisar la web a mano, vista por vista     |
+| [Specs](specs/)                                                                                                | Qué se construye en cada etapa y por qué                 |
+| [Anteproyecto](Romero%20Julio%20-%20Ante%20proyecto%20Fundamentos%20Te%C3%B3ricos%20de%20la%20informatica.pdf) | La propuesta original del trabajo                        |
 
 ---
 
@@ -387,7 +411,7 @@ sabueso/
 Como anticipa el anteproyecto, el trabajo usa asistentes de inteligencia artificial como apoyo, dentro de la política de la cátedra, y su uso se declara acá.
 
 - **Herramienta:** Claude (Anthropic), a través de Claude Code.
-- **Para qué se usó:** discutir alternativas de diseño, redactar los specs, escribir y revisar el código y las pruebas, y redactar la documentación (las guías, las fichas y este README).
+- **Para qué se usó:** discutir alternativas de diseño, redactar los specs, escribir y revisar el código y las pruebas, y redactar la documentación (las guías y este README).
 - **Qué hizo el autor:** definió el problema, el modelo narrativo, las etiquetas y las gramáticas G0 y G1 del anteproyecto; decidió el alcance y las decisiones de diseño; guió el desarrollo paso a paso y revisó y aprobó cada cambio. Los valores esperados de las pruebas se calcularon a mano en los specs antes de implementar.
 - **Revisión:** el autor revisó el trabajo y asume el contenido del repositorio como propio.
 

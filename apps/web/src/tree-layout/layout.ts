@@ -10,7 +10,7 @@ export type LayoutNodeKind = 'terminal' | 'nonterminal' | 'epsilon' | 'collapsed
 
 /**
  * Which steps of the leftmost derivation a node stands for: its expansion number in preorder
- * (the order of the leftmost derivation, card 20). A collapsed node stands for every expansion
+ * (the order of the leftmost derivation, guide 21). A collapsed node stands for every expansion
  * of its hidden subtree, from first to last.
  */
 export interface ExpansionRange {

@@ -1,7 +1,7 @@
 /**
  * Concept: the parse trees of an accepted input, rebuilt by following the links of the
  * Earley items (backpointers), one tree at a time and up to a limit.
- * Card: docs/concepts/18-backpointers-and-trees.md
+ * Guide: docs/guides/19-arboles-de-un-relato.md
  */
 import { computeNullable } from '../analysis/nullable.js';
 import type { EarleyItem, Link } from '../earley/item.js';

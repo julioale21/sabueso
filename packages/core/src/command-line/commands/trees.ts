@@ -1,7 +1,7 @@
 /**
  * Concept: the parse trees of a story, rebuilt from the links of the Earley items and drawn
  * one by one. More than one tree means the grammar is ambiguous for that story.
- * Card: docs/concepts/18-backpointers-and-trees.md
+ * Guide: docs/guides/19-arboles-de-un-relato.md
  */
 import { diagnose } from '../../earley/diagnostics.js';
 import { recognize } from '../../earley/recognizer.js';

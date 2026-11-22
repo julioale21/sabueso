@@ -1,7 +1,7 @@
 /**
  * Concept: the ε-trees of a nullable symbol: how many ways it derives the empty string,
  * and those trees drawn. Without a symbol, the count for every nullable symbol.
- * Card: docs/concepts/18-backpointers-and-trees.md
+ * Guide: docs/guides/18-arboles-epsilon.md
  */
 import { computeNullable } from '../../analysis/nullable.js';
 import type { Grammar, SymbolName } from '../../grammar/types.js';

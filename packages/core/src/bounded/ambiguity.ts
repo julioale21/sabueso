@@ -2,7 +2,7 @@
  * Concept: a witness of ambiguity: the first sentence of length ≤ k with more than one parse
  * tree. Ambiguity is undecidable, but this search semidecides it: if G is ambiguous, some k
  * finds a witness. "None up to k" proves nothing.
- * Card: docs/concepts/25-bounded-searches.md
+ * Guide: docs/guides/27-busquedas-acotadas.md
  */
 import { recognize } from '../earley/recognizer.js';
 import type { Grammar, SymbolName } from '../grammar/types.js';

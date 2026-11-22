@@ -1,6 +1,6 @@
 /**
  * The analysis of the story (SPEC 03, sections 3.1 and 3.4): the verdict; if accepted, the
- * trees to browse with their derivations; if rejected, the diagnosis. Concepts: cards 17 to 21.
+ * trees to browse with their derivations; if rejected, the diagnosis. Concepts: guides 16 and 19 to 21.
  */
 import { useState } from 'react';
 import type { StoryAnalysis } from '../../analysis/service';

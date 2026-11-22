@@ -1,7 +1,7 @@
 /**
  * Autómata de pila (SPEC 03, section 3.4): the automaton of the grammar, its run on the
  * analyzed story and the accepting path as instantaneous descriptions. Concept: from a CFG to
- * a pushdown automaton, accepting by empty stack (card 24). Everything comes from the core.
+ * a pushdown automaton, accepting by empty stack (guide 26). Everything comes from the core.
  */
 import { useAnalysisService } from '../analysis/context';
 import { useServiceResult } from '../analysis/use-service-result';

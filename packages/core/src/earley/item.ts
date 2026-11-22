@@ -1,7 +1,7 @@
 /**
  * Concept: the Earley item (A → α • β, j), a dotted rule with an origin: "I am recognizing
  * A, I already recognized α starting at position j, and β is still missing".
- * Card: docs/concepts/11-earley-item.md
+ * Guide: docs/guides/13-earley-items-y-conjuntos.md
  */
 import type { Grammar, Production, SymbolName } from '../grammar/types.js';
 

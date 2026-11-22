@@ -47,7 +47,7 @@ La única lógica no trivial de la UI es el **posicionamiento del árbol** (secc
 - Estilos con **Tailwind CSS v4** (solo como dependencia de desarrollo, con `@tailwindcss/vite`), tema claro/oscuro con la variante `dark:` (sigue a `prefers-color-scheme`).
 - Pruebas de componentes con Vitest, Testing Library y jsdom, y pruebas unitarias del posicionamiento del árbol.
 - Build estático (`apps/web/dist`) y workflow de GitHub Actions para publicar en GitHub Pages, para que la cátedra pueda probar la herramienta sin instalar nada.
-- Una lista corta de verificación manual en el navegador (`docs/web-manual-check.md`).
+- Una lista corta de verificación manual en el navegador (`docs/verificacion-manual-web.md`).
 
 **Fuera de alcance (para specs futuros):**
 
@@ -305,7 +305,7 @@ apps/web/
     DiagnosticPanel.test.tsx
     App.test.tsx               # integración
 .github/workflows/deploy-pages.yml
-docs/web-manual-check.md
+docs/verificacion-manual-web.md
 ```
 
 El código y sus comentarios van en inglés, como en el SPEC 02; los textos de la interfaz, en español (con tuteo). Cada componente de vista empieza con un comentario que nombra el concepto que visualiza y su ficha.
@@ -395,8 +395,8 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
     - En el README, los pasos manuales: hacer público el repo (si hace falta) y elegir "GitHub Actions" como fuente de Pages.
     - Hecho: `.github/workflows/deploy-pages.yml` (también se puede lanzar a mano, con `workflow_dispatch`). Un deploy por vez, sin cancelar uno en curso. Se probó en local: con `VITE_BASE=/sabueso/` los recursos apuntan a `/sabueso/assets/…`, y `vite preview` en `/sabueso/` analiza A1 sin errores en la consola. La sección "La interfaz web" del README tiene el enlace y los pasos manuales.
 17. **Verificación manual.**
-    - `docs/web-manual-check.md` con los casos de la sección 8, marcados después de revisarlos en el navegador.
-    - Hecho: `docs/web-manual-check.md`, una lista por vista con los valores exactos, tomados de las pruebas de `apps/web/test` y de los comandos de la consola. Falta marcar cada caso en el navegador.
+    - `docs/verificacion-manual-web.md` con los casos de la sección 8, marcados después de revisarlos en el navegador.
+    - Hecho: `docs/verificacion-manual-web.md`, una lista por vista con los valores exactos, tomados de las pruebas de `apps/web/test` y de los comandos de la consola. Falta marcar cada caso en el navegador.
 18. **Mejoras de la UI (versión 2).**
     - Se encara con las fases A a C terminadas, en su propia rama. No cambia la estructura: las vistas siguen pasando por el `AnalysisService` y las primitivas de `components/ui/`.
     - **El árbol se construye paso a paso, al ritmo de la derivación.** Un reproductor (⏮ ◀ ▶ ⏭, reproducir/pausar y velocidad) recorre la derivación más a la izquierda: en el paso k aparecen los hijos del nodo de la expansión k − 1, con una animación de entrada, y la forma sentencial k se resalta en la lista. Así se ve que la derivación más a la izquierda recorre el árbol en preorden. Usa el número de expansión que ya calcula `layoutTree` (paso 7): no hace falta nada nuevo del núcleo.
@@ -434,11 +434,11 @@ El trabajo va en la rama `ui_v1` (desde `main`, con el SPEC 02 ya fusionado) y s
 - [ ] El panel de gramática muestra el texto de la gramática activa sin permitir editarlo, y la UI no ofrece ninguna forma de cargar una gramática.
 - [ ] Al recargar, la página abre con G1 y el relato vacío: no se guarda nada.
 - [ ] El workflow `deploy-pages.yml` existe y es válido. Con Pages habilitado, el sitio carga en `https://<usuario>.github.io/sabueso/`.
-- [ ] Existe `docs/web-manual-check.md`, y cada caso fue marcado como verificado.
+- [ ] Existe `docs/verificacion-manual-web.md`, y cada caso fue marcado como verificado.
 
 ---
 
-## 8. Verificación manual (contenido mínimo de `docs/web-manual-check.md`)
+## 8. Verificación manual (contenido mínimo de `docs/verificacion-manual-web.md`)
 
 - Los casos de la tabla 9.1 del SPEC 02 con G0 y con G1: aceptación, cantidad de árboles y diagnóstico tal como se muestran en pantalla.
 - Cada pestaña didáctica con un caso: Earley con A1, LL(1) con G0 y G1, FNC y CYK con `CRI PIS REV`, autómata de pila con `CRI PIS REV`, G0 vs G1 con k = 3 y k = 4.
